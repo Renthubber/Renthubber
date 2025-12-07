@@ -6,7 +6,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { stripePromise } from "../lib/stripe";
-import { createBookingWithPaymentApi, api } from "../services/api";
+import { api } from "../services/api";
 import { Listing, User } from "../types";
 import { supabase } from "../lib/supabase";
 
@@ -22,7 +22,7 @@ async function createBookingConversation(params: {
 }): Promise<void> {
   const { bookingId, renterId, hubberId, listingId, listingTitle, startDate, endDate } = params;
   
-  console.log("🔧 createBookingConversation chiamata con:", params);
+  console.log("📧 createBookingConversation chiamata con:", params);
   
   const now = new Date().toISOString();
   const conversationId = `conv-booking-${bookingId}`;
@@ -233,26 +233,13 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
 
     // ✅ CALCOLO CORRETTO COMMISSIONE HUBBER
     // Commissione hubber = (prezzo base × % hubber) + fee fissa
-    // Esempio: (€5 × 10%) + €2 = €0.50 + €2 = €2.50
     const hubberVariableFeeEur = (rentalAmountEur * hubberFeePercentage) / 100;
     const hubberTotalFeeEur = hubberVariableFeeEur + fixedFee;
     const hubberTotalFeeCents = Math.round(hubberTotalFeeEur * 100);
     
     // ✅ NETTO HUBBER = prezzo base - commissione hubber
-    // Esempio: €5 - €2.50 = €2.50
     const hubberNetEur = rentalAmountEur - hubberTotalFeeEur;
     const hubberNetCents = Math.round(hubberNetEur * 100);
-
-    console.log("📊 Calcolo commissioni:", {
-      rentalAmountEur,
-      hubberFeePercentage,
-      fixedFee,
-      hubberVariableFeeEur,
-      hubberTotalFeeEur,
-      hubberNetEur,
-      hubberTotalFeeCents,
-      hubberNetCents,
-    });
 
     return {
       totalCents,
@@ -268,7 +255,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
 
   if (!isOpen) return null;
 
-  // 🧪 MODALITÀ TEST: Salta Stripe, salva direttamente la prenotazione
+  // 💳 PAGAMENTO STRIPE REALE
   const handleConfirm = async () => {
     // Aspetta che le fee siano caricate
     if (!feesLoaded) {
@@ -276,54 +263,135 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       return;
     }
 
+    if (!stripe || !elements) {
+      setErrorMsg("Stripe non è ancora pronto. Riprova tra un momento.");
+      return;
+    }
+
     try {
       setLoading(true);
       setErrorMsg(null);
 
-      console.log("📤 Invio prenotazione:", {
-        renterId: renter.id,
-        listingId: listing.id,
-        amountTotalCents: amounts.totalCents,
-        platformFeeCents: amounts.hubberTotalFeeCents,
-        hubberNetAmountCents: amounts.hubberNetCents,
-      });
-
-      const booking = await createBookingWithPaymentApi({
-        renterId: renter.id,
-        listingId: listing.id,
-        startDate,
-        endDate,
-        amountTotalCents: amounts.totalCents,
-        platformFeeCents: amounts.hubberTotalFeeCents, // ✅ Commissione hubber corretta
-        hubberNetAmountCents: amounts.hubberNetCents,   // ✅ Netto hubber corretto
-        walletUsedCents: amounts.walletCents,
-        provider: "test_mode",
-        providerPaymentId: `test_${Date.now()}`,
-      });
-
-      console.log("✅ Prenotazione creata:", booking);
-
-      // ✅ CREA CONVERSAZIONE AUTOMATICA TRA RENTER E HUBBER
-      try {
-        await createBookingConversation({
-          bookingId: booking.id,
-          renterId: renter.id,
-          hubberId: listing.hostId,
-          listingId: listing.id,
-          listingTitle: listing.title,
-          startDate,
-          endDate,
-        });
-      } catch (convError) {
-        console.warn("⚠️ Errore creazione conversazione (non bloccante):", convError);
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) {
+        setErrorMsg("Elemento carta non trovato.");
+        setLoading(false);
+        return;
       }
 
-      if (onSuccess) onSuccess(booking);
+      console.log("💳 Creazione Payment Intent...");
 
-      setLoading(false);
-      onClose();
+      // ✅ CHIAMATA ALLA NETLIFY FUNCTION
+      const response = await fetch("/.netlify/functions/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listingId: listing.id,
+          renterId: renter.id,
+          hubberId: listing.hostId,
+          startDate,
+          endDate,
+          basePrice: rentalAmountEur,
+          renterFee: platformFeeEur,
+          hubberFee: amounts.hubberTotalFeeCents / 100,
+          deposit: depositEur,
+          totalAmount: totalAmountEur,
+          useWallet: walletUsedEur > 0,
+          refundBalanceToUse: walletUsedEur, // Semplificato - puoi dividere tra refund/referral
+          referralBalanceToUse: 0,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Errore creazione Payment Intent");
+      }
+
+      const { clientSecret, paidWithWallet, bookingId } = await response.json();
+
+      // Se pagato completamente con wallet
+      if (paidWithWallet) {
+        console.log("✅ Prenotazione pagata con wallet:", bookingId);
+        
+        // Crea conversazione
+        try {
+          await createBookingConversation({
+            bookingId,
+            renterId: renter.id,
+            hubberId: listing.hostId,
+            listingId: listing.id,
+            listingTitle: listing.title,
+            startDate,
+            endDate,
+          });
+        } catch (convError) {
+          console.warn("⚠️ Errore creazione conversazione:", convError);
+        }
+
+        if (onSuccess) onSuccess({ id: bookingId });
+        setLoading(false);
+        onClose();
+        return;
+      }
+
+      // ✅ CONFERMA PAGAMENTO CON STRIPE
+      console.log("🔐 Conferma pagamento...");
+
+      const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        {
+          payment_method: {
+            card: cardElement,
+            billing_details: {
+              name: renter.name || renter.email,
+              email: renter.email,
+            },
+          },
+        }
+      );
+
+      if (confirmError) {
+        throw new Error(confirmError.message || "Pagamento fallito");
+      }
+
+      if (paymentIntent?.status === "succeeded") {
+        console.log("✅ Pagamento confermato:", paymentIntent.id);
+        
+        // Il webhook creerà la prenotazione - aspettiamo un momento
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Recupera la prenotazione creata dal webhook
+        const { data: bookings } = await supabase
+          .from("bookings")
+          .select("*")
+          .eq("stripe_payment_intent_id", paymentIntent.id)
+          .single();
+
+        if (bookings) {
+          // Crea conversazione
+          try {
+            await createBookingConversation({
+              bookingId: bookings.id,
+              renterId: renter.id,
+              hubberId: listing.hostId,
+              listingId: listing.id,
+              listingTitle: listing.title,
+              startDate,
+              endDate,
+            });
+          } catch (convError) {
+            console.warn("⚠️ Errore creazione conversazione:", convError);
+          }
+
+          if (onSuccess) onSuccess(bookings);
+        }
+
+        setLoading(false);
+        onClose();
+      }
+
     } catch (err: any) {
-      console.error("Errore handleConfirm:", err);
+      console.error("❌ Errore pagamento:", err);
       setErrorMsg(err.message || "Errore imprevisto durante il pagamento");
       setLoading(false);
     }
@@ -380,10 +448,32 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
           </div>
         </div>
 
-        {/* 🧪 TEST MODE: Avviso */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-xs text-yellow-800">
-          ⚠️ Modalità Test: Il pagamento Stripe è disabilitato. La prenotazione verrà salvata direttamente.
-        </div>
+        {/* 💳 CARTA DI CREDITO */}
+        {cardToPayEur > 0 && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Dettagli carta
+            </label>
+            <div className="border border-gray-300 rounded-md p-3">
+              <CardElement
+                options={{
+                  style: {
+                    base: {
+                      fontSize: "16px",
+                      color: "#424770",
+                      "::placeholder": {
+                        color: "#aab7c4",
+                      },
+                    },
+                    invalid: {
+                      color: "#9e2146",
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {errorMsg && (
           <div className="text-red-600 text-sm mb-3">{errorMsg}</div>
@@ -392,10 +482,14 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
         <button
           className="w-full bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700 disabled:opacity-50"
           onClick={handleConfirm}
-          disabled={loading || !feesLoaded}
+          disabled={loading || !feesLoaded || !stripe}
         >
-          {loading ? "Elaborazione..." : !feesLoaded ? "Caricamento..." : "Paga e conferma"}
+          {loading ? "Elaborazione..." : !feesLoaded ? "Caricamento..." : `Paga ${cardToPayEur.toFixed(2)} €`}
         </button>
+
+        <p className="text-xs text-gray-500 mt-3 text-center">
+          🔒 Pagamento sicuro elaborato da Stripe
+        </p>
       </div>
     </div>
   );
