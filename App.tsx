@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Header } from "./components/Header";
+import { BottomNavBar } from "./components/BottomNavBar";
 import { Footer } from "./components/Footer";
 import { CookieConsent, CookieSettingsButton } from './components/CookieConsent';
 import { Home } from "./views/Home";
@@ -733,6 +734,15 @@ const App: React.FC = () => {
           <MappaSitoPage setView={setCurrentView} />
         )}
       </main>
+
+      {/* Bottom Navigation Bar - Solo Mobile */}
+      <BottomNavBar
+        setView={setCurrentView}
+        currentView={currentView}
+        currentUser={currentUser}
+        activeMode={activeMode}
+        onSwitchMode={setActiveMode}
+      />
 
       <Footer setView={setCurrentView} />
     </div>
