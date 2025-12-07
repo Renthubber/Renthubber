@@ -357,35 +357,57 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       if (paymentIntent?.status === "succeeded") {
         console.log("✅ Pagamento confermato:", paymentIntent.id);
         
-        // Il webhook creerà la prenotazione - aspettiamo un momento
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // ✅ POLLING: Aspetta che il webhook crei la prenotazione (max 10 tentativi)
+        let booking = null;
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        while (attempts < maxAttempts && !booking) {
+          attempts++;
+          console.log(`🔄 Tentativo ${attempts}/${maxAttempts} - Cerco prenotazione creata dal webhook...`);
+          
+          const { data, error } = await supabase
+            .from("bookings")
+            .select("*")
+            .eq("stripe_payment_intent_id", paymentIntent.id)
+            .maybeSingle();
 
-        // Recupera la prenotazione creata dal webhook
-        const { data: bookings } = await supabase
-          .from("bookings")
-          .select("*")
-          .eq("stripe_payment_intent_id", paymentIntent.id)
-          .single();
-
-        if (bookings) {
-          // Crea conversazione
-          try {
-            await createBookingConversation({
-              bookingId: bookings.id,
-              renterId: renter.id,
-              hubberId: listing.hostId,
-              listingId: listing.id,
-              listingTitle: listing.title,
-              startDate,
-              endDate,
-            });
-          } catch (convError) {
-            console.warn("⚠️ Errore creazione conversazione:", convError);
+          if (data) {
+            booking = data;
+            console.log("✅ Prenotazione trovata:", booking.id);
+            break;
           }
-
-          if (onSuccess) onSuccess(bookings);
+          
+          if (error) {
+            console.error("❌ Errore ricerca prenotazione:", error);
+          }
+          
+          // Aspetta 1 secondo prima del prossimo tentativo
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
         }
 
+        if (!booking) {
+          throw new Error("Il webhook non ha creato la prenotazione. Riprova tra qualche istante o contatta il supporto.");
+        }
+
+        // Crea conversazione
+        try {
+          await createBookingConversation({
+            bookingId: booking.id,
+            renterId: renter.id,
+            hubberId: listing.hostId,
+            listingId: listing.id,
+            listingTitle: listing.title,
+            startDate,
+            endDate,
+          });
+        } catch (convError) {
+          console.warn("⚠️ Errore creazione conversazione:", convError);
+        }
+
+        if (onSuccess) onSuccess(booking);
         setLoading(false);
         onClose();
       }
