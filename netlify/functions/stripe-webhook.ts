@@ -169,7 +169,7 @@ async function handlePaymentIntentSucceeded(
         hubber_net_amount: basePrice - hubberFee,
         wallet_used_cents: Math.round(walletUsed * 100),
         status: 'confirmed',
-        payment_id: paymentIntent.id,
+        stripe_payment_intent_id: paymentIntent.id,
         created_at: new Date().toISOString(),
       }),
     }
