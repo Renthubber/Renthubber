@@ -1917,7 +1917,7 @@ const handleIdFileChange =
 
         <div className="space-y-4">
           {/* EMAIL */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
             <div className="flex items-center">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
@@ -1937,7 +1937,7 @@ const handleIdFileChange =
                 <p className="text-xs text-gray-500">{profileData.email}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-11 md:ml-0">
               <button
                 onClick={openEmailModal}
                 className="text-xs font-semibold text-brand hover:text-brand-dark transition-colors px-3 py-1.5 rounded-lg hover:bg-brand/5"
@@ -2119,11 +2119,11 @@ const handleIdFileChange =
   );
   // --- SEZIONE PROFILO (shared) ---
   const renderProfile = () => (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-300 pb-20 md:pb-0">
       {/* CARD PROFILO PRINCIPALE */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex gap-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-6">
         {/* AVATAR + UPLOAD */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 mx-auto md:mx-0">
           <div
             className="relative w-24 h-24 rounded-full overflow-hidden bg-brand text-white flex items-center justify-center text-2xl font-bold cursor-pointer group"
             onClick={handleAvatarClick}
@@ -2160,9 +2160,9 @@ const handleIdFileChange =
         </div>
 
         {/* INFO PROFILO */}
-        <div className="flex-1">
+        <div className="flex-1 text-center md:text-left">
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center md:text-left">
               {profileData.firstName || profileData.lastName
                 ? `${profileData.firstName} ${profileData.lastName}`.trim()
                 : 'Nuovo utente Renthubber'}
@@ -2275,7 +2275,7 @@ const handleIdFileChange =
           <div className="mt-6">
             <button
               onClick={openProfileModal}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-bold text-gray-700 hover:bg-gray-50"
+              className="w-full md:w-auto px-4 py-2 rounded-lg border border-gray-300 text-sm font-bold text-gray-700 hover:bg-gray-50"
             >
               Modifica dati profilo
             </button>
@@ -2398,6 +2398,33 @@ const handleIdFileChange =
 
     return (
     <div className="space-y-8 animate-in fade-in duration-300">
+      <style dangerouslySetInnerHTML={{__html: `
+        * {
+          scrollbar-width: none !important;
+        }
+        
+        *::-webkit-scrollbar {
+          width: 0px !important;
+          height: 0px !important;
+          display: none !important;
+        }
+        
+        *::-webkit-scrollbar-track {
+          display: none !important;
+        }
+        
+        *::-webkit-scrollbar-thumb {
+          display: none !important;
+        }
+        
+        .overflow-y-auto,
+        .overflow-x-auto,
+        .overflow-auto {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+        }
+      `}} />
+
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Guadagni del mese */}
@@ -3153,7 +3180,7 @@ const handleIdFileChange =
       <div className="space-y-8 animate-in fade-in duration-300">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center md:text-left">
               Prenotazioni ricevute
             </h2>
             <p className="text-sm text-gray-500">
@@ -3477,7 +3504,7 @@ const handleIdFileChange =
 const renderHubberCalendar = () => (
   <div className="space-y-8 animate-in fade-in duration-300">
     <div>
-      <h2 className="text-2xl font-bold text-gray-900">Calendario Prenotazioni</h2>
+      <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center md:text-left">Calendario Prenotazioni</h2>
       <p className="text-sm text-gray-500 mt-1">
         Visualizza tutte le tue prenotazioni e sincronizza con calendari esterni.
       </p>
@@ -3569,10 +3596,10 @@ const renderHubberCalendar = () => (
       </div>
 
       {/* Custom Tabs */}
-      <div className="flex flex-wrap gap-1 bg-white p-1 rounded-xl border border-gray-200 mb-8 w-fit">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 bg-white p-3 rounded-xl border border-gray-200 mb-8 w-full sm:w-auto">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
             activeTab === 'overview'
               ? 'bg-gray-100 text-gray-900 shadow-sm'
               : 'text-gray-500 hover:text-gray-700'
@@ -3584,7 +3611,7 @@ const renderHubberCalendar = () => (
         {/* ✅ NUOVO TAB CALENDARIO */}
         <button
           onClick={() => setActiveTab('calendar')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
             activeTab === 'calendar'
               ? 'bg-gray-100 text-gray-900 shadow-sm'
               : 'text-gray-500 hover:text-gray-700'
@@ -3595,7 +3622,7 @@ const renderHubberCalendar = () => (
         
         <button
           onClick={() => setActiveTab('hubber_bookings')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
             activeTab === 'hubber_bookings'
               ? 'bg-gray-100 text-gray-900 shadow-sm'
               : 'text-gray-500 hover:text-gray-700'
@@ -3605,7 +3632,7 @@ const renderHubberCalendar = () => (
         </button>
         <button
           onClick={() => setActiveTab('profile')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
             activeTab === 'profile'
               ? 'bg-gray-100 text-gray-900 shadow-sm'
               : 'text-gray-500 hover:text-gray-700'
@@ -3615,7 +3642,7 @@ const renderHubberCalendar = () => (
         </button>
         <button
           onClick={() => setActiveTab('payments')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
             activeTab === 'payments'
               ? 'bg-gray-100 text-gray-900 shadow-sm'
               : 'text-gray-500 hover:text-gray-700'
@@ -3625,7 +3652,7 @@ const renderHubberCalendar = () => (
         </button>
         <button
           onClick={() => setActiveTab('security')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
             activeTab === 'security'
               ? 'bg-gray-100 text-gray-900 shadow-sm'
               : 'text-gray-500 hover:text-gray-700'
@@ -3901,10 +3928,10 @@ const renderRenterPayments = () => {
       </div>
 
       {/* Custom Tabs for Renter */}
-<div className="flex flex-wrap gap-1 bg-white p-1 rounded-xl border border-gray-200 mb-8 w-fit">
+<div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 bg-white p-3 rounded-xl border border-gray-200 mb-8 w-full sm:w-auto">
   <button
     onClick={() => setActiveTab('overview')}
-    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+    className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
       activeTab === 'overview'
         ? 'bg-gray-100 text-gray-900 shadow-sm'
         : 'text-gray-500 hover:text-gray-700'
@@ -3914,7 +3941,7 @@ const renderRenterPayments = () => {
   </button>
   <button
     onClick={() => setActiveTab('bookings')}
-    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+    className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
       activeTab === 'bookings'
         ? 'bg-gray-100 text-gray-900 shadow-sm'
         : 'text-gray-500 hover:text-gray-700'
@@ -3924,7 +3951,7 @@ const renderRenterPayments = () => {
   </button>
   <button
     onClick={() => setActiveTab('profile')}
-    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+    className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
       activeTab === 'profile'
         ? 'bg-gray-100 text-gray-900 shadow-sm'
         : 'text-gray-500 hover:text-gray-700'
@@ -3934,7 +3961,7 @@ const renderRenterPayments = () => {
   </button>
   <button
     onClick={() => setActiveTab('payments')}
-    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+    className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
       activeTab === 'payments'
         ? 'bg-gray-100 text-gray-900 shadow-sm'
         : 'text-gray-500 hover:text-gray-700'
@@ -3944,7 +3971,7 @@ const renderRenterPayments = () => {
   </button>
   <button
     onClick={() => setActiveTab('security')}
-    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+    className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
       activeTab === 'security'
         ? 'bg-gray-100 text-gray-900 shadow-sm'
         : 'text-gray-500 hover:text-gray-700'
@@ -4306,7 +4333,7 @@ const renderRenterPayments = () => {
     const totalPaid = (bookingToCancel as any).renterTotalPaid || bookingToCancel.totalPrice || 0;
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
         <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative mx-4">
           <button
             onClick={closeCancelModal}
@@ -4529,7 +4556,7 @@ const renderRenterPayments = () => {
     if (!hubberCancelModalOpen || !hubberBookingToCancel) return null;
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
         <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative mx-4">
           <button
             onClick={closeHubberCancelModal}
@@ -4834,7 +4861,7 @@ const renderRenterPayments = () => {
     if (!phoneModalOpen) return null;
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
         <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative mx-4">
           <button
             onClick={closePhoneModal}
@@ -4999,7 +5026,7 @@ const renderRenterPayments = () => {
     if (!emailModalOpen) return null;
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
         <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative mx-4">
           <button
             onClick={closeEmailModal}
@@ -5163,8 +5190,8 @@ const renderRenterPayments = () => {
   const renderProfileModal = () => {
     if (!isProfileModalOpen) return null;
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative max-h-[85vh] md:max-h-[90vh] overflow-y-auto">
           <button
             onClick={() => !isSavingProfile && setIsProfileModalOpen(false)}
             className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100"
