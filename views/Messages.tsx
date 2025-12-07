@@ -633,11 +633,13 @@ export const Messages: React.FC<MessagesProps> = ({
 
         // Carica conversazioni da Supabase
         const supabaseConversations = await api.messages.getConversationsForUser(currentUser.id);
+        console.log("🟢 CONVERSAZIONI DA SUPABASE:", supabaseConversations);
 
         // Converti in formato "contact" per l'UI
         const realContactsPromises = supabaseConversations
           .filter((conv: any) => !conv.isSupport) // Escludi supporto dalla lista contatti
           .map(async (conv: any) => {
+            console.log("🟢 COSTRUISCO CONTATTO:", conv.id, "isSupport:", conv.isSupport, "bookingId:", conv.bookingId);
             const isRenter = conv.renterId === currentUser.id;
             const contactId = isRenter ? conv.hubberId : conv.renterId;
             const contactData = isRenter ? conv.hubber : conv.renter;
@@ -683,6 +685,7 @@ export const Messages: React.FC<MessagesProps> = ({
         setRealConversationsCount(realContacts.length);
 
         // Usa solo conversazioni reali
+        console.log("✅ CONTATTI FINALI SETTATI:", realContacts);
         setContacts(realContacts);
 
         // Seleziona la prima conversazione reale se esiste, altrimenti supporto
@@ -705,6 +708,7 @@ export const Messages: React.FC<MessagesProps> = ({
 
   // ✅ CARICA MESSAGGI - REALI O MOCK
   useEffect(() => {
+    console.log("🔴 useEffect ATTIVATO - activeChatId:", activeChatId, "activeContact:", activeContact);
     if (!activeContact) return;
 
     // ✅ Se è la chat supporto, carica da Supabase
@@ -771,9 +775,13 @@ export const Messages: React.FC<MessagesProps> = ({
 
     // Se è una conversazione reale, carica messaggi da Supabase
     if (activeContact.isRealConversation) {
+      console.log("🔵 ATTIVO CARICAMENTO MESSAGGI");
+      console.log("🔵 activeChatId:", activeChatId);
+      console.log("🔵 activeContact:", activeContact);
       const loadConversationMessages = async () => {
         try {
           const msgs = await api.messages.getMessagesForConversation(activeChatId);
+          console.log("🔵 MESSAGGI RICEVUTI DA API:", msgs.length, msgs);
           
           const conversationMessages = msgs.map((m: any) => {
   const isFromMe = m.fromUserId === currentUser?.id;
