@@ -13,8 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 // CONFIGURAZIONE
 // ============================================
 const SUPABASE_URL = 'https://upyznglekmynztmydtxi.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVweXpuZ2xla215bnp0bXlkdHhpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzcxNDIyMiwiZXhwIjoyMDc5MjkwMjIyfQ.tHCbkORSRhMyheyV39Bt5pL5dd5f5mtaCinoV34CXAg'; // ← MODIFICA QUESTA RIGA!
-
+const SUPABASE_ANON_KEY = 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============================================
@@ -236,4 +235,5 @@ async function main() {
 }
 
 // Esegui
+
 main();
