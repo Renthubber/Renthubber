@@ -1,14 +1,6 @@
 import { Handler } from '@netlify/functions';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia',
-});
-
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || '';
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
-
 /**
  * Netlify Function: Stripe Webhook Handler
  * 
@@ -20,6 +12,25 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
  * - account.updated → Aggiorna stato onboarding hubber
  */
 export const handler: Handler = async (event, context) => {
+  // ✅ Inizializza Stripe DENTRO l'handler per accedere alle env vars a runtime
+  const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
+  const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
+  const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || '';
+  const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+
+  // ✅ Verifica che le chiavi siano presenti
+  if (!STRIPE_SECRET_KEY) {
+    console.error('❌ STRIPE_SECRET_KEY not found in environment variables');
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Server configuration error - Missing STRIPE_SECRET_KEY' }),
+    };
+  }
+
+  const stripe = new Stripe(STRIPE_SECRET_KEY, {
+    apiVersion: '2024-11-20.acacia',
+  });
+
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, Stripe-Signature',
@@ -73,7 +84,7 @@ export const handler: Handler = async (event, context) => {
     // Gestisci diversi tipi di eventi
     switch (stripeEvent.type) {
       case 'payment_intent.succeeded':
-        await handlePaymentIntentSucceeded(stripeEvent.data.object as Stripe.PaymentIntent);
+        await handlePaymentIntentSucceeded(stripeEvent.data.object as Stripe.PaymentIntent, SUPABASE_URL, SUPABASE_ANON_KEY);
         break;
 
       case 'payment_intent.payment_failed':
@@ -81,7 +92,7 @@ export const handler: Handler = async (event, context) => {
         break;
 
       case 'account.updated':
-        await handleAccountUpdated(stripeEvent.data.object as Stripe.Account);
+        await handleAccountUpdated(stripeEvent.data.object as Stripe.Account, SUPABASE_URL, SUPABASE_ANON_KEY);
         break;
 
       default:
@@ -107,7 +118,11 @@ export const handler: Handler = async (event, context) => {
 /**
  * Gestisce pagamento riuscito
  */
-async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+async function handlePaymentIntentSucceeded(
+  paymentIntent: Stripe.PaymentIntent,
+  SUPABASE_URL: string,
+  SUPABASE_ANON_KEY: string
+) {
   console.log('✅ Payment succeeded:', paymentIntent.id);
 
   const metadata = paymentIntent.metadata;
@@ -215,9 +230,6 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     }
   }
 
-  // 3. Crea conversazione automatica (opzionale, già gestito in api.ts?)
-  // Puoi aggiungere logica per creare conversazione se necessario
-
   console.log('🎉 Payment processing completed');
 }
 
@@ -239,7 +251,11 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
 /**
  * Gestisce aggiornamento account Connect
  */
-async function handleAccountUpdated(account: Stripe.Account) {
+async function handleAccountUpdated(
+  account: Stripe.Account,
+  SUPABASE_URL: string,
+  SUPABASE_ANON_KEY: string
+) {
   console.log('🔄 Account updated:', account.id);
 
   const userId = account.metadata?.renthubber_user_id;
