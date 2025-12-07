@@ -182,7 +182,7 @@ export const AirbnbCalendar: React.FC<AirbnbCalendarProps> = ({
 
      return (
         <div className="w-[320px] select-none">
-           <h3 className="text-center font-bold text-gray-800 mb-4 capitalize">
+           <h3 className="text-center font-bold text-gray-800 mb-4 capitalize text-sm md:text-base">
               {MONTHS_IT[month]} {year}
            </h3>
            <div className="grid grid-cols-7 mb-2">

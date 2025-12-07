@@ -38,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
+    <header className="sticky top-0 z-[9999] bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
 
@@ -157,7 +157,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* MENU PROFILO */}
             {currentUser && (
-              <div className="relative" ref={menuRef}>
+              <div className="relative z-[9999]" ref={menuRef}>
                 <button
                   onClick={() => setMenuOpen(!menuOpen)}
                   className="flex items-center bg-gray-50 border border-gray-200 rounded-full pl-1 pr-1 py-1 cursor-pointer hover:shadow-md transition-shadow"
@@ -165,13 +165,49 @@ export const Header: React.FC<HeaderProps> = ({
                   <Menu className="w-4 h-4 text-gray-600 mx-2" />
                   <img
                     src={currentUser.avatar}
+                    alt="Profile"
                     className="w-8 h-8 rounded-full border border-white shadow-sm"
                   />
                 </button>
 
                 {/* DROP MENU A CLICK */}
                 {menuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-20">
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-[9999]">
+
+                    {/* ✅ Switch Renter/Hubber - SOLO per hubber e SOLO su mobile */}
+                    {isHubber && (
+                      <div className="md:hidden px-4 py-3 border-b border-gray-100">
+                        <p className="text-xs font-semibold text-gray-500 mb-2">Modalità</p>
+                        <div className="bg-gray-100 p-1 rounded-lg flex items-center">
+                          <button
+                            onClick={() => {
+                              onSwitchMode("renter");
+                              setMenuOpen(false);
+                            }}
+                            className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
+                              activeMode === "renter"
+                                ? "bg-white shadow text-brand"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            Renter
+                          </button>
+                          <button
+                            onClick={() => {
+                              onSwitchMode("hubber");
+                              setMenuOpen(false);
+                            }}
+                            className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
+                              activeMode === "hubber"
+                                ? "bg-white shadow text-brand-accent"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            Hubber
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     <button
                       onClick={() => setView("dashboard")}
