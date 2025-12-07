@@ -1957,7 +1957,7 @@ const handleIdFileChange =
           </div>
 
           {/* TELEFONO */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
             <div className="flex items-center">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
@@ -1979,7 +1979,7 @@ const handleIdFileChange =
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-11 md:ml-0">
               <button
                 onClick={openPhoneModal}
                 className="text-xs font-semibold text-brand hover:text-brand-dark transition-colors px-3 py-1.5 rounded-lg hover:bg-brand/5"
@@ -2000,7 +2000,7 @@ const handleIdFileChange =
 
           {/* DOCUMENTO IDENTITÀ */}
           <div className="flex flex-col gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div className="flex items-center">
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
@@ -2024,7 +2024,7 @@ const handleIdFileChange =
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 ml-11 md:ml-0">
                 {user.idDocumentVerified && (
                   <button
                     onClick={() => {

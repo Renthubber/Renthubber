@@ -236,11 +236,11 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, user }) =>
           <div ref={searchBarRef} className="relative max-w-3xl mx-auto z-50">
             
             {/* Barra principale */}
-            <div className={`bg-white rounded-full shadow-2xl flex items-center transition-all ${activeDropdown ? 'shadow-3xl' : ''}`}>
+            <div className={`bg-white rounded-2xl md:rounded-full shadow-2xl flex flex-col md:flex-row md:items-center transition-all ${activeDropdown ? 'shadow-3xl' : ''}`}>
               
               {/* 1️⃣ COSA CERCHI (con AI) */}
               <div 
-                className={`flex-1 px-6 py-4 cursor-pointer rounded-l-full transition-colors ${activeDropdown === 'search' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                className={`flex-1 px-6 py-4 cursor-pointer rounded-t-2xl md:rounded-l-full md:rounded-tr-none transition-colors ${activeDropdown === 'search' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
                 onClick={() => setActiveDropdown(activeDropdown === 'search' ? null : 'search')}
               >
                 <div className="text-left">
@@ -260,7 +260,7 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, user }) =>
               </div>
               
               {/* Separatore */}
-              <div className="h-8 w-px bg-gray-200"></div>
+              <div className="h-px md:h-8 w-full md:w-px bg-gray-200"></div>
               
               {/* 2️⃣ DOVE */}
               <div 
@@ -284,31 +284,34 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, user }) =>
               </div>
               
               {/* Separatore */}
-              <div className="h-8 w-px bg-gray-200"></div>
+              <div className="h-px md:h-8 w-full md:w-px bg-gray-200"></div>
               
-              {/* 3️⃣ DATE */}
-              <div 
-                className={`flex-1 px-6 py-4 cursor-pointer transition-colors ${activeDropdown === 'dates' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
-                onClick={() => setActiveDropdown(activeDropdown === 'dates' ? null : 'dates')}
-              >
-                <div className="text-left">
-                  <p className="text-[11px] font-bold text-gray-800 uppercase tracking-wide">Date</p>
-                  <p className={`text-sm ${searchDateStart ? 'text-gray-800' : 'text-gray-400'}`}>
-                    {formatDateRange()}
-                  </p>
-                </div>
-              </div>
-              
-              {/* 4️⃣ BOTTONE CERCA */}
-              <div className="pr-2">
-                <button 
-                  onClick={handleSearch}
-                  className="flex items-center gap-2 text-gray-800 font-bold py-3 px-6 rounded-full transition-all hover:shadow-lg hover:scale-105"
-                  style={{ backgroundColor: '#FFD93D' }}
+              {/* Wrapper per DATE + BOTTONE - su stessa riga mobile */}
+              <div className="flex items-center rounded-b-2xl md:rounded-none md:rounded-r-full overflow-hidden">
+                {/* 3️⃣ DATE */}
+                <div 
+                  className={`flex-1 px-6 py-4 cursor-pointer transition-colors ${activeDropdown === 'dates' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                  onClick={() => setActiveDropdown(activeDropdown === 'dates' ? null : 'dates')}
                 >
-                  <Search className="w-5 h-5" />
-                  <span className="hidden sm:inline">Cerca</span>
-                </button>
+                  <div className="text-left">
+                    <p className="text-[11px] font-bold text-gray-800 uppercase tracking-wide">Date</p>
+                    <p className={`text-sm ${searchDateStart ? 'text-gray-800' : 'text-gray-400'}`}>
+                      {formatDateRange()}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* 4️⃣ BOTTONE CERCA */}
+                <div className="pr-2 py-2">
+                  <button 
+                    onClick={handleSearch}
+                    className="flex items-center gap-2 text-gray-800 font-bold py-3 px-6 rounded-full transition-all hover:shadow-lg hover:scale-105"
+                    style={{ backgroundColor: '#FFD93D' }}
+                  >
+                    <Search className="w-5 h-5" />
+                    <span className="hidden sm:inline">Cerca</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -443,23 +446,6 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, user }) =>
             )}
           </div>
 
-          {/* Mobile: Search bar compatta */}
-          <div className="md:hidden mt-4">
-            <button
-              onClick={() => setActiveDropdown('search')}
-              className="w-full bg-white rounded-full shadow-lg px-6 py-4 flex items-center gap-3"
-            >
-              <Search className="w-5 h-5 text-gray-400" />
-              <div className="text-left flex-1">
-                <p className="text-sm font-medium text-gray-800">
-                  {searchQuery || 'Cosa cerchi?'}
-                </p>
-                <p className="text-xs text-gray-400">
-                  {searchCity || 'Ovunque'} • {formatDateRange()}
-                </p>
-              </div>
-            </button>
-          </div>
         </div>
       </div>
 

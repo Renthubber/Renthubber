@@ -633,13 +633,11 @@ export const Messages: React.FC<MessagesProps> = ({
 
         // Carica conversazioni da Supabase
         const supabaseConversations = await api.messages.getConversationsForUser(currentUser.id);
-        console.log("🟢 CONVERSAZIONI DA SUPABASE:", supabaseConversations);
 
         // Converti in formato "contact" per l'UI
         const realContactsPromises = supabaseConversations
           .filter((conv: any) => !conv.isSupport) // Escludi supporto dalla lista contatti
           .map(async (conv: any) => {
-            console.log("🟢 COSTRUISCO CONTATTO:", conv.id, "isSupport:", conv.isSupport, "bookingId:", conv.bookingId);
             const isRenter = conv.renterId === currentUser.id;
             const contactId = isRenter ? conv.hubberId : conv.renterId;
             const contactData = isRenter ? conv.hubber : conv.renter;
@@ -685,7 +683,6 @@ export const Messages: React.FC<MessagesProps> = ({
         setRealConversationsCount(realContacts.length);
 
         // Usa solo conversazioni reali
-        console.log("✅ CONTATTI FINALI SETTATI:", realContacts);
         setContacts(realContacts);
 
         // Seleziona la prima conversazione reale se esiste, altrimenti supporto
@@ -695,7 +692,6 @@ export const Messages: React.FC<MessagesProps> = ({
           setActiveChatId("support");
         }
 
-        console.log("✅ Conversazioni reali caricate da Supabase:", realContacts.length);
       } catch (err) {
         console.error("Errore caricamento conversazioni:", err);
       } finally {
@@ -708,7 +704,6 @@ export const Messages: React.FC<MessagesProps> = ({
 
   // ✅ CARICA MESSAGGI - REALI O MOCK
   useEffect(() => {
-    console.log("🔴 useEffect ATTIVATO - activeChatId:", activeChatId, "activeContact:", activeContact);
     if (!activeContact) return;
 
     // ✅ Se è la chat supporto, carica da Supabase
@@ -775,13 +770,9 @@ export const Messages: React.FC<MessagesProps> = ({
 
     // Se è una conversazione reale, carica messaggi da Supabase
     if (activeContact.isRealConversation) {
-      console.log("🔵 ATTIVO CARICAMENTO MESSAGGI");
-      console.log("🔵 activeChatId:", activeChatId);
-      console.log("🔵 activeContact:", activeContact);
       const loadConversationMessages = async () => {
         try {
           const msgs = await api.messages.getMessagesForConversation(activeChatId);
-          console.log("🔵 MESSAGGI RICEVUTI DA API:", msgs.length, msgs);
           
           const conversationMessages = msgs.map((m: any) => {
   const isFromMe = m.fromUserId === currentUser?.id;
@@ -860,7 +851,6 @@ export const Messages: React.FC<MessagesProps> = ({
         if (currentUser) {
           try {
             await api.support.sendUserMessage(selectedTicketId, currentUser.id, safeText);
-            console.log('📧 Messaggio aggiunto al ticket:', selectedTicketId);
             
             // Ricarica ticket per aggiornare la lista
             await loadAllUserTickets();
@@ -1157,7 +1147,7 @@ export const Messages: React.FC<MessagesProps> = ({
   return (
     <div className="h-[calc(100vh-64px)] bg-white flex flex-col md:flex-row overflow-hidden">
       {/* Sidebar Contacts */}
-      <div className="w-full md:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col">
+      <div className={`w-full md:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col ${activeChatId ? "hidden md:flex" : "flex"}`}>
         <div className="p-4 border-b border-gray-100">
           <h2 className="text-xl font-bold text-gray-900">Messaggi</h2>
           {/* ✅ CONTATORE CONVERSAZIONI REALI */}
@@ -1393,7 +1383,7 @@ export const Messages: React.FC<MessagesProps> = ({
 
       {/* Chat Area */}
       <div 
-        className="flex flex-1 flex-col bg-gray-50 relative"
+        className={`flex flex-1 flex-col bg-gray-50 relative ${!activeChatId ? "hidden md:flex" : "flex"}`}
         onClick={() => setContextMenuContactId(null)}
       >
         {/* ✅ AREA SUPPORTO CON SISTEMA TICKET */}
@@ -1402,6 +1392,20 @@ export const Messages: React.FC<MessagesProps> = ({
             {/* Header Supporto */}
             <div className="bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm">
               <div className="flex items-center">
+                {/* Bottone Indietro - Solo Mobile */}
+                <button
+                  onClick={() => {
+                    setActiveChatId(null);
+                    setSupportView('list');
+                    setSelectedTicketId(null);
+                  }}
+                  className="md:hidden mr-3 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="Torna alla lista"
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
                 <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center mr-3">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -1689,6 +1693,21 @@ export const Messages: React.FC<MessagesProps> = ({
         {/* Chat Header */}
         <div className="bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-10">
           <div className="flex items-center">
+            {/* Bottone Indietro - Solo Mobile */}
+            <button
+              onClick={() => {
+                setActiveChatId(null);
+                setShowMenu(false);
+                setShowPhoneInfo(false);
+                setShowDisputeModal(false);
+              }}
+              className="md:hidden mr-3 p-2 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Torna alla lista"
+            >
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
             {hasRealAvatarUrl(activeContact.avatar) ? (
               <img
                 src={activeContact.avatar}
