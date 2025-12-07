@@ -424,35 +424,21 @@ useEffect(() => {
   const startDateIso = startDate ? startDate.toISOString() : "";
   const endDateIso = endDate ? endDate.toISOString() : startDateIso;
 
-  // 🔗 CREA LA PRENOTAZIONE DOPO PAGAMENTO + AGGIORNA WALLET
+  // 🔗 DOPO IL PAGAMENTO: Solo aggiorna wallet (il webhook crea la prenotazione)
   const handlePaymentSuccess = async () => {
     if (!currentUser) {
-      console.warn("Nessun utente loggato, impossibile creare prenotazione.");
+      console.warn("Nessun utente loggato.");
       return;
     }
-    if (!startDate) {
-      console.warn("Data di inizio mancante, impossibile creare prenotazione.");
-      return;
-    }
-
-    const startIso = startDate.toISOString();
-    const endIso = endDate ? endDate.toISOString() : startIso;
-    const totalAmountCents = Math.round(total * 100);
 
     try {
-      await api.createBookingAfterPayment({
-        listingId: listing.id,
-        renterId: currentUser.id,
-        hubberId: listing.hostId || owner?.id || currentUser.id,
-        startDate: startIso,
-        endDate: endIso,
-        totalAmountCents,
-        listingTitle: listing.title, // ✅ Passa il titolo per la conversazione
-      });
-
+      // ✅ Il webhook ha già creato la prenotazione
+      // Dobbiamo solo aggiornare il wallet locale per riflettere l'uso del credito
+      console.log("✅ Prenotazione creata dal webhook, aggiornamento wallet locale...");
+      
       onPaymentSuccess(total, walletUsedEur);
     } catch (err) {
-      console.error("Errore durante la creazione della prenotazione:", err);
+      console.error("Errore durante l'aggiornamento post-pagamento:", err);
     }
   };
 
