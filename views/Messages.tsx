@@ -303,7 +303,7 @@ export const Messages: React.FC<MessagesProps> = ({
     : (contacts.find((c) => c.id === activeChatId) || supportContact);
 
   const [messageInput, setMessageInput] = useState("");
-  const [showMobileList, setShowMobileList] = useState(true); // Mobile: mostra lista o chat
+  const [showMobileList, setShowMobileList] = useState(true); // Default: mostra lista // Mobile: mostra lista o chat
 
 
   // ✅ FORMATTA DATE STILE AIRBNB
@@ -420,8 +420,10 @@ export const Messages: React.FC<MessagesProps> = ({
         const remaining = contacts.filter(c => c.id !== contactId);
         if (remaining.length > 0) {
           setActiveChatId(remaining[0].id);
+          setShowMobileList(false); // Mobile: apri chat
         } else {
           setActiveChatId("support");
+          setShowMobileList(false); // Mobile: apri chat
         }
       }
     }
@@ -457,8 +459,10 @@ export const Messages: React.FC<MessagesProps> = ({
         const remaining = contacts.filter(c => c.id !== contactId);
         if (remaining.length > 0) {
           setActiveChatId(remaining[0].id);
+          setShowMobileList(false); // Mobile: apri chat
         } else {
           setActiveChatId("support");
+          setShowMobileList(false); // Mobile: apri chat
         }
       }
     }
@@ -733,8 +737,10 @@ export const Messages: React.FC<MessagesProps> = ({
         // Seleziona la prima conversazione reale se esiste, altrimenti supporto
         if (realContacts.length > 0) {
           setActiveChatId(realContacts[0].id);
+          setShowMobileList(false); // Mobile: apri chat
         } else {
           setActiveChatId("support");
+          setShowMobileList(false); // Mobile: apri chat
         }
 
         console.log("✅ Conversazioni reali caricate da Supabase:", realContacts.length);
@@ -1197,7 +1203,9 @@ export const Messages: React.FC<MessagesProps> = ({
   return (
     <div className="h-[calc(100vh-64px)] bg-white flex flex-col md:flex-row overflow-hidden">
       {/* Sidebar Contacts */}
-      <div className="w-full md:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col">
+      <div className={`w-full md:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col ${ 
+        showMobileList ? '' : 'hidden md:flex'
+      }`}>
         <div className="p-4 border-b border-gray-100">
           <h2 className="text-xl font-bold text-gray-900">Messaggi</h2>
           {/* ✅ CONTATORE CONVERSAZIONI REALI */}
@@ -1213,6 +1221,7 @@ export const Messages: React.FC<MessagesProps> = ({
           <div
             onClick={() => {
               setActiveChatId("support");
+              setShowMobileList(false); // Mobile: apri chat
               setShowMenu(false);
               setShowPhoneInfo(false);
               setShowDisputeModal(false);
@@ -1279,32 +1288,34 @@ export const Messages: React.FC<MessagesProps> = ({
           {(showArchived ? archivedContacts : contacts).map((contact) => (
             <div
               key={contact.id}
+              onClick={() => {
+                console.log('🖱️ CLICK CONTATTO:', contact.name, contact.id);
+                console.log('📱 showMobileList PRIMA:', showMobileList);
+                setActiveChatId(contact.id);
+                setShowMobileList(false);
+                console.log('📱 showMobileList DOPO:', false);
+                setTimeout(() => console.log('📱 showMobileList dopo 100ms:', showMobileList), 100);
+                setShowMenu(false);
+                setShowPhoneInfo(false);
+                setShowDisputeModal(false);
+                resetDisputeState();
+                setContextMenuContactId(null);
+                if (!showArchived) {
+                  setContacts((prev) =>
+                    prev.map((c) =>
+                      c.id === contact.id ? { ...c, unreadCount: 0 } : c
+                    )
+                  );
+                }
+              }}
               className={`relative flex items-center p-4 cursor-pointer transition-colors hover:bg-gray-50 ${
                 activeChatId === contact.id
                   ? "bg-brand/5 border-l-4 border-brand"
                   : ""
               }`}
             >
-              {/* Click area principale */}
-              <div 
-                className="flex items-center flex-1"
-                onClick={() => {
-                  setActiveChatId(contact.id);
-                  setShowMobileList(false); // ✅ Nascondi lista su mobile
-                  setShowMenu(false);
-                  setShowPhoneInfo(false);
-                  setShowDisputeModal(false);
-                  resetDisputeState();
-                  setContextMenuContactId(null);
-                  if (!showArchived) {
-                    setContacts((prev) =>
-                      prev.map((c) =>
-                        c.id === contact.id ? { ...c, unreadCount: 0 } : c
-                      )
-                    );
-                  }
-                }}
-              >
+              {/* Area contenuto */}
+              <div className="flex items-center flex-1">
               <div className="relative">
                 {hasRealAvatarUrl(contact.avatar) ? (
                   <img
@@ -1447,7 +1458,9 @@ export const Messages: React.FC<MessagesProps> = ({
 
       {/* Chat Area */}
       <div 
-        className="flex flex-1 flex-col bg-gray-50 relative"
+        className={`flex flex-1 flex-col bg-gray-50 relative ${
+          showMobileList ? 'hidden md:flex' : 'flex'
+        }`}
         onClick={() => setContextMenuContactId(null)}
       >
         {/* ✅ AREA SUPPORTO CON SISTEMA TICKET */}
@@ -1455,6 +1468,16 @@ export const Messages: React.FC<MessagesProps> = ({
           <div className="flex flex-col h-full">
             {/* Header Supporto */}
             <div className="bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm">
+              {/* Bottone BACK mobile */}
+              <button
+                onClick={() => setShowMobileList(true)}
+                className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors -ml-2 mr-2"
+              >
+                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
               <div className="flex items-center">
                 <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center mr-3">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
