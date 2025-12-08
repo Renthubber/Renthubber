@@ -1600,33 +1600,33 @@ export const Messages: React.FC<MessagesProps> = ({
 
             {/* ✅ VISTA NUOVO TICKET */}
             {supportView === 'new' && (
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="max-w-lg mx-auto">
+              <div className="flex-1 overflow-y-auto p-4 pb-32">
+                <div className="max-w-lg mx-auto mb-8">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Crea un nuovo ticket</h3>
                   
                   {/* Seleziona Reparto */}
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Seleziona reparto *</label>
                     <div className="grid grid-cols-2 gap-2">
                       {SUPPORT_CATEGORIES.map((cat) => (
                         <button
                           key={cat.id}
                           onClick={() => setNewTicketCategory(cat.id)}
-                          className={`p-3 rounded-xl border text-left transition-all ${
+                          className={`p-2 md:p-3 rounded-lg md:rounded-xl border text-left transition-all ${
                             newTicketCategory === cat.id
                               ? 'border-brand bg-brand/5 text-brand'
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
-                          <span className="text-lg mr-2">{cat.icon}</span>
-                          <span className="text-sm">{cat.label.replace(cat.icon + ' ', '')}</span>
+                          <span className="text-base md:text-lg mr-1 md:mr-2">{cat.icon}</span>
+                          <span className="text-xs md:text-sm">{cat.label.replace(cat.icon + ' ', '')}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
                   {/* Oggetto */}
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Oggetto *</label>
                     <input
                       type="text"
@@ -1645,7 +1645,7 @@ export const Messages: React.FC<MessagesProps> = ({
                       value={newTicketMessage}
                       onChange={(e) => setNewTicketMessage(e.target.value)}
                       placeholder="Spiega nel dettaglio il problema o la tua richiesta..."
-                      rows={5}
+                      rows={4}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand focus:border-brand resize-none"
                     />
                   </div>
