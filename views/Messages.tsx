@@ -303,6 +303,7 @@ export const Messages: React.FC<MessagesProps> = ({
     : (contacts.find((c) => c.id === activeChatId) || supportContact);
 
   const [messageInput, setMessageInput] = useState("");
+  const [showMobileList, setShowMobileList] = useState(true); // Mobile: mostra lista o chat
 
 
   // ✅ FORMATTA DATE STILE AIRBNB
@@ -1289,6 +1290,7 @@ export const Messages: React.FC<MessagesProps> = ({
                 className="flex items-center flex-1"
                 onClick={() => {
                   setActiveChatId(contact.id);
+                  setShowMobileList(false); // ✅ Nascondi lista su mobile
                   setShowMenu(false);
                   setShowPhoneInfo(false);
                   setShowDisputeModal(false);
