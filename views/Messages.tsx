@@ -303,6 +303,38 @@ export const Messages: React.FC<MessagesProps> = ({
     : (contacts.find((c) => c.id === activeChatId) || supportContact);
 
   const [messageInput, setMessageInput] = useState("");
+
+
+  // ✅ FORMATTA DATE STILE AIRBNB
+  const formatBookingDates = (startDate: string | null, endDate: string | null): string => {
+    if (!startDate || !endDate) return "";
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    const startDay = start.getDate();
+    const endDay = end.getDate();
+    const startMonth = start.toLocaleDateString('it-IT', { month: 'short' });
+    const endMonth = end.toLocaleDateString('it-IT', { month: 'short' });
+    const startYear = start.getFullYear();
+    const endYear = end.getFullYear();
+    
+    if (startMonth === endMonth && startYear === endYear) {
+      return `${startDay}-${endDay} ${startMonth}`;
+    }
+    
+    if (startYear === endYear) {
+      return `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
+    }
+    
+    return `${startDay} ${startMonth} ${startYear.toString().slice(-2)} - ${endDay} ${endMonth} ${endYear.toString().slice(-2)}`;
+  };
+
+  const formatBookingNumber = (bookingId: string | null): string => {
+    if (!bookingId) return "";
+    return `#RH-${bookingId.slice(0, 8).toUpperCase()}`;
+  };
+
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [supportMessages, setSupportMessages] = useState<ChatMessage[]>([
     {
@@ -648,6 +680,14 @@ export const Messages: React.FC<MessagesProps> = ({
             const contactAvatar = contactData?.avatar_url || 
               `https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=0D414B&color=fff`;
 
+            const bookingData = conv.booking || {};
+            const listingTitle = conv.listing?.title || conv.listing?.name || "Annuncio";
+            const bookingDates = formatBookingDates(
+              bookingData.startDate || bookingData.start_date,
+              bookingData.endDate || bookingData.end_date
+            );
+            const bookingNumber = formatBookingNumber(conv.bookingId);
+            
             return {
               id: conv.id,
               name: contactName,
@@ -668,6 +708,10 @@ export const Messages: React.FC<MessagesProps> = ({
               hubberId: conv.hubberId,
               contactId,
               listing: conv.listing,
+              listingTitle,
+              bookingDates,
+              bookingNumber,
+              booking: bookingData,
             };
           });
 
@@ -692,6 +736,7 @@ export const Messages: React.FC<MessagesProps> = ({
           setActiveChatId("support");
         }
 
+        console.log("✅ Conversazioni reali caricate da Supabase:", realContacts.length);
       } catch (err) {
         console.error("Errore caricamento conversazioni:", err);
       } finally {
@@ -818,18 +863,20 @@ export const Messages: React.FC<MessagesProps> = ({
   }, [activeChatId, activeContact, currentUser, supportMessages]);
 
   const handleSend = async () => {
-    if (!messageInput.trim()) return;
+        if (!messageInput.trim()) {
+            return;
+    }
 
-    try {
+        try {
       const { cleaned, blockedContacts } = api.messages.sanitizeContent(
         messageInput,
         isBookingConfirmed
       ) as any;
-
-      const rawText = cleaned || messageInput;
+      
+            const rawText = cleaned || messageInput;
       const safeText = maskObfuscatedPhones(rawText);
-
-      const now = new Date();
+      
+            const now = new Date();
       const time = now.toLocaleTimeString("it-IT", {
         hour: "2-digit",
         minute: "2-digit",
@@ -841,16 +888,17 @@ export const Messages: React.FC<MessagesProps> = ({
         text: safeText,
         time,
       };
-
-      // ✅ Se è chat supporto, usa il sistema TICKET
-      if (activeChatId === "support" && supportView === 'chat' && selectedTicketId) {
-        setChatMessages(prev => [...prev, newMessage]);
+      
+            // ✅ Se è chat supporto, usa il sistema TICKET
+            if (activeChatId === "support" && supportView === 'chat' && selectedTicketId) {
+                setChatMessages(prev => [...prev, newMessage]);
         setMessageInput("");
         
         // Salva su Supabase tramite sistema ticket
         if (currentUser) {
           try {
             await api.support.sendUserMessage(selectedTicketId, currentUser.id, safeText);
+            console.log('📧 Messaggio aggiunto al ticket:', selectedTicketId);
             
             // Ricarica ticket per aggiornare la lista
             await loadAllUserTickets();
@@ -862,25 +910,26 @@ export const Messages: React.FC<MessagesProps> = ({
         return;
       }
 
-      setChatMessages((prev) => [
+            setChatMessages((prev) => [
         ...prev,
         newMessage,
       ]);
-
-      // ✅ Se è conversazione reale, salva su Supabase
-      if (activeContact?.isRealConversation && currentUser) {
-        try {
-          await api.messages.sendMessage({
+      
+            // ✅ Se è conversazione reale, salva su Supabase
+            if (activeContact?.isRealConversation && currentUser) {
+                try {
+                    const result = await api.messages.sendMessage({
             fromUserId: currentUser.id,
             toUserId: activeContact.contactId,
             text: safeText,
             listingId: activeContact.listingId,
+            bookingId: activeContact.bookingId, // ✅ AGGIUNGO bookingId!
             hasConfirmedBooking: true,
             isSupport: false,
           });
-        } catch (e) {
-          console.warn('Errore salvataggio messaggio:', e);
-        }
+          
+                  } catch (e) {
+                            }
 
         // Aggiorna preview conversazione locale (per UI immediata)
         const convRaw = localStorage.getItem("conversations");
@@ -1147,7 +1196,7 @@ export const Messages: React.FC<MessagesProps> = ({
   return (
     <div className="h-[calc(100vh-64px)] bg-white flex flex-col md:flex-row overflow-hidden">
       {/* Sidebar Contacts */}
-      <div className={`w-full md:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col ${activeChatId ? "hidden md:flex" : "flex"}`}>
+      <div className="w-full md:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col">
         <div className="p-4 border-b border-gray-100">
           <h2 className="text-xl font-bold text-gray-900">Messaggi</h2>
           {/* ✅ CONTATORE CONVERSAZIONI REALI */}
@@ -1277,22 +1326,35 @@ export const Messages: React.FC<MessagesProps> = ({
                 )}
               </div>
               <div className="ml-3 flex-1 overflow-hidden">
-                <div className="flex justify-between items-center mb-0.5">
-                  <h4 className="font-semibold text-gray-900 text-sm">
+                {/* ✅ LAYOUT AIRBNB: Nome persona + data */}
+                <div className="flex justify-between items-start mb-1">
+                  <h4 className="font-semibold text-gray-900 text-base">
                     {contact.name}
                   </h4>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
                     {contact.lastMessageTime}
                   </span>
                 </div>
-                <p
-                  className={`text-sm truncate ${
-                    contact.unreadCount > 0
-                      ? "font-semibold text-gray-800"
-                      : "text-gray-500"
-                  }`}
-                >
+                
+                {/* Ultimo messaggio (preview) */}
+                <p className="text-sm text-gray-600 truncate mb-1 leading-tight">
                   {contact.lastMessage}
+                </p>
+                
+                {/* ✅ Date + Nome annuncio (stile Airbnb) */}
+                <p className="text-xs text-gray-500 truncate">
+                  {(contact as any).bookingDates ? (
+                    <>
+                      {(contact as any).bookingDates}
+                      {' • '}
+                      {(contact as any).listingTitle || 'Annuncio'}
+                    </>
+                  ) : (
+                    <>
+                      {(contact as any).bookingNumber || 'Nuova prenotazione'}
+                      {(contact as any).listingTitle && ` • ${(contact as any).listingTitle}`}
+                    </>
+                  )}
                 </p>
               </div>
               </div>
@@ -1383,7 +1445,7 @@ export const Messages: React.FC<MessagesProps> = ({
 
       {/* Chat Area */}
       <div 
-        className={`flex flex-1 flex-col bg-gray-50 relative ${!activeChatId ? "hidden md:flex" : "flex"}`}
+        className="flex flex-1 flex-col bg-gray-50 relative"
         onClick={() => setContextMenuContactId(null)}
       >
         {/* ✅ AREA SUPPORTO CON SISTEMA TICKET */}
@@ -1392,20 +1454,6 @@ export const Messages: React.FC<MessagesProps> = ({
             {/* Header Supporto */}
             <div className="bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm">
               <div className="flex items-center">
-                {/* Bottone Indietro - Solo Mobile */}
-                <button
-                  onClick={() => {
-                    setActiveChatId(null);
-                    setSupportView('list');
-                    setSelectedTicketId(null);
-                  }}
-                  className="md:hidden mr-3 p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  aria-label="Torna alla lista"
-                >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
                 <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center mr-3">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -1693,21 +1741,6 @@ export const Messages: React.FC<MessagesProps> = ({
         {/* Chat Header */}
         <div className="bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-10">
           <div className="flex items-center">
-            {/* Bottone Indietro - Solo Mobile */}
-            <button
-              onClick={() => {
-                setActiveChatId(null);
-                setShowMenu(false);
-                setShowPhoneInfo(false);
-                setShowDisputeModal(false);
-              }}
-              className="md:hidden mr-3 p-2 hover:bg-gray-100 rounded-full transition-colors"
-              aria-label="Torna alla lista"
-            >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
             {hasRealAvatarUrl(activeContact.avatar) ? (
               <img
                 src={activeContact.avatar}
