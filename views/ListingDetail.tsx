@@ -310,12 +310,14 @@ useEffect(() => {
       }
     } else {
       // --- CASO GIORNO / SETTIMANA / MESE ----
-      if (startDate && endDate) {
-        const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+      if (startDate) {
+        // ✅ Se end non c'è, usa start (stesso giorno = 1 giorno)
+        const effectiveEndDate = endDate || startDate;
+        const diffTime = Math.abs(effectiveEndDate.getTime() - startDate.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         if (listing.priceUnit === "giorno") {
-          units = diffDays || 1;
+          units = diffDays || 1; // Minimo 1 giorno
         } else if (listing.priceUnit === "settimana") {
           units = Math.max(Math.ceil(diffDays / 7), 1);
         } else if (listing.priceUnit === "mese") {
@@ -325,9 +327,6 @@ useEffect(() => {
         }
 
         baseSubtotal = units * listing.price;
-      } else if (startDate) {
-        units = 1;
-        baseSubtotal = listing.price;
       }
     }
 
@@ -384,8 +383,76 @@ useEffect(() => {
     start: Date | undefined,
     end: Date | undefined
   ) => {
+    // ✅ Gestione doppio click stesso giorno
+    // Se clicco la stessa data già selezionata, setta end = start
+    if (start && !end && startDate) {
+      const isSameDay =
+        start.getDate() === startDate.getDate() &&
+        start.getMonth() === startDate.getMonth() &&
+        start.getFullYear() === startDate.getFullYear();
+      
+      if (isSameDay) {
+        // Doppio click! Setta end = start e chiudi
+        setEndDate(start);
+        setIsCalendarOpen(false);
+        return;
+      }
+    }
+    
     setStartDate(start);
     setEndDate(end);
+    
+    // ✅ Chiudi calendario quando range completo
+    if (start && end) {
+      setIsCalendarOpen(false);
+    }
+  };
+
+
+  // ✅ CONTROLLO: Tutte le date nel range devono essere libere
+  // IMPORTANTE: Il check-out non viene controllato (restituisci la mattina)
+  const isRangeAvailable = (start: Date, end: Date): boolean => {
+    if (!start) return true;
+    
+    const current = new Date(start);
+    const checkoutDate = end ? new Date(end) : new Date(start);
+    
+    // ✅ Controlla dal check-in (incluso) al giorno PRIMA del check-out
+    // Se stesso giorno (10→10), controlla solo il 10
+    while (current <= checkoutDate) {
+      // Se è il giorno di check-out E non è lo stesso del check-in, skippa
+      const isSameDay = 
+        start.getDate() === checkoutDate.getDate() &&
+        start.getMonth() === checkoutDate.getMonth() &&
+        start.getFullYear() === checkoutDate.getFullYear();
+      
+      const isCheckoutDay =
+        current.getDate() === checkoutDate.getDate() &&
+        current.getMonth() === checkoutDate.getMonth() &&
+        current.getFullYear() === checkoutDate.getFullYear();
+      
+      // Se è check-out e NON è stesso giorno, skippa (restituisci mattina)
+      if (isCheckoutDay && !isSameDay) {
+        break; // Finito, non controllare check-out
+      }
+      
+      // Controlla se questa data è in bookedDates
+      const isBooked = bookedDates.some(bookedDate => {
+        return (
+          bookedDate.getFullYear() === current.getFullYear() &&
+          bookedDate.getMonth() === current.getMonth() &&
+          bookedDate.getDate() === current.getDate()
+        );
+      });
+      
+      if (isBooked) {
+        return false; // ❌ Anche solo UN giorno occupato = blocca tutto
+      }
+      
+      current.setDate(current.getDate() + 1);
+    }
+    
+    return true; // ✅ Tutte le date sono libere
   };
 
   const handleBookingClick = () => {
@@ -397,6 +464,13 @@ useEffect(() => {
       setIsCalendarOpen(true);
       return;
     }
+    
+    // ✅ CONTROLLO DISPONIBILITÀ: tutte le date devono essere libere
+    if (!isRangeAvailable(startDate, endDate || startDate)) {
+      alert("❌ Date non disponibili!\n\nAlcuni giorni nel periodo selezionato sono già prenotati.\nScegli altre date o prenota solo i giorni liberi.");
+      return;
+    }
+    
     setShowPaymentModal(true);
   };
 
