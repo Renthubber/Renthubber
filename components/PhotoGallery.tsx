@@ -120,21 +120,17 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({ images }) => {
         </button>
       </div>
 
-      {/* Fullscreen Modal */}
+      {/* Fullscreen Modal - SFONDO BIANCO + X FLOATING */}
       {showModal && (
-        <div className="fixed inset-0 z-[60] bg-white flex flex-col animate-in fade-in">
-           {/* Header con X - VISIBLE SU MOBILE */}
-           <div className="p-4 flex justify-between items-center border-b border-gray-100">
-              <button 
-                onClick={() => setShowModal(false)} 
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                aria-label="Chiudi galleria"
-              >
-                 <X className="w-6 h-6 text-gray-900" />
-              </button>
-              <span className="font-bold text-gray-900">Galleria fotografica</span>
-              <div className="w-10"></div> {/* Spacer per centrare il titolo */}
-           </div>
+        <div className="fixed inset-0 z-[9999] bg-white flex flex-col">
+           {/* X button - floating in alto a destra sulla foto */}
+           <button 
+             onClick={() => setShowModal(false)} 
+             className="fixed top-4 right-4 z-20 p-2 bg-white/90 hover:bg-white border border-gray-300 rounded-full transition-all shadow-lg"
+             aria-label="Chiudi galleria"
+           >
+             <X className="w-5 h-5 text-gray-900" strokeWidth={2} />
+           </button>
            
            {/* Gallery Content */}
            <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50">
