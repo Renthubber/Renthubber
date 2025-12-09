@@ -583,13 +583,11 @@ useEffect(() => {
           
           {/* Pulsanti azioni: Preferiti + Condividi */}
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            {currentUser && (
-              <FavoriteButton 
-                listingId={listing.id} 
-                userId={currentUser.id}
-                variant="detail"
-              />
-            )}
+            <FavoriteButton 
+              listingId={listing.id} 
+              userId={currentUser?.id}
+              variant="detail"
+            />
             <ShareButton
               listingId={listing.id}
               listingTitle={listing.title}
