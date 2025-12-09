@@ -1,7 +1,7 @@
 import React from 'react';
-import { Listing, User } from '../types';  // ← AGGIUNGI User
+import { Listing, User } from '../types';
 import { Star, MapPin } from 'lucide-react';
-import { FavoriteButton } from './FavoriteButton';  // ← AGGIUNGI QUESTA RIGA
+import { FavoriteButton } from './FavoriteButton';
 
 interface ListingCardProps {
   listing: Listing;
@@ -37,14 +37,12 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, onClick, curr
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
         
-        {/* ✅ AGGIUNGI QUESTO - Cuore preferiti */}
-        {currentUser && (
-          <FavoriteButton 
-            listingId={listing.id} 
-            userId={currentUser.id}
-            variant="card"
-          />
-        )}
+        {/* Cuore preferiti - SEMPRE VISIBILE */}
+        <FavoriteButton 
+          listingId={listing.id} 
+          userId={currentUser?.id}
+          variant="card"
+        />
         
         {listing.subCategory && (
           <div className="absolute top-1.5 right-1.5 bg-white/90 px-1.5 py-0.5 

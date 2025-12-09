@@ -155,6 +155,7 @@ interface Props {
   rentalAmountEur: number;
   platformFeeEur: number;
   depositEur?: number;
+  cleaningFeeEur?: number;
   walletUsedEur?: number;
   onSuccess?: (booking: any) => void;
 }
@@ -171,6 +172,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
     rentalAmountEur,
     platformFeeEur,
     depositEur = 0,
+    cleaningFeeEur = 0,
     walletUsedEur = 0,
     onSuccess,
   } = props;
@@ -442,6 +444,12 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
             <span>Noleggio</span>
             <span>{rentalAmountEur.toFixed(2)} €</span>
           </div>
+          {cleaningFeeEur > 0 && (
+            <div className="flex justify-between">
+              <span>Costo pulizia</span>
+              <span>{cleaningFeeEur.toFixed(2)} €</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span>Commissioni Renthubber</span>
             <span>{platformFeeEur.toFixed(2)} €</span>
