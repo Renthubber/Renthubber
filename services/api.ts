@@ -560,6 +560,9 @@ const mapDbListingToAppListing = (row: any): Listing => {
     maxGuests: row.max_guests ?? undefined,
     openingHours: row.opening_hours || "",
     manualBadges: row.manual_badges || [],
+
+    // 👇 CONTEGGIO VISUALIZZAZIONI
+view_count: row.view_count ?? 0,
   };
 };
 
@@ -1226,7 +1229,7 @@ getById: async (listingId: string): Promise<Listing | null> => {
         // Query semplificata senza JOIN complesso
         const { data, error } = await supabase
           .from("listings")
-          .select("*")
+          .select("*, view_count")
           .order("created_at", { ascending: false });
 
         if (error) {
@@ -5217,12 +5220,18 @@ issued_at: new Date().toISOString()
       const now = new Date().toISOString();
 
       // Cerca conversazione esistente
-      const { data: existingConv } = await supabase
+      let query = supabase
         .from("conversations")
         .select("id")
         .eq("is_support", !!isSupport)
-        .or(`and(renter_id.eq.${fromUserId},hubber_id.eq.${toUserId}),and(renter_id.eq.${toUserId},hubber_id.eq.${fromUserId})`)
-        .maybeSingle();
+        .or(`and(renter_id.eq.${fromUserId},hubber_id.eq.${toUserId}),and(renter_id.eq.${toUserId},hubber_id.eq.${fromUserId})`);
+      
+      // ✅ Se c'è bookingId, cerca per quello specifico
+      if (bookingId) {
+        query = query.eq("booking_id", bookingId);
+      }
+      
+      const { data: existingConv } = await query.maybeSingle();
 
       let conversationId = existingConv?.id;
 
