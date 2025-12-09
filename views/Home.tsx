@@ -167,6 +167,9 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, user }) =>
 
   // ========== FILTRO LISTINGS CON AI ==========
   const filteredListings = listings.filter((l) => {
+    // Filtro solo annunci pubblicati (esclude sospesi, draft, ecc.)
+    if (l.status !== 'published') return false;
+    
     // Filtro categoria
     if (l.category !== activeTab) return false;
     
@@ -435,7 +438,7 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, user }) =>
 
             {/* ========== DROPDOWN: DATE (Calendario Airbnb) ========== */}
             {activeDropdown === 'dates' && (
-              <div className="absolute top-full right-0 mt-3 z-[100]">
+              <div className="absolute top-full left-1/2 -translate-x-1/2 md:left-auto md:right-0 md:translate-x-0 mt-3 z-[100]">
                 <AirbnbCalendar
                   selectedStart={searchDateStart}
                   selectedEnd={searchDateEnd}

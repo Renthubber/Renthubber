@@ -80,6 +80,44 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
     loadFees();
   }, []);
 
+  // ✅ TRACCIA VISUALIZZAZIONE ANNUNCIO
+  useEffect(() => {
+    const trackView = async () => {
+      // Non tracciare se l'utente è il proprietario dell'annuncio
+      if (currentUser?.id === listing.hostId) return;
+      
+      try {
+        // Verifica se ha già visualizzato nelle ultime 24 ore
+        if (currentUser?.id) {
+          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          const { data: recentView } = await supabase
+            .from('listing_views')
+            .select('id')
+            .eq('listing_id', listing.id)
+            .eq('viewer_id', currentUser.id)
+            .gte('viewed_at', oneDayAgo)
+            .maybeSingle();
+          
+          if (recentView) return; // Già visualizzato recentemente
+        }
+        
+        // Registra la visualizzazione
+        await supabase
+          .from('listing_views')
+          .insert({
+            listing_id: listing.id,
+            viewer_id: currentUser?.id || null,
+            user_agent: navigator.userAgent
+          });
+      } catch (error) {
+        // Non bloccare l'app se il tracking fallisce
+        console.error('Errore tracking visualizzazione:', error);
+      }
+    };
+    
+    trackView();
+  }, [listing.id, listing.hostId, currentUser?.id]);
+
   // ✅ CARICA SALDI WALLET DAL DATABASE
   useEffect(() => {
     const loadWalletBalances = async () => {
