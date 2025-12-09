@@ -550,18 +550,24 @@ const App: React.FC = () => {
           )}
 
         {/* MY LISTINGS */}
-        {currentView === "my-listings" && currentUser && (
-          <MyListings
-            currentUser={currentUser}
-            listings={listings}
-            onCreateNew={() => setCurrentView("publish")}
-            onEditListing={(listing) => {
-              console.log("App.onEditListing", listing.id);
-              setEditingListing(listing);
-              setCurrentView("hubber-edit");
-            }}
-          />
-        )}
+{currentView === "my-listings" && currentUser && (
+  <MyListings
+    currentUser={currentUser}
+    listings={listings}
+    onCreateNew={() => setCurrentView("publish")}
+    onEditListing={(listing) => {
+      console.log("App.onEditListing", listing.id);
+      setEditingListing(listing);
+      setCurrentView("hubber-edit");
+    }}
+    onListingUpdated={async () => {
+      // Invalida cache e ricarica
+      api.listings.invalidateCache();
+      const loadedListings = await api.admin.getAllListings();
+      setListings(loadedListings);
+    }}
+  />
+)}
 
         {/* PUBLISH */}
         {currentView === "publish" && currentUser && (

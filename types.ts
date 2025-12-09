@@ -335,6 +335,7 @@ export interface Listing {
   hostRules?: string[];
 
   createdAt?: string; // 🔥 AGGIUNTO per ordinamento e compatibilità
+  view_count?: number; // 🔥 CONTEGGIO VISUALIZZAZIONI REALI
 }
 
 // --- TRANSAZIONI ---
