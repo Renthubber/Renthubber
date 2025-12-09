@@ -461,6 +461,7 @@ const App: React.FC = () => {
         {currentView === "home" && (
           <Home
             listings={listings}
+            user={currentUser}
             onListingClick={(listing) => {
               console.log("App.onListingClick HOME", listing.id);
               setSelectedListing(listing);
@@ -476,6 +477,10 @@ const App: React.FC = () => {
             activeMode={activeMode}
             onManageListings={() => setCurrentView("my-listings")}
             onBecomeHubber={() => setCurrentView("become-hubber")}
+            onViewListing={(listing) => {
+              setSelectedListing(listing);
+              setCurrentView("detail");
+            }}
             invoices={invoices}
             onUpdateProfile={async (data) => {
               try {
