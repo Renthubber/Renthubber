@@ -15,23 +15,19 @@ export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   variant = 'card',
   className = '',
 }) => {
-  // ✅ LOG PRIMA DI TUTTO
-  console.log('🔍 FavoriteButton render:', { listingId, userId, variant });
-  
   const { isFavorite, toggleFavorite } = useFavorites(listingId, userId);
-
-  // Non mostrare se non c'è userId
-  if (!userId) {
-    console.log('❌ FavoriteButton: userId mancante, return null');
-    return null;
-  }
-
-  console.log('✅ FavoriteButton: rendering button, isFavorite:', isFavorite);
 
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('💗 FavoriteButton: click sul cuore');
+    
+    // ✅ Se non è loggato, mostra messaggio per login
+    if (!userId) {
+      alert('Accedi o crea un account per aggiungere questo annuncio ai preferiti! 🔐');
+      return;
+    }
+    
+    // Altrimenti toggle normale
     await toggleFavorite();
   };
 
