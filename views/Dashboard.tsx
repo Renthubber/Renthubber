@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, BookingRequest, ActiveMode, Invoice } from '../types';
+import { RenterFavorites } from '../components/RenterFavorites';
 import {
   TrendingUp,
   Calendar,
@@ -17,6 +18,7 @@ import {
   Edit3,
   AlertTriangle,
   Star,
+  Heart,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -186,6 +188,7 @@ interface DashboardProps {
   activeMode: ActiveMode;
   onManageListings: () => void;
   onBecomeHubber?: () => void;  // ✅ AGGIUNTO: callback per aprire wizard "Diventa Hubber"
+  onViewListing?: (listing: any) => void; // ✅ NUOVO: per aprire dettaglio annuncio
   invoices?: Invoice[];
   // Callback opzionale per sincronizzare con Supabase / backend
   onUpdateProfile?: (updated: {
@@ -208,6 +211,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   activeMode,
   onManageListings,
   onBecomeHubber,  // ✅ AGGIUNTO
+  onViewListing, // ✅ NUOVO
   invoices = [],
   onUpdateProfile,
   onViewRenterProfile,
@@ -3979,12 +3983,33 @@ const renderRenterPayments = () => {
   >
     Sicurezza & Verifica
   </button>
+  <button
+    onClick={() => setActiveTab('favorites')}
+    className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
+      activeTab === 'favorites'
+        ? 'bg-gray-100 text-gray-900 shadow-sm'
+        : 'text-gray-500 hover:text-gray-700'
+    }`}
+  >
+    Preferiti
+  </button>
 </div>
 
      {activeTab === 'security' && renderSecurity()}
       {activeTab === 'profile' && renderProfile()}
       {activeTab === 'payments' && renderRenterPayments()}
       {activeTab === 'bookings' && renderRenterBookings()}
+      {activeTab === 'favorites' && (
+        <RenterFavorites
+          currentUser={user}
+          onListingClick={(listing) => {
+            if (onViewListing) {
+              onViewListing(listing);
+            }
+          }}
+          onExploreClick={onManageListings}
+        />
+      )}
 
       {activeTab === 'overview' && (
         <>
