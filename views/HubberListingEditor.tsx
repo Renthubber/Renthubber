@@ -279,12 +279,237 @@ export const HubberListingEditor: React.FC<HubberListingEditorProps> = ({ listin
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Sottocategoria</label>
-                  <input 
-                    type="text" 
+                  <select
                     value={formData.subCategory}
                     onChange={e => setFormData({...formData, subCategory: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                  />
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none bg-white"
+                  >
+                    <option value="">Seleziona...</option>
+                    {formData.category === 'oggetto' ? (
+                      <>
+                        <optgroup label="🏠 CASA & AMBIENTE">
+                          <option value="casa">Casa & Arredamento</option>
+                          <option value="cucina">Cucina & Elettrodomestici</option>
+                          <option value="giardino">Giardino & Esterni</option>
+                          <option value="pulizia">Pulizia & Igiene</option>
+                          <option value="riscaldamento">Riscaldamento</option>
+                          <option value="raffrescamento">Raffrescamento & Climatizzazione</option>
+                          <option value="illuminazione">Illuminazione</option>
+                          <option value="sicurezza">Sicurezza & Antifurti</option>
+                        </optgroup>
+                        <optgroup label="🔧 FAI DA TE & LAVORO">
+                          <option value="fai-da-te">Fai da te & Bricolage</option>
+                          <option value="attrezzature">Attrezzature Professionali</option>
+                          <option value="strumenti">Strumenti & Utensili</option>
+                          <option value="edilizia">Edilizia & Ristrutturazione</option>
+                          <option value="carpenteria">Carpenteria & Falegnameria</option>
+                          <option value="pittura">Pittura & Decorazione</option>
+                          <option value="ufficio">Ufficio & Coworking</option>
+                        </optgroup>
+                        <optgroup label="💻 ELETTRONICA & MULTIMEDIA">
+                          <option value="elettronica">Elettronica & Tecnologia</option>
+                          <option value="fotografia">Fotografia</option>
+                          <option value="video">Video & Riprese</option>
+                          <option value="audio">Audio & Registrazione</option>
+                          <option value="musica">Musica & Strumenti</option>
+                          <option value="gaming">Gaming & Console</option>
+                          <option value="droni">Droni & Modellismo</option>
+                        </optgroup>
+                        <optgroup label="⚽ SPORT & TEMPO LIBERO">
+                          <option value="sport">Sport & Fitness</option>
+                          <option value="fitness">Palestra & Attrezzi</option>
+                          <option value="ciclismo">Bici & Ciclismo</option>
+                          <option value="sport-acquatici">Sport Acquatici</option>
+                          <option value="sport-invernali">Sport Invernali</option>
+                          <option value="campeggio">Campeggio & Outdoor</option>
+                          <option value="pesca">Pesca & Caccia</option>
+                          <option value="tempo-libero">Tempo Libero</option>
+                          <option value="hobby">Hobby & Creatività</option>
+                        </optgroup>
+                        <optgroup label="🎉 EVENTI & INTRATTENIMENTO">
+                          <option value="party">Party & Feste</option>
+                          <option value="decorazioni">Decorazioni & Allestimenti</option>
+                          <option value="matrimoni">Matrimoni & Cerimonie</option>
+                          <option value="gonfiabili">Gonfiabili & Giochi</option>
+                          <option value="costumi">Costumi & Carnevale</option>
+                          <option value="teatro">Teatro & Spettacoli</option>
+                        </optgroup>
+                        <optgroup label="👔 ABBIGLIAMENTO & ACCESSORI">
+                          <option value="abbigliamento">Abbigliamento & Moda</option>
+                          <option value="abbigliamento-formale">Abiti Eleganti & Formali</option>
+                          <option value="abbigliamento-sportivo">Abbigliamento Sportivo</option>
+                          <option value="scarpe">Scarpe & Calzature</option>
+                          <option value="borse">Borse & Valigie</option>
+                          <option value="gioielli">Gioielli & Accessori</option>
+                        </optgroup>
+                        <optgroup label="🍽️ RISTORAZIONE & CATERING">
+                          <option value="ristorazione">Ristorazione & Catering</option>
+                          <option value="attrezzature-cucina">Attrezzature da Cucina Pro</option>
+                          <option value="servizio-tavola">Servizio Tavola & Bicchieri</option>
+                          <option value="bar">Bar & Cocktail</option>
+                        </optgroup>
+                        <optgroup label="👶 FAMIGLIA & BAMBINI">
+                          <option value="pre-maman">Gravidanza & Pre-maman</option>
+                          <option value="neonati">Neonati (0-12 mesi)</option>
+                          <option value="bimbi">Bambini (1-12 anni)</option>
+                          <option value="giocattoli">Giocattoli & Giochi</option>
+                          <option value="passeggini">Passeggini & Seggiolini</option>
+                        </optgroup>
+                        <optgroup label="🚗 TRASPORTI & VEICOLI">
+                          <option value="auto">Auto & Veicoli</option>
+                          <option value="moto">Moto & Scooter</option>
+                          <option value="furgoni">Furgoni & Van</option>
+                          <option value="rimorchi">Rimorchi & Carrelli</option>
+                          <option value="barche">Barche & Nautica</option>
+                          <option value="camper">Camper & Roulotte</option>
+                          <option value="bici-elettriche">Bici Elettriche & Monopattini</option>
+                        </optgroup>
+                        <optgroup label="🚜 AGRICOLTURA & GIARDINAGGIO">
+                          <option value="agricoltura">Agricoltura & Farming</option>
+                          <option value="trattori">Trattori & Macchine Agricole</option>
+                          <option value="irrigazione">Irrigazione & Pompe</option>
+                          <option value="serre">Serre & Colture</option>
+                        </optgroup>
+                        <optgroup label="🐕 ANIMALI">
+                          <option value="animali">Animali & Pet Care</option>
+                          <option value="trasporto-animali">Trasporto Animali</option>
+                        </optgroup>
+                        <optgroup label="💊 SALUTE & BENESSERE">
+                          <option value="medicale">Medicale & Sanitario</option>
+                          <option value="riabilitazione">Riabilitazione & Ortopedia</option>
+                          <option value="benessere">Benessere & Spa</option>
+                        </optgroup>
+                        <optgroup label="📚 ALTRO">
+                          <option value="libri">Libri & Materiale Didattico</option>
+                          <option value="arte">Arte & Design</option>
+                          <option value="vintage">Vintage & Collezioni</option>
+                          <option value="altro">Altro</option>
+                        </optgroup>
+                      </>
+                    ) : (
+                      <>
+                        <optgroup label="🏢 LAVORO & UFFICI">
+                          <option value="ufficio">Uffici</option>
+                          <option value="coworking">Coworking</option>
+                          <option value="sale-riunioni">Sale Riunioni</option>
+                          <option value="postazioni">Postazioni Lavoro</option>
+                        </optgroup>
+                        <optgroup label="🎉 EVENTI & FESTE">
+                          <option value="sale-feste">Sale Feste</option>
+                          <option value="location-matrimoni">Location Matrimoni</option>
+                          <option value="spazi-eventi">Spazi Eventi</option>
+                          <option value="sale-conferenze">Sale Conferenze</option>
+                        </optgroup>
+                        <optgroup label="📦 STORAGE & DEPOSITI">
+                          <option value="magazzino">Magazzini</option>
+                          <option value="box">Box</option>
+                          <option value="depositi">Depositi</option>
+                          <option value="garage">Garage</option>
+                        </optgroup>
+                        <optgroup label="🎬 CREATIVI & PRODUZIONE">
+                          <option value="studi-fotografici">Studi Fotografici</option>
+                          <option value="sale-prove">Sale Prove Musicali</option>
+                          <option value="sale-registrazione">Sale Registrazione</option>
+                          <option value="set-video">Set Video & Cinema</option>
+                          <option value="green-screen">Green Screen Studios</option>
+                        </optgroup>
+                        <optgroup label="🏋️ SPORT & FITNESS">
+                          <option value="palestre">Palestre</option>
+                          <option value="sale-fitness">Sale Fitness</option>
+                          <option value="campi-sportivi">Campi Sportivi</option>
+                          <option value="piscine">Piscine</option>
+                        </optgroup>
+                        <optgroup label="🏠 RESIDENZIALI">
+                          <option value="appartamenti">Appartamenti</option>
+                          <option value="ville">Ville</option>
+                          <option value="case-vacanza">Case Vacanza</option>
+                          <option value="b&b">B&B</option>
+                        </optgroup>
+                        <optgroup label="🍽️ RISTORAZIONE">
+                          <option value="cucine-professionali">Cucine Professionali</option>
+                          <option value="sale-ristoranti">Sale Ristoranti</option>
+                          <option value="bar-locali">Bar & Locali</option>
+                          <option value="rooftop">Rooftop</option>
+                          <option value="cantine">Cantine</option>
+                          <option value="sale-degustazione">Sale Degustazione</option>
+                        </optgroup>
+                        <optgroup label="🏪 COMMERCIALI">
+                          <option value="negozi">Negozi</option>
+                          <option value="popup-store">Pop-up Store</option>
+                          <option value="showroom">Showroom</option>
+                          <option value="stand-fieristici">Stand Fieristici</option>
+                        </optgroup>
+                        <optgroup label="🎓 DIDATTICI & FORMATIVI">
+                          <option value="aule">Aule</option>
+                          <option value="sale-formazione">Sale Formazione</option>
+                          <option value="laboratori">Laboratori</option>
+                          <option value="biblioteche">Biblioteche & Sale Lettura</option>
+                        </optgroup>
+                        <optgroup label="🏥 SANITARI & BENESSERE">
+                          <option value="studi-medici">Studi Medici</option>
+                          <option value="sale-massaggi">Sale Massaggi</option>
+                          <option value="sale-terapia">Sale Terapia</option>
+                          <option value="centri-estetici">Centri Estetici</option>
+                          <option value="spa">SPA</option>
+                          <option value="saune">Saune</option>
+                        </optgroup>
+                        <optgroup label="🎨 ARTE & CULTURA">
+                          <option value="gallerie">Gallerie d'Arte</option>
+                          <option value="spazi-espositivi">Spazi Espositivi</option>
+                          <option value="sale-teatro">Sale Teatro</option>
+                          <option value="cinema">Sale Cinema</option>
+                        </optgroup>
+                        <optgroup label="🏭 INDUSTRIALI & PRODUTTIVI">
+                          <option value="capannoni">Capannoni</option>
+                          <option value="laboratori-artigianali">Laboratori Artigianali</option>
+                          <option value="spazi-produzione">Spazi Produzione</option>
+                        </optgroup>
+                        <optgroup label="🚗 PARCHEGGI & AUTO">
+                          <option value="posti-auto">Posti Auto</option>
+                          <option value="box-auto">Box Auto</option>
+                          <option value="garage-privati">Garage Privati</option>
+                        </optgroup>
+                        <optgroup label="🌳 ESTERNI">
+                          <option value="giardini">Giardini</option>
+                          <option value="terrazze">Terrazze</option>
+                          <option value="cortili">Cortili</option>
+                          <option value="spazi-outdoor">Spazi All'aperto</option>
+                          <option value="gazebo">Gazebo</option>
+                        </optgroup>
+                        <optgroup label="⛪ CERIMONIE">
+                          <option value="sale-cerimonie">Sale Cerimonie</option>
+                          <option value="spazi-rituali">Spazi Rituali</option>
+                        </optgroup>
+                        <optgroup label="🏕️ CAMPING & OUTDOOR">
+                          <option value="piazzole-campeggio">Piazzole Campeggio</option>
+                          <option value="aree-camper">Aree Camper</option>
+                          <option value="glamping">Glamping</option>
+                        </optgroup>
+                        <optgroup label="🎮 GAMING & INTRATTENIMENTO">
+                          <option value="sale-giochi">Sale Giochi</option>
+                          <option value="sale-gaming">Sale Gaming</option>
+                          <option value="escape-room">Escape Room</option>
+                          <option value="simulatori">Simulatori</option>
+                        </optgroup>
+                        <optgroup label="🚢 TRASPORTI & MOBILITÀ">
+                          <option value="posti-barca">Posti Barca/Ormeggi</option>
+                          <option value="hangar">Hangar</option>
+                          <option value="rimesse">Rimesse</option>
+                        </optgroup>
+                        <optgroup label="🐾 PET & ANIMALI">
+                          <option value="pensioni-animali">Pensioni Animali</option>
+                          <option value="aree-cani">Aree Sgambamento Cani</option>
+                          <option value="maneggi">Maneggi</option>
+                          <option value="scuderie">Scuderie</option>
+                        </optgroup>
+                        <optgroup label="🧘 YOGA & MEDITAZIONE">
+                          <option value="sale-yoga">Sale Yoga</option>
+                          <option value="spazi-meditazione">Spazi Meditazione</option>
+                          <option value="centri-olistici">Centri Olistici</option>
+                        </optgroup>
+                      </>
+                    )}
+                  </select>
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Descrizione</label>
@@ -483,6 +708,19 @@ export const HubberListingEditor: React.FC<HubberListingEditorProps> = ({ listin
                        placeholder="0"
                      />
                   </div>
+               </div>
+
+               {/* Costo Pulizia */}
+               <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Costo Pulizia (€)</label>
+                  <input
+                    type="number"
+                    value={formData.cleaningFee || ''}
+                    onChange={(e) => setFormData({...formData, cleaningFee: parseFloat(e.target.value)})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Addebito una tantum per pulizia finale (opzionale)</p>
                </div>
             </div>
           </div>

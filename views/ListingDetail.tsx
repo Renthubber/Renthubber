@@ -368,17 +368,22 @@ useEffect(() => {
       }
     }
 
-    // ✅ CALCOLO COMMISSIONI RENTER (quello che paga il renter)
-    const renterVariableFee = (baseSubtotal * renterFeePercentage) / 100;
+    const deposit = listing.deposit || 0;
+    const cleaningFee = listing.cleaningFee || 0;
+    
+    // ✅ SUBTOTALE COMPLETO: prezzo base + tutti i costi extra impostati dall'hubber
+    const completeSubtotal = baseSubtotal + cleaningFee;
+
+    // ✅ CALCOLO COMMISSIONI RENTER (sul subtotale completo)
+    const renterVariableFee = (completeSubtotal * renterFeePercentage) / 100;
     const renterTotalFee = renterVariableFee + fixedFee;
 
-    // ✅ CALCOLO COMMISSIONI HUBBER (quello che viene trattenuto all'hubber)
-    const hubberVariableFee = (baseSubtotal * actualHubberFeePercentage) / 100;
+    // ✅ CALCOLO COMMISSIONI HUBBER (sul subtotale completo)
+    const hubberVariableFee = (completeSubtotal * actualHubberFeePercentage) / 100;
     const hubberTotalFee = hubberVariableFee + fixedFee;
-    const hubberNetAmount = baseSubtotal - hubberTotalFee;
+    const hubberNetAmount = completeSubtotal - hubberTotalFee;
 
-    const deposit = listing.deposit || 0;
-    const totalCalc = baseSubtotal + renterTotalFee + deposit;
+    const totalCalc = completeSubtotal + renterTotalFee + deposit;
 
     setDuration(units);
     setSubtotal(baseSubtotal);
@@ -395,6 +400,7 @@ useEffect(() => {
     listing.price,
     listing.priceUnit,
     listing.deposit,
+    listing.cleaningFee,
     listing.category,
     renterFeePercentage,
     actualHubberFeePercentage,
@@ -498,6 +504,13 @@ useEffect(() => {
       alert("Devi accedere per prenotare.");
       return;
     }
+    
+    // ✅ BLOCCO: Non puoi prenotare il tuo stesso annuncio
+    if (currentUser.id === listing.hostId) {
+      alert("❌ Non puoi prenotare il tuo stesso annuncio!");
+      return;
+    }
+    
     if (!startDate) {
       setIsCalendarOpen(true);
       return;
@@ -558,38 +571,35 @@ useEffect(() => {
     <div className="bg-white min-h-screen pb-12 relative font-sans">
       {/* Navbar Placeholder */}
       <div className="max-w-7xl mx-auto px-4 py-4">
-        <button
-          onClick={onBack}
-          className="flex items-center text-gray-600 hover:text-brand font-medium transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5 mr-1" /> Torna alla ricerca
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="flex items-center text-gray-600 hover:text-brand font-medium transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 mr-1" /> Torna alla ricerca
+          </button>
+          
+          {/* Pulsanti azioni: Preferiti + Condividi */}
+          <div className="flex items-center gap-2">
+            {currentUser && (
+              <FavoriteButton 
+                listingId={listing.id} 
+                userId={currentUser.id}
+                variant="detail"
+              />
+            )}
+            <ShareButton
+              listingId={listing.id}
+              listingTitle={listing.title}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Main Detail Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
        {/* 1. PHOTO GALLERY */}
 <div className="relative">
-  {/* Bottoni overlay - stile Airbnb */}
-  <div className="absolute top-6 left-6 right-6 z-10 flex items-center justify-between">
-    {/* Sinistra: Salva */}
-    <div className="flex items-center gap-2">
-      {currentUser && (
-        <FavoriteButton 
-          listingId={listing.id} 
-          userId={currentUser.id}
-          variant="detail"
-        />
-      )}
-    </div>
-    
-    {/* Destra: Condividi */}
-    <ShareButton
-      listingId={listing.id}
-      listingTitle={listing.title}
-    />
-  </div>
-
   <PhotoGallery images={listing.images} />
 </div>
 
@@ -603,6 +613,7 @@ useEffect(() => {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {listing.title}
               </h1>
+              
               <div className="flex items-center text-gray-600 text-sm">
                 <span className="font-semibold flex items-center text-gray-900 mr-1">
                   <Star className="w-4 h-4 fill-current mr-1" />{" "}
@@ -917,12 +928,19 @@ useEffect(() => {
               )}
 
               {/* Pulsante principale */}
-              <button
-                onClick={handleBookingClick}
-                className="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl text-lg shadow-md transition-all mb-4"
-              >
-                {duration ? "Prenota" : "Verifica disponibilità"}
-              </button>
+              {currentUser?.id === listing.hostId ? (
+                // Messaggio se è il proprio annuncio
+                <div className="w-full bg-gray-100 text-gray-600 font-bold py-3.5 rounded-xl text-lg text-center mb-4 border-2 border-gray-200">
+                  ✋ Questo è il tuo annuncio
+                </div>
+              ) : (
+                <button
+                  onClick={handleBookingClick}
+                  className="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl text-lg shadow-md transition-all mb-4"
+                >
+                  {duration ? "Prenota" : "Verifica disponibilità"}
+                </button>
+              )}
 
               {/* Riepilogo costi */}
               {duration > 0 && (
@@ -938,6 +956,12 @@ useEffect(() => {
                       </span>
                       <span>€{subtotal.toFixed(2)}</span>
                     </div>
+                    {Number(listing.cleaningFee) > 0 && (
+                      <div className="flex justify-between underline decoration-gray-300">
+                        <span>Costo pulizia</span>
+                        <span>€{Number(listing.cleaningFee).toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between underline decoration-gray-300">
                       <span>Costi del servizio Renthubber</span>
                       <span>€{serviceFee.toFixed(2)}</span>
@@ -991,6 +1015,7 @@ useEffect(() => {
           rentalAmountEur={subtotal}
           platformFeeEur={serviceFee}
           depositEur={Number(listing.deposit) || 0}
+          cleaningFeeEur={Number(listing.cleaningFee) || 0}
           walletUsedEur={walletUsedEur}
           onSuccess={async () => {
             await handlePaymentSuccess();
