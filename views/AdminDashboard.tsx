@@ -286,6 +286,7 @@ const [localInvoiceSettingsSaving, setlocalInvoiceSettingsSaving] = useState(fal
 const [selectedWalletUser, setSelectedWalletUser] = useState<any>(null);
 const [showWalletModal, setShowWalletModal] = useState(false);
 const [walletModalMode, setWalletModalMode] = useState<'credit' | 'debit'>('credit');
+const [walletType, setWalletType] = useState<'hubber' | 'renter'>('hubber'); // ✨ NUOVO
 const [walletAmount, setWalletAmount] = useState('');
 const [walletReason, setWalletReason] = useState('');
 const [walletNote, setWalletNote] = useState('');
@@ -2246,7 +2247,7 @@ useEffect(() => {
                     <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
                       <td className="py-4 px-6">
                         <div className="font-medium text-gray-900">{booking.listingTitle || 'N/A'}</div>
-                        <div className="text-xs text-gray-500">ID: {booking.id?.slice(0, 8)}...</div>
+                        <div className="text-xs text-gray-500">Codice: <span className="font-mono font-bold text-brand">#{booking.id?.slice(0, 6).toUpperCase()}</span></div>
                       </td>
                       <td className="py-4 px-6">
                         <div className="text-sm text-gray-900">{booking.renterName || 'N/A'}</div>
@@ -3954,8 +3955,8 @@ const renderFinanceTransactions = () => {
                   {getStatusBadge(selectedPayment.status)}
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-xl">
-                  <p className="text-xs text-gray-500 mb-1">ID Prenotazione</p>
-                  <code className="text-xs font-mono">{selectedPayment.booking_id?.slice(0, 8) || 'N/A'}...</code>
+                  <p className="text-xs text-gray-500 mb-1">Codice Prenotazione</p>
+                  <code className="text-xs font-mono font-bold text-brand">#{selectedPayment.booking_id?.slice(0, 6).toUpperCase() || 'N/A'}</code>
                 </div>
               </div>
             </div>
@@ -4139,8 +4140,8 @@ const renderFinanceWallets = () => {
                 <th className="text-left p-4 text-xs font-semibold text-gray-500 uppercase">Utente</th>
                 <th className="text-left p-4 text-xs font-semibold text-gray-500 uppercase">Email</th>
                 <th className="text-center p-4 text-xs font-semibold text-gray-500 uppercase">Ruolo</th>
-                <th className="text-right p-4 text-xs font-semibold text-gray-500 uppercase">Saldo</th>
-                <th className="text-center p-4 text-xs font-semibold text-gray-500 uppercase">Valuta</th>
+                <th className="text-right p-4 text-xs font-semibold text-gray-500 uppercase">💰 Saldo Hubber</th>
+                <th className="text-right p-4 text-xs font-semibold text-gray-500 uppercase">👤 Saldo Renter</th>
                 <th className="text-left p-4 text-xs font-semibold text-gray-500 uppercase">Ultimo Aggiornamento</th>
                  <th className="text-center p-4 text-xs font-semibold text-gray-500 uppercase">Azioni</th>
               </tr>
@@ -4191,14 +4192,16 @@ const renderFinanceWallets = () => {
                       </td>
                       <td className="p-4 text-right">
                         <span className={`text-sm font-bold ${
-                          (wallet.balanceEur || 0) > 0 ? 'text-green-600' : 'text-gray-500'
+                          (wallet.hubberBalanceEur || 0) > 0 ? 'text-green-600' : 'text-gray-400'
                         }`}>
-                          € {(wallet.balanceEur || 0).toFixed(2)}
+                          € {(wallet.hubberBalanceEur || 0).toFixed(2)}
                         </span>
                       </td>
-                      <td className="p-4 text-center">
-                        <span className="text-xs bg-gray-100 px-2 py-1 rounded-full font-medium">
-                          {wallet.currency || 'EUR'}
+                      <td className="p-4 text-right">
+                        <span className={`text-sm font-bold ${
+                          (wallet.renterBalanceEur || 0) > 0 ? 'text-blue-600' : 'text-gray-400'
+                        }`}>
+                          € {(wallet.renterBalanceEur || 0).toFixed(2)}
                         </span>
                       </td>
                       <td className="p-4">
@@ -4219,6 +4222,7 @@ const renderFinanceWallets = () => {
                           onClick={() => {
                             setSelectedWalletUser(wallet);
                             setWalletModalMode('credit');
+                            setWalletType('hubber'); // ✨ NUOVO: reset a hubber
                             setWalletAmount('');
                             setWalletReason('');
                             setWalletNote('');
@@ -6718,7 +6722,7 @@ const renderFinanceRefunds = () => {
                       </td>
                       <td className="p-4">
                         {invoice.booking_id ? (
-                          <code className="text-xs bg-gray-100 px-2 py-1 rounded">{invoice.booking_id.slice(0, 8)}...</code>
+                          <code className="text-xs bg-brand/10 text-brand px-2 py-1 rounded font-mono font-bold">#{invoice.booking_id.slice(0, 6).toUpperCase()}</code>
                         ) : (
                           <span className="text-xs text-gray-400">-</span>
                         )}
@@ -7442,6 +7446,7 @@ const renderFinanceRefunds = () => {
         <thead className="bg-gray-50 text-gray-900 font-semibold border-b border-gray-100">
           <tr>
             <th className="p-4">ID</th>
+            <th className="p-4">Prenotazione</th>
             <th className="p-4">Data</th>
             <th className="p-4">Aperta da</th>
             <th className="p-4">Motivo</th>
@@ -7457,6 +7462,15 @@ const renderFinanceRefunds = () => {
               className="border-b border-gray-50 hover:bg-gray-50"
             >
               <td className="p-4 text-xs font-mono">{d.dispute_id || d.id.slice(0,8)}</td>
+              <td className="p-4">
+                {d.booking_id ? (
+                  <code className="text-xs bg-brand/10 text-brand px-2 py-1 rounded font-mono font-bold">
+                    #{d.booking_id.slice(0, 6).toUpperCase()}
+                  </code>
+                ) : (
+                  <span className="text-xs text-gray-400">-</span>
+                )}
+              </td>
               <td className="p-4 text-xs">{new Date(d.created_at).toLocaleDateString('it-IT')}</td>
               <td className="p-4">
                 <span className={`px-2 py-1 rounded text-xs font-bold ${
@@ -7539,7 +7553,7 @@ const renderFinanceRefunds = () => {
           ))}
           {localDisputes.length === 0 && (
             <tr>
-              <td colSpan={7} className="p-8 text-center text-gray-400">
+              <td colSpan={8} className="p-8 text-center text-gray-400">
                 Nessuna controversia trovata.
               </td>
             </tr>
@@ -9568,9 +9582,10 @@ const renderReviews = () => {
                     {selectedWalletUser.user?.first_name} {selectedWalletUser.user?.last_name}
                   </p>
                   <p className="text-sm text-gray-500">{selectedWalletUser.user?.email}</p>
-                  <p className="text-xs text-gray-400">
-                    Saldo attuale: <span className="font-bold text-green-600">€ {(selectedWalletUser.balanceEur || 0).toFixed(2)}</span>
-                  </p>
+                  <div className="text-xs text-gray-600 mt-1 space-y-0.5">
+                    <p>💰 Wallet Hubber: <span className="font-bold text-green-600">€ {(selectedWalletUser.hubberBalanceEur || 0).toFixed(2)}</span></p>
+                    <p>👤 Wallet Renter: <span className="font-bold text-blue-600">€ {(selectedWalletUser.renterBalanceEur || 0).toFixed(2)}</span></p>
+                  </div>
                 </div>
               </div>
 
@@ -9596,6 +9611,40 @@ const renderReviews = () => {
                 >
                   ➖ Rimuovi
                 </button>
+              </div>
+
+              {/* ✨ NUOVO: Selezione Tipo Wallet */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  💼 Wallet di destinazione *
+                </label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setWalletType('hubber')}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+                      walletType === 'hubber'
+                        ? 'bg-brand text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-300'
+                    }`}
+                  >
+                    🏠 Wallet Hubber
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWalletType('renter')}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+                      walletType === 'renter'
+                        ? 'bg-brand text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-300'
+                    }`}
+                  >
+                    👤 Wallet Renter
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Scegli quale wallet modificare per questo utente
+                </p>
               </div>
 
               {/* Importo */}
@@ -9661,11 +9710,18 @@ const renderReviews = () => {
               </div>
 
               {/* Warning per rimozione */}
-              {walletModalMode === 'debit' && parseFloat(walletAmount) > (selectedWalletUser.balanceEur || 0) && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                  ⚠️ L'importo supera il saldo disponibile!
-                </div>
-              )}
+              {walletModalMode === 'debit' && (() => {
+                const currentBalance = walletType === 'hubber' 
+                  ? (selectedWalletUser.hubberBalanceEur || 0)
+                  : (selectedWalletUser.renterBalanceEur || 0);
+                const amount = parseFloat(walletAmount);
+                
+                return amount > currentBalance && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    ⚠️ L'importo supera il saldo disponibile nel wallet {walletType === 'hubber' ? 'Hubber' : 'Renter'} (€{currentBalance.toFixed(2)})!
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="p-5 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
@@ -9691,9 +9747,16 @@ const renderReviews = () => {
                     return;
                   }
 
-                  if (walletModalMode === 'debit' && amount > (selectedWalletUser.balanceEur || 0)) {
-                    alert('Saldo insufficiente');
-                    return;
+                  // Validazione saldo per debit - controlla il wallet giusto
+                  if (walletModalMode === 'debit') {
+                    const currentBalance = walletType === 'hubber' 
+                      ? (selectedWalletUser.hubberBalanceEur || 0)
+                      : (selectedWalletUser.renterBalanceEur || 0);
+                    
+                    if (amount > currentBalance) {
+                      alert(`Saldo insufficiente nel wallet ${walletType === 'hubber' ? 'Hubber' : 'Renter'} (disponibile: €${currentBalance.toFixed(2)})`);
+                      return;
+                    }
                   }
 
                   setWalletSaving(true);
@@ -9703,27 +9766,41 @@ const renderReviews = () => {
                         selectedWalletUser.user_id,
                         amount,
                         walletReason,
-                        walletNote
+                        walletNote,
+                        walletType // ✨ NUOVO
                       );
                     } else {
                       await api.wallet.adminDebit(
                         selectedWalletUser.user_id,
                         amount,
                         walletReason,
-                        walletNote
+                        walletNote,
+                        walletType // ✨ NUOVO
                       );
                     }
 
-                    // Aggiorna stato locale
-                    const newBalance = walletModalMode === 'credit' 
-                      ? (selectedWalletUser.balanceEur || 0) + amount
-                      : (selectedWalletUser.balanceEur || 0) - amount;
-
-                    setLocalWallets(prev => prev.map(w => 
-                      w.user_id === selectedWalletUser.user_id 
-                        ? { ...w, balanceEur: newBalance, balance_cents: Math.round(newBalance * 100) }
-                        : w
-                    ));
+                    // Aggiorna stato locale - aggiorna il wallet specifico
+                    setLocalWallets(prev => prev.map(w => {
+                      if (w.user_id !== selectedWalletUser.user_id) return w;
+                      
+                      const delta = walletModalMode === 'credit' ? amount : -amount;
+                      
+                      if (walletType === 'hubber') {
+                        const newHubberBalance = (w.hubberBalanceEur || 0) + delta;
+                        return { 
+                          ...w, 
+                          hubberBalanceEur: newHubberBalance,
+                          balanceEur: newHubberBalance + (w.renterBalanceEur || 0)
+                        };
+                      } else {
+                        const newRenterBalance = (w.renterBalanceEur || 0) + delta;
+                        return { 
+                          ...w, 
+                          renterBalanceEur: newRenterBalance,
+                          balanceEur: (w.hubberBalanceEur || 0) + newRenterBalance
+                        };
+                      }
+                    }));
 
                     // Ricarica transazioni
                     const txData = await api.admin.getAllWalletTransactions();

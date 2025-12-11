@@ -276,7 +276,8 @@ export const Messages: React.FC<MessagesProps> = ({
   currentUser,
   onCreateDispute,
 }) => {
-  const isBookingConfirmed = true;
+  // 🔒 Controlla se i contatti possono essere condivisi
+  const [isBookingConfirmed, setIsBookingConfirmed] = useState(true);
 
   // ✅ STATO PER LOADING CONVERSAZIONI REALI
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
@@ -301,6 +302,57 @@ export const Messages: React.FC<MessagesProps> = ({
   const activeContact = activeChatId === "support" 
     ? supportContact 
     : (contacts.find((c) => c.id === activeChatId) || supportContact);
+
+  // 🔒 Controlla stato booking quando cambia conversazione attiva
+  useEffect(() => {
+    const checkBookingStatus = async () => {
+      if (!activeContact?.bookingId) {
+        setIsBookingConfirmed(true); // Chat normale o senza booking
+        return;
+      }
+
+      try {
+        const { supabase } = await import('../lib/supabase');
+        const { data: booking } = await supabase
+          .from('bookings')
+          .select('status, completed_at, cancelled_at')
+          .eq('id', activeContact.bookingId)
+          .single();
+
+        if (!booking) {
+          setIsBookingConfirmed(true);
+          return;
+        }
+
+        // 🔒 Oscura se cancellato
+        if (booking.status === 'cancelled') {
+          setIsBookingConfirmed(false);
+          return;
+        }
+
+        // 🔒 Oscura se completato da più di 48 ore
+        if (booking.status === 'completed' && booking.completed_at) {
+          const completedDate = new Date(booking.completed_at);
+          const now = new Date();
+          const hoursPassed = (now.getTime() - completedDate.getTime()) / (1000 * 60 * 60);
+
+          if (hoursPassed >= 48) {
+            setIsBookingConfirmed(false);
+            console.log(`🔒 Booking completato da ${Math.floor(hoursPassed)} ore - Contatti bloccati`);
+            return;
+          }
+        }
+
+        // Altrimenti permetti contatti
+        setIsBookingConfirmed(true);
+      } catch (err) {
+        console.error('Errore controllo stato booking:', err);
+        setIsBookingConfirmed(true);
+      }
+    };
+
+    checkBookingStatus();
+  }, [activeContact?.bookingId, activeChatId]);
 
   const [messageInput, setMessageInput] = useState("");
   const [showMobileList, setShowMobileList] = useState(true); // Default: mostra lista // Mobile: mostra lista o chat
@@ -693,6 +745,11 @@ export const Messages: React.FC<MessagesProps> = ({
             );
             const bookingNumber = formatBookingNumber(conv.bookingId);
             
+            // 🔔 Determina se ha messaggi non letti
+            const hasUnread = isRenter 
+              ? (conv.unreadForRenter === true) 
+              : (conv.unreadForHubber === true);
+            
             return {
               id: conv.id,
               name: contactName,
@@ -703,6 +760,7 @@ export const Messages: React.FC<MessagesProps> = ({
                 month: "short",
               }) : "",
               unreadCount: conv.unreadCount || 0,
+              hasUnread, // 🔔 Nuovo campo
               isOnline: false,
               avgResponseMinutes: 60,
               phoneNumber: contactData?.phone_number || contactData?.phoneNumber || "",
@@ -861,7 +919,7 @@ export const Messages: React.FC<MessagesProps> = ({
       // Nessuna conversazione selezionata o contatto non trovato
       setChatMessages([]);
     }
-  }, [activeChatId, activeContact, currentUser, supportMessages]);
+  }, [activeChatId, currentUser, supportMessages]);
 
   const handleSend = async () => {
         if (!messageInput.trim()) {
@@ -925,7 +983,7 @@ export const Messages: React.FC<MessagesProps> = ({
             text: safeText,
             listingId: activeContact.listingId,
             bookingId: activeContact.bookingId, // ✅ AGGIUNGO bookingId!
-            hasConfirmedBooking: true,
+            hasConfirmedBooking: isBookingConfirmed, // ✅ Usa valore dinamico
             isSupport: false,
           });
           
@@ -1282,7 +1340,7 @@ export const Messages: React.FC<MessagesProps> = ({
           {(showArchived ? archivedContacts : contacts).map((contact) => (
             <div
               key={contact.id}
-              onClick={() => {
+              onClick={async () => {
                 console.log('🖱️ CLICK CONTATTO:', contact.name, contact.id);
                 console.log('📱 showMobileList PRIMA:', showMobileList);
                 setActiveChatId(contact.id);
@@ -1301,11 +1359,35 @@ export const Messages: React.FC<MessagesProps> = ({
                     )
                   );
                 }
+
+                // 🔔 Segna conversazione come letta nel DB
+                if (contact.isRealConversation && currentUser) {
+                  try {
+                    const { supabase } = await import('../lib/supabase');
+                    const field = currentUser.role === 'renter' || !currentUser.roles?.includes('hubber')
+                      ? 'unread_for_renter'
+                      : 'unread_for_hubber';
+                    
+                    await supabase
+                      .from('conversations')
+                      .update({ [field]: false })
+                      .eq('id', contact.id);
+                    
+                    console.log('✅ Conversazione segnata come letta');
+                    
+                    // 🔔 Emetti evento per aggiornare badge immediatamente
+                    window.dispatchEvent(new Event('unread-changed'));
+                  } catch (err) {
+                    console.error('Errore segnando come letta:', err);
+                  }
+                }
               }}
-              className={`relative flex items-center p-4 cursor-pointer transition-colors hover:bg-gray-50 ${
+              className={`relative flex items-center p-4 cursor-pointer transition-colors ${
                 activeChatId === contact.id
                   ? "bg-brand/5 border-l-4 border-brand"
-                  : ""
+                  : (contact as any).hasUnread 
+                    ? "bg-gray-100 hover:bg-gray-150"  // Sfondo più scuro se non letta
+                    : "hover:bg-gray-50"
               }`}
             >
               {/* Area contenuto */}
@@ -1821,8 +1903,8 @@ export const Messages: React.FC<MessagesProps> = ({
             </button>
 
             {showPhoneInfo && (
-              <div className="absolute right-10 top-7 bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 z-20">
-                {phoneNumber ? (
+              <div className="absolute right-10 top-7 bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 z-20 min-w-[200px]">
+                {phoneNumber && isBookingConfirmed ? (
                   <a
                     href={`tel:${phoneNumber}`}
                     className="text-xs text-gray-800 hover:text-brand"

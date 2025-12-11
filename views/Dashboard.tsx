@@ -19,6 +19,8 @@ import {
   AlertTriangle,
   Star,
   Heart,
+  Gift,
+  ArrowRight,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -188,6 +190,7 @@ interface DashboardProps {
   activeMode: ActiveMode;
   onManageListings: () => void;
   onBecomeHubber?: () => void;  // ✅ AGGIUNTO: callback per aprire wizard "Diventa Hubber"
+  onNavigateToWallet?: () => void;  // ✅ NUOVO: callback per navigare al wallet
   onViewListing?: (listing: any) => void; // ✅ NUOVO: per aprire dettaglio annuncio
   invoices?: Invoice[];
   // Callback opzionale per sincronizzare con Supabase / backend
@@ -211,6 +214,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   activeMode,
   onManageListings,
   onBecomeHubber,  // ✅ AGGIUNTO
+  onNavigateToWallet,  // ✅ NUOVO
   onViewListing, // ✅ NUOVO
   invoices = [],
   onUpdateProfile,
@@ -308,6 +312,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     completedBookings: 0,
     isLoading: true,
   });
+
+  // 💰 Saldo reale da Supabase (invece di user.hubberBalance)
+  const [realHubberBalance, setRealHubberBalance] = useState<number>(user.hubberBalance || 0);
 
   // CANCELLAZIONE PRENOTAZIONI RENTER
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -607,7 +614,14 @@ const [importedCalendars, setImportedCalendars] = useState<ImportedCalendar[]>([
   // ✅ CARICA STATISTICHE HUBBER
   useEffect(() => {
     const loadHubberStats = async () => {
-      if (activeMode !== 'hubber' || !user.id) return;
+      console.log('🔄 loadHubberStats chiamata - activeMode:', activeMode, 'user.id:', user.id);
+      console.log('📦 hubberBookings.length:', hubberBookings.length);
+      console.log('📦 hubberBookings:', hubberBookings);
+      
+      if (activeMode !== 'hubber' || !user.id) {
+        console.log('❌ loadHubberStats saltata - activeMode:', activeMode, 'user.id:', user.id);
+        return;
+      }
 
       setHubberStats(prev => ({ ...prev, isLoading: true }));
 
@@ -637,6 +651,8 @@ const [importedCalendars, setImportedCalendars] = useState<ImportedCalendar[]>([
           })
           .reduce((sum, b) => sum + (b.netEarnings || b.totalPrice || 0), 0);
 
+        console.log('💰 monthlyEarnings calcolato:', monthlyEarnings);
+
         // Storico guadagni ultimi 4 mesi
         const earningsHistory: { name: string; value: number }[] = [];
         const monthNames = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
@@ -657,6 +673,8 @@ const [importedCalendars, setImportedCalendars] = useState<ImportedCalendar[]>([
             value: Math.round(monthEarnings * 100) / 100,
           });
         }
+
+        console.log('📊 earningsHistory:', earningsHistory);
 
         // Aggiorna lo state
         setHubberStats({
@@ -681,6 +699,31 @@ const [importedCalendars, setImportedCalendars] = useState<ImportedCalendar[]>([
       loadHubberStats();
     }
   }, [activeMode, user.id, loadingBookings, hubberBookings.length]);
+
+  // 💰 Carica saldo reale hubber da Supabase
+  useEffect(() => {
+    const loadRealBalance = async () => {
+      if (activeMode !== 'hubber' || !user.id) return;
+
+      try {
+        const { supabase } = await import('../lib/supabase');
+        const { data, error } = await supabase
+          .from('users')
+          .select('hubber_balance')
+          .eq('id', user.id)
+          .single();
+
+        if (!error && data) {
+          setRealHubberBalance(data.hubber_balance || 0);
+          console.log('💰 Saldo hubber caricato:', data.hubber_balance);
+        }
+      } catch (err) {
+        console.error('Errore caricamento saldo hubber:', err);
+      }
+    };
+
+    loadRealBalance();
+  }, [activeMode, user.id]);
 
   // --- PROSSIMA PRENOTAZIONE RENTER (per Panoramica) ---
   useEffect(() => {
@@ -2165,7 +2208,7 @@ const handleIdFileChange =
 
         {/* INFO PROFILO */}
         <div className="flex-1 text-center md:text-left">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2 justify-center md:justify-start">
             <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center md:text-left">
               {profileData.firstName || profileData.lastName
                 ? `${profileData.firstName} ${profileData.lastName}`.trim()
@@ -2180,7 +2223,7 @@ const handleIdFileChange =
 
             {user.status && (
               <span
-                className={`px-2 py-1 text-xs font-bold rounded-full ${
+                className={`px-2 py-1 text-xs font-bold rounded-full text-center ${
                   user.status === 'active'
                     ? 'bg-green-100 text-green-700'
                     : 'bg-gray-100 text-gray-600'
@@ -2488,7 +2531,7 @@ const handleIdFileChange =
             </div>
           </div>
           <p className="text-sm text-gray-500">Saldo Disponibile</p>
-          <h3 className="text-2xl font-bold text-gray-900">€{user.hubberBalance.toFixed(2)}</h3>
+          <h3 className="text-2xl font-bold text-gray-900">€{realHubberBalance.toFixed(2)}</h3>
         </div>
       </div>
 
@@ -2501,7 +2544,7 @@ const handleIdFileChange =
               <div className="h-full flex items-center justify-center">
                 <div className="animate-spin w-8 h-8 border-2 border-brand border-t-transparent rounded-full"></div>
               </div>
-            ) : chartData.length > 0 && chartData[0].value > 0 ? (
+            ) : chartData.length > 0 && chartData.some(d => d.value > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
                   <defs>
@@ -4322,27 +4365,52 @@ const renderRenterPayments = () => {
             </div>
           </div>
 
-          {/* Become Hubber Promo - VISIBLE FOR RENTERS */}
-          <div className="bg-gray-900 rounded-2xl p-8 text-white flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
-            <div className="relative z-10">
-              <h3 className="text-2xl font-bold mb-2">
-                Hai oggetti che non usi?
-              </h3>
-              <p className="text-gray-400 mb-6 max-w-md">
-                Diventa Hubber e inizia a guadagnare noleggiando le tue
-                attrezzature o i tuoi spazi inutilizzati. È facile e sicuro.
-              </p>
-              <button
-                onClick={onBecomeHubber}
-                className="bg-brand-accent text-brand-dark font-bold py-3 px-6 rounded-xl hover:bg-amber-400 transition-colors shadow-lg"
-              >
-                Inizia a guadagnare
-              </button>
+          {/* Become Hubber Promo o Referral Badge */}
+          {user?.user_type === 'renter' ? (
+            // Mostra "Diventa Hubber" solo per utenti che sono SOLO renter
+            <div className="bg-gray-900 rounded-2xl p-8 text-white flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
+              <div className="relative z-10">
+                <h3 className="text-2xl font-bold mb-2">
+                  Hai oggetti che non usi?
+                </h3>
+                <p className="text-gray-400 mb-6 max-w-md">
+                  Diventa Hubber e inizia a guadagnare noleggiando le tue
+                  attrezzature o i tuoi spazi inutilizzati. È facile e sicuro.
+                </p>
+                <button
+                  onClick={onBecomeHubber}
+                  className="bg-brand-accent text-brand-dark font-bold py-3 px-6 rounded-xl hover:bg-amber-400 transition-colors shadow-lg"
+                >
+                  Inizia a guadagnare
+                </button>
+              </div>
+              <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
+                <Package className="w-64 h-64 transform translate-x-10 translate-y-10" />
+              </div>
             </div>
-            <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
-              <Package className="w-64 h-64 transform translate-x-10 translate-y-10" />
+          ) : (
+            // Mostra "Invita un amico" per hubber e both
+            <div 
+              onClick={() => onNavigateToWallet && onNavigateToWallet()}
+              className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-8 text-white flex flex-col md:flex-row items-center justify-between relative overflow-hidden cursor-pointer hover:shadow-xl transition-all"
+            >
+              <div className="relative z-10">
+                <h3 className="text-2xl font-bold mb-2">
+                  Invita un amico e guadagna
+                </h3>
+                <p className="text-green-100 mb-6 max-w-md">
+                  Invita i tuoi amici su Renthubber e ricevi €5 di credito per ogni amico che completa la prima prenotazione.
+                </p>
+                <div className="inline-flex items-center gap-2 bg-white text-green-600 font-bold py-3 px-6 rounded-xl hover:bg-green-50 transition-colors shadow-lg">
+                  Vai al Wallet
+                  <ArrowRight className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
+                <Gift className="w-64 h-64 transform translate-x-10 translate-y-10" />
+              </div>
             </div>
-          </div>
+          )}
         </>
       )}
     </div>

@@ -15,6 +15,7 @@ import {
   Gift,
   RefreshCw,
   Clock,
+  Calendar,
 } from 'lucide-react';
 import { User, ActiveMode, SystemConfig, BankDetails } from '../types';
 import {
@@ -93,8 +94,13 @@ export const Wallet: React.FC<WalletProps> = ({
   const [pendingEarnings, setPendingEarnings] = useState(0);
   const [pendingBookingsCount, setPendingBookingsCount] = useState(0);
 
-  // Totale credito renter (somma dei due saldi)
-  const totalRenterCredit = referralBalance + refundBalance;
+  // 📋 Modal dettaglio prenotazione
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [bookingDetails, setBookingDetails] = useState<any>(null);
+  const [loadingBookingDetails, setLoadingBookingDetails] = useState(false);
+
+  // Totale credito renter = wallet + referral + rimborsi
+  const totalRenterCredit = (walletBalance ?? 0) + referralBalance + refundBalance;
 
   // ===========================
   //   REFERRAL CODE: CREAZIONE AUTOMATICA
@@ -258,7 +264,7 @@ export const Wallet: React.FC<WalletProps> = ({
           .from('wallet_transactions')
           .select('*')
           .eq('user_id', currentUser.id)
-          .in('source', ['adjustment', 'refund', 'booking_payment', 'referral'])
+          .eq('wallet_type', 'renter') // ✨ Filtra per wallet_type renter
           .order('created_at', { ascending: false })
           .limit(20);
         
@@ -306,18 +312,79 @@ export const Wallet: React.FC<WalletProps> = ({
     loadPendingReferrals();
   }, [currentUser.id]);
 
+  // 📋 Gestione modal dettaglio prenotazione
+  const handleBookingClick = async (bookingId: string) => {
+    setSelectedBookingId(bookingId);
+    setLoadingBookingDetails(true);
+    setBookingDetails(null);
+
+    try {
+      // Query per ottenere tutti i dettagli della prenotazione
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          start_date,
+          end_date,
+          amount_total,
+          platform_fee,
+          hubber_net_amount,
+          status,
+          created_at,
+          listing:listing_id(
+            id,
+            title,
+            images,
+            price,
+            price_unit,
+            pickup_address,
+            pickup_city,
+            pickup_instructions
+          ),
+          renter:renter_id(
+            id,
+            first_name,
+            last_name,
+            public_name,
+            avatar_url
+          )
+        `)
+        .eq('id', bookingId)
+        .single();
+
+      if (error) {
+        console.error('Errore caricamento dettagli prenotazione:', error);
+        return;
+      }
+
+      setBookingDetails(data);
+    } catch (err) {
+      console.error('Errore:', err);
+    } finally {
+      setLoadingBookingDetails(false);
+    }
+  };
+
+  const closeBookingModal = () => {
+    setSelectedBookingId(null);
+    setBookingDetails(null);
+  };
+
   // ===========================
   //   CARICA WALLET REALE (HUBBER)
   // ===========================
   useEffect(() => {
     const loadWallet = async () => {
       setWalletLoading(true);
+      console.log('🟢 [WALLET] Carico saldo - activeMode:', activeMode, 'userId:', currentUser.id);
       try {
-        const balance = await api.wallet.getBalanceFromDb(currentUser.id);
+        const balance = await api.wallet.getBalanceFromDb(currentUser.id, activeMode);
+        console.log('🟢 [WALLET] Saldo ricevuto:', balance, 'per mode:', activeMode);
         setWalletBalance(balance);
       } catch (err) {
-        console.error('Errore caricando saldo wallet:', err);
-        const fallback = currentUser.hubberBalance ?? 0;
+        console.error('❌ [WALLET] Errore caricando saldo wallet:', err);
+        const fallback = activeMode === 'hubber' ? (currentUser.hubberBalance ?? 0) : (currentUser.renterBalance ?? 0);
+        console.log('⚠️ [WALLET] Uso fallback:', fallback, 'per mode:', activeMode);
         setWalletBalance(fallback);
       } finally {
         setWalletLoading(false);
@@ -332,7 +399,7 @@ export const Wallet: React.FC<WalletProps> = ({
           .from('wallet_transactions')
           .select('*')
           .eq('user_id', currentUser.id)
-          .in('source', ['booking_payout', 'adjustment', 'booking_payment', 'refund'])
+          .eq('wallet_type', activeMode) // ✨ Filtra per wallet_type invece di source
           .order('created_at', { ascending: false })
           .limit(20);
         
@@ -348,7 +415,7 @@ export const Wallet: React.FC<WalletProps> = ({
           })));
         }
       } catch (err) {
-        console.error('Errore caricando transazioni hubber:', err);
+        console.error('Errore caricando transazioni:', err);
       } finally {
         setTxLoading(false);
       }
@@ -379,7 +446,7 @@ export const Wallet: React.FC<WalletProps> = ({
     loadWallet();
     loadTransactions();
     loadPendingEarnings();
-  }, [currentUser.id, currentUser.hubberBalance]);
+  }, [currentUser.id, activeMode]); // Rimosso currentUser.hubberBalance che causava loop
 
   const handleCopyReferral = () => {
     if (!currentUser.referralCode) return;
@@ -520,14 +587,14 @@ export const Wallet: React.FC<WalletProps> = ({
     setShowPayoutModal(false);
     setPayoutAmount('');
     
-    // Ricarica transazioni hubber
-const { data: txs } = await supabase
-  .from('wallet_transactions')
-  .select('*')
-  .eq('user_id', currentUser.id)
-  .in('source', ['booking_payout', 'adjustment', 'booking_payment', 'refund'])
-  .order('created_at', { ascending: false })
-  .limit(20);
+    // Ricarica transazioni filtrate per wallet_type
+    const { data: txs } = await supabase
+      .from('wallet_transactions')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .eq('wallet_type', activeMode) // ✨ Filtra per wallet_type
+      .order('created_at', { ascending: false })
+      .limit(20);
     
     if (txs) {
       setHubberTransactions(txs.map(t => ({
@@ -572,7 +639,7 @@ const { data: txs } = await supabase
                   Credito Totale Disponibile
                 </p>
                 <h2 className="text-4xl font-bold mb-4">
-                  {renterWalletLoading ? (
+                  {(renterWalletLoading || walletLoading) ? (
                     <span className="flex items-center">
                       <RefreshCw className="w-6 h-6 animate-spin mr-2" /> ...
                     </span>
@@ -582,7 +649,17 @@ const { data: txs } = await supabase
                 </h2>
                 
                 {/* ✅ DETTAGLIO SALDI SEPARATI */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {/* Box Wallet (credito admin) */}
+                  <div className="bg-white/10 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <WalletIcon className="w-4 h-4 text-blue-300" />
+                      <span className="text-xs text-blue-200">Wallet</span>
+                    </div>
+                    <p className="text-xl font-bold">€ {(walletBalance ?? 0).toFixed(2)}</p>
+                    <p className="text-[10px] text-blue-300 mt-1">Utilizzo al 100%</p>
+                  </div>
+                
                   {/* Box Invita Amico con pending */}
                   <div className="bg-white/10 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-1">
@@ -598,7 +675,7 @@ const { data: txs } = await supabase
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-blue-300 mt-1">Utilizzo Max 30% per commissioni</p>
+                    <p className="text-[10px] text-blue-300 mt-1">Max 30% commissioni</p>
                   </div>
                   
                   {/* Box Rimborsi */}
@@ -608,7 +685,7 @@ const { data: txs } = await supabase
                       <span className="text-xs text-blue-200">Rimborsi</span>
                     </div>
                     <p className="text-xl font-bold">€ {refundBalance.toFixed(2)}</p>
-                    <p className="text-[10px] text-blue-300 mt-1">Utilizzo al 100% per prenotazioni</p>
+                    <p className="text-[10px] text-blue-300 mt-1">Utilizzo al 100%</p>
                   </div>
                 </div>
 
@@ -786,7 +863,7 @@ const { data: txs } = await supabase
               </div>
             )}
 
-            <div className="flex space-x-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <PayoutRequestButton
                 userId={currentUser.id}
                 hubberBalance={walletBalance ?? 0}
@@ -801,7 +878,7 @@ const { data: txs } = await supabase
               />
               <button
                 onClick={() => setShowBankModal(true)}
-                className="flex-1 bg-brand-light/30 text-white border border-white/20 font-bold py-2.5 rounded-lg hover:bg-brand-light/40 transition-colors text-sm flex items-center justify-center"
+                className="w-full sm:flex-1 bg-brand-light/30 text-white border border-white/20 font-bold py-2.5 rounded-lg hover:bg-brand-light/40 transition-colors text-sm flex items-center justify-center"
               >
                 <Landmark className="w-4 h-4 mr-2" /> Impostazioni Fiscali
               </button>
@@ -876,7 +953,25 @@ const { data: txs } = await supabase
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {t.description}
+                        {(() => {
+                          const bookingCodePattern = /(#[A-Z0-9]{6})/g;
+                          const parts = t.description.split(bookingCodePattern);
+                          
+                          return parts.map((part, index) => {
+                            if (part.match(bookingCodePattern) && t.relatedBookingId) {
+                              return (
+                                <button
+                                  key={index}
+                                  onClick={() => handleBookingClick(t.relatedBookingId)}
+                                  className="text-brand hover:text-brand-dark font-semibold underline cursor-pointer"
+                                >
+                                  {part}
+                                </button>
+                              );
+                            }
+                            return <span key={index}>{part}</span>;
+                          });
+                        })()}
                       </p>
                       <p className="text-xs text-gray-500">
                         {t.createdAt
@@ -1111,6 +1206,170 @@ const { data: txs } = await supabase
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* BOOKING DETAIL MODAL */}
+      {selectedBookingId && (
+        <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white p-5 border-b border-gray-100 flex justify-between items-center z-10">
+              <h3 className="font-bold text-gray-900 flex items-center">
+                <Calendar className="w-5 h-5 mr-2 text-brand" /> Dettaglio Prenotazione
+              </h3>
+              <button
+                onClick={closeBookingModal}
+                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {/* Codice prenotazione */}
+              <div className="bg-brand/5 border border-brand/20 rounded-xl p-4 mb-6">
+                <p className="text-xs text-brand uppercase font-semibold mb-2">
+                  Codice Prenotazione
+                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-2xl font-mono font-bold text-brand tracking-wider">
+                    #{selectedBookingId.slice(0, 6).toUpperCase()}
+                  </p>
+                  <button
+                    onClick={() => {
+                      const code = selectedBookingId.slice(0, 6).toUpperCase();
+                      navigator.clipboard.writeText(code);
+                    }}
+                    className="text-sm text-brand hover:text-brand-dark font-medium hover:underline"
+                  >
+                    Copia
+                  </button>
+                </div>
+              </div>
+
+              {/* Contenuto prenotazione */}
+              {loadingBookingDetails ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin w-8 h-8 border-3 border-brand border-t-transparent rounded-full mx-auto mb-3"></div>
+                  <p className="text-sm text-gray-500">Caricamento dettagli...</p>
+                </div>
+              ) : bookingDetails ? (
+                <div className="space-y-4">
+                  {/* Info listing con immagine */}
+                  <div className="flex items-start gap-4 pb-4 border-b border-gray-100">
+                    <div className="w-20 h-20 rounded-xl bg-gray-200 overflow-hidden flex-shrink-0">
+                      {bookingDetails.listing?.images?.[0] && (
+                        <img
+                          src={bookingDetails.listing.images[0]}
+                          alt={bookingDetails.listing.title}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 text-base mb-1">
+                        {bookingDetails.listing?.title || 'N/A'}
+                      </h4>
+                      <p className="text-sm text-gray-600 flex items-center">
+                        <Calendar className="w-4 h-4 mr-1" />
+                        {new Date(bookingDetails.start_date).toLocaleDateString('it-IT')} - {new Date(bookingDetails.end_date).toLocaleDateString('it-IT')}
+                      </p>
+                      <div className="mt-2">
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                          bookingDetails.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                          bookingDetails.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                          bookingDetails.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                          'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {bookingDetails.status === 'confirmed' ? 'Confermata' :
+                           bookingDetails.status === 'completed' ? 'Completata' :
+                           bookingDetails.status === 'cancelled' ? 'Cancellata' :
+                           bookingDetails.status === 'pending' ? 'In Attesa' : bookingDetails.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Indirizzo ritiro (solo se confermata/completata) */}
+                  {(bookingDetails.status === 'confirmed' || bookingDetails.status === 'completed') && (
+                    <div className="bg-brand/5 border border-brand/20 rounded-xl p-4">
+                      <p className="text-xs text-brand uppercase font-semibold mb-2 flex items-center">
+                        <Landmark className="w-3 h-3 mr-1" />
+                        Indirizzo di ritiro
+                      </p>
+                      {bookingDetails.listing?.pickup_address ? (
+                        <>
+                          <p className="font-bold text-gray-900 text-sm">
+                            {bookingDetails.listing.pickup_address}
+                          </p>
+                          {bookingDetails.listing.pickup_city && (
+                            <p className="text-sm text-gray-600">{bookingDetails.listing.pickup_city}</p>
+                          )}
+                          {bookingDetails.listing.pickup_instructions && (
+                            <p className="text-xs text-gray-500 mt-2 italic">
+                              "{bookingDetails.listing.pickup_instructions}"
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-500">Indirizzo non ancora disponibile</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Info renter */}
+                  {bookingDetails.renter && (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Cliente</p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+                          {bookingDetails.renter.avatar_url ? (
+                            <img
+                              src={bookingDetails.renter.avatar_url}
+                              alt="Avatar"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm bg-brand">
+                              {(bookingDetails.renter.first_name?.[0] || '?').toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm">
+                            {bookingDetails.renter.public_name || `${bookingDetails.renter.first_name || ''} ${bookingDetails.renter.last_name || ''}`.trim() || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Riepilogo costi */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-xs text-gray-500 uppercase font-semibold mb-3">Riepilogo Finanziario</p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Importo totale</span>
+                        <span className="font-medium text-gray-900">€{(bookingDetails.amount_total || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Commissione piattaforma</span>
+                        <span className="font-medium text-red-600">-€{(bookingDetails.platform_fee || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="pt-2 border-t border-gray-200 flex justify-between">
+                        <span className="font-bold text-gray-900">Netto Hubber</span>
+                        <span className="font-bold text-green-600 text-lg">€{(bookingDetails.hubber_net_amount || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                  <p className="text-sm text-red-800">Errore nel caricamento dei dettagli</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
