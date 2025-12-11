@@ -86,11 +86,10 @@ export const HubberCalendar: React.FC<HubberCalendarProps> = ({
     
     const days: { date: Date; isCurrentMonth: boolean }[] = [];
     
-    // Giorni del mese precedente
-    const prevMonth = new Date(year, month, 0);
-    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    // ✅ FIX: Aggiungi celle vuote invece dei giorni del mese precedente
+    for (let i = 0; i < startDayOfWeek; i++) {
       days.push({
-        date: new Date(year, month - 1, prevMonth.getDate() - i),
+        date: new Date(year, month - 1, 1), // data placeholder
         isCurrentMonth: false,
       });
     }
@@ -103,11 +102,11 @@ export const HubberCalendar: React.FC<HubberCalendarProps> = ({
       });
     }
     
-    // Giorni del mese successivo per completare la griglia
+    // ✅ FIX: Aggiungi celle vuote invece dei giorni del mese successivo
     const remainingDays = 42 - days.length; // 6 righe × 7 giorni
-    for (let i = 1; i <= remainingDays; i++) {
+    for (let i = 0; i < remainingDays; i++) {
       days.push({
-        date: new Date(year, month + 1, i),
+        date: new Date(year, month + 1, 1), // data placeholder
         isCurrentMonth: false,
       });
     }
@@ -144,13 +143,10 @@ export const HubberCalendar: React.FC<HubberCalendarProps> = ({
     setCurrentDate(new Date());
   };
 
-  // Apri dettaglio prenotazione
+  // Apri solo il modale senza navigare
   const openBookingDetail = (booking: CalendarBooking) => {
     setSelectedBooking(booking);
     setDetailModalOpen(true);
-    if (onBookingClick) {
-      onBookingClick(booking);
-    }
   };
 
   // Formatta data per display
@@ -205,47 +201,44 @@ export const HubberCalendar: React.FC<HubberCalendarProps> = ({
   }, [bookings, listingColorMap]);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-100">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Calendar className="w-5 h-5 text-brand" />
-            <h3 className="font-bold text-gray-900 text-lg">
-              Calendario Prenotazioni
-            </h3>
-          </div>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+      {/* ✅ FIX: Header responsive migliorato */}
+      <div className="p-3 sm:p-4 border-b border-gray-100">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          {/* Titolo mese - più piccolo su mobile */}
+          <h2 className="text-base sm:text-xl font-bold text-gray-900 flex-shrink truncate">
+            {MONTHS_IT[currentDate.getMonth()]} {currentDate.getFullYear()}
+          </h2>
           
-          {/* Navigazione */}
-          <div className="flex items-center gap-2">
+          {/* Navigazione - sempre visibile e compatta */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={goToPreviousMonth}
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              title="Mese precedente"
+            >
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+            </button>
             <button
               onClick={goToToday}
-              className="px-3 py-1.5 text-xs font-medium text-brand hover:bg-brand/5 rounded-lg transition-colors"
+              className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Oggi
             </button>
             <button
-              onClick={goToPreviousMonth}
-              className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <span className="text-base font-semibold text-gray-900 min-w-[160px] text-center">
-              {MONTHS_IT[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </span>
-            <button
               onClick={goToNextMonth}
-              className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              title="Mese successivo"
             >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
             </button>
           </div>
         </div>
 
-        {/* Legenda annunci */}
+        {/* Legenda annunci - scrollabile su mobile */}
         {uniqueListings.length > 0 && (
-          <div className="flex flex-wrap gap-3">
-            {uniqueListings.map((listing) => (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {uniqueListings.map(listing => (
               <div key={listing.id} className="flex items-center gap-1.5">
                 <div className={`w-3 h-3 rounded-full ${listing.color.dot}`} />
                 <span className="text-xs text-gray-600 truncate max-w-[120px]">
@@ -257,42 +250,43 @@ export const HubberCalendar: React.FC<HubberCalendarProps> = ({
         )}
       </div>
 
-      {/* Griglia Calendario */}
-      <div className="p-4">
-        {/* Header giorni */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {DAYS_IT.map((day) => (
-            <div
-              key={day}
-              className="text-center text-xs font-semibold text-gray-500 py-2"
-            >
+      {/* Calendario */}
+      <div className="p-3 sm:p-4">
+        {/* Header giorni settimana */}
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
+          {DAYS_IT.map(day => (
+            <div key={day} className="text-center text-xs font-semibold text-gray-500 py-2">
               {day}
             </div>
           ))}
         </div>
 
         {/* Griglia giorni */}
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
           {calendarDays.map((dayInfo, index) => {
+            // ✅ FIX: Non renderizzare giorni di altri mesi
+            if (!dayInfo.isCurrentMonth) {
+              return (
+                <div key={index} className="aspect-square" />
+              );
+            }
+
             const dayBookings = getBookingsForDay(dayInfo.date);
-            const hasBookings = dayBookings.length > 0;
             const isTodayDate = isToday(dayInfo.date);
-            
+
             return (
               <div
                 key={index}
                 className={`
-                  min-h-[80px] p-1 rounded-lg border transition-all
-                  ${dayInfo.isCurrentMonth ? 'bg-white' : 'bg-gray-50'}
-                  ${isTodayDate ? 'border-brand border-2' : 'border-gray-100'}
-                  ${hasBookings ? 'hover:border-brand/50 cursor-pointer' : ''}
+                  aspect-square border rounded-lg p-1 sm:p-2 cursor-pointer
+                  hover:bg-gray-50 transition-colors relative overflow-hidden
+                  ${isTodayDate ? 'border-brand bg-brand/5' : 'border-gray-200'}
                 `}
               >
                 {/* Numero giorno */}
                 <div className={`
                   text-xs font-medium mb-1 flex items-center justify-between px-1
-                  ${dayInfo.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}
-                  ${isTodayDate ? 'text-brand font-bold' : ''}
+                  ${isTodayDate ? 'text-brand font-bold' : 'text-gray-900'}
                 `}>
                   <span>{dayInfo.date.getDate()}</span>
                   {isTodayDate && (
@@ -342,33 +336,33 @@ export const HubberCalendar: React.FC<HubberCalendarProps> = ({
       </div>
 
       {/* Statistiche rapide */}
-      <div className="px-4 pb-4">
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-blue-50 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-blue-600">
+      <div className="px-3 sm:px-4 pb-3 sm:pb-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="bg-blue-50 rounded-xl p-2 sm:p-3 text-center">
+            <p className="text-xl sm:text-2xl font-bold text-blue-600">
               {bookings.filter(b => ['confirmed', 'accepted', 'active'].includes(b.status)).length}
             </p>
-            <p className="text-xs text-blue-600 font-medium">Attive</p>
+            <p className="text-[10px] sm:text-xs text-blue-600 font-medium">Attive</p>
           </div>
-          <div className="bg-yellow-50 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-yellow-600">
+          <div className="bg-yellow-50 rounded-xl p-2 sm:p-3 text-center">
+            <p className="text-xl sm:text-2xl font-bold text-yellow-600">
               {bookings.filter(b => b.status === 'pending').length}
             </p>
-            <p className="text-xs text-yellow-600 font-medium">In attesa</p>
+            <p className="text-[10px] sm:text-xs text-yellow-600 font-medium">In attesa</p>
           </div>
-          <div className="bg-green-50 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-green-600">
+          <div className="bg-green-50 rounded-xl p-2 sm:p-3 text-center">
+            <p className="text-xl sm:text-2xl font-bold text-green-600">
               {bookings.filter(b => b.status === 'completed').length}
             </p>
-            <p className="text-xs text-green-600 font-medium">Completate</p>
+            <p className="text-[10px] sm:text-xs text-green-600 font-medium">Completate</p>
           </div>
         </div>
       </div>
 
-      {/* Modale Dettaglio Prenotazione */}
+      {/* ✅ Modale Dettaglio Prenotazione */}
       {detailModalOpen && selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative mx-4 max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setDetailModalOpen(false)}
               className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100"
@@ -395,6 +389,18 @@ export const HubberCalendar: React.FC<HubberCalendarProps> = ({
                 <h3 className="font-bold text-gray-900 text-lg leading-tight">
                   {selectedBooking.listingTitle}
                 </h3>
+                {/* ✅ Numero prenotazione cliccabile */}
+                <button
+                  onClick={() => {
+                    if (onBookingClick) {
+                      setDetailModalOpen(false);
+                      onBookingClick(selectedBooking);
+                    }
+                  }}
+                  className="text-xs text-brand hover:text-brand-dark font-semibold mt-1 hover:underline"
+                >
+                  Prenotazione #{selectedBooking.id.slice(0, 8)}
+                </button>
                 <div className="mt-2">
                   {getStatusBadge(selectedBooking.status)}
                 </div>
