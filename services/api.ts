@@ -2469,6 +2469,86 @@ if (ownerIds.length > 0) {
     },
   },
 
+  // =============================
+  // 💳 PAYMENTS (Pagamenti reali)
+  // =============================
+  payments: {
+    /**
+     * Carica i pagamenti per un RENTER
+     * Ritorna tutti i pagamenti dove renter_id = userId
+     */
+    getRenterPayments: async (renterId: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('payments')
+          .select(`
+            *,
+            booking:booking_id (
+              id,
+              start_date,
+              end_date,
+              listing:listing_id (
+                title
+              )
+            )
+          `)
+          .eq('renter_id', renterId)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('❌ Errore caricamento pagamenti renter:', error);
+          return [];
+        }
+
+        return data || [];
+      } catch (e) {
+        console.error('❌ Errore inatteso getRenterPayments:', e);
+        return [];
+      }
+    },
+
+    /**
+     * Carica i pagamenti per un HUBBER
+     * Ritorna tutti i pagamenti dove hubber_id = userId
+     */
+    getHubberPayments: async (hubberId: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('payments')
+          .select(`
+            *,
+            booking:booking_id (
+              id,
+              start_date,
+              end_date,
+              renter:renter_id (
+                id,
+                first_name,
+                last_name,
+                email,
+                avatar_url
+              ),
+              listing:listing_id (
+                title
+              )
+            )
+          `)
+          .eq('hubber_id', hubberId)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('❌ Errore caricamento pagamenti hubber:', error);
+          return [];
+        }
+
+        return data || [];
+      } catch (e) {
+        console.error('❌ Errore inatteso getHubberPayments:', e);
+        return [];
+      }
+    },
+  },
+
   wallet: {
     // =========================
     // LEGACY: LOCAL STORAGE
