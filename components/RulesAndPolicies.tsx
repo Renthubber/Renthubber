@@ -25,7 +25,7 @@ export const RulesAndPolicies: React.FC<RulesAndPoliciesProps> = ({ rules, cance
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
          {/* Rules */}
          <div>
-            <h4 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wide">Regole dell'Host</h4>
+            <h4 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wide">Regole dell'Hubber</h4>
             <ul className="space-y-3">
                {openingHours && (
                   <li className="flex items-start text-sm text-gray-600">

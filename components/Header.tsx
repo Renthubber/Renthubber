@@ -22,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // ✅ Controlla se l'utente ha il ruolo hubber
   const isHubber = currentUser?.roles?.includes("hubber") || currentUser?.role === "hubber";
@@ -36,6 +37,54 @@ export const Header: React.FC<HeaderProps> = ({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // 🔔 Carica conteggio messaggi non letti
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const loadUnreadCount = async () => {
+      try {
+        const { supabase } = await import('../lib/supabase');
+        
+        // Query diversa in base al ruolo attivo
+        const field = activeMode === 'renter' ? 'unread_for_renter' : 'unread_for_hubber';
+        const userField = activeMode === 'renter' ? 'renter_id' : 'hubber_id';
+        
+        const { data, error } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq(userField, currentUser.id)
+          .eq(field, true);
+
+        if (!error && data) {
+          // Se sei nella sezione messaggi, azzera il badge
+          if (currentView === 'messages') {
+            setUnreadCount(0);
+          } else {
+            setUnreadCount(data.length);
+            console.log('🔔 Messaggi non letti:', data.length, 'per', activeMode);
+          }
+        } else if (error) {
+          console.error('❌ Errore query non letti:', error);
+        }
+      } catch (err) {
+        console.error('Errore caricamento messaggi non letti:', err);
+      }
+    };
+
+    loadUnreadCount();
+
+    // 🔔 Ascolta evento per aggiornamento immediato
+    window.addEventListener('unread-changed', loadUnreadCount);
+
+    // Ricarica ogni 30 secondi
+    const interval = setInterval(loadUnreadCount, 30000);
+    
+    return () => {
+      window.removeEventListener('unread-changed', loadUnreadCount);
+      clearInterval(interval);
+    };
+  }, [currentUser, activeMode, currentView]);
 
   return (
     <header className="sticky top-0 z-[9999] bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
@@ -119,8 +168,15 @@ export const Header: React.FC<HeaderProps> = ({
                   currentView === "messages" ? "text-brand" : "text-gray-500"
                 }`}
               >
-                <MessageSquare className="w-4 h-4 mr-1.5" />
-                Messaggi
+                <div className="relative">
+                  <MessageSquare className="w-4 h-4 mr-1.5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1 bg-brand text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+                <span>Messaggi</span>
               </button>
 
               <button
