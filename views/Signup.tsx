@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Briefcase, Check, Upload, ShieldCheck, ArrowRight, ChevronLeft, Camera, LogIn, Gift, Loader2 } from 'lucide-react';
+import { User, Briefcase, Check, Upload, ShieldCheck, ArrowRight, ChevronLeft, Camera, LogIn, Gift, Loader2, Eye, EyeOff } from 'lucide-react';
 import { User as UserType } from '../types';
 import { api } from '../services/api';
 import { referralApi } from '../services/referralApi';
@@ -8,17 +8,22 @@ interface SignupProps {
   onComplete: (user: UserType) => void;
   onLoginRedirect: () => void;
   initialStep?: 'role' | 'login';  // ✅ AGGIUNTO: permette di aprire direttamente il login
+  onForgotPassword?: () => void; // ✅ NUOVO: callback per password dimenticata
 }
 
 type Step = 'role' | 'info' | 'kyc' | 'success' | 'login';
 type Role = 'renter' | 'hubber' | null;
 
-export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role' }) => {
+export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role', onForgotPassword }) => {
   const [step, setStep] = useState<Step>(initialStep);
   const [role, setRole] = useState<Role>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [registeredUser, setRegisteredUser] = useState<UserType | null>(null);
+  
+  // ✅ NUOVO: Stati per toggle password
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   
   // KYC Files State
   const [kycFiles, setKycFiles] = useState<{front: File | null, back: File | null}>({ front: null, back: null });
@@ -197,14 +202,38 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
          </div>
          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input 
-              type="password" 
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-              onKeyDown={(e) => e.key === 'Enter' && handleLoginSubmit()}
-            />
+            <div className="relative">
+              <input 
+                type={showLoginPassword ? 'text' : 'password'}
+                className="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                onKeyDown={(e) => e.key === 'Enter' && handleLoginSubmit()}
+              />
+              <button
+                type="button"
+                onClick={() => setShowLoginPassword(!showLoginPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
+                aria-label={showLoginPassword ? 'Nascondi password' : 'Mostra password'}
+              >
+                {showLoginPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            
+            <div className="flex justify-end mt-1">
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                className="text-xs text-brand hover:text-brand-dark font-medium transition-colors"
+              >
+                Password dimenticata?
+              </button>
+            </div>
          </div>
          <button 
             onClick={handleLoginSubmit}
@@ -346,13 +375,28 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <input 
-            type="password" required
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
-            placeholder="••••••••"
-            value={formData.password}
-            onChange={e => setFormData({...formData, password: e.target.value})}
-          />
+          <div className="relative">
+            <input 
+              type={showRegisterPassword ? 'text' : 'password'}
+              required
+              className="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={e => setFormData({...formData, password: e.target.value})}
+            />
+            <button
+              type="button"
+              onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
+              aria-label={showRegisterPassword ? 'Nascondi password' : 'Mostra password'}
+            >
+              {showRegisterPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
           <p className="text-xs text-gray-400 mt-1">Minimo 8 caratteri.</p>
         </div>
 

@@ -62,10 +62,11 @@ const findRelatedKeywords = (query: string): string[] => {
 interface HomeProps {
   onListingClick: (listing: Listing) => void;
   listings: Listing[];
-   user?: any;
+  bookings?: any[]; // ✅ NUOVO: array prenotazioni dal DB
+  user?: any;
 }
 
-export const Home: React.FC<HomeProps> = ({ onListingClick, listings, user }) => {
+export const Home: React.FC<HomeProps> = ({ onListingClick, listings, bookings = [], user }) => {
   const [activeTab, setActiveTab] = useState<ListingCategory>('oggetto');
   
   // ========== SEARCH BAR STATE ==========
@@ -156,13 +157,43 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, user }) =>
 
   const handleSearch = () => {
     setActiveDropdown(null);
-    console.log('🔍 Ricerca:', {
-      query: searchQuery,
-      city: searchCity,
-      dateStart: searchDateStart,
-      dateEnd: searchDateEnd,
-      aiSuggestions
+  };
+
+  // ========== CONTROLLO DISPONIBILITÀ DATE ==========
+  const isListingAvailable = (listingId: string): boolean => {
+    // Se non ci sono date selezionate, mostra tutti gli annunci
+    if (!searchDateStart || !searchDateEnd) {
+      return true;
+    }
+
+    // Trova tutte le prenotazioni confermate/attive per questo listing
+    const listingBookings = bookings.filter(b => {
+      // Filtra per listing
+      if (b.listing_id !== listingId && b.listingId !== listingId) {
+        return false;
+      }
+
+      // Filtra solo prenotazioni attive (non cancellate/rifiutate)
+      const activeStatuses = ['pending', 'accepted', 'confirmed', 'paid', 'active', 'completed'];
+      return activeStatuses.includes(b.status);
     });
+
+    // Controlla sovrapposizioni con le date di ricerca
+    const searchStart = searchDateStart.toISOString().split('T')[0];
+    const searchEnd = searchDateEnd.toISOString().split('T')[0];
+
+    for (const booking of listingBookings) {
+      const bookingStart = (booking.start_date || booking.startDate || '').split('T')[0];
+      const bookingEnd = (booking.end_date || booking.endDate || '').split('T')[0];
+
+      // Controlla sovrapposizione: booking si sovrappone se:
+      // start_booking <= end_ricerca AND end_booking >= start_ricerca
+      if (bookingStart <= searchEnd && bookingEnd >= searchStart) {
+        return false; // ❌ Occupato in quel periodo
+      }
+    }
+
+    return true; // ✅ Disponibile
   };
 
   // ========== FILTRO LISTINGS CON AI ==========
@@ -191,6 +222,11 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, user }) =>
     // Filtro città
     if (searchCity && !l.location?.toLowerCase().includes(searchCity.toLowerCase())) {
       return false;
+    }
+    
+    // ✅ Filtro disponibilità per date
+    if (!isListingAvailable(l.id)) {
+      return false; // Listing occupato per le date selezionate
     }
     
     // Filtro prezzo

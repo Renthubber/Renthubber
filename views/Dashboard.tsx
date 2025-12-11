@@ -47,7 +47,7 @@ type UserTypeOption =
   | 'societa'
   | 'associazione';
 
-type HubberBookingFilter = 'all' | 'pending' | 'accepted' | 'completed' | 'rejected';
+type HubberBookingFilter = 'all' | 'pending' | 'accepted' | 'completed' | 'rejected' | 'cancelled';
 interface CalendarBooking {
   id: string;
   listingId: string;
@@ -223,6 +223,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // --- STATE GENERALE ---
   const [requests, setRequests] = useState<BookingRequest[]>(MOCK_REQUESTS);
   const [loadingBookings, setLoadingBookings] = useState(false); // ✅ solo per debug/estensioni future
+  
+  // ✅ NUOVO: State per payments reali dal DB
+  const [renterPayments, setRenterPayments] = useState<any[]>([]);
+  const [hubberPayments, setHubberPayments] = useState<any[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  
  const [activeTab, setActiveTab] = useState<
   'overview' | 'payments' | 'security' | 'profile' | 'bookings' | 'hubber_bookings' | 'calendar'
 >('overview');
@@ -298,8 +304,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // FILTRI PRENOTAZIONI HUBBER
   const [hubberBookingFilter, setHubberBookingFilter] =
     useState<HubberBookingFilter>('all');
+  const [hubberTimeFilter, setHubberTimeFilter] = useState<'current' | 'historical'>('current'); // ✅ NUOVO: filtro temporale
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set()); // ✅ NUOVO: mesi espansi
   const [selectedHubberBookingId, setSelectedHubberBookingId] =
     useState<string | null>(null);
+  
+  // ✅ NUOVO: filtri temporali pagamenti hubber
+  const [hubberPaymentsTimeFilter, setHubberPaymentsTimeFilter] = useState<'current' | 'historical'>('current');
+  const [expandedHubberPaymentsMonths, setExpandedHubberPaymentsMonths] = useState<Set<string>>(new Set());
+  
+  // ✅ NUOVO: filtri temporali fatture hubber (condivisi con pagamenti)
+  const [hubberInvoicesTimeFilter, setHubberInvoicesTimeFilter] = useState<'current' | 'historical'>('current');
+  const [expandedHubberInvoicesMonths, setExpandedHubberInvoicesMonths] = useState<Set<string>>(new Set());
 
   // ✅ STATISTICHE HUBBER (dati reali)
   const [hubberStats, setHubberStats] = useState({
@@ -348,6 +364,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // DETTAGLIO PRENOTAZIONE RENTER
   const [selectedRenterBooking, setSelectedRenterBooking] = useState<BookingRequest | null>(null);
+  const [renterTimeFilter, setRenterTimeFilter] = useState<'current' | 'historical'>('current'); // ✅ NUOVO: filtro temporale renter
+  const [expandedRenterMonths, setExpandedRenterMonths] = useState<Set<string>>(new Set()); // ✅ NUOVO: mesi espansi renter
+  
+  // ✅ NUOVO: filtri temporali pagamenti renter
+  const [renterPaymentsTimeFilter, setRenterPaymentsTimeFilter] = useState<'current' | 'historical'>('current');
+  const [expandedRenterPaymentsMonths, setExpandedRenterPaymentsMonths] = useState<Set<string>>(new Set());
   const [bookingDetailData, setBookingDetailData] = useState<{
     listingPrice: number;
     priceUnit: string;
@@ -511,6 +533,28 @@ const [importedCalendars, setImportedCalendars] = useState<ImportedCalendar[]>([
     return { percentage, amount, message };
   };
 
+  // ✅ NUOVO: Helper per collegare payment a booking
+  const getPaymentForBooking = (bookingId: string, isHubber: boolean) => {
+    const payments = isHubber ? hubberPayments : renterPayments;
+    return payments.find(p => p.booking_id === bookingId);
+  };
+
+  // ✅ NUOVO: Helper per ottenere numero transazione/ordine reale o fallback
+  const getTransactionNumber = (bookingId: string, isHubber: boolean) => {
+    const payment = getPaymentForBooking(bookingId, isHubber);
+    
+    if (payment?.provider_payment_id) {
+      // Usa ID Stripe reale
+      return payment.provider_payment_id;
+    }
+    
+    // Fallback: genera numero temporaneo basato su booking ID
+    const prefix = isHubber ? 'TX' : 'RH';
+    const year = new Date().getFullYear();
+    const shortId = bookingId.replace(/-/g, '').slice(0, 6).toUpperCase();
+    return `${prefix}-${year}-${shortId}`;
+  };
+
   // Risincronizza se cambia utente
   useEffect(() => {
     const firstName =
@@ -553,6 +597,7 @@ const [importedCalendars, setImportedCalendars] = useState<ImportedCalendar[]>([
     const load = async () => {
       if (!user?.id) return;
       setLoadingBookings(true);
+      setLoadingPayments(true);
       try {
         // se per qualunque motivo api.bookings non esiste, non rompiamo nulla
         if (!(api as any).bookings) {
@@ -561,10 +606,21 @@ const [importedCalendars, setImportedCalendars] = useState<ImportedCalendar[]>([
           return;
         }
 
+        // ✅ Carica payments contemporaneamente ai bookings
+        const paymentsPromise = activeMode === 'hubber'
+          ? (api as any).payments?.getHubberPayments?.(user.id)
+          : (api as any).payments?.getRenterPayments?.(user.id);
+
         if (activeMode === 'hubber') {
-  const dbBookings =
-    (await (api as any).bookings.getForHubberFromDb?.(user.id)) || [];
+  const [dbBookings, payments] = await Promise.all([
+    (api as any).bookings.getForHubberFromDb?.(user.id) || [],
+    paymentsPromise || Promise.resolve([])
+  ]);
+  
   if (cancelled) return;
+
+  // Salva payments
+  setHubberPayments(payments);
 
   if (dbBookings.length > 0) {
     const mapped = dbBookings.map((b: any) => ({
@@ -577,9 +633,15 @@ const [importedCalendars, setImportedCalendars] = useState<ImportedCalendar[]>([
     setRequests(MOCK_REQUESTS);
   }
 } else {
-  const dbBookings =
-    (await (api as any).bookings.getForRenterFromDb?.(user.id)) || [];
+  const [dbBookings, payments] = await Promise.all([
+    (api as any).bookings.getForRenterFromDb?.(user.id) || [],
+    paymentsPromise || Promise.resolve([])
+  ]);
+  
   if (cancelled) return;
+
+  // Salva payments
+  setRenterPayments(payments);
 
   if (dbBookings.length > 0) {
     const mapped = dbBookings.map((b: any) => ({
@@ -595,7 +657,10 @@ const [importedCalendars, setImportedCalendars] = useState<ImportedCalendar[]>([
         console.error('Errore caricamento prenotazioni (Dashboard):', err);
         if (!cancelled) setRequests(MOCK_REQUESTS);
       } finally {
-        if (!cancelled) setLoadingBookings(false);
+        if (!cancelled) {
+          setLoadingBookings(false);
+          setLoadingPayments(false);
+        }
       }
     };
 
@@ -2679,24 +2744,174 @@ const handleIdFileChange =
   };
 
   // --- PAGAMENTI HUBBER ---
-  const renderHubberPayments = () => (
+  const renderHubberPayments = () => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    
+    // Filtra prenotazioni pagate/completate
+    let paidHubberBookings = hubberBookings.filter((b) =>
+      ['confirmed', 'accepted', 'completed', 'active', 'paid'].includes(b.status)
+    );
+
+    // ✅ Applico filtro temporale
+    if (hubberPaymentsTimeFilter === 'current') {
+      // "Mese corrente"
+      paidHubberBookings = paidHubberBookings.filter(b => {
+        const bookingDate = new Date(b.start_date || b.startDate || '');
+        return bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear;
+      });
+    }
+
+    // ✅ Raggruppa per anno/mese se "Storico"
+    const groupedPayments: Record<string, typeof paidHubberBookings> = {};
+    const groupedByYear: Record<string, Record<string, typeof paidHubberBookings>> = {};
+    
+    if (hubberPaymentsTimeFilter === 'historical') {
+      paidHubberBookings.forEach(b => {
+        const bookingDate = new Date(b.start_date || b.startDate || '');
+        const year = bookingDate.getFullYear();
+        const monthKey = `${year}-${String(bookingDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!groupedPayments[monthKey]) {
+          groupedPayments[monthKey] = [];
+        }
+        groupedPayments[monthKey].push(b);
+        
+        // Raggruppa anche per anno
+        if (!groupedByYear[year]) {
+          groupedByYear[year] = {};
+        }
+        if (!groupedByYear[year][monthKey]) {
+          groupedByYear[year][monthKey] = [];
+        }
+        groupedByYear[year][monthKey].push(b);
+      });
+      
+      // Ordina i gruppi per data (più recente prima)
+      const sortedKeys = Object.keys(groupedPayments).sort().reverse();
+      const sortedGrouped: Record<string, typeof paidHubberBookings> = {};
+      sortedKeys.forEach(key => {
+        sortedGrouped[key] = groupedPayments[key];
+      });
+      Object.assign(groupedPayments, sortedGrouped);
+    }
+
+    // Verifica se ci sono più anni
+    const hasMultipleYears = Object.keys(groupedByYear).length > 1;
+
+    // Toggle espansione mese
+    const togglePaymentMonth = (monthKey: string) => {
+      const newExpanded = new Set(expandedHubberPaymentsMonths);
+      if (newExpanded.has(monthKey)) {
+        newExpanded.delete(monthKey);
+      } else {
+        newExpanded.add(monthKey);
+      }
+      setExpandedHubberPaymentsMonths(newExpanded);
+    };
+
+    // ✅ Filtro fatture per mese corrente o storico
+    let filteredInvoices = userInvoices;
+    if (hubberInvoicesTimeFilter === 'current') {
+      // Mese corrente
+      filteredInvoices = userInvoices.filter(inv => {
+        const invoiceDate = new Date(inv.created_at);
+        return invoiceDate.getMonth() === currentMonth && invoiceDate.getFullYear() === currentYear;
+      });
+    }
+
+    // ✅ Raggruppa fatture per anno/mese se "Storico"
+    const groupedInvoices: Record<string, typeof filteredInvoices> = {};
+    const groupedInvoicesByYear: Record<string, Record<string, typeof filteredInvoices>> = {};
+    
+    if (hubberInvoicesTimeFilter === 'historical') {
+      filteredInvoices.forEach(inv => {
+        const invoiceDate = new Date(inv.created_at);
+        const year = invoiceDate.getFullYear();
+        const monthKey = `${year}-${String(invoiceDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!groupedInvoices[monthKey]) {
+          groupedInvoices[monthKey] = [];
+        }
+        groupedInvoices[monthKey].push(inv);
+        
+        if (!groupedInvoicesByYear[year]) {
+          groupedInvoicesByYear[year] = {};
+        }
+        if (!groupedInvoicesByYear[year][monthKey]) {
+          groupedInvoicesByYear[year][monthKey] = [];
+        }
+        groupedInvoicesByYear[year][monthKey].push(inv);
+      });
+      
+      const sortedKeys = Object.keys(groupedInvoices).sort().reverse();
+      const sortedGrouped: Record<string, typeof filteredInvoices> = {};
+      sortedKeys.forEach(key => {
+        sortedGrouped[key] = groupedInvoices[key];
+      });
+      Object.assign(groupedInvoices, sortedGrouped);
+    }
+
+    const hasMultipleInvoiceYears = Object.keys(groupedInvoicesByYear).length > 1;
+
+    const toggleInvoiceMonth = (monthKey: string) => {
+      const newExpanded = new Set(expandedHubberInvoicesMonths);
+      if (newExpanded.has(monthKey)) {
+        newExpanded.delete(monthKey);
+      } else {
+        newExpanded.add(monthKey);
+      }
+      setExpandedHubberInvoicesMonths(newExpanded);
+    };
+
+    return (
     <div className="space-y-8 animate-in fade-in duration-300">
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-100">
-          <h3 className="font-bold text-gray-900 flex items-center">
-            <DollarSign className="w-5 h-5 mr-2 text-brand" /> Dettaglio
-            Prenotazioni & Guadagni
-          </h3>
-          <p className="text-gray-500 text-sm mt-1">
-            Lista delle prenotazioni completate o accettate con dettaglio
-            commissioni.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div>
+              <h3 className="font-bold text-gray-900 flex items-center">
+                <DollarSign className="w-5 h-5 mr-2 text-brand" /> Dettaglio
+                Prenotazioni & Guadagni
+              </h3>
+              <p className="text-gray-500 text-sm mt-1">
+                Lista delle prenotazioni completate o accettate con dettaglio
+                commissioni.
+              </p>
+            </div>
+            
+            {/* ✅ Toggle temporale */}
+            <div className="inline-flex bg-white rounded-xl border border-gray-200 p-1 text-xs justify-center sm:justify-start">
+              <button
+                onClick={() => setHubberPaymentsTimeFilter('current')}
+                className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+                  hubberPaymentsTimeFilter === 'current'
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                🔵 Mese corrente
+              </button>
+              <button
+                onClick={() => setHubberPaymentsTimeFilter('historical')}
+                className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+                  hubberPaymentsTimeFilter === 'historical'
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                📅 Storico
+              </button>
+            </div>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600">
             <thead className="bg-gray-50 text-gray-900 font-semibold border-b border-gray-100">
               <tr>
                 <th className="p-4">Data</th>
+                <th className="p-4">N° Transazione</th>
                 <th className="p-4">Annuncio</th>
                 <th className="p-4">Renter</th>
                 <th className="p-4">Stato</th>
@@ -2706,52 +2921,252 @@ const handleIdFileChange =
               </tr>
             </thead>
             <tbody>
-              {hubberBookings.map((booking) => (
-                <tr
-                  key={booking.id}
-                  className="border-b border-gray-50 hover:bg-gray-50"
-                >
-                  <td className="p-4 text-xs whitespace-nowrap">
-                    {booking.dates}
-                  </td>
-                  <td className="p-4 font-medium text-gray-900">
-                    {booking.listingTitle}
-                  </td>
-                  <td className="p-4">
-                    <button
-                      onClick={() => {
-                        if (onViewRenterProfile && (booking as any).renterId) {
-                          onViewRenterProfile({
-                            id: (booking as any).renterId,
-                            name: booking.renterName,
-                            avatar: booking.renterAvatar,
-                          });
-                        }
-                      }}
-                      className="text-gray-600 hover:text-brand hover:underline"
-                    >
-                      {booking.renterName}
-                    </button>
-                  </td>
-                  <td className="p-4">
-                    {renderBookingStatusBadge(booking.status)}
-                  </td>
-                  <td className="p-4 font-bold">
-                    €{booking.totalPrice.toFixed(2)}
-                  </td>
-                  <td className="p-4 text-red-500">
-                    - €{booking.commission?.toFixed(2) || '0.00'}
-                  </td>
-                  <td className="p-4 font-bold text-green-600 text-right">
-                    €
-                    {booking.netEarnings?.toFixed(2) ||
-                      booking.totalPrice.toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-              {hubberBookings.length === 0 && (
+              {/* ✅ Modalità "Mese corrente" - Lista normale */}
+              {hubberPaymentsTimeFilter === 'current' && paidHubberBookings.map((booking) => {
+                const bookingDate = booking.start_date || booking.startDate || '';
+                const transactionNumber = getTransactionNumber(booking.id, true); // ✅ USA HELPER GLOBALE
+                
+                return (
+                  <tr
+                    key={booking.id}
+                    className="border-b border-gray-50 hover:bg-gray-50"
+                  >
+                    <td className="p-4 text-xs whitespace-nowrap">
+                      {booking.dates}
+                    </td>
+                    <td className="p-4 font-mono text-xs text-gray-600">
+                      {transactionNumber}
+                    </td>
+                    <td className="p-4 font-medium text-gray-900">
+                      {booking.listingTitle}
+                    </td>
+                    <td className="p-4">
+                      <button
+                        onClick={() => {
+                          if (onViewRenterProfile && (booking as any).renterId) {
+                            onViewRenterProfile({
+                              id: (booking as any).renterId,
+                              name: booking.renterName,
+                              avatar: booking.renterAvatar,
+                            });
+                          }
+                        }}
+                        className="text-gray-600 hover:text-brand hover:underline"
+                      >
+                        {booking.renterName}
+                      </button>
+                    </td>
+                    <td className="p-4">
+                      {renderBookingStatusBadge(booking.status)}
+                    </td>
+                    <td className="p-4 font-bold">
+                      €{booking.totalPrice.toFixed(2)}
+                    </td>
+                    <td className="p-4 text-red-500">
+                      - €{booking.commission?.toFixed(2) || '0.00'}
+                    </td>
+                    <td className="p-4 font-bold text-green-600 text-right">
+                      €
+                      {booking.netEarnings?.toFixed(2) ||
+                        booking.totalPrice.toFixed(2)}
+                    </td>
+                  </tr>
+                );
+              })}
+
+              {/* ✅ Modalità "Storico" - Raggruppato per anno/mese */}
+              {hubberPaymentsTimeFilter === 'historical' && (() => {
+                const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+                                   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+                
+                if (hasMultipleYears) {
+                  return Object.keys(groupedByYear).sort().reverse().map(year => (
+                    <React.Fragment key={year}>
+                      <tr className="bg-gray-100 border-b-2 border-gray-300">
+                        <td colSpan={8} className="p-4">
+                          <span className="text-base font-bold text-gray-900">
+                            📆 {year}
+                          </span>
+                        </td>
+                      </tr>
+                      
+                      {Object.keys(groupedByYear[year]).sort().reverse().map(monthKey => {
+                        const monthPayments = groupedByYear[year][monthKey];
+                        const [, month] = monthKey.split('-');
+                        const monthName = monthNames[parseInt(month) - 1];
+                        const isExpanded = expandedHubberPaymentsMonths.has(monthKey);
+                        
+                        return (
+                          <React.Fragment key={monthKey}>
+                            <tr 
+                              className="bg-gray-50 border-b border-gray-200 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => togglePaymentMonth(monthKey)}
+                            >
+                              <td colSpan={8} className="p-3">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <span className="text-sm font-bold text-gray-800">
+                                      {isExpanded ? '▼' : '▶'} {monthName}
+                                    </span>
+                                    <span className="ml-2 text-xs text-gray-500">
+                                      ({monthPayments.length} pagamenti)
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-gray-400">
+                                    {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                            
+                            {isExpanded && monthPayments.map((booking) => {
+                              const bookingDate = booking.start_date || booking.startDate || '';
+                              const transactionNumber = getTransactionNumber(booking.id, true); // ✅ USA HELPER GLOBALE
+                              
+                              return (
+                                <tr
+                                  key={booking.id}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="border-b border-gray-50 hover:bg-gray-50"
+                                >
+                                  <td className="p-4 text-xs whitespace-nowrap">
+                                    {booking.dates}
+                                  </td>
+                                  <td className="p-4 font-mono text-xs text-gray-600">
+                                    {transactionNumber}
+                                  </td>
+                                  <td className="p-4 font-medium text-gray-900">
+                                    {booking.listingTitle}
+                                  </td>
+                                  <td className="p-4">
+                                    <button
+                                      onClick={() => {
+                                        if (onViewRenterProfile && (booking as any).renterId) {
+                                          onViewRenterProfile({
+                                            id: (booking as any).renterId,
+                                            name: booking.renterName,
+                                            avatar: booking.renterAvatar,
+                                          });
+                                        }
+                                      }}
+                                      className="text-gray-600 hover:text-brand hover:underline"
+                                    >
+                                      {booking.renterName}
+                                    </button>
+                                  </td>
+                                  <td className="p-4">
+                                    {renderBookingStatusBadge(booking.status)}
+                                  </td>
+                                  <td className="p-4 font-bold">
+                                    €{booking.totalPrice.toFixed(2)}
+                                  </td>
+                                  <td className="p-4 text-red-500">
+                                    - €{booking.commission?.toFixed(2) || '0.00'}
+                                  </td>
+                                  <td className="p-4 font-bold text-green-600 text-right">
+                                    €
+                                    {booking.netEarnings?.toFixed(2) ||
+                                      booking.totalPrice.toFixed(2)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      })}
+                    </React.Fragment>
+                  ));
+                } else {
+                  return Object.keys(groupedPayments).map((monthKey) => {
+                    const monthPayments = groupedPayments[monthKey];
+                    const [year, month] = monthKey.split('-');
+                    const monthName = monthNames[parseInt(month) - 1];
+                    const isExpanded = expandedHubberPaymentsMonths.has(monthKey);
+                    
+                    return (
+                      <React.Fragment key={monthKey}>
+                        <tr 
+                          className="bg-gray-50 border-b-2 border-gray-200 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => togglePaymentMonth(monthKey)}
+                        >
+                          <td colSpan={8} className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-sm font-bold text-gray-800">
+                                  {isExpanded ? '▼' : '▶'} {monthName} {year}
+                                </span>
+                                <span className="ml-2 text-xs text-gray-500">
+                                  ({monthPayments.length} pagamenti)
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-400">
+                                {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                        
+                        {isExpanded && monthPayments.map((booking) => {
+                          const bookingDate = booking.start_date || booking.startDate || '';
+                          const transactionNumber = getTransactionNumber(booking.id, true); // ✅ USA HELPER GLOBALE
+                          
+                          return (
+                            <tr
+                              key={booking.id}
+                              onClick={(e) => e.stopPropagation()}
+                              className="border-b border-gray-50 hover:bg-gray-50"
+                            >
+                              <td className="p-4 text-xs whitespace-nowrap">
+                                {booking.dates}
+                              </td>
+                              <td className="p-4 font-mono text-xs text-gray-600">
+                                {transactionNumber}
+                              </td>
+                              <td className="p-4 font-medium text-gray-900">
+                                {booking.listingTitle}
+                              </td>
+                              <td className="p-4">
+                                <button
+                                  onClick={() => {
+                                    if (onViewRenterProfile && (booking as any).renterId) {
+                                      onViewRenterProfile({
+                                        id: (booking as any).renterId,
+                                        name: booking.renterName,
+                                        avatar: booking.renterAvatar,
+                                      });
+                                    }
+                                  }}
+                                  className="text-gray-600 hover:text-brand hover:underline"
+                                >
+                                  {booking.renterName}
+                                </button>
+                              </td>
+                              <td className="p-4">
+                                {renderBookingStatusBadge(booking.status)}
+                              </td>
+                              <td className="p-4 font-bold">
+                                €{booking.totalPrice.toFixed(2)}
+                              </td>
+                              <td className="p-4 text-red-500">
+                                - €{booking.commission?.toFixed(2) || '0.00'}
+                              </td>
+                              <td className="p-4 font-bold text-green-600 text-right">
+                                €
+                                {booking.netEarnings?.toFixed(2) ||
+                                  booking.totalPrice.toFixed(2)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  });
+                }
+              })()}
+
+              {paidHubberBookings.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-gray-400">
+                  <td colSpan={8} className="p-8 text-center text-gray-400">
                     Nessuna prenotazione registrata.
                   </td>
                 </tr>
@@ -2764,14 +3179,42 @@ const handleIdFileChange =
       {/* Fatture */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-100">
-          <h3 className="font-bold text-gray-900 flex items-center">
-            <FileText className="w-5 h-5 mr-2 text-brand" /> Fatture da
-            Renthubber
-          </h3>
-          <p className="text-gray-500 text-sm mt-1">
-            Le fatture per le commissioni del servizio trattenute dalla
-            piattaforma.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div>
+              <h3 className="font-bold text-gray-900 flex items-center">
+                <FileText className="w-5 h-5 mr-2 text-brand" /> Fatture da
+                Renthubber
+              </h3>
+              <p className="text-gray-500 text-sm mt-1">
+                Le fatture per le commissioni del servizio trattenute dalla
+                piattaforma.
+              </p>
+            </div>
+            
+            {/* ✅ Toggle temporale */}
+            <div className="inline-flex bg-white rounded-xl border border-gray-200 p-1 text-xs justify-center sm:justify-start">
+              <button
+                onClick={() => setHubberInvoicesTimeFilter('current')}
+                className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+                  hubberInvoicesTimeFilter === 'current'
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                🔵 Mese corrente
+              </button>
+              <button
+                onClick={() => setHubberInvoicesTimeFilter('historical')}
+                className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+                  hubberInvoicesTimeFilter === 'historical'
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                📅 Storico
+              </button>
+            </div>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600">
@@ -2786,7 +3229,8 @@ const handleIdFileChange =
               </tr>
             </thead>
             <tbody>
-             {userInvoices.map((inv) => (
+             {/* ✅ Modalità "Mese corrente" - Lista normale */}
+             {hubberInvoicesTimeFilter === 'current' && filteredInvoices.map((inv) => (
                 <tr
                   key={inv.id}
                   className="border-b border-gray-50 hover:bg-gray-50"
@@ -2838,7 +3282,200 @@ const handleIdFileChange =
                   </td>
                 </tr>
               ))}
-              {userInvoices.length === 0 && (
+
+              {/* ✅ Modalità "Storico" - Raggruppato per anno/mese */}
+              {hubberInvoicesTimeFilter === 'historical' && (() => {
+                const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+                                   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+                
+                if (hasMultipleInvoiceYears) {
+                  return Object.keys(groupedInvoicesByYear).sort().reverse().map(year => (
+                    <React.Fragment key={year}>
+                      <tr className="bg-gray-100 border-b-2 border-gray-300">
+                        <td colSpan={6} className="p-4">
+                          <span className="text-base font-bold text-gray-900">
+                            📆 {year}
+                          </span>
+                        </td>
+                      </tr>
+                      
+                      {Object.keys(groupedInvoicesByYear[year]).sort().reverse().map(monthKey => {
+                        const monthInvoices = groupedInvoicesByYear[year][monthKey];
+                        const [, month] = monthKey.split('-');
+                        const monthName = monthNames[parseInt(month) - 1];
+                        const isExpanded = expandedHubberInvoicesMonths.has(monthKey);
+                        
+                        return (
+                          <React.Fragment key={monthKey}>
+                            <tr 
+                              className="bg-gray-50 border-b border-gray-200 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => toggleInvoiceMonth(monthKey)}
+                            >
+                              <td colSpan={6} className="p-3">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <span className="text-sm font-bold text-gray-800">
+                                      {isExpanded ? '▼' : '▶'} {monthName}
+                                    </span>
+                                    <span className="ml-2 text-xs text-gray-500">
+                                      ({monthInvoices.length} fatture)
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-gray-400">
+                                    {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                            
+                            {isExpanded && monthInvoices.map((inv) => (
+                              <tr
+                                key={inv.id}
+                                onClick={(e) => e.stopPropagation()}
+                                className="border-b border-gray-50 hover:bg-gray-50"
+                              >
+                                <td className="p-4 text-xs">
+                                  {new Date(inv.created_at).toLocaleDateString('it-IT', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric'
+                                  })}
+                                </td>
+                                <td className="p-4 font-mono font-medium text-gray-900">
+                                  {inv.invoice_number}
+                                </td>
+                                <td className="p-4">
+                                  {inv.period_start && inv.period_end 
+                                    ? `${new Date(inv.period_start).toLocaleDateString('it-IT')} - ${new Date(inv.period_end).toLocaleDateString('it-IT')}`
+                                    : inv.description?.slice(0, 40) || '—'
+                                  }
+                                </td>
+                                <td className="p-4 font-bold">
+                                  €{Number(inv.total || 0).toFixed(2)}
+                                </td>
+                                <td className="p-4">
+                                  <span className={`flex items-center text-xs font-bold uppercase ${
+                                    inv.status === 'paid' ? 'text-green-600' :
+                                    inv.status === 'issued' ? 'text-blue-600' :
+                                    inv.status === 'sent' ? 'text-yellow-600' :
+                                    'text-gray-500'
+                                  }`}>
+                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                    {inv.status === 'paid' ? 'Pagata' :
+                                     inv.status === 'issued' ? 'Emessa' :
+                                     inv.status === 'sent' ? 'Inviata' :
+                                     inv.status === 'draft' ? 'Bozza' : inv.status}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-right">
+                                  <button
+                                    className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
+                                    title="Scarica PDF"
+                                    onClick={() => {
+                                      console.log('Download fattura:', inv.invoice_number);
+                                      alert(`Download ${inv.invoice_number} - Funzionalità in arrivo!`);
+                                    }}
+                                  >
+                                    <Download className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </React.Fragment>
+                        );
+                      })}
+                    </React.Fragment>
+                  ));
+                } else {
+                  return Object.keys(groupedInvoices).map((monthKey) => {
+                    const monthInvoices = groupedInvoices[monthKey];
+                    const [year, month] = monthKey.split('-');
+                    const monthName = monthNames[parseInt(month) - 1];
+                    const isExpanded = expandedHubberInvoicesMonths.has(monthKey);
+                    
+                    return (
+                      <React.Fragment key={monthKey}>
+                        <tr 
+                          className="bg-gray-50 border-b-2 border-gray-200 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => toggleInvoiceMonth(monthKey)}
+                        >
+                          <td colSpan={6} className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-sm font-bold text-gray-800">
+                                  {isExpanded ? '▼' : '▶'} {monthName} {year}
+                                </span>
+                                <span className="ml-2 text-xs text-gray-500">
+                                  ({monthInvoices.length} fatture)
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-400">
+                                {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                        
+                        {isExpanded && monthInvoices.map((inv) => (
+                          <tr
+                            key={inv.id}
+                            onClick={(e) => e.stopPropagation()}
+                            className="border-b border-gray-50 hover:bg-gray-50"
+                          >
+                            <td className="p-4 text-xs">
+                              {new Date(inv.created_at).toLocaleDateString('it-IT', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </td>
+                            <td className="p-4 font-mono font-medium text-gray-900">
+                              {inv.invoice_number}
+                            </td>
+                            <td className="p-4">
+                              {inv.period_start && inv.period_end 
+                                ? `${new Date(inv.period_start).toLocaleDateString('it-IT')} - ${new Date(inv.period_end).toLocaleDateString('it-IT')}`
+                                : inv.description?.slice(0, 40) || '—'
+                              }
+                            </td>
+                            <td className="p-4 font-bold">
+                              €{Number(inv.total || 0).toFixed(2)}
+                            </td>
+                            <td className="p-4">
+                              <span className={`flex items-center text-xs font-bold uppercase ${
+                                inv.status === 'paid' ? 'text-green-600' :
+                                inv.status === 'issued' ? 'text-blue-600' :
+                                inv.status === 'sent' ? 'text-yellow-600' :
+                                'text-gray-500'
+                              }`}>
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                {inv.status === 'paid' ? 'Pagata' :
+                                 inv.status === 'issued' ? 'Emessa' :
+                                 inv.status === 'sent' ? 'Inviata' :
+                                 inv.status === 'draft' ? 'Bozza' : inv.status}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right">
+                              <button
+                                className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
+                                title="Scarica PDF"
+                                onClick={() => {
+                                  console.log('Download fattura:', inv.invoice_number);
+                                  alert(`Download ${inv.invoice_number} - Funzionalità in arrivo!`);
+                                }}
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    );
+                  });
+                }
+              })()}
+
+              {filteredInvoices.length === 0 && (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-gray-400">
                     {loadingInvoices ? 'Caricamento fatture...' : 'Nessuna fattura disponibile.'}
@@ -2850,21 +3487,124 @@ const handleIdFileChange =
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   // --- PRENOTAZIONI RENTER ---
-  const renderRenterBookings = () => (
+  const renderRenterBookings = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Applico filtro temporale
+    let filteredRenterBookings = renterBookings.filter((b) => {
+      if (renterTimeFilter === 'current') {
+        // "In corso" = prenotazioni attive, future o correnti
+        const endDate = new Date(b.end_date || b.endDate || '');
+        const activeStatuses = ['pending', 'accepted', 'confirmed', 'paid', 'active'];
+        
+        // Mostra se: (1) stato attivo E (2) data fine >= oggi
+        return activeStatuses.includes(b.status) && endDate >= today;
+      }
+      
+      // "Storico" = tutte le prenotazioni
+      return true;
+    });
+
+    // ✅ Raggruppa per mese se "Storico"
+    const groupedBookings: Record<string, typeof filteredRenterBookings> = {};
+    const groupedByYear: Record<string, Record<string, typeof filteredRenterBookings>> = {};
+    
+    if (renterTimeFilter === 'historical') {
+      filteredRenterBookings.forEach(b => {
+        const startDate = new Date(b.start_date || b.startDate || '');
+        const year = startDate.getFullYear();
+        const monthKey = `${year}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!groupedBookings[monthKey]) {
+          groupedBookings[monthKey] = [];
+        }
+        groupedBookings[monthKey].push(b);
+        
+        // Raggruppa anche per anno
+        if (!groupedByYear[year]) {
+          groupedByYear[year] = {};
+        }
+        if (!groupedByYear[year][monthKey]) {
+          groupedByYear[year][monthKey] = [];
+        }
+        groupedByYear[year][monthKey].push(b);
+      });
+      
+      // Ordina i gruppi per data (più recente prima)
+      const sortedKeys = Object.keys(groupedBookings).sort().reverse();
+      const sortedGrouped: Record<string, typeof filteredRenterBookings> = {};
+      sortedKeys.forEach(key => {
+        sortedGrouped[key] = groupedBookings[key];
+      });
+      Object.assign(groupedBookings, sortedGrouped);
+    }
+
+    // Verifica se ci sono più anni
+    const hasMultipleYears = Object.keys(groupedByYear).length > 1;
+
+    // Toggle espansione mese
+    const toggleRenterMonth = (monthKey: string) => {
+      const newExpanded = new Set(expandedRenterMonths);
+      if (newExpanded.has(monthKey)) {
+        newExpanded.delete(monthKey);
+      } else {
+        newExpanded.add(monthKey);
+      }
+      setExpandedRenterMonths(newExpanded);
+    };
+
+    return (
     <div className="space-y-8 animate-in fade-in duration-300">
+      {/* ✅ NUOVO: Header con toggle temporale */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center md:text-left">
+            Le mie prenotazioni
+          </h2>
+          <p className="text-sm text-gray-500">
+            Tutte le prenotazioni che hai effettuato su Renthubber.
+          </p>
+        </div>
+
+        {/* Toggle temporale */}
+        <div className="inline-flex bg-white rounded-xl border border-gray-200 p-1 text-xs justify-center sm:justify-start">
+          <button
+            onClick={() => setRenterTimeFilter('current')}
+            className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+              renterTimeFilter === 'current'
+                ? 'bg-brand text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            🔵 In corso
+          </button>
+          <button
+            onClick={() => setRenterTimeFilter('historical')}
+            className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+              renterTimeFilter === 'historical'
+                ? 'bg-brand text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            📅 Storico
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* LISTA PRENOTAZIONI */}
         <div className={`${selectedRenterBooking ? 'lg:col-span-2' : 'lg:col-span-3'} bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden`}>
           <div className="p-6 border-b border-gray-100">
             <h3 className="font-bold text-gray-900 flex items-center">
-              <Calendar className="w-5 h-5 mr-2 text-brand" /> Le mie
-              prenotazioni
+              <Calendar className="w-5 h-5 mr-2 text-brand" /> {filteredRenterBookings.length} prenotazioni
             </h3>
             <p className="text-gray-500 text-sm mt-1">
-              Clicca su una prenotazione per vedere i dettagli. Qui trovi tutte le prenotazioni che hai effettuato su Renthubber.
+              Clicca su una prenotazione per vedere i dettagli.
             </p>
           </div>
 
@@ -2880,7 +3620,8 @@ const handleIdFileChange =
                 </tr>
               </thead>
               <tbody>
-                {renterBookings.map((booking) => {
+                {/* ✅ Modalità "In corso" - Lista normale */}
+                {renterTimeFilter === 'current' && filteredRenterBookings.map((booking) => {
                   const isSelected = selectedRenterBooking?.id === booking.id;
                   // Usa renterTotalPaid se disponibile, altrimenti fallback
                   const displayTotal = (booking as any).renterTotalPaid || booking.totalPrice;
@@ -2943,7 +3684,229 @@ const handleIdFileChange =
                   );
                 })}
 
-                {renterBookings.length === 0 && (
+                {/* ✅ Modalità "Storico" - Raggruppato per anno/mese */}
+                {renterTimeFilter === 'historical' && (() => {
+                  const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+                                     'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+                  
+                  if (hasMultipleYears) {
+                    // Mostra anni separati
+                    return Object.keys(groupedByYear).sort().reverse().map(year => (
+                      <React.Fragment key={year}>
+                        {/* Header Anno */}
+                        <tr className="bg-gray-100 border-b-2 border-gray-300">
+                          <td colSpan={5} className="p-4">
+                            <span className="text-base font-bold text-gray-900">
+                              📆 {year}
+                            </span>
+                          </td>
+                        </tr>
+                        
+                        {/* Mesi dell'anno */}
+                        {Object.keys(groupedByYear[year]).sort().reverse().map(monthKey => {
+                          const monthBookings = groupedByYear[year][monthKey];
+                          const [, month] = monthKey.split('-');
+                          const monthName = monthNames[parseInt(month) - 1];
+                          const isExpanded = expandedRenterMonths.has(monthKey);
+                          
+                          return (
+                            <React.Fragment key={monthKey}>
+                              {/* Header mese espandibile */}
+                              <tr 
+                                className="bg-gray-50 border-b border-gray-200 hover:bg-gray-100 cursor-pointer"
+                                onClick={() => toggleRenterMonth(monthKey)}
+                              >
+                                <td colSpan={5} className="p-3">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <span className="text-sm font-bold text-gray-800">
+                                        {isExpanded ? '▼' : '▶'} {monthName}
+                                      </span>
+                                      <span className="ml-2 text-xs text-gray-500">
+                                        ({monthBookings.length} prenotazioni)
+                                      </span>
+                                    </div>
+                                    <span className="text-xs text-gray-400">
+                                      {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                              
+                              {/* Prenotazioni del mese (solo se espanso) */}
+                              {isExpanded && monthBookings.map((booking) => {
+                                const isSelected = selectedRenterBooking?.id === booking.id;
+                                const displayTotal = (booking as any).renterTotalPaid || booking.totalPrice;
+                                
+                                return (
+                                  <tr
+                                    key={booking.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      loadBookingDetail(booking);
+                                    }}
+                                    className={`border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors ${
+                                      isSelected ? 'bg-blue-50 hover:bg-blue-50' : ''
+                                    }`}
+                                  >
+                                    <td className="p-4 text-xs whitespace-nowrap">
+                                      {booking.dates}
+                                    </td>
+                                    <td className="p-4 font-medium text-gray-900">
+                                      {booking.listingTitle}
+                                    </td>
+                                    <td className="p-4">
+                                      {renderBookingStatusBadge(booking.status)}
+                                    </td>
+                                    <td className="p-4 font-bold text-right">
+                                      €{displayTotal.toFixed(2)}
+                                    </td>
+                                   <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+  {booking.status === 'completed' ? (
+    (booking as any).hasReviewed ? (
+      <span className="px-3 py-1.5 rounded-lg text-xs font-bold text-green-600 bg-green-50 inline-flex items-center gap-1">
+        <CheckCircle2 className="w-3 h-3" /> Recensito
+      </span>
+    ) : (
+      <button
+        onClick={() => openReviewModal(booking, 'renter_to_hubber')}
+        className="px-3 py-1.5 rounded-lg text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors inline-flex items-center gap-1"
+      >
+        <Star className="w-3 h-3" /> Recensione
+      </button>
+    )
+  ) : canCancelBooking(booking.status) ? (
+    <div className="flex items-center justify-center gap-2">
+      <button
+        onClick={() => openModifyModal(booking)}
+        className="px-3 py-1.5 rounded-lg text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-1"
+      >
+        <Edit3 className="w-3 h-3" />
+        Modifica
+      </button>
+      <button
+        onClick={() => openCancelModal(booking)}
+        className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+      >
+        Cancella
+      </button>
+    </div>
+  ) : (
+    <span className="text-xs text-gray-400">—</span>
+  )}
+</td>
+                                  </tr>
+                                );
+                              })}
+                            </React.Fragment>
+                          );
+                        })}
+                      </React.Fragment>
+                    ));
+                  } else {
+                    // Anno singolo - mostra solo mesi
+                    return Object.keys(groupedBookings).map((monthKey) => {
+                      const monthBookings = groupedBookings[monthKey];
+                      const [year, month] = monthKey.split('-');
+                      const monthName = monthNames[parseInt(month) - 1];
+                      const isExpanded = expandedRenterMonths.has(monthKey);
+                      
+                      return (
+                        <React.Fragment key={monthKey}>
+                          {/* Header mese espandibile */}
+                          <tr 
+                            className="bg-gray-50 border-b-2 border-gray-200 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => toggleRenterMonth(monthKey)}
+                          >
+                            <td colSpan={5} className="p-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="text-sm font-bold text-gray-800">
+                                    {isExpanded ? '▼' : '▶'} {monthName} {year}
+                                  </span>
+                                  <span className="ml-2 text-xs text-gray-500">
+                                    ({monthBookings.length} prenotazioni)
+                                  </span>
+                                </div>
+                                <span className="text-xs text-gray-400">
+                                  {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                          
+                          {/* Prenotazioni del mese (solo se espanso) */}
+                          {isExpanded && monthBookings.map((booking) => {
+                            const isSelected = selectedRenterBooking?.id === booking.id;
+                            const displayTotal = (booking as any).renterTotalPaid || booking.totalPrice;
+                            
+                            return (
+                              <tr
+                                key={booking.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  loadBookingDetail(booking);
+                                }}
+                                className={`border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors ${
+                                  isSelected ? 'bg-blue-50 hover:bg-blue-50' : ''
+                                }`}
+                              >
+                                <td className="p-4 text-xs whitespace-nowrap">
+                                  {booking.dates}
+                                </td>
+                                <td className="p-4 font-medium text-gray-900">
+                                  {booking.listingTitle}
+                                </td>
+                                <td className="p-4">
+                                  {renderBookingStatusBadge(booking.status)}
+                                </td>
+                                <td className="p-4 font-bold text-right">
+                                  €{displayTotal.toFixed(2)}
+                                </td>
+                               <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+  {booking.status === 'completed' ? (
+    (booking as any).hasReviewed ? (
+      <span className="px-3 py-1.5 rounded-lg text-xs font-bold text-green-600 bg-green-50 inline-flex items-center gap-1">
+        <CheckCircle2 className="w-3 h-3" /> Recensito
+      </span>
+    ) : (
+      <button
+        onClick={() => openReviewModal(booking, 'renter_to_hubber')}
+        className="px-3 py-1.5 rounded-lg text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors inline-flex items-center gap-1"
+      >
+        <Star className="w-3 h-3" /> Recensione
+      </button>
+    )
+  ) : canCancelBooking(booking.status) ? (
+    <div className="flex items-center justify-center gap-2">
+      <button
+        onClick={() => openModifyModal(booking)}
+        className="px-3 py-1.5 rounded-lg text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-1"
+      >
+        <Edit3 className="w-3 h-3" />
+        Modifica
+      </button>
+      <button
+        onClick={() => openCancelModal(booking)}
+        className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+      >
+        Cancella
+      </button>
+    </div>
+  ) : (
+    <span className="text-xs text-gray-400">—</span>
+  )}
+</td>
+                              </tr>
+                            );
+                          })}
+                        </React.Fragment>
+                      );
+                    });
+                  }
+                })()}
+
+                {filteredRenterBookings.length === 0 && (
                   <tr>
                     <td colSpan={5} className="p-8 text-center text-gray-400">
                       Non hai ancora effettuato nessuna prenotazione.
@@ -3206,17 +4169,87 @@ const handleIdFileChange =
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   // --- PRENOTAZIONI HUBBER: LISTA + DETTAGLIO ---
   const renderHubberBookingsList = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     // Applico il filtro scelto
-    const filteredHubberBookings = hubberBookings.filter((b) => {
-      if (hubberBookingFilter === 'all') return true;
-      // Considero anche 'confirmed' come stato valido
-      if (hubberBookingFilter === 'accepted' && b.status === 'confirmed') return true;
-      return b.status === hubberBookingFilter;
+    let filteredHubberBookings = hubberBookings.filter((b) => {
+      // Filtro per stato
+      if (hubberBookingFilter !== 'all') {
+        // Considero anche 'confirmed' come stato valido per 'accepted'
+        if (hubberBookingFilter === 'accepted' && b.status === 'confirmed') {
+          // continua
+        } else if (b.status !== hubberBookingFilter) {
+          return false;
+        }
+      }
+
+      // ✅ NUOVO: Filtro temporale
+      if (hubberTimeFilter === 'current') {
+        // "In corso" = prenotazioni attive, future o correnti
+        const endDate = new Date(b.end_date || b.endDate || '');
+        const activeStatuses = ['pending', 'accepted', 'confirmed', 'paid', 'active'];
+        
+        // Mostra se: (1) stato attivo E (2) data fine >= oggi
+        return activeStatuses.includes(b.status) && endDate >= today;
+      }
+      
+      // "Storico" = tutte le prenotazioni (già filtrate per stato sopra)
+      return true;
     });
+
+    // ✅ NUOVO: Raggruppa per mese se "Storico"
+    const groupedBookings: Record<string, typeof filteredHubberBookings> = {};
+    const groupedByYear: Record<string, Record<string, typeof filteredHubberBookings>> = {};
+    
+    if (hubberTimeFilter === 'historical') {
+      filteredHubberBookings.forEach(b => {
+        const startDate = new Date(b.start_date || b.startDate || '');
+        const year = startDate.getFullYear();
+        const monthKey = `${year}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!groupedBookings[monthKey]) {
+          groupedBookings[monthKey] = [];
+        }
+        groupedBookings[monthKey].push(b);
+        
+        // Raggruppa anche per anno
+        if (!groupedByYear[year]) {
+          groupedByYear[year] = {};
+        }
+        if (!groupedByYear[year][monthKey]) {
+          groupedByYear[year][monthKey] = [];
+        }
+        groupedByYear[year][monthKey].push(b);
+      });
+      
+      // Ordina i gruppi per data (più recente prima)
+      const sortedKeys = Object.keys(groupedBookings).sort().reverse();
+      const sortedGrouped: Record<string, typeof filteredHubberBookings> = {};
+      sortedKeys.forEach(key => {
+        sortedGrouped[key] = groupedBookings[key];
+      });
+      Object.assign(groupedBookings, sortedGrouped);
+    }
+
+    // Verifica se ci sono più anni
+    const hasMultipleYears = Object.keys(groupedByYear).length > 1;
+
+    // Toggle espansione mese
+    const toggleMonth = (monthKey: string) => {
+      const newExpanded = new Set(expandedMonths);
+      if (newExpanded.has(monthKey)) {
+        newExpanded.delete(monthKey);
+      } else {
+        newExpanded.add(monthKey);
+      }
+      setExpandedMonths(newExpanded);
+    };
 
     const selectedBooking =
       filteredHubberBookings.find((b) => b.id === selectedHubberBookingId) ||
@@ -3235,29 +4268,56 @@ const handleIdFileChange =
             </p>
           </div>
 
-          {/* Filtri stato */}
-          <div className="inline-flex bg-white rounded-xl border border-gray-200 p-1 text-xs">
-            {(
-              [
-                { key: 'all', label: 'Tutte' },
-                { key: 'pending', label: 'In attesa' },
-                { key: 'accepted', label: 'Accettate' },
-                { key: 'completed', label: 'Completate' },
-                { key: 'rejected', label: 'Rifiutate' },
-              ] as { key: HubberBookingFilter; label: string }[]
-            ).map((item) => (
+          <div className="flex flex-col gap-2">
+            {/* ✅ NUOVO: Toggle temporale */}
+            <div className="inline-flex bg-white rounded-xl border border-gray-200 p-1 text-xs justify-center sm:justify-start">
               <button
-                key={item.key}
-                onClick={() => setHubberBookingFilter(item.key)}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-                  hubberBookingFilter === item.key
-                    ? 'bg-gray-100 text-gray-900 shadow-sm'
+                onClick={() => setHubberTimeFilter('current')}
+                className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+                  hubberTimeFilter === 'current'
+                    ? 'bg-brand text-white shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                {item.label}
+                🔵 In corso
               </button>
-            ))}
+              <button
+                onClick={() => setHubberTimeFilter('historical')}
+                className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+                  hubberTimeFilter === 'historical'
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                📅 Storico
+              </button>
+            </div>
+
+            {/* Filtri stato */}
+            <div className="inline-flex bg-white rounded-xl border border-gray-200 p-1 text-xs flex-wrap justify-center sm:justify-start">
+              {(
+                [
+                  { key: 'all', label: 'Tutte' },
+                  { key: 'pending', label: 'In attesa' },
+                  { key: 'accepted', label: 'Accettate' },
+                  { key: 'completed', label: 'Completate' },
+                  { key: 'cancelled', label: 'Cancellate' },
+                  { key: 'rejected', label: 'Rifiutate' },
+                ] as { key: HubberBookingFilter; label: string }[]
+              ).map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() => setHubberBookingFilter(item.key)}
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+                    hubberBookingFilter === item.key
+                      ? 'bg-gray-100 text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -3282,7 +4342,8 @@ const handleIdFileChange =
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredHubberBookings.map((booking) => {
+                  {/* ✅ Modalità "In corso" - Lista normale */}
+                  {hubberTimeFilter === 'current' && filteredHubberBookings.map((booking) => {
   
                     const isSelected = booking.id === selectedHubberBookingId;
                     return (
@@ -3343,6 +4404,227 @@ const handleIdFileChange =
                       </tr>
                     );
                   })}
+
+                  {/* ✅ Modalità "Storico" - Raggruppato per anno/mese */}
+                  {hubberTimeFilter === 'historical' && (() => {
+                    const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+                                       'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+                    
+                    if (hasMultipleYears) {
+                      // Mostra anni separati
+                      return Object.keys(groupedByYear).sort().reverse().map(year => (
+                        <React.Fragment key={year}>
+                          {/* Header Anno */}
+                          <tr className="bg-gray-100 border-b-2 border-gray-300">
+                            <td colSpan={6} className="p-4">
+                              <span className="text-base font-bold text-gray-900">
+                                📆 {year}
+                              </span>
+                            </td>
+                          </tr>
+                          
+                          {/* Mesi dell'anno */}
+                          {Object.keys(groupedByYear[year]).sort().reverse().map(monthKey => {
+                            const monthBookings = groupedByYear[year][monthKey];
+                            const [, month] = monthKey.split('-');
+                            const monthName = monthNames[parseInt(month) - 1];
+                            const isExpanded = expandedMonths.has(monthKey);
+                            
+                            return (
+                              <React.Fragment key={monthKey}>
+                                {/* Header mese espandibile */}
+                                <tr 
+                                  className="bg-gray-50 border-b border-gray-200 hover:bg-gray-100 cursor-pointer"
+                                  onClick={() => toggleMonth(monthKey)}
+                                >
+                                  <td colSpan={6} className="p-3">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <span className="text-sm font-bold text-gray-800">
+                                          {isExpanded ? '▼' : '▶'} {monthName}
+                                        </span>
+                                        <span className="ml-2 text-xs text-gray-500">
+                                          ({monthBookings.length} prenotazioni)
+                                        </span>
+                                      </div>
+                                      <span className="text-xs text-gray-400">
+                                        {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                                      </span>
+                                    </div>
+                                  </td>
+                                </tr>
+                                
+                                {/* Prenotazioni del mese (solo se espanso) */}
+                                {isExpanded && monthBookings.map((booking) => {
+                                  const isSelected = booking.id === selectedHubberBookingId;
+                                  return (
+                                    <tr
+                                      key={booking.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedHubberBookingId(booking.id);
+                                      }}
+                                      className={`border-b border-gray-50 hover:bg-gray-50 cursor-pointer ${
+                                        isSelected ? 'bg-gray-50' : ''
+                                      }`}
+                                    >
+                                      <td className="p-3 text-xs whitespace-nowrap">
+                                        {booking.dates}
+                                      </td>
+                                      <td className="p-3 font-medium text-gray-900">
+                                        {booking.listingTitle}
+                                      </td>
+                                      <td className="p-3">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onViewRenterProfile && (booking as any).renterId) {
+                                              onViewRenterProfile({
+                                                id: (booking as any).renterId,
+                                                name: booking.renterName,
+                                                avatar: booking.renterAvatar,
+                                              });
+                                            }
+                                          }}
+                                          className="text-gray-600 hover:text-brand hover:underline"
+                                        >
+                                          {booking.renterName}
+                                        </button>
+                                      </td>
+                                      <td className="p-3">
+                                        {renderBookingStatusBadge(booking.status)}
+                                      </td>
+                                      <td className="p-3 font-bold text-right">
+                                        €{booking.totalPrice.toFixed(2)}
+                                      </td>
+                                      <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                        {booking.status === 'completed' ? (
+                                          (booking as any).hasReviewedByHubber ? (
+                                            <span className="px-3 py-1.5 rounded-lg text-xs font-bold text-green-600 bg-green-50 inline-flex items-center gap-1">
+                                              <CheckCircle2 className="w-3 h-3" /> Recensito
+                                            </span>
+                                          ) : (
+                                            <button
+                                              onClick={() => openReviewModal(booking, 'hubber_to_renter')}
+                                              className="px-3 py-1.5 rounded-lg text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors inline-flex items-center gap-1"
+                                            >
+                                              <Star className="w-3 h-3" /> Recensione
+                                            </button>
+                                          )
+                                        ) : (
+                                          <span className="text-xs text-gray-400">—</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </React.Fragment>
+                            );
+                          })}
+                        </React.Fragment>
+                      ));
+                    } else {
+                      // Anno singolo - mostra solo mesi
+                      return Object.keys(groupedBookings).map((monthKey) => {
+                        const monthBookings = groupedBookings[monthKey];
+                        const [year, month] = monthKey.split('-');
+                        const monthName = monthNames[parseInt(month) - 1];
+                        const isExpanded = expandedMonths.has(monthKey);
+                        
+                        return (
+                          <React.Fragment key={monthKey}>
+                            {/* Header mese espandibile */}
+                            <tr 
+                              className="bg-gray-50 border-b-2 border-gray-200 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => toggleMonth(monthKey)}
+                            >
+                              <td colSpan={6} className="p-3">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <span className="text-sm font-bold text-gray-800">
+                                      {isExpanded ? '▼' : '▶'} {monthName} {year}
+                                    </span>
+                                    <span className="ml-2 text-xs text-gray-500">
+                                      ({monthBookings.length} prenotazioni)
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-gray-400">
+                                    {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                            
+                            {/* Prenotazioni del mese (solo se espanso) */}
+                            {isExpanded && monthBookings.map((booking) => {
+                              const isSelected = booking.id === selectedHubberBookingId;
+                              return (
+                                <tr
+                                  key={booking.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedHubberBookingId(booking.id);
+                                  }}
+                                  className={`border-b border-gray-50 hover:bg-gray-50 cursor-pointer ${
+                                    isSelected ? 'bg-gray-50' : ''
+                                  }`}
+                                >
+                                  <td className="p-3 text-xs whitespace-nowrap">
+                                    {booking.dates}
+                                  </td>
+                                  <td className="p-3 font-medium text-gray-900">
+                                    {booking.listingTitle}
+                                  </td>
+                                  <td className="p-3">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (onViewRenterProfile && (booking as any).renterId) {
+                                          onViewRenterProfile({
+                                            id: (booking as any).renterId,
+                                            name: booking.renterName,
+                                            avatar: booking.renterAvatar,
+                                          });
+                                        }
+                                      }}
+                                      className="text-gray-600 hover:text-brand hover:underline"
+                                    >
+                                      {booking.renterName}
+                                    </button>
+                                  </td>
+                                  <td className="p-3">
+                                    {renderBookingStatusBadge(booking.status)}
+                                  </td>
+                                  <td className="p-3 font-bold text-right">
+                                    €{booking.totalPrice.toFixed(2)}
+                                  </td>
+                                  <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                    {booking.status === 'completed' ? (
+                                      (booking as any).hasReviewedByHubber ? (
+                                        <span className="px-3 py-1.5 rounded-lg text-xs font-bold text-green-600 bg-green-50 inline-flex items-center gap-1">
+                                          <CheckCircle2 className="w-3 h-3" /> Recensito
+                                        </span>
+                                      ) : (
+                                        <button
+                                          onClick={() => openReviewModal(booking, 'hubber_to_renter')}
+                                          className="px-3 py-1.5 rounded-lg text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors inline-flex items-center gap-1"
+                                        >
+                                          <Star className="w-3 h-3" /> Recensione
+                                        </button>
+                                      )
+                                    ) : (
+                                      <span className="text-xs text-gray-400">—</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      });
+                    }
+                  })()}
+
                   {filteredHubberBookings.length === 0 && (
                     <tr>
                       <td
@@ -3380,6 +4662,10 @@ const handleIdFileChange =
                       <h3 className="font-bold text-gray-900 text-sm">
                         {selectedBooking.listingTitle}
                       </h3>
+                      {/* ✅ Numero prenotazione */}
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        #{selectedBooking.id.slice(0, 8)}
+                      </p>
                     </div>
                   </div>
                   {renderBookingStatusBadge(selectedBooking.status)}
@@ -3720,10 +5006,23 @@ const renderHubberCalendar = () => (
 
 // --- PAGAMENTI & FATTURE RENTER ---
 const renderRenterPayments = () => {
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  
   // Filtra solo prenotazioni pagate (confirmed, accepted, completed, active)
-  const paidBookings = renterBookings.filter((b) =>
+  let paidBookings = renterBookings.filter((b) =>
     ['confirmed', 'accepted', 'completed', 'active'].includes(b.status)
   );
+
+  // ✅ Applico filtro temporale
+  if (renterPaymentsTimeFilter === 'current') {
+    // "In corso" = mese corrente
+    paidBookings = paidBookings.filter(b => {
+      const paymentDate = new Date(b.start_date || b.startDate || '');
+      return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+    });
+  }
 
   // Calcola totale speso
   const totalSpent = paidBookings.reduce(
@@ -3731,11 +5030,52 @@ const renderRenterPayments = () => {
     0
   );
 
-  // Genera numero ricevuta dal booking ID
-  const generateReceiptNumber = (bookingId: string, date: string) => {
-    const year = new Date(date).getFullYear();
-    const shortId = bookingId.replace(/-/g, '').slice(0, 6).toUpperCase();
-    return `RH-${year}-${shortId}`;
+  // ✅ Raggruppa per anno/mese se "Storico"
+  const groupedPayments: Record<string, typeof paidBookings> = {};
+  const groupedByYear: Record<string, Record<string, typeof paidBookings>> = {};
+  
+  if (renterPaymentsTimeFilter === 'historical') {
+    paidBookings.forEach(b => {
+      const paymentDate = new Date(b.start_date || b.startDate || '');
+      const year = paymentDate.getFullYear();
+      const monthKey = `${year}-${String(paymentDate.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!groupedPayments[monthKey]) {
+        groupedPayments[monthKey] = [];
+      }
+      groupedPayments[monthKey].push(b);
+      
+      // Raggruppa anche per anno
+      if (!groupedByYear[year]) {
+        groupedByYear[year] = {};
+      }
+      if (!groupedByYear[year][monthKey]) {
+        groupedByYear[year][monthKey] = [];
+      }
+      groupedByYear[year][monthKey].push(b);
+    });
+    
+    // Ordina i gruppi per data (più recente prima)
+    const sortedKeys = Object.keys(groupedPayments).sort().reverse();
+    const sortedGrouped: Record<string, typeof paidBookings> = {};
+    sortedKeys.forEach(key => {
+      sortedGrouped[key] = groupedPayments[key];
+    });
+    Object.assign(groupedPayments, sortedGrouped);
+  }
+
+  // Verifica se ci sono più anni
+  const hasMultipleYears = Object.keys(groupedByYear).length > 1;
+
+  // Toggle espansione mese
+  const togglePaymentMonth = (monthKey: string) => {
+    const newExpanded = new Set(expandedRenterPaymentsMonths);
+    if (newExpanded.has(monthKey)) {
+      newExpanded.delete(monthKey);
+    } else {
+      newExpanded.add(monthKey);
+    }
+    setExpandedRenterPaymentsMonths(newExpanded);
   };
 
   return (
@@ -3778,18 +5118,47 @@ const renderRenterPayments = () => {
       {/* Storico Pagamenti */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-100">
-          <h3 className="font-bold text-gray-900 flex items-center">
-            <DollarSign className="w-5 h-5 mr-2 text-brand" /> Storico Pagamenti
-          </h3>
-          <p className="text-gray-500 text-sm mt-1">
-            Tutti i pagamenti effettuati per i tuoi noleggi su RentHubber.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div>
+              <h3 className="font-bold text-gray-900 flex items-center">
+                <DollarSign className="w-5 h-5 mr-2 text-brand" /> Storico Pagamenti
+              </h3>
+              <p className="text-gray-500 text-sm mt-1">
+                Tutti i pagamenti effettuati per i tuoi noleggi su RentHubber.
+              </p>
+            </div>
+            
+            {/* ✅ Toggle temporale */}
+            <div className="inline-flex bg-white rounded-xl border border-gray-200 p-1 text-xs justify-center sm:justify-start">
+              <button
+                onClick={() => setRenterPaymentsTimeFilter('current')}
+                className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+                  renterPaymentsTimeFilter === 'current'
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                🔵 Mese corrente
+              </button>
+              <button
+                onClick={() => setRenterPaymentsTimeFilter('historical')}
+                className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+                  renterPaymentsTimeFilter === 'historical'
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                📅 Storico
+              </button>
+            </div>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600">
             <thead className="bg-gray-50 text-gray-900 font-semibold border-b border-gray-100">
               <tr>
                 <th className="p-4">Data</th>
+                <th className="p-4">N° Ordine</th>
                 <th className="p-4">Annuncio</th>
                 <th className="p-4">Periodo</th>
                 <th className="p-4">Metodo</th>
@@ -3798,11 +5167,13 @@ const renderRenterPayments = () => {
               </tr>
             </thead>
             <tbody>
-              {paidBookings.map((booking) => {
+              {/* ✅ Modalità "Mese corrente" - Lista normale */}
+              {renterPaymentsTimeFilter === 'current' && paidBookings.map((booking) => {
                 const totalPaid = (booking as any).renterTotalPaid || booking.totalPrice || 0;
                 const walletUsed = ((booking as any).walletUsedCents || 0) / 100;
                 const cardPaid = Math.max(totalPaid - walletUsed, 0);
                 const paymentDate = (booking as any).start_date || new Date().toISOString();
+                const orderNumber = getTransactionNumber(booking.id, false); // ✅ USA HELPER GLOBALE
 
                 return (
                   <tr
@@ -3815,6 +5186,9 @@ const renderRenterPayments = () => {
                         month: 'short',
                         year: 'numeric',
                       })}
+                    </td>
+                    <td className="p-4 font-mono text-xs text-gray-600">
+                      {orderNumber}
                     </td>
                     <td className="p-4 font-medium text-gray-900">
                       {booking.listingTitle}
@@ -3847,9 +5221,212 @@ const renderRenterPayments = () => {
                   </tr>
                 );
               })}
+
+              {/* ✅ Modalità "Storico" - Raggruppato per anno/mese */}
+              {renterPaymentsTimeFilter === 'historical' && (() => {
+                const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+                                   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+                
+                if (hasMultipleYears) {
+                  // Mostra anni separati
+                  return Object.keys(groupedByYear).sort().reverse().map(year => (
+                    <React.Fragment key={year}>
+                      {/* Header Anno */}
+                      <tr className="bg-gray-100 border-b-2 border-gray-300">
+                        <td colSpan={7} className="p-4">
+                          <span className="text-base font-bold text-gray-900">
+                            📆 {year}
+                          </span>
+                        </td>
+                      </tr>
+                      
+                      {/* Mesi dell'anno */}
+                      {Object.keys(groupedByYear[year]).sort().reverse().map(monthKey => {
+                        const monthPayments = groupedByYear[year][monthKey];
+                        const [, month] = monthKey.split('-');
+                        const monthName = monthNames[parseInt(month) - 1];
+                        const isExpanded = expandedRenterPaymentsMonths.has(monthKey);
+                        
+                        return (
+                          <React.Fragment key={monthKey}>
+                            {/* Header mese espandibile */}
+                            <tr 
+                              className="bg-gray-50 border-b border-gray-200 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => togglePaymentMonth(monthKey)}
+                            >
+                              <td colSpan={7} className="p-3">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <span className="text-sm font-bold text-gray-800">
+                                      {isExpanded ? '▼' : '▶'} {monthName}
+                                    </span>
+                                    <span className="ml-2 text-xs text-gray-500">
+                                      ({monthPayments.length} pagamenti)
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-gray-400">
+                                    {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                            
+                            {/* Pagamenti del mese (solo se espanso) */}
+                            {isExpanded && monthPayments.map((booking) => {
+                              const totalPaid = (booking as any).renterTotalPaid || booking.totalPrice || 0;
+                              const walletUsed = ((booking as any).walletUsedCents || 0) / 100;
+                              const cardPaid = Math.max(totalPaid - walletUsed, 0);
+                              const paymentDate = (booking as any).start_date || new Date().toISOString();
+                              const orderNumber = getTransactionNumber(booking.id, false); // ✅ USA HELPER GLOBALE
+
+                              return (
+                                <tr
+                                  key={booking.id}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="border-b border-gray-50 hover:bg-gray-50"
+                                >
+                                  <td className="p-4 text-xs whitespace-nowrap">
+                                    {new Date(paymentDate).toLocaleDateString('it-IT', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    })}
+                                  </td>
+                                  <td className="p-4 font-mono text-xs text-gray-600">
+                                    {orderNumber}
+                                  </td>
+                                  <td className="p-4 font-medium text-gray-900">
+                                    {booking.listingTitle}
+                                  </td>
+                                  <td className="p-4 text-xs text-gray-500">
+                                    {booking.dates}
+                                  </td>
+                                  <td className="p-4">
+                                    <div className="flex flex-col gap-0.5">
+                                      {walletUsed > 0 && (
+                                        <span className="text-xs text-purple-600 font-medium">
+                                          Wallet: €{walletUsed.toFixed(2)}
+                                        </span>
+                                      )}
+                                      {cardPaid > 0 && (
+                                        <span className="text-xs text-gray-600">
+                                          Carta: €{cardPaid.toFixed(2)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="p-4">
+                                    <span className="flex items-center text-green-600 text-xs font-bold uppercase">
+                                      <CheckCircle2 className="w-3 h-3 mr-1" /> Pagato
+                                    </span>
+                                  </td>
+                                  <td className="p-4 font-bold text-right text-gray-900">
+                                    €{totalPaid.toFixed(2)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      })}
+                    </React.Fragment>
+                  ));
+                } else {
+                  // Anno singolo - mostra solo mesi
+                  return Object.keys(groupedPayments).map((monthKey) => {
+                    const monthPayments = groupedPayments[monthKey];
+                    const [year, month] = monthKey.split('-');
+                    const monthName = monthNames[parseInt(month) - 1];
+                    const isExpanded = expandedRenterPaymentsMonths.has(monthKey);
+                    
+                    return (
+                      <React.Fragment key={monthKey}>
+                        {/* Header mese espandibile */}
+                        <tr 
+                          className="bg-gray-50 border-b-2 border-gray-200 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => togglePaymentMonth(monthKey)}
+                        >
+                          <td colSpan={7} className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-sm font-bold text-gray-800">
+                                  {isExpanded ? '▼' : '▶'} {monthName} {year}
+                                </span>
+                                <span className="ml-2 text-xs text-gray-500">
+                                  ({monthPayments.length} pagamenti)
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-400">
+                                {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                        
+                        {/* Pagamenti del mese (solo se espanso) */}
+                        {isExpanded && monthPayments.map((booking) => {
+                          const totalPaid = (booking as any).renterTotalPaid || booking.totalPrice || 0;
+                          const walletUsed = ((booking as any).walletUsedCents || 0) / 100;
+                          const cardPaid = Math.max(totalPaid - walletUsed, 0);
+                          const paymentDate = (booking as any).start_date || new Date().toISOString();
+                          const orderNumber = getTransactionNumber(booking.id, false); // ✅ USA HELPER GLOBALE
+
+                          return (
+                            <tr
+                              key={booking.id}
+                              onClick={(e) => e.stopPropagation()}
+                              className="border-b border-gray-50 hover:bg-gray-50"
+                            >
+                              <td className="p-4 text-xs whitespace-nowrap">
+                                {new Date(paymentDate).toLocaleDateString('it-IT', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                              </td>
+                              <td className="p-4 font-mono text-xs text-gray-600">
+                                {orderNumber}
+                              </td>
+                              <td className="p-4 font-medium text-gray-900">
+                                {booking.listingTitle}
+                              </td>
+                              <td className="p-4 text-xs text-gray-500">
+                                {booking.dates}
+                              </td>
+                              <td className="p-4">
+                                <div className="flex flex-col gap-0.5">
+                                  {walletUsed > 0 && (
+                                    <span className="text-xs text-purple-600 font-medium">
+                                      Wallet: €{walletUsed.toFixed(2)}
+                                    </span>
+                                  )}
+                                  {cardPaid > 0 && (
+                                    <span className="text-xs text-gray-600">
+                                      Carta: €{cardPaid.toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <span className="flex items-center text-green-600 text-xs font-bold uppercase">
+                                  <CheckCircle2 className="w-3 h-3 mr-1" /> Pagato
+                                </span>
+                              </td>
+                              <td className="p-4 font-bold text-right text-gray-900">
+                                €{totalPaid.toFixed(2)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  });
+                }
+              })()}
+
               {paidBookings.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-gray-400">
+                  <td colSpan={7} className="p-8 text-center text-gray-400">
                     Nessun pagamento effettuato.
                   </td>
                 </tr>
@@ -3862,12 +5439,40 @@ const renderRenterPayments = () => {
       {/* Ricevute scaricabili */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-100">
-          <h3 className="font-bold text-gray-900 flex items-center">
-            <FileText className="w-5 h-5 mr-2 text-brand" /> Ricevute di Pagamento
-          </h3>
-          <p className="text-gray-500 text-sm mt-1">
-            Scarica le ricevute per i tuoi noleggi completati.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div>
+              <h3 className="font-bold text-gray-900 flex items-center">
+                <FileText className="w-5 h-5 mr-2 text-brand" /> Ricevute di Pagamento
+              </h3>
+              <p className="text-gray-500 text-sm mt-1">
+                Scarica le ricevute per i tuoi noleggi completati.
+              </p>
+            </div>
+            
+            {/* ✅ Stesso toggle temporale */}
+            <div className="inline-flex bg-white rounded-xl border border-gray-200 p-1 text-xs justify-center sm:justify-start">
+              <button
+                onClick={() => setRenterPaymentsTimeFilter('current')}
+                className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+                  renterPaymentsTimeFilter === 'current'
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                🔵 Mese corrente
+              </button>
+              <button
+                onClick={() => setRenterPaymentsTimeFilter('historical')}
+                className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+                  renterPaymentsTimeFilter === 'historical'
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                📅 Storico
+              </button>
+            </div>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600">
@@ -3882,10 +5487,11 @@ const renderRenterPayments = () => {
               </tr>
             </thead>
             <tbody>
-              {paidBookings.map((booking) => {
+              {/* ✅ Modalità "Mese corrente" - Lista normale */}
+              {renterPaymentsTimeFilter === 'current' && paidBookings.map((booking) => {
                 const totalPaid = (booking as any).renterTotalPaid || booking.totalPrice || 0;
                 const paymentDate = (booking as any).start_date || new Date().toISOString();
-                const receiptNumber = generateReceiptNumber(booking.id, paymentDate);
+                const receiptNumber = getTransactionNumber(booking.id, false); // ✅ USA HELPER GLOBALE
 
                 return (
                   <tr
@@ -3932,6 +5538,193 @@ const renderRenterPayments = () => {
                   </tr>
                 );
               })}
+
+              {/* ✅ Modalità "Storico" - Raggruppato per anno/mese */}
+              {renterPaymentsTimeFilter === 'historical' && (() => {
+                const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+                                   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+                
+                if (hasMultipleYears) {
+                  return Object.keys(groupedByYear).sort().reverse().map(year => (
+                    <React.Fragment key={year}>
+                      <tr className="bg-gray-100 border-b-2 border-gray-300">
+                        <td colSpan={6} className="p-4">
+                          <span className="text-base font-bold text-gray-900">
+                            📆 {year}
+                          </span>
+                        </td>
+                      </tr>
+                      
+                      {Object.keys(groupedByYear[year]).sort().reverse().map(monthKey => {
+                        const monthPayments = groupedByYear[year][monthKey];
+                        const [, month] = monthKey.split('-');
+                        const monthName = monthNames[parseInt(month) - 1];
+                        const isExpanded = expandedRenterPaymentsMonths.has(monthKey);
+                        
+                        return (
+                          <React.Fragment key={monthKey}>
+                            <tr 
+                              className="bg-gray-50 border-b border-gray-200 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => togglePaymentMonth(monthKey)}
+                            >
+                              <td colSpan={6} className="p-3">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <span className="text-sm font-bold text-gray-800">
+                                      {isExpanded ? '▼' : '▶'} {monthName}
+                                    </span>
+                                    <span className="ml-2 text-xs text-gray-500">
+                                      ({monthPayments.length} ricevute)
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-gray-400">
+                                    {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                            
+                            {isExpanded && monthPayments.map((booking) => {
+                              const totalPaid = (booking as any).renterTotalPaid || booking.totalPrice || 0;
+                              const paymentDate = (booking as any).start_date || new Date().toISOString();
+                              const receiptNumber = getTransactionNumber(booking.id, false); // ✅ USA HELPER GLOBALE
+
+                              return (
+                                <tr
+                                  key={booking.id}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="border-b border-gray-50 hover:bg-gray-50"
+                                >
+                                  <td className="p-4 text-xs whitespace-nowrap">
+                                    {new Date(paymentDate).toLocaleDateString('it-IT', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    })}
+                                  </td>
+                                  <td className="p-4 font-mono font-medium text-gray-900">
+                                    {receiptNumber}
+                                  </td>
+                                  <td className="p-4">
+                                    <div>
+                                      <p className="font-medium text-gray-900">{booking.listingTitle}</p>
+                                      <p className="text-xs text-gray-500">{booking.dates}</p>
+                                    </div>
+                                  </td>
+                                  <td className="p-4 font-bold">
+                                    €{totalPaid.toFixed(2)}
+                                  </td>
+                                  <td className="p-4">
+                                    <span className="flex items-center text-green-600 text-xs font-bold uppercase">
+                                      <CheckCircle2 className="w-3 h-3 mr-1" /> Emessa
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-right">
+                                    <button
+                                      onClick={() => {
+                                        console.log('Download ricevuta:', receiptNumber);
+                                        alert(`Funzionalità in arrivo! Ricevuta: ${receiptNumber}`);
+                                      }}
+                                      className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
+                                      title="Scarica PDF"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      })}
+                    </React.Fragment>
+                  ));
+                } else {
+                  return Object.keys(groupedPayments).map((monthKey) => {
+                    const monthPayments = groupedPayments[monthKey];
+                    const [year, month] = monthKey.split('-');
+                    const monthName = monthNames[parseInt(month) - 1];
+                    const isExpanded = expandedRenterPaymentsMonths.has(monthKey);
+                    
+                    return (
+                      <React.Fragment key={monthKey}>
+                        <tr 
+                          className="bg-gray-50 border-b-2 border-gray-200 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => togglePaymentMonth(monthKey)}
+                        >
+                          <td colSpan={6} className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-sm font-bold text-gray-800">
+                                  {isExpanded ? '▼' : '▶'} {monthName} {year}
+                                </span>
+                                <span className="ml-2 text-xs text-gray-500">
+                                  ({monthPayments.length} ricevute)
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-400">
+                                {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                        
+                        {isExpanded && monthPayments.map((booking) => {
+                          const totalPaid = (booking as any).renterTotalPaid || booking.totalPrice || 0;
+                          const paymentDate = (booking as any).start_date || new Date().toISOString();
+                          const receiptNumber = getTransactionNumber(booking.id, false); // ✅ USA HELPER GLOBALE
+
+                          return (
+                            <tr
+                              key={booking.id}
+                              onClick={(e) => e.stopPropagation()}
+                              className="border-b border-gray-50 hover:bg-gray-50"
+                            >
+                              <td className="p-4 text-xs whitespace-nowrap">
+                                {new Date(paymentDate).toLocaleDateString('it-IT', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                              </td>
+                              <td className="p-4 font-mono font-medium text-gray-900">
+                                {receiptNumber}
+                              </td>
+                              <td className="p-4">
+                                <div>
+                                  <p className="font-medium text-gray-900">{booking.listingTitle}</p>
+                                  <p className="text-xs text-gray-500">{booking.dates}</p>
+                                </div>
+                              </td>
+                              <td className="p-4 font-bold">
+                                €{totalPaid.toFixed(2)}
+                              </td>
+                              <td className="p-4">
+                                <span className="flex items-center text-green-600 text-xs font-bold uppercase">
+                                  <CheckCircle2 className="w-3 h-3 mr-1" /> Emessa
+                                </span>
+                              </td>
+                              <td className="p-4 text-right">
+                                <button
+                                  onClick={() => {
+                                    console.log('Download ricevuta:', receiptNumber);
+                                    alert(`Funzionalità in arrivo! Ricevuta: ${receiptNumber}`);
+                                  }}
+                                  className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
+                                  title="Scarica PDF"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  });
+                }
+              })()}
+
               {paidBookings.length === 0 && (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-gray-400">
