@@ -449,6 +449,26 @@ async function sendBookingSystemMessage(params: {
   console.log("📩 Messaggio di sistema inviato:", messageText.slice(0, 50));
 }
 
+/**
+ * 🔒 RIOSCURA CONTATTI dopo cancellazione prenotazione
+ * Aggiorna tutti i messaggi della conversazione con hasConfirmedBooking: false
+ */
+async function hideContactsAfterCancellation(bookingId: string): Promise<void> {
+  const conversationId = `conv-booking-${bookingId}`;
+  
+  try {
+    // Aggiorna Supabase
+    await supabase
+      .from("messages")
+      .update({ has_confirmed_booking: false })
+      .eq("conversation_id", conversationId);
+    
+    console.log("🔒 Contatti rioscurati per conversazione:", conversationId);
+  } catch (e) {
+    console.warn("Errore rioscuramento contatti:", e);
+  }
+}
+
 /* ------------------------------------------------------
    PRENOTAZIONI (bookings) – RENTER
 -------------------------------------------------------*/
@@ -1952,6 +1972,9 @@ if (ownerIds.length > 0) {
           messageText: cancelMessage,
         });
 
+        // 🔒 Rioscura contatti dopo cancellazione
+        await hideContactsAfterCancellation(bookingId);
+
         return {
           success: true,
           walletRefunded: walletRefunded > 0 ? walletRefunded : undefined,
@@ -2069,6 +2092,9 @@ if (ownerIds.length > 0) {
           bookingId,
           messageText: cancelMessage,
         });
+
+        // 🔒 Rioscura contatti dopo cancellazione
+        await hideContactsAfterCancellation(bookingId);
 
         return {
           success: true,
@@ -2464,52 +2490,42 @@ if (ownerIds.length > 0) {
     /**
      * Ottiene (o crea) il saldo wallet reale da Supabase (in EURO)
      */
-    getBalanceFromDb: async (userId: string): Promise<number> => {
+    getBalanceFromDb: async (userId: string, walletType: 'hubber' | 'renter' = 'hubber'): Promise<number> => {
       if (!userId) throw new Error("Missing userId for wallet");
 
+      // 💰 Leggi da users.hubber_balance o users.renter_balance
+      const balanceField = walletType === 'hubber' ? 'hubber_balance' : 'renter_balance';
+      
       const { data, error } = await supabase
-        .from("wallets")
-        .select("balance_cents")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (error && (error as any).code !== "PGRST116") {
-        console.error("Errore getBalanceFromDb:", error);
-        throw error;
-      }
-
-      if (data && typeof data.balance_cents === "number") {
-        return fromCents(data.balance_cents);
-      }
-
-      // Se non esiste ancora, lo creo a 0
-      const { data: newRow, error: insertError } = await supabase
-        .from("wallets")
-        .insert({
-          user_id: userId,
-          balance_cents: 0,
-        })
-        .select("balance_cents")
+        .from("users")
+        .select(balanceField)
+        .eq("id", userId)
         .single();
 
-      if (insertError) {
-        console.error("Errore creazione wallet:", insertError);
-        throw insertError;
+      if (error) {
+        console.error(`Errore getBalanceFromDb (${walletType}):`, error);
+        return 0;
       }
 
-      return fromCents(newRow?.balance_cents ?? 0);
+      return data?.[balanceField] || 0;
     },
 
     /**
      * Restituisce lo storico movimenti reale da Supabase
      */
-    getTransactionsFromDb: async (userId: string): Promise<any[]> => {
+    getTransactionsFromDb: async (userId: string, walletType: 'hubber' | 'renter' = 'hubber'): Promise<any[]> => {
       if (!userId) throw new Error("Missing userId for wallet tx");
+
+      // 💰 Filtra transazioni in base al tipo wallet
+      const hubberSources = ['booking_payout', 'payout_request', 'adjustment'];
+      const renterSources = ['booking_payment', 'refund', 'adjustment'];
+      const sources = walletType === 'hubber' ? hubberSources : renterSources;
 
       const { data, error } = await supabase
         .from("wallet_transactions")
         .select("*")
         .eq("user_id", userId)
+        .in("source", sources)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -2643,52 +2659,66 @@ if (ownerIds.length > 0) {
       userId: string,
       amount: number,
       reason: string,
-      adminNote: string = ""
+      adminNote: string = "",
+      walletType: 'hubber' | 'renter' = 'hubber'
     ): Promise<{ newBalance: number }> => {
       if (!userId) throw new Error("Missing userId");
       if (amount <= 0) throw new Error("Amount must be > 0");
       if (!reason) throw new Error("Reason is required");
 
-      const currentBalance = await api.wallet.getBalanceFromDb(userId);
-      const currentCents = toCents(currentBalance);
-      const deltaCents = toCents(amount);
-      const newBalanceCents = currentCents + deltaCents;
+      // Leggi saldo da users.hubber_balance o users.renter_balance
+      const balanceField = walletType === 'hubber' ? 'hubber_balance' : 'renter_balance';
+      
+      const { data: userData, error: readError } = await supabase
+        .from('users')
+        .select(balanceField)
+        .eq('id', userId)
+        .single();
+
+      if (readError) {
+        console.error('Errore lettura saldo:', readError);
+        throw readError;
+      }
+
+      const currentBalance = userData?.[balanceField] || 0;
+      const newBalance = currentBalance + amount;
 
       const description = adminNote 
         ? `${reason}: ${adminNote}`
         : `${reason}`;
 
+      // 1. Crea transazione
       const { error: txError } = await supabase
         .from("wallet_transactions")
         .insert({
           user_id: userId,
-          amount_cents: deltaCents,
-          balance_after_cents: newBalanceCents,
+          amount_cents: toCents(amount),
+          balance_after_cents: toCents(newBalance),
           type: "credit",
           source: "adjustment",
+          wallet_type: walletType, // ✨ NUOVO
           description,
           related_booking_id: null,
         });
 
       if (txError) {
-        console.error("Errore admin credit:", txError);
+        console.error("Errore admin credit transazione:", txError);
         throw txError;
       }
 
+      // 2. Aggiorna users.hubber_balance o users.renter_balance
       const { error: updateError } = await supabase
-        .from("wallets")
-        .update({
-          balance_cents: newBalanceCents,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", userId);
+        .from("users")
+        .update({ [balanceField]: newBalance })
+        .eq("id", userId);
 
       if (updateError) {
-        console.error("Errore update wallet (admin credit):", updateError);
+        console.error("Errore update users (admin credit):", updateError);
         throw updateError;
       }
 
-      return { newBalance: fromCents(newBalanceCents) };
+      console.log(`✅ Admin credit: ${walletType} wallet +€${amount} → €${newBalance}`);
+      return { newBalance };
     },
 
     /**
@@ -2698,57 +2728,71 @@ if (ownerIds.length > 0) {
       userId: string,
       amount: number,
       reason: string,
-      adminNote: string = ""
+      adminNote: string = "",
+      walletType: 'hubber' | 'renter' = 'hubber'
     ): Promise<{ newBalance: number }> => {
       if (!userId) throw new Error("Missing userId");
       if (amount <= 0) throw new Error("Amount must be > 0");
       if (!reason) throw new Error("Reason is required");
 
-      const currentBalance = await api.wallet.getBalanceFromDb(userId);
-      const currentCents = toCents(currentBalance);
-      const deltaCents = toCents(amount);
+      // Leggi saldo da users.hubber_balance o users.renter_balance
+      const balanceField = walletType === 'hubber' ? 'hubber_balance' : 'renter_balance';
+      
+      const { data: userData, error: readError } = await supabase
+        .from('users')
+        .select(balanceField)
+        .eq('id', userId)
+        .single();
 
-      if (deltaCents > currentCents) {
-        throw new Error("Saldo insufficiente nel wallet");
+      if (readError) {
+        console.error('Errore lettura saldo:', readError);
+        throw readError;
       }
 
-      const newBalanceCents = currentCents - deltaCents;
+      const currentBalance = userData?.[balanceField] || 0;
+
+      if (amount > currentBalance) {
+        throw new Error(`Saldo insufficiente nel wallet ${walletType}`);
+      }
+
+      const newBalance = currentBalance - amount;
 
       const description = adminNote 
         ? `${reason}: ${adminNote}`
         : `${reason}`;
 
+      // 1. Crea transazione
       const { error: txError } = await supabase
         .from("wallet_transactions")
         .insert({
           user_id: userId,
-          amount_cents: -deltaCents,
-          balance_after_cents: newBalanceCents,
+          amount_cents: -toCents(amount),
+          balance_after_cents: toCents(newBalance),
           type: "debit",
           source: "adjustment",
+          wallet_type: walletType, // ✨ NUOVO
           description,
           related_booking_id: null,
         });
 
       if (txError) {
-        console.error("Errore admin debit:", txError);
+        console.error("Errore admin debit transazione:", txError);
         throw txError;
       }
 
+      // 2. Aggiorna users.hubber_balance o users.renter_balance
       const { error: updateError } = await supabase
-        .from("wallets")
-        .update({
-          balance_cents: newBalanceCents,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", userId);
+        .from("users")
+        .update({ [balanceField]: newBalance })
+        .eq("id", userId);
 
       if (updateError) {
-        console.error("Errore update wallet (admin debit):", updateError);
+        console.error("Errore update users (admin debit):", updateError);
         throw updateError;
       }
 
-      return { newBalance: fromCents(newBalanceCents) };
+      console.log(`✅ Admin debit: ${walletType} wallet -€${amount} → €${newBalance}`);
+      return { newBalance };
     },
 
     /**
@@ -3072,37 +3116,43 @@ getAllWalletTransactions: async (): Promise<any[]> => {
 getAllWallets: async (): Promise<any[]> => {
   console.log('👑 admin.getAllWallets – inizio');
   try {
-    const { data: walletsData, error: walletsError } = await supabase
-      .from('wallets')
-      .select('*')
+    // 💰 Leggi DIRETTAMENTE da users invece che da wallets
+    const { data: usersData, error: usersError } = await supabase
+      .from('users')
+      .select('id, first_name, last_name, name, email, avatar_url, role, roles, hubber_balance, renter_balance, updated_at')
       .order('updated_at', { ascending: false });
 
-    if (walletsError) {
-      console.error('❌ admin.getAllWallets – errore:', walletsError);
+    if (usersError) {
+      console.error('❌ admin.getAllWallets – errore:', usersError);
       return [];
     }
 
-    if (!walletsData || walletsData.length === 0) {
+    if (!usersData || usersData.length === 0) {
       console.log('👑 admin.getAllWallets – nessun wallet');
       return [];
     }
 
-    // Prendi gli utenti dalla tabella USERS
-    const userIds = walletsData.map(w => w.user_id);
-    const { data: usersData } = await supabase
-      .from('users')
-      .select('id, first_name, last_name, name, email, avatar_url, role, roles')
-      .in('id', userIds);
-
-    const usersMap = new Map((usersData || []).map(u => [u.id, u]));
-
-    const result = walletsData.map((w: any) => ({
-      ...w,
-      user: usersMap.get(w.user_id) || null,
-      balanceEur: w.balance_cents ? w.balance_cents / 100 : 0,
+    const result = usersData.map((u: any) => ({
+      user_id: u.id,
+      user: {
+        id: u.id,
+        first_name: u.first_name,
+        last_name: u.last_name,
+        name: u.name,
+        email: u.email,
+        avatar_url: u.avatar_url,
+        role: u.role,
+        roles: u.roles,
+      },
+      hubberBalanceEur: u.hubber_balance || 0, // ✨ Saldo hubber separato
+      renterBalanceEur: u.renter_balance || 0, // ✨ Saldo renter separato
+      balanceEur: (u.hubber_balance || 0) + (u.renter_balance || 0), // Totale per compatibilità
+      currency: 'EUR',
+      updated_at: u.updated_at,
     }));
 
     console.log('✅ admin.getAllWallets – trovati:', result.length);
+    console.log('🔍 PRIMO WALLET DEBUG:', JSON.stringify(result[0], null, 2)); // ← DEBUG
     return result;
   } catch (e) {
     console.error('❌ admin.getAllWallets – eccezione:', e);
@@ -3678,36 +3728,43 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
       try {
         console.log("👑 admin.getAllWallets – inizio");
         
-        const { data: walletsData, error: walletsError } = await supabase
-          .from("wallets")
-          .select("*")
-          .order("balance_cents", { ascending: false });
+        // 💰 Leggi DIRETTAMENTE da users invece che da wallets
+        const { data: usersData, error: usersError } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, name, email, avatar_url, role, roles, hubber_balance, renter_balance, updated_at')
+          .order('updated_at', { ascending: false });
 
-        if (walletsError) {
-          console.error("❌ admin.getAllWallets – errore:", walletsError);
+        if (usersError) {
+          console.error("❌ admin.getAllWallets – errore:", usersError);
           return [];
         }
 
-        if (!walletsData || walletsData.length === 0) {
+        if (!usersData || usersData.length === 0) {
           console.log("👑 admin.getAllWallets – nessun wallet");
           return [];
         }
 
-        const userIds = walletsData.map(w => w.user_id);
-        const { data: usersData } = await supabase
-          .from('users')
-          .select('id, first_name, last_name, public_name, email, avatar_url, role, roles')
-          .in('id', userIds);
-
-        const usersMap = new Map((usersData || []).map(u => [u.id, u]));
-
-        const result = walletsData.map((w: any) => ({
-          ...w,
-          user: usersMap.get(w.user_id) || null,
-          balanceEur: (w.balance_cents || 0) / 100,
+        const result = usersData.map((u: any) => ({
+          user_id: u.id,
+          user: {
+            id: u.id,
+            first_name: u.first_name,
+            last_name: u.last_name,
+            name: u.name,
+            email: u.email,
+            avatar_url: u.avatar_url,
+            role: u.role,
+            roles: u.roles,
+          },
+          hubberBalanceEur: u.hubber_balance || 0, // ✨ Saldo hubber separato
+          renterBalanceEur: u.renter_balance || 0, // ✨ Saldo renter separato
+          balanceEur: (u.hubber_balance || 0) + (u.renter_balance || 0), // Totale per compatibilità
+          currency: 'EUR',
+          updated_at: u.updated_at,
         }));
 
         console.log("✅ admin.getAllWallets – trovati:", result.length);
+        console.log("🔍 PRIMO WALLET DEBUG:", JSON.stringify(result[0], null, 2)); // ← DEBUG
         return result;
       } catch (err) {
         console.error("❌ admin.getAllWallets – errore inatteso:", err);
@@ -4922,6 +4979,8 @@ issued_at: new Date().toISOString()
           hubber: usersMap[c.hubber_id] || null,
           listing: listingsMap[c.listing_id] || null,
           unreadCount: count || 0,
+          unreadForRenter: c.unread_for_renter || false,
+          unreadForHubber: c.unread_for_hubber || false,
           isArchived: isRenter ? c.archived_by_renter : c.archived_by_hubber,
         };
       }));
@@ -5064,6 +5123,7 @@ issued_at: new Date().toISOString()
 
     // Ottieni messaggi di una conversazione
     getMessagesForConversation: async (conversationId: string) => {
+      // 1. Carica messaggi
       const { data, error } = await supabase
         .from("messages")
         .select("*")
@@ -5075,6 +5135,38 @@ issued_at: new Date().toISOString()
         return [];
       }
 
+      // 2. Controlla se è una conversazione di booking e lo stato
+      let shouldHideContacts = false;
+      if (conversationId.startsWith("conv-booking-")) {
+        const bookingId = conversationId.replace("conv-booking-", "");
+        
+        const { data: booking } = await supabase
+          .from("bookings")
+          .select("status, completed_at, cancelled_at")
+          .eq("id", bookingId)
+          .single();
+
+        if (booking) {
+          // 🔒 Oscura contatti se cancellato
+          if (booking.status === "cancelled") {
+            shouldHideContacts = true;
+          }
+          
+          // 🔒 Oscura contatti se completato da più di 48 ore
+          if (booking.status === "completed" && booking.completed_at) {
+            const completedDate = new Date(booking.completed_at);
+            const now = new Date();
+            const hoursPassed = (now.getTime() - completedDate.getTime()) / (1000 * 60 * 60);
+            
+            if (hoursPassed >= 48) {
+              shouldHideContacts = true;
+              console.log(`🔒 Booking ${bookingId} completato da ${Math.floor(hoursPassed)} ore - Contatti oscurati`);
+            }
+          }
+        }
+      }
+
+      // 3. Restituisci messaggi con hasConfirmedBooking aggiornato
       return (data || []).map((m: any) => ({
         id: m.id,
         conversationId: m.conversation_id,
@@ -5087,7 +5179,7 @@ issued_at: new Date().toISOString()
         flagReason: m.flag_reason,
         isAdminMessage: m.is_admin_message,
         adminId: m.admin_id,
-        hasConfirmedBooking: m.has_confirmed_booking,
+        hasConfirmedBooking: shouldHideContacts ? false : m.has_confirmed_booking,
         isSupport: m.is_support,
         isSystemMessage: m.is_system_message,
       }));
@@ -5655,14 +5747,17 @@ issued_at: new Date().toISOString()
       }
 
       // Aggiungi messaggio iniziale con dettagli disputa
+      const bookingCode = dispute.booking_id ? `#${dispute.booking_id.slice(0, 6).toUpperCase()}` : 'N/A';
       const initialMessage = `🚨 CONTROVERSIA APERTA
 
 📋 ID Disputa: ${dispute.dispute_id || dispute.id}
+🎫 Prenotazione: ${bookingCode}
 👤 Aperta da: ${dispute.opened_by_role === 'hubber' ? 'Hubber' : 'Renter'}
 📝 Motivo: ${dispute.reason?.replace(/_/g, ' ')}
 💬 Dettagli: ${dispute.details || 'N/A'}
 💰 Importo richiesto: ${dispute.refund_amount ? `€${dispute.refund_amount}` : 'N/A'}
-📅 Data apertura: ${new Date(dispute.created_at).toLocaleDateString('it-IT')}`;
+📅 Data apertura: ${new Date(dispute.created_at).toLocaleDateString('it-IT')}
+${new Date(dispute.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
 
       await supabase.from("support_messages").insert({
         id: `smsg-dsp-${timestamp}`,
@@ -5786,6 +5881,32 @@ issued_at: new Date().toISOString()
       if (status === "resolved" || status === "closed") {
         updates.resolved_at = new Date().toISOString();
         updates.resolved_by = adminId;
+
+        // 🔄 CHIUDI ANCHE LA DISPUTA COLLEGATA (se esiste)
+        try {
+          // Recupera il ticket per vedere se ha una disputa collegata
+          const { data: ticket } = await supabase
+            .from("support_tickets")
+            .select("related_dispute_id")
+            .eq("id", ticketId)
+            .single();
+
+          if (ticket?.related_dispute_id) {
+            // Chiudi la disputa
+            await supabase
+              .from("disputes")
+              .update({ 
+                status: "resolved",
+                updated_at: new Date().toISOString()
+              })
+              .eq("id", ticket.related_dispute_id);
+            
+            console.log('✅ Disputa collegata chiusa:', ticket.related_dispute_id);
+          }
+        } catch (error) {
+          console.error('⚠️ Errore chiusura disputa collegata:', error);
+          // Non bloccare l'operazione se la chiusura della disputa fallisce
+        }
       }
 
       const { error } = await supabase.from("support_tickets").update(updates).eq("id", ticketId);
