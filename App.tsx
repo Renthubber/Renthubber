@@ -477,6 +477,7 @@ const App: React.FC = () => {
             activeMode={activeMode}
             onManageListings={() => setCurrentView("my-listings")}
             onBecomeHubber={() => setCurrentView("become-hubber")}
+            onNavigateToWallet={() => setCurrentView("wallet")}
             onViewListing={(listing) => {
               setSelectedListing(listing);
               setCurrentView("detail");
