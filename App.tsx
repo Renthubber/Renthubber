@@ -9,6 +9,8 @@ import { Wallet } from "./views/Wallet";
 import { Messages } from "./views/Messages";
 import { ListingDetail } from "./views/ListingDetail";
 import { Signup } from "./views/Signup";
+import { ForgotPassword } from "./views/ForgotPassword";
+import { ResetPassword } from "./views/ResetPassword";
 import { Dashboard } from "./views/Dashboard";
 import { MyListings } from "./views/MyListings";
 import { HubberListingEditor } from "./views/HubberListingEditor";
@@ -145,6 +147,14 @@ const App: React.FC = () => {
 
     console.log("🔄 useEffect INIT chiamato - timestamp:", Date.now());
 
+    // ✅ CHECK: Se l'utente arriva dal link email di reset password
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery') && hash.includes('access_token')) {
+      console.log("🔑 Reset password detected - redirect a reset-password view");
+      setCurrentView('reset-password');
+      return;
+    }
+
     const init = async () => {
       console.log("🚀 Avvio Renthubber...");
 
@@ -156,7 +166,7 @@ const App: React.FC = () => {
       setListings(loadedListings);
 
       setTransactions(await api.wallet.getTransactions());
-      setBookings(await api.bookings.getAll());
+      setBookings(await api.bookings.getAllFromDb()); // ✅ USA BOOKINGS REALI DA SUPABASE
       setPayoutRequests(await api.payouts.getAll());
       setDisputes(await api.admin.getDisputes());
       setReviews(await api.admin.getReviews());
@@ -430,6 +440,7 @@ const App: React.FC = () => {
               setCurrentView("dashboard");
             }}
             onLoginRedirect={() => setCurrentView("login")}
+            onForgotPassword={() => setCurrentView("forgot-password")}
           />
         )}
 
@@ -454,6 +465,22 @@ const App: React.FC = () => {
       setCurrentView("dashboard");
     }}
     onLoginRedirect={() => setCurrentView("signup")}
+    onForgotPassword={() => setCurrentView("forgot-password")}
+  />
+)}
+
+{/* FORGOT PASSWORD */}
+{currentView === "forgot-password" && (
+  <ForgotPassword
+    onBackToLogin={() => setCurrentView("login")}
+  />
+)}
+
+{/* RESET PASSWORD */}
+{currentView === "reset-password" && (
+  <ResetPassword
+    onSuccess={() => setCurrentView("login")}
+    onRequestNewLink={() => setCurrentView("forgot-password")}
   />
 )}
 
@@ -461,6 +488,7 @@ const App: React.FC = () => {
         {currentView === "home" && (
           <Home
             listings={listings}
+            bookings={bookings}
             user={currentUser}
             onListingClick={(listing) => {
               console.log("App.onListingClick HOME", listing.id);
