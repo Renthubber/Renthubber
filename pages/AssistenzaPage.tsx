@@ -41,7 +41,7 @@ export const AssistenzaPage: React.FC = () => {
                 Le principali aree di supporto
               </h3>
               <ul className="list-disc list-inside text-gray-700 space-y-2 text-sm md:text-base">
-                <li className="text-justify">Registrazione, accesso e gestione dell'account.</li>
+                <li className="text-justify">Registrazione, accesso e gestione dell’account.</li>
                 <li className="text-justify">Prenotazioni, modifiche e cancellazioni.</li>
                 <li className="text-justify">Pagamenti, cauzioni e rimborsi.</li>
                 <li className="text-justify">Problemi con un Renter o un Hubber.</li>
@@ -60,19 +60,19 @@ export const AssistenzaPage: React.FC = () => {
               </h2>
               <p className="text-gray-600 leading-relaxed text-justify mb-4">
                 Molte delle domande più comuni trovano risposta nella sezione
-                "Domande frequenti". È il punto di partenza ideale se hai dubbi su
+                “Domande frequenti”. È il punto di partenza ideale se hai dubbi su
                 come funziona Renthubber o su come gestire una specifica situazione.
               </p>
               <p className="text-gray-600 leading-relaxed text-justify">
                 Aggiorniamo periodicamente le FAQ in base ai feedback degli utenti,
                 così da rendere sempre più semplice trovare le informazioni che cerchi.
               </p>
-              <Link
-                to="/faq"
+              <a
+                href="#"
                 className="inline-block mt-6 text-sm font-semibold text-[#0D414B] hover:underline"
               >
                 Vai alle Domande frequenti
-              </Link>
+              </a>
             </div>
 
             <div className="bg-white rounded-xl p-8 shadow-sm border">
@@ -105,10 +105,10 @@ export const AssistenzaPage: React.FC = () => {
                 <li className="text-justify">
                   <span className="font-semibold">1. Accedi al tuo account</span>
                   <br />
-                  Entra con le tue credenziali e vai nella sezione "Supporto" o "Centro assistenza".
+                  Entra con le tue credenziali e vai nella sezione “Supporto” o “Centro assistenza”.
                 </li>
                 <li className="text-justify">
-                  <span className="font-semibold">2. Scegli l'area del problema</span>
+                  <span className="font-semibold">2. Scegli l’area del problema</span>
                   <br />
                   Seleziona la categoria più vicina al tuo caso (prenotazioni, pagamenti, account, ecc.).
                 </li>
@@ -201,7 +201,7 @@ export const AssistenzaPage: React.FC = () => {
                   Sospetto di truffa o richieste di pagamento fuori piattaforma.
                 </li>
                 <li className="text-justify">
-                  Mancata consegna o accesso non garantito all'oggetto/spazio.
+                  Mancata consegna o accesso non garantito all’oggetto/spazio.
                 </li>
                 <li className="text-justify">
                   Danni gravi, pericoli o comportamenti aggressivi.
@@ -221,15 +221,14 @@ export const AssistenzaPage: React.FC = () => {
               Hai bisogno di aiuto proprio ora?
             </h2>
             <p className="text-lg text-gray-200 mb-8 text-justify md:text-center">
-              Accedi alla sezione Messaggi per contattare direttamente il nostro team
-              di supporto. Se il problema riguarda una prenotazione in corso, segnala
-              subito la situazione. Siamo qui per aiutarti.
+              Accedi al tuo account, apri una richiesta dal Centro assistenza o,
+              se il problema riguarda una prenotazione in corso, segnala subito la
+              situazione al nostro team. Siamo qui per aiutarti.
             </p>
-            <Link 
-              to="/messages"
+            <Link to="/contatti"
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
-              Contatta il supporto
+              Contattaci
             </Link>
           </div>
         </section>

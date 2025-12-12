@@ -1,11 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
-import { useAuth } from "../contexts/AuthContext";
 
 export const SegnalaPage: React.FC = () => {
-  const { currentUser } = useAuth();
-
   return (
     <PageLayout slug="segnala-problema" fallbackTitle="Segnala un problema">
       <div className="bg-gray-50 text-gray-800">
@@ -182,16 +179,14 @@ export const SegnalaPage: React.FC = () => {
               Hai bisogno di inviare una segnalazione?
             </h2>
             <p className="text-lg text-gray-200 mb-8 text-justify md:text-center">
-              {currentUser
-                ? "Accedi alla sezione Messaggi per inviare una segnalazione al nostro team di supporto."
-                : "Accedi al tuo account per inviare una segnalazione tramite la sezione Messaggi."
-              }
+              Per inviare una segnalazione, contattaci tramite il form nella pagina Contatti
+              o accedi al tuo account per inviare un messaggio diretto al nostro team.
             </p>
             <Link 
-              to={currentUser ? "/messages" : "/login"}
+              to="/contatti"
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
-              {currentUser ? "Invia segnalazione" : "Accedi per segnalare"}
+              Contattaci
             </Link>
           </div>
         </section>
