@@ -1,0 +1,23 @@
+# robots.txt per RentHubber
+
+User-agent: *
+Allow: /
+
+# Permetti tutte le pagine pubbliche
+Allow: /listing/*
+Allow: /profile/*
+Allow: /terms
+Allow: /privacy-policy
+Allow: /cookie-policy
+
+# Blocca pagine private/admin
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /wallet
+Disallow: /messages
+Disallow: /my-listings
+Disallow: /publish
+Disallow: /settings
+
+# Sitemap
+Sitemap: https://renthubber.com/sitemap.xml
