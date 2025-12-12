@@ -21,6 +21,7 @@ import {
   Heart,
   Gift,
   ArrowRight,
+  Loader2,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -220,6 +221,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onUpdateProfile,
   onViewRenterProfile,
 }) => {
+  // ✅ NUOVO: Gestione caso user undefined (race condition durante login)
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-[#0A4D68] mx-auto mb-4" />
+          <p className="text-gray-600 text-lg">Caricamento dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   // --- STATE GENERALE ---
   const [requests, setRequests] = useState<BookingRequest[]>(MOCK_REQUESTS);
   const [loadingBookings, setLoadingBookings] = useState(false); // ✅ solo per debug/estensioni future
