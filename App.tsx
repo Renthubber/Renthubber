@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
 import { Header } from "./components/Header";
 import { BottomNavBar } from "./components/BottomNavBar";
 import { Footer } from "./components/Footer";
@@ -92,7 +93,8 @@ const buildFallbackUser = (authUser: any): User => ({
                 COMPONENTE PRINCIPALE
 -------------------------------------------------------*/
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<string>("home");
+  const navigate = useNavigate();
+  
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [selectedHost, setSelectedHost] = useState<User | null>(null);
   const [selectedRenter, setSelectedRenter] = useState<User | null>(null);
@@ -119,9 +121,6 @@ const App: React.FC = () => {
   // ✅ REF per evitare doppi processi auth
   const hasProcessedAuth = useRef(false);
   const isInitialized = useRef(false);
-
-  // ✅ Traccia la view precedente per il back dal profilo renter
-  const [previousView, setPreviousView] = useState<string>("home");
 
   const loadAdminUsers = async () => {
     try {
@@ -151,7 +150,7 @@ const App: React.FC = () => {
     const hash = window.location.hash;
     if (hash.includes('type=recovery') && hash.includes('access_token')) {
       console.log("🔑 Reset password detected - redirect a reset-password view");
-      setCurrentView('reset-password');
+      navigate('/reset-password');
       return;
     }
 
@@ -166,7 +165,7 @@ const App: React.FC = () => {
       setListings(loadedListings);
 
       setTransactions(await api.wallet.getTransactions());
-      setBookings(await api.bookings.getAllFromDb()); // ✅ USA BOOKINGS REALI DA SUPABASE
+      setBookings(await api.bookings.getAll()); // ✅ FIX: rimosso "FromDb"
       setPayoutRequests(await api.payouts.getAll());
       setDisputes(await api.admin.getDisputes());
       setReviews(await api.admin.getReviews());
@@ -189,7 +188,7 @@ const App: React.FC = () => {
           };
           setCurrentUser(adminUser);
           setActiveMode("hubber");
-          setCurrentView("admin");
+          navigate('/admin');
           hasProcessedAuth.current = true;
 
           await loadAdminUsers();
@@ -213,7 +212,7 @@ const App: React.FC = () => {
               if (dbUser.role === "admin" || userRoles.includes("admin")) {
                 console.log("🔑 Admin riconosciuto dal ruolo DB!");
                 setActiveMode("hubber");
-                setCurrentView("admin");
+                navigate('/admin');
                 hasProcessedAuth.current = true;
                 await loadAdminUsers();
                 return;
@@ -234,557 +233,433 @@ const App: React.FC = () => {
             setCurrentUser(fallbackUser);
             setActiveMode("renter");
           }
-
-          hasProcessedAuth.current = true;
-          setCurrentView("home");
         }
       } else {
-        setCurrentView("home");
+        console.log("❌ Nessuna sessione attiva");
       }
     };
 
     init();
-
-    // Listener Auth
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("⚡ Stato auth:", event);
-
-        // ✅ Ignora eventi che non sono login/logout effettivi
-        if (
-          event === "TOKEN_REFRESHED" ||
-          event === "USER_UPDATED" ||
-          event === "INITIAL_SESSION"
-        ) {
-          console.log("⏭️ Evento ignorato:", event);
-          return;
-        }
-
-        if (event === "SIGNED_IN" && session?.user) {
-          // ✅ Se abbiamo già processato l'auth, ignora
-          if (hasProcessedAuth.current) {
-            console.log("⏭️ Auth già processato, ignoro evento SIGNED_IN");
-            return;
-          }
-          hasProcessedAuth.current = true;
-
-          const email = session.user.email || "";
-          const isAdmin =
-            email.toLowerCase() === (DEMO_ADMIN.email || "").toLowerCase();
-
-          if (isAdmin) {
-            const adminUser: User = {
-              ...DEMO_ADMIN,
-              id: session.user.id,
-              email,
-            };
-            setCurrentUser(adminUser);
-            setActiveMode("hubber");
-            setCurrentView("admin");
-            await loadAdminUsers();
-          } else {
-            console.log("🔑 Utente loggato (listener):", session.user.id);
-            try {
-              const dbUser = await Promise.race([
-                api.users.get(session.user.id),
-                new Promise<null>((resolve) =>
-                  setTimeout(() => resolve(null), 5000)
-                ),
-              ]);
-
-              if (dbUser) {
-                console.log("✅ Utente caricato dal DB (listener):", dbUser);
-                setCurrentUser(dbUser);
-                const userRoles = dbUser.roles || [dbUser.role];
-                
-                // ✅ FIX: Controlla se è admin dal ruolo DB
-                if (dbUser.role === "admin" || userRoles.includes("admin")) {
-                  console.log("🔑 Admin riconosciuto dal ruolo DB (listener)!");
-                  setActiveMode("hubber");
-                  setCurrentView("admin");
-                  await loadAdminUsers();
-                  return;
-                }
-                
-                setActiveMode(
-                  userRoles.includes("hubber") ? "hubber" : "renter"
-                );
-              } else {
-                console.log("⚠️ Timeout o utente non trovato, uso fallback");
-                const fallbackUser = buildFallbackUser(session.user);
-                setCurrentUser(fallbackUser);
-                setActiveMode("renter");
-              }
-            } catch (e) {
-              console.log("⚠️ Errore caricamento utente, uso fallback:", e);
-              const fallbackUser = buildFallbackUser(session.user);
-              setCurrentUser(fallbackUser);
-              setActiveMode("renter");
-            }
-            // ✅ NON cambiamo view qui - l'utente resta dove si trova
-          }
-        } else if (event === "SIGNED_OUT") {
-          // ✅ Reset al logout
-          hasProcessedAuth.current = false;
-          setCurrentUser(null);
-          setActiveMode("renter");
-          setCurrentView("home");
-          setAdminUsers([]);
-        }
-      }
-    );
-
-    return () => listener.subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   /* ------------------------------------------------------
-                      HANDLER ANNUNCI
+      FUNZIONI HELPER
   -------------------------------------------------------*/
-  const handleAddListing = async (listing: Listing) => {
-    try {
-      const saved = await api.listings.create(listing);
-      setListings((prev) => [saved, ...prev]);
-      setCurrentView("my-listings");
-    } catch (e) {
-      console.error("Errore create listing:", e);
-      setListings((prev) => [listing, ...prev]);
-      setCurrentView("my-listings");
+  const handleLogin = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    if (data.user) {
+      const isAdmin =
+        email.toLowerCase() === (DEMO_ADMIN.email || "").toLowerCase();
+
+      if (isAdmin) {
+        const adminUser: User = {
+          ...DEMO_ADMIN,
+          id: data.user.id,
+          email,
+        };
+        setCurrentUser(adminUser);
+        setActiveMode("hubber");
+        navigate('/admin');
+        await loadAdminUsers();
+      } else {
+        const dbUser = await api.users.get(data.user.id);
+
+        if (dbUser) {
+          setCurrentUser(dbUser);
+          const userRoles = dbUser.roles || [dbUser.role];
+
+          if (dbUser.role === "admin" || userRoles.includes("admin")) {
+            setActiveMode("hubber");
+            navigate('/admin');
+            await loadAdminUsers();
+          } else if (userRoles.includes("hubber")) {
+            setActiveMode("hubber");
+            navigate('/dashboard');
+          } else {
+            setActiveMode("renter");
+            navigate('/dashboard');
+          }
+        } else {
+          const fallbackUser = buildFallbackUser(data.user);
+          setCurrentUser(fallbackUser);
+          setActiveMode("renter");
+          navigate('/dashboard');
+        }
+      }
     }
   };
 
-  const handleUpdateListing = async (listing: Listing) => {
-    const saved = await api.listings.update(listing);
-    setListings((prev) => prev.map((l) => (l.id === saved.id ? saved : l)));
-    setCurrentView("my-listings");
-  };
-
-  /* ------------------------------------------------------
-                        LOGOUT
-  -------------------------------------------------------*/
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setCurrentUser(null);
-    setCurrentView("home");
-    setAdminUsers([]);
+    setActiveMode("renter");
+    navigate('/');
+  };
+
+  const handleAddListing = (listing: Listing) => {
+    setListings((prev) => [...prev, listing]);
+    navigate('/my-listings');
+  };
+
+  const handleUpdateListing = (updated: Listing) => {
+    setListings((prev) =>
+      prev.map((l) => (l.id === updated.id ? updated : l))
+    );
+    navigate('/my-listings');
+  };
+
+  const handleRenterClick = (renter: User) => {
+    console.log("APP: renter cliccato:", renter);
+    setSelectedRenter(renter);
+    navigate('/renter-profile');
   };
 
   /* ------------------------------------------------------
-        HANDLER COMUNE PER CLICK SU RENTER
+      WRAPPER COMPONENTS PER GESTIRE PARAMS
   -------------------------------------------------------*/
-  const handleRenterClick = async (renter: { id: string; name: string; avatar?: string }, fromView: string) => {
-    setPreviousView(fromView);
+  const ListingDetailWrapper = () => {
+    const { id } = useParams<{ id: string }>();
+    const listing = listings.find(l => l.id === id);
     
-    // ✅ Carica dati completi dal database
-    try {
-      const fullRenter = await api.users.get(renter.id);
-      if (fullRenter) {
-        setSelectedRenter(fullRenter);  // ✅ CAMBIATO
-      } else {
-        // Fallback se non trova l'utente
-        const renterAsUser: User = {
-          id: renter.id,
-          name: renter.name,
-          avatar: renter.avatar,
-          email: "",
-          role: "renter",
-          roles: ["renter"],
-          status: "active",
-          renterBalance: 0,
-          hubberBalance: 0,
-          referralCode: "",
-          isSuperHubber: false,
-          rating: 0,
-          isSuspended: false,
-          emailVerified: false,
-          phoneVerified: false,
-          idDocumentVerified: false,
-          verificationStatus: "unverified",
-        };
-        setSelectedRenter(renterAsUser);  // ✅ CAMBIATO
-      }
-    } catch (err) {
-      console.error("Errore caricamento renter:", err);
+    if (!listing) {
+      return <Navigate to="/" />;
     }
-    
-    setCurrentView("renter-profile");
+
+    return (
+      <ListingDetail
+        listing={listing}
+        currentUser={currentUser}
+        onBack={() => navigate(-1)}
+        systemConfig={systemConfig}
+        onPaymentSuccess={() => {}}
+        onHostClick={(host) => {
+          setSelectedHost(host);
+          navigate('/host-profile');
+        }}
+        onRenterClick={handleRenterClick}
+      />
+    );
   };
-  /* ------------------------------------------------------
-                    RENDER PRINCIPALE
-  -------------------------------------------------------*/
+
+  const PublicHostProfileWrapper = () => {
+    if (!selectedHost) {
+      return <Navigate to="/" />;
+    }
+
+    return (
+      <PublicHostProfile
+        host={selectedHost}
+        listings={listings.filter(
+          (l) => l.hostId === selectedHost.id && l.status === "published"
+        )}
+        onBack={() => navigate(-1)}
+        onListingClick={(listing) => {
+          setSelectedListing(listing);
+          navigate(`/listing/${listing.id}`);
+        }}
+        onRenterClick={handleRenterClick}
+      />
+    );
+  };
+
+  const PublicRenterProfileWrapper = () => {
+    if (!selectedRenter) {
+      return <Navigate to="/" />;
+    }
+
+    return (
+      <PublicRenterProfile
+        renter={selectedRenter}
+        onBack={() => navigate(-1)}
+      />
+    );
+  };
+
+  const HubberListingEditorWrapper = () => {
+    if (!editingListing) {
+      return <Navigate to="/my-listings" />;
+    }
+
+    return (
+      <HubberListingEditor
+        listing={editingListing}
+        onSave={handleUpdateListing}
+        onCancel={() => navigate('/my-listings')}
+      />
+    );
+  };
+
   return (
     <BrandingProvider>
-      <div className="min-h-screen flex flex-col">
-      {/* HEADER */}
-      {currentView !== "admin" &&
-        currentView !== "hubber-edit" &&
-        currentView !== "become-hubber" && (
-          <Header
-            setView={setCurrentView}
-            currentView={currentView}
-            currentUser={currentUser}
-            activeMode={activeMode}
-            onSwitchMode={setActiveMode}
-            onLogout={handleLogout}
-          />
-        )}
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <Header
+        currentUser={currentUser}
+        activeMode={activeMode}
+        onSwitchMode={setActiveMode}
+        onLogout={handleLogout}
+      />
 
-      <main className="flex-grow bg-gray-50">
-        {/* SIGNUP (Registrazione - parte dalla scelta ruolo) */}
-        {currentView === "signup" && (
-          <Signup
-            initialStep="role"
-            onComplete={(user) => {
-              setCurrentUser(user);
-              const userRoles = user.roles || [user.role];
-              setActiveMode(userRoles.includes("hubber") ? "hubber" : "renter");
-              setCurrentView("dashboard");
-            }}
-            onLoginRedirect={() => setCurrentView("login")}
-            onForgotPassword={() => setCurrentView("forgot-password")}
-          />
-        )}
-
-        {/* LOGIN (Accedi - parte direttamente dal form login) */}
-{currentView === "login" && (
-  <Signup
-    initialStep="login"
-    onComplete={async (user) => {
-      setCurrentUser(user);
-      const userRoles = user.roles || [user.role];
-      
-      // Se è admin, vai alla dashboard admin
-      if (user.role === "admin" || userRoles.includes("admin") || 
-          user.email?.toLowerCase() === (DEMO_ADMIN.email || "").toLowerCase()) {
-        setActiveMode("hubber");
-        setCurrentView("admin");
-        await loadAdminUsers();
-        return;
-      }
-      
-      setActiveMode(userRoles.includes("hubber") ? "hubber" : "renter");
-      setCurrentView("dashboard");
-    }}
-    onLoginRedirect={() => setCurrentView("signup")}
-    onForgotPassword={() => setCurrentView("forgot-password")}
-  />
-)}
-
-{/* FORGOT PASSWORD */}
-{currentView === "forgot-password" && (
-  <ForgotPassword
-    onBackToLogin={() => setCurrentView("login")}
-  />
-)}
-
-{/* RESET PASSWORD */}
-{currentView === "reset-password" && (
-  <ResetPassword
-    onSuccess={() => setCurrentView("login")}
-    onRequestNewLink={() => setCurrentView("forgot-password")}
-  />
-)}
-
-{/* HOME */}
-        {currentView === "home" && (
-          <Home
-            listings={listings}
-            bookings={bookings}
-            user={currentUser}
-            onListingClick={(listing) => {
-              console.log("App.onListingClick HOME", listing.id);
-              setSelectedListing(listing);
-              setCurrentView("detail");
-            }}
-          />
-        )}
-
-        {/* DASHBOARD HUBBER/RENTER */}
-        {currentView === "dashboard" && currentUser && (
-          <Dashboard
-            user={currentUser}
-            activeMode={activeMode}
-            onManageListings={() => setCurrentView("my-listings")}
-            onBecomeHubber={() => setCurrentView("become-hubber")}
-            onNavigateToWallet={() => setCurrentView("wallet")}
-            onViewListing={(listing) => {
-              setSelectedListing(listing);
-              setCurrentView("detail");
-            }}
-            invoices={invoices}
-            onUpdateProfile={async (data) => {
-              try {
-                const updatedUser: User = {
-                  ...currentUser,
-                  email: data.email ?? currentUser.email,
-                  phoneNumber: data.phoneNumber ?? currentUser.phoneNumber,
-                  userType: data.userType ?? (currentUser as any).userType,
-                  dateOfBirth: data.dateOfBirth ?? (currentUser as any).dateOfBirth,
-                  bio: data.bio ?? (currentUser as any).bio,
-                  emailVerified: data.resetEmailVerification
-                    ? false
-                    : currentUser.emailVerified,
-                  phoneVerified: data.resetPhoneVerification
-                    ? false
-                    : currentUser.phoneVerified,
-                  idDocumentVerified: data.resetIdDocumentVerification
-                    ? false
-                    : currentUser.idDocumentVerified,
-                };
-                await api.users.update(updatedUser);
-                setCurrentUser(updatedUser);
-                console.log("✅ Profilo aggiornato su Supabase");
-              } catch (err) {
-                console.error("❌ Errore aggiornamento profilo:", err);
-              }
-            }}
-            onViewRenterProfile={(renter) => handleRenterClick(renter, "dashboard")}
-          />
-        )}
-
-        {/* ADMIN DASHBOARD */}
-        {currentView === "admin" &&
-          currentUser &&
-          currentUser.role === "admin" && (
-            <AdminDashboard
-              systemConfig={systemConfig}
-              onUpdateConfig={setSystemConfig}
-              allListings={listings}
-              allUsers={adminUsers}
-              payoutRequests={payoutRequests}
-              onProcessPayout={(id, approved) => {
-                setPayoutRequests((prev) =>
-                  prev.map((p) =>
-                    p.id === id
-                      ? { ...p, status: approved ? "approved" : "rejected" }
-                      : p
-                  )
-                );
-              }}
-              onLogout={handleLogout}
-              disputes={disputes}
-              onDisputeAction={(id, action, note) => {
-                setDisputes((prev) =>
-                  prev.map((d) =>
-                    d.id === id
-                      ? {
-                          ...d,
-                          status:
-                            action === "resolve" ? "resolved" : "dismissed",
-                          adminNote: note ?? d.adminNote,
-                        }
-                      : d
-                  )
-                );
-              }}
-              reviews={reviews}
-              invoices={invoices}
+      <main className="flex-1">
+        <Routes>
+          {/* HOME & AUTH */}
+          <Route path="/" element={
+            <Home
+              listings={listings}
               currentUser={currentUser}
-              bookings={bookings}
+              onListingClick={(listing) => {
+                setSelectedListing(listing);
+                navigate(`/listing/${listing.id}`);
+              }}
             />
-          )}
+          } />
+          
+          <Route path="/signup" element={
+            <Signup 
+              onComplete={async (user) => {
+                setCurrentUser(user);
+                const userRoles = user.roles || [user.role];
+                
+                if (user.role === "admin" || userRoles.includes("admin")) {
+                  setActiveMode("hubber");
+                  navigate('/admin');
+                  await loadAdminUsers();
+                } else if (userRoles.includes("hubber")) {
+                  setActiveMode("hubber");
+                  navigate('/dashboard');
+                } else {
+                  setActiveMode("renter");
+                  navigate('/dashboard');
+                }
+              }}
+              onLoginRedirect={() => navigate('/login')}
+              onForgotPassword={() => navigate('/forgot-password')}
+            />
+          } />
+          
+          <Route path="/login" element={
+            <Signup 
+              initialStep="login"
+              onComplete={async (user) => {
+                setCurrentUser(user);
+                const userRoles = user.roles || [user.role];
+                
+                if (user.role === "admin" || userRoles.includes("admin")) {
+                  setActiveMode("hubber");
+                  navigate('/admin');
+                  await loadAdminUsers();
+                } else if (userRoles.includes("hubber")) {
+                  setActiveMode("hubber");
+                  navigate('/dashboard');
+                } else {
+                  setActiveMode("renter");
+                  navigate('/dashboard');
+                }
+              }}
+              onLoginRedirect={() => navigate('/signup')}
+              onForgotPassword={() => navigate('/forgot-password')}
+            />
+          } />
+          
+          <Route path="/forgot-password" element={
+            <ForgotPassword onBack={() => navigate('/')} />
+          } />
+          
+          <Route path="/reset-password" element={
+            <ResetPassword onSuccess={() => navigate('/')} />
+          } />
 
-        {/* MY LISTINGS */}
-{currentView === "my-listings" && currentUser && (
-  <MyListings
-    currentUser={currentUser}
-    listings={listings}
-    onCreateNew={() => setCurrentView("publish")}
-    onEditListing={(listing) => {
-      console.log("App.onEditListing", listing.id);
-      setEditingListing(listing);
-      setCurrentView("hubber-edit");
-    }}
-    onListingUpdated={async () => {
-      // Invalida cache e ricarica
-      api.listings.invalidateCache();
-      const loadedListings = await api.admin.getAllListings();
-      setListings(loadedListings);
-    }}
-  />
-)}
+          {/* DASHBOARD & USER VIEWS */}
+          <Route path="/dashboard" element={
+            currentUser ? (
+              <Dashboard
+                user={currentUser}
+                activeMode={activeMode}
+                onManageListings={() => navigate('/my-listings')}
+                onBecomeHubber={() => navigate('/become-hubber')}
+                onNavigateToWallet={() => navigate('/wallet')}
+                onViewListing={(listing) => {
+                  setSelectedListing(listing);
+                  navigate(`/listing/${listing.id}`);
+                }}
+                invoices={invoices}
+                onUpdateProfile={async (updated) => {
+                  // Qui dovresti implementare l'aggiornamento del profilo
+                  console.log('Update profile:', updated);
+                }}
+                onViewRenterProfile={handleRenterClick}
+              />
+            ) : (
+              <Navigate to="/" />
+            )
+          } />
 
-        {/* PUBLISH */}
-        {currentView === "publish" && currentUser && (
-          <Publish onPublish={handleAddListing} currentUser={currentUser} />
-        )}
+          <Route path="/admin" element={
+            currentUser?.role === 'admin' ? (
+              <AdminDashboard
+                systemConfig={systemConfig}
+                onUpdateConfig={setSystemConfig}
+                allListings={listings}
+                allUsers={adminUsers}
+                payoutRequests={payoutRequests}
+                onProcessPayout={(requestId, approved) => {
+                  setPayoutRequests((prev) =>
+                    prev.map((p) => 
+                      p.id === requestId 
+                        ? { ...p, status: approved ? "paid" : "rejected" } 
+                        : p
+                    )
+                  );
+                }}
+                onLogout={() => {
+                  setCurrentUser(null);
+                  navigate('/');
+                }}
+                disputes={disputes}
+                onDisputeAction={(id, action, note) => {
+                  setDisputes((prev) =>
+                    prev.map((d) =>
+                      d.id === id
+                        ? {
+                            ...d,
+                            status:
+                              action === "resolve" ? "resolved" : "dismissed",
+                            adminNote: note ?? d.adminNote,
+                          }
+                        : d
+                    )
+                  );
+                }}
+                reviews={reviews}
+                invoices={invoices}
+                currentUser={currentUser}
+                bookings={bookings}
+              />
+            ) : (
+              <Navigate to="/" />
+            )
+          } />
 
-        {/* MESSAGES */}
-        {currentView === "messages" && currentUser && (
-          <Messages currentUser={currentUser} onCreateDispute={() => {}} />
-        )}
+          <Route path="/my-listings" element={
+            currentUser ? (
+              <MyListings
+                currentUser={currentUser}
+                listings={listings}
+                onCreateNew={() => navigate('/publish')}
+                onEditListing={(listing) => {
+                  setEditingListing(listing);
+                  navigate('/edit-listing');
+                }}
+                onListingUpdated={async () => {
+                  api.listings.invalidateCache();
+                  const loadedListings = await api.admin.getAllListings();
+                  setListings(loadedListings);
+                }}
+              />
+            ) : (
+              <Navigate to="/" />
+            )
+          } />
 
-        {/* WALLET */}
-        {currentView === "wallet" && currentUser && (
-          <Wallet
-            currentUser={currentUser}
-            activeMode={activeMode}
-            systemConfig={systemConfig}
-            onUpdateUser={() => {}}
-            onRequestPayout={() => {}}
-          />
-        )}
+          <Route path="/publish" element={
+            currentUser ? (
+              <Publish onPublish={handleAddListing} currentUser={currentUser} />
+            ) : (
+              <Navigate to="/" />
+            )
+          } />
 
-        {/* DETTAGLIO ANNUNCIO */}
-        {currentView === "detail" && selectedListing && (
-          <ListingDetail
-            listing={selectedListing}
-            currentUser={currentUser}
-            onBack={() => {
-              setSelectedListing(null);
-              setCurrentView("home");
-            }}
-            systemConfig={systemConfig}
-            onPaymentSuccess={() => {}}
-            onHostClick={(host) => {
-              console.log("APP: host cliccato:", host);
-              setSelectedHost(host);
-              setCurrentView("host-profile");
-            }}
-            onRenterClick={(renter) => handleRenterClick(renter, "detail")}
-          />
-        )}
+          <Route path="/messages" element={
+            currentUser ? (
+              <Messages currentUser={currentUser} onCreateDispute={() => {}} />
+            ) : (
+              <Navigate to="/" />
+            )
+          } />
 
-        {/* PROFILO HOST */}
-        {currentView === "host-profile" && selectedHost && (
-          <PublicHostProfile
-            host={selectedHost}
-            listings={listings.filter(
-              (l) => l.hostId === selectedHost.id && l.status === "published"
-            )}
-            onBack={() => setCurrentView("detail")}
-            onListingClick={(listing) => {
-              setSelectedListing(listing);
-              setCurrentView("detail");
-            }}
-            onRenterClick={(renter) => handleRenterClick(renter, "host-profile")}
-          />
-        )}
+          <Route path="/wallet" element={
+            currentUser ? (
+              <Wallet
+                currentUser={currentUser}
+                activeMode={activeMode}
+                systemConfig={systemConfig}
+                onUpdateUser={() => {}}
+                onRequestPayout={() => {}}
+              />
+            ) : (
+              <Navigate to="/" />
+            )
+          } />
 
-        {/* PROFILO RENTER */}
-{currentView === "renter-profile" && selectedRenter && (
-  <PublicRenterProfile
-    renter={selectedRenter}
-    onBack={() => setCurrentView(previousView)}
-  />
-)}
+          {/* LISTING DETAIL */}
+          <Route path="/listing/:id" element={<ListingDetailWrapper />} />
 
-        {/* EDIT LISTING */}
-        {currentView === "hubber-edit" && editingListing && (
-          <HubberListingEditor
-            listing={editingListing}
-            onSave={handleUpdateListing}
-            onCancel={() => setCurrentView("my-listings")}
-          />
-        )}
+          {/* PROFILES */}
+          <Route path="/host-profile" element={<PublicHostProfileWrapper />} />
+          <Route path="/renter-profile" element={<PublicRenterProfileWrapper />} />
 
-        {/* BECOME HUBBER */}
-        {currentView === "become-hubber" && currentUser && (
-          <BecomeHubberWizard
-            user={currentUser}
-            onComplete={(updatedUser) => {
-              setCurrentUser(updatedUser);
-              setActiveMode("hubber");
-              setCurrentView("dashboard");
-            }}
-            onCancel={() => setCurrentView("dashboard")}
-          />
-        )}
+          {/* EDIT LISTING */}
+          <Route path="/edit-listing" element={<HubberListingEditorWrapper />} />
 
-        {/* ============================================
-            PAGINE FOOTER - RENTHUBBER
-        ============================================ */}
+          {/* BECOME HUBBER */}
+          <Route path="/become-hubber" element={
+            currentUser ? (
+              <BecomeHubberWizard
+                user={currentUser}
+                onComplete={(updatedUser) => {
+                  setCurrentUser(updatedUser);
+                  setActiveMode("hubber");
+                  navigate('/dashboard');
+                }}
+                onCancel={() => navigate('/dashboard')}
+              />
+            ) : (
+              <Navigate to="/" />
+            )
+          } />
 
-        {currentView === "chi-siamo" && (
-          <ChiSiamoPage setView={setCurrentView} />
-        )}
+          {/* PAGINE FOOTER - RENTHUBBER */}
+          <Route path="/chi-siamo" element={<ChiSiamoPage />} />
+          <Route path="/come-funziona" element={<ComeFunzionaPage />} />
+          <Route path="/sicurezza" element={<SicurezzaPage />} />
+          <Route path="/tariffe" element={<TariffePage />} />
+          <Route path="/invita-amico" element={<InvitaAmicoPage />} />
+          <Route path="/super-hubber" element={<SuperHubberPage />} />
+          <Route path="/investitori" element={<InvestitoriPage />} />
 
-        {currentView === "come-funziona" && (
-          <ComeFunzionaPage setView={setCurrentView} />
-        )}
+          {/* PAGINE FOOTER - SUPPORTO */}
+          <Route path="/faq" element={<FaqPage />} />
+          <Route path="/diventare-hubber" element={<DiventareHubberPage />} />
+          <Route path="/assistenza" element={<AssistenzaPage />} />
+          <Route path="/cancellazione" element={<CancellazionePage />} />
+          <Route path="/segnala" element={<SegnalaPage />} />
+          <Route path="/contatti" element={<ContattiPage />} />
 
-        {currentView === "sicurezza" && (
-          <SicurezzaPage setView={setCurrentView} />
-        )}
-
-        {currentView === "tariffe" && (
-          <TariffePage setView={setCurrentView} />
-        )}
-
-        {currentView === "invita-amico" && (
-          <InvitaAmicoPage setView={setCurrentView} />
-        )}
-
-        {currentView === "super-hubber" && (
-          <SuperHubberPage setView={setCurrentView} />
-        )}
-
-        {currentView === "investitori" && (
-          <InvestitoriPage setView={setCurrentView} />
-        )}
-
-        {/* ============================================
-            PAGINE FOOTER - SUPPORTO
-        ============================================ */}
-
-        {currentView === "faq" && <FaqPage setView={setCurrentView} />}
-
-        {currentView === "diventare-hubber" && (
-          <DiventareHubberPage setView={setCurrentView} />
-        )}
-
-        {currentView === "assistenza" && (
-          <AssistenzaPage setView={setCurrentView} />
-        )}
-
-        {currentView === "cancellazione" && (
-          <CancellazionePage setView={setCurrentView} />
-        )}
-
-        {currentView === "segnala" && (
-          <SegnalaPage setView={setCurrentView} />
-        )}
-
-        {currentView === "contatti" && (
-          <ContattiPage setView={setCurrentView} />
-        )}
-
-        {/* ============================================
-            PAGINE FOOTER - LEGALE
-        ============================================ */}
-
-        {currentView === "cookie" && <CookiePage setView={setCurrentView} />}
-
-        {currentView === "linee-guida" && (
-          <LineeGuidaPage setView={setCurrentView} />
-        )}
-
-        {currentView === "antidiscriminazione" && (
-          <AntidiscriminazionePage setView={setCurrentView} />
-        )}
-
-        {currentView === "privacy" && (
-          <PrivacyPage setView={setCurrentView} />
-        )}
-
-        {currentView === "termini" && (
-          <TerminiPage setView={setCurrentView} />
-        )}
-
-        {currentView === "mappa-sito" && (
-          <MappaSitoPage setView={setCurrentView} />
-        )}
+          {/* PAGINE FOOTER - LEGALE */}
+          <Route path="/cookie-policy" element={<CookiePage />} />
+          <Route path="/linee-guida" element={<LineeGuidaPage />} />
+          <Route path="/antidiscriminazione" element={<AntidiscriminazionePage />} />
+          <Route path="/privacy-policy" element={<PrivacyPage />} />
+          <Route path="/termini-condizioni" element={<TerminiPage />} />
+          <Route path="/mappa-sito" element={<MappaSitoPage />} />
+        </Routes>
       </main>
 
       {/* Bottom Navigation Bar - Solo Mobile */}
       <BottomNavBar
-        setView={setCurrentView}
-        currentView={currentView}
         currentUser={currentUser}
         activeMode={activeMode}
         onSwitchMode={setActiveMode}
       />
 
-      <Footer setView={setCurrentView} />
+      <Footer />
     </div>
 
 <CookieConsent />
