@@ -165,7 +165,7 @@ const App: React.FC = () => {
       setListings(loadedListings);
 
       setTransactions(await api.wallet.getTransactions());
-      setBookings(await api.bookings.getAll()); // ✅ FIX: rimosso "FromDb"
+      setBookings(await api.bookings.getAllFromDb()); // ✅ USA BOOKINGS REALI DA SUPABASE
       setPayoutRequests(await api.payouts.getAll());
       setDisputes(await api.admin.getDisputes());
       setReviews(await api.admin.getReviews());
@@ -413,6 +413,7 @@ const App: React.FC = () => {
           <Route path="/" element={
             <Home
               listings={listings}
+              bookings={bookings}
               currentUser={currentUser}
               onListingClick={(listing) => {
                 setSelectedListing(listing);
