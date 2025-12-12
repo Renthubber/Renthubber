@@ -4990,34 +4990,45 @@ issued_at: new Date().toISOString()
         return value;
       };
 
+      // 🐛 DEBUG: Vediamo cosa arriva
+      console.log('🔍 DISPUTES.CREATE - Payload ricevuto:', payload);
+      console.log('🔍 booking_id tipo:', typeof payload.bookingId, 'valore:', payload.bookingId);
+      console.log('🔍 contact_id tipo:', typeof payload.contactId, 'valore:', payload.contactId);
+      console.log('🔍 dispute_id tipo:', typeof payload.disputeId, 'valore:', payload.disputeId);
+
+      const insertData = {
+        dispute_id: toUuidOrNull(payload.disputeId),
+        contact_id: toUuidOrNull(payload.contactId),
+        booking_id: toUuidOrNull(payload.bookingId),
+        against_user_id: toUuidOrNull(payload.againstUserId),
+        against_user_name: payload.againstUserName,
+        opened_by_user_id: toUuidOrNull(payload.openedByUserId),
+        opened_by_role: payload.openedByRole || null,
+        role: payload.role,
+        scope: payload.scope,
+        reason: payload.reason,
+        details: payload.details,
+        refund_amount: payload.refundAmount
+          ? Number(payload.refundAmount)
+          : null,
+        refund_currency: payload.refundCurrency || "EUR",
+        refund_document_name: payload.refundDocumentName || null,
+        evidence_images: payload.evidenceImages || [],
+        status: payload.status || "open",
+        created_at: payload.createdAt || new Date().toISOString(),
+      };
+
+      console.log('🔍 DISPUTES.CREATE - Dati da inserire:', insertData);
+
       const { data, error } = await supabase
         .from("disputes")
-        .insert({
-          dispute_id: toUuidOrNull(payload.disputeId),
-          contact_id: toUuidOrNull(payload.contactId),
-          booking_id: toUuidOrNull(payload.bookingId),
-          against_user_id: toUuidOrNull(payload.againstUserId),
-          against_user_name: payload.againstUserName,
-          opened_by_user_id: toUuidOrNull(payload.openedByUserId),
-          opened_by_role: payload.openedByRole || null,
-          role: payload.role,
-          scope: payload.scope,
-          reason: payload.reason,
-          details: payload.details,
-          refund_amount: payload.refundAmount
-            ? Number(payload.refundAmount)
-            : null,
-          refund_currency: payload.refundCurrency || "EUR",
-          refund_document_name: payload.refundDocumentName || null,
-          evidence_images: payload.evidenceImages || [],
-          status: payload.status || "open",
-          created_at: payload.createdAt || new Date().toISOString(),
-        })
+        .insert(insertData)
         .select()
         .single();
 
       if (error) {
-        console.error("Errore salvataggio contestazione Supabase:", error);
+        console.error("❌ Errore salvataggio contestazione Supabase:", error);
+        console.error("❌ Dati che hanno causato errore:", insertData);
         throw error;
       }
 
