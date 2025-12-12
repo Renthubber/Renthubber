@@ -1024,24 +1024,26 @@ export const Messages: React.FC<MessagesProps> = ({
     }
   };
 
-  const handleImageAttach = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleImageAttach = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     if (!isBookingConfirmed) return;
 
     const file = e.target.files?.[0];
     if (!file) return;
 
     const localUrl = URL.createObjectURL(file as File);
-
     const now = new Date();
     const time = now.toLocaleTimeString("it-IT", {
       hour: "2-digit",
       minute: "2-digit",
     });
 
+    const tempId = `img-${now.getTime()}`;
+
+    // 1) Mostra immagine locale immediatamente (UX veloce)
     setChatMessages((prev) => [
       ...prev,
       {
-        id: `img-${now.getTime()}`,
+        id: tempId,
         from: "me",
         imageUrl: localUrl,
         time,
@@ -1049,6 +1051,70 @@ export const Messages: React.FC<MessagesProps> = ({
     ]);
 
     e.target.value = "";
+
+    // 2) Carica immagine su Supabase Storage e salva messaggio
+    try {
+      const { supabase } = await import('../lib/supabase');
+      
+      // Verifica/crea bucket images
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const imagesBucket = buckets?.find((b) => b.name === 'images');
+      if (!imagesBucket) {
+        await supabase.storage.createBucket('images', { public: true });
+      }
+      
+      // Crea nome file unico
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${currentUser?.id || 'user'}_${Date.now()}.${fileExt}`;
+      const filePath = `chat-images/${fileName}`;
+
+      // Upload su Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Errore upload immagine:', uploadError);
+        return;
+      }
+
+      // Ottieni URL pubblico
+      const { data: urlData } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl;
+
+      // Salva messaggio nel database con immagine
+      if (activeContact?.isRealConversation && currentUser) {
+        const msgId = `msg-img-${Date.now()}`;
+        await supabase.from("messages").insert({
+          id: msgId,
+          conversation_id: activeContact.id,
+          from_user_id: currentUser.id,
+          to_user_id: activeContact.contactId || null,
+          text: '', // Messaggio vuoto, solo immagine
+          image_url: publicUrl,
+          created_at: now.toISOString(),
+          read: false,
+          flagged: false,
+          is_support: false,
+          is_admin_message: false,
+        });
+
+        // Aggiorna messaggio locale con URL reale
+        setChatMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === tempId
+              ? { ...msg, imageUrl: publicUrl, id: msgId }
+              : msg
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Errore salvataggio immagine:', err);
+      // L'immagine rimane visibile localmente anche se il salvataggio fallisce
+    }
   };
 
   const handleDisputeImageUpload = (
@@ -1182,7 +1248,30 @@ export const Messages: React.FC<MessagesProps> = ({
         // Non blocchiamo: la contestazione esiste comunque nell'app
       }
 
-      // 2) Crea oggetto locale per la dashboard / stato interno
+      // 2) Salva messaggio della contestazione nel database
+      try {
+        const { supabase } = await import('../lib/supabase');
+        const msgId = `msg-dispute-${Date.now()}`;
+        const messageText = "Hai avviato una contestazione per questa prenotazione. Il team di supporto di Renthubber valuterà la situazione e proverà a trovare una soluzione tra le parti.";
+        
+        await supabase.from("messages").insert({
+          id: msgId,
+          conversation_id: activeContact.id, // conversationId
+          from_user_id: currentUser?.id || null,
+          to_user_id: activeContact.contactId || null,
+          text: messageText,
+          created_at: createdAtIso,
+          read: false,
+          flagged: false,
+          is_support: false,
+          is_admin_message: false,
+        });
+      } catch (err) {
+        console.error("Errore salvataggio messaggio contestazione:", err);
+        // Non blocchiamo: il messaggio verrà mostrato comunque localmente
+      }
+
+      // 3) Crea oggetto locale per la dashboard / stato interno
       const dispute = {
         id: finalDisputeId,
       } as Dispute;
@@ -1207,7 +1296,7 @@ export const Messages: React.FC<MessagesProps> = ({
 
       onCreateDispute(dispute);
 
-      // 3) Messaggio di conferma nella chat
+      // 4) Messaggio di conferma nella chat (locale per UI immediata)
       const now = new Date();
       const time = now.toLocaleTimeString("it-IT", {
         hour: "2-digit",
