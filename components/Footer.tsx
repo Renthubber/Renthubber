@@ -1,10 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
-interface FooterProps {
-  setView: (view: string) => void;
-}
-
-export const Footer: React.FC<FooterProps> = ({ setView }) => {
+export const Footer: React.FC = () => {
   return (
     <footer className="bg-gray-50 border-t border-gray-200 py-12 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -30,13 +27,13 @@ export const Footer: React.FC<FooterProps> = ({ setView }) => {
           <div className="max-w-[190px]">
             <h3 className="font-semibold text-gray-900 mb-4">Renthubber</h3>
             <ul className="space-y-2 text-sm text-gray-500">
-              <li><span onClick={() => setView('chi-siamo')} className="hover:text-brand cursor-pointer">Chi siamo</span></li>
-              <li><span onClick={() => setView('come-funziona')} className="hover:text-brand cursor-pointer">Come funziona</span></li>
-              <li><span onClick={() => setView('sicurezza')} className="hover:text-brand cursor-pointer">Sicurezza</span></li>
-              <li><span onClick={() => setView('tariffe')} className="hover:text-brand cursor-pointer">Tariffe e Commissioni</span></li>
-              <li><span onClick={() => setView('invita-amico')} className="hover:text-brand cursor-pointer">Programma Invita un amico</span></li>
-              <li><span onClick={() => setView('super-hubber')} className="hover:text-brand cursor-pointer">Programma SuperHubber</span></li>
-              <li><span onClick={() => setView('investitori')} className="hover:text-brand cursor-pointer">Investitori</span></li>
+              <li><Link to="/chi-siamo" className="hover:text-brand">Chi siamo</Link></li>
+              <li><Link to="/come-funziona" className="hover:text-brand">Come funziona</Link></li>
+              <li><Link to="/sicurezza" className="hover:text-brand">Sicurezza</Link></li>
+              <li><Link to="/tariffe" className="hover:text-brand">Tariffe e Commissioni</Link></li>
+              <li><Link to="/invita-amico" className="hover:text-brand">Programma Invita un amico</Link></li>
+              <li><Link to="/super-hubber" className="hover:text-brand">Programma SuperHubber</Link></li>
+              <li><Link to="/investitori" className="hover:text-brand">Investitori</Link></li>
             </ul>
           </div>
 
@@ -44,12 +41,12 @@ export const Footer: React.FC<FooterProps> = ({ setView }) => {
           <div className="max-w-[190px]">
             <h3 className="font-semibold text-gray-900 mb-4">Supporto</h3>
             <ul className="space-y-2 text-sm text-gray-500">
-              <li><span onClick={() => setView('faq')} className="hover:text-brand cursor-pointer">Domande frequenti</span></li>
-              <li><span onClick={() => setView('diventare-hubber')} className="hover:text-brand cursor-pointer">Come diventare Hubber</span></li>
-              <li><span onClick={() => setView('assistenza')} className="hover:text-brand cursor-pointer">Centro assistenza</span></li>
-              <li><span onClick={() => setView('cancellazione')} className="hover:text-brand cursor-pointer">Regole di cancellazione</span></li>
-              <li><span onClick={() => setView('segnala')} className="hover:text-brand cursor-pointer">Segnala un problema</span></li>
-              <li><span onClick={() => setView('contatti')} className="hover:text-brand cursor-pointer">Contattaci</span></li>
+              <li><Link to="/faq" className="hover:text-brand">Domande frequenti</Link></li>
+              <li><Link to="/diventare-hubber" className="hover:text-brand">Come diventare Hubber</Link></li>
+              <li><Link to="/assistenza" className="hover:text-brand">Centro assistenza</Link></li>
+              <li><Link to="/cancellazione" className="hover:text-brand">Regole di cancellazione</Link></li>
+              <li><Link to="/segnala" className="hover:text-brand">Segnala un problema</Link></li>
+              <li><Link to="/contatti" className="hover:text-brand">Contattaci</Link></li>
             </ul>
           </div>
 
@@ -57,9 +54,9 @@ export const Footer: React.FC<FooterProps> = ({ setView }) => {
           <div className="max-w-[190px]">
             <h3 className="font-semibold text-gray-900 mb-4">Legale</h3>
             <ul className="space-y-2 text-sm text-gray-500">
-              <li><span onClick={() => setView('cookie')} className="hover:text-brand cursor-pointer">Cookie policy</span></li>
-              <li><span onClick={() => setView('linee-guida')} className="hover:text-brand cursor-pointer">Linee guida della community</span></li>
-              <li><span onClick={() => setView('antidiscriminazione')} className="hover:text-brand cursor-pointer">Politica antidiscriminazione</span></li>
+              <li><Link to="/cookie-policy" className="hover:text-brand">Cookie policy</Link></li>
+              <li><Link to="/linee-guida" className="hover:text-brand">Linee guida della community</Link></li>
+              <li><Link to="/antidiscriminazione" className="hover:text-brand">Politica antidiscriminazione</Link></li>
             </ul>
           </div>
 
@@ -70,9 +67,9 @@ export const Footer: React.FC<FooterProps> = ({ setView }) => {
           <p>© 2025 Renthubber è una piattaforma di Amalis Group S.r.l.</p>
 
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <span onClick={() => setView('privacy')} className="hover:text-gray-600 cursor-pointer">Privacy</span>
-            <span onClick={() => setView('termini')} className="hover:text-gray-600 cursor-pointer">Termini</span>
-            <span onClick={() => setView('mappa-sito')} className="hover:text-gray-600 cursor-pointer">Mappa del sito</span>
+            <Link to="/privacy-policy" className="hover:text-gray-600">Privacy</Link>
+            <Link to="/termini-condizioni" className="hover:text-gray-600">Termini</Link>
+            <Link to="/mappa-sito" className="hover:text-gray-600">Mappa del sito</Link>
           </div>
         </div>
 

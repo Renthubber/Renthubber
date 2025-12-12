@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { 
   Home, 
   PlusCircle, 
@@ -10,20 +11,20 @@ import {
 import { User as UserType, ActiveMode } from "../types";
 
 interface BottomNavBarProps {
-  setView: (view: string) => void;
-  currentView: string;
   currentUser: UserType | null;
   activeMode: ActiveMode;
   onSwitchMode: (mode: ActiveMode) => void;
 }
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({
-  setView,
-  currentView,
   currentUser,
   activeMode,
   onSwitchMode,
 }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentView = location.pathname;
+
   const isHubber = currentUser?.roles?.includes("hubber") || currentUser?.role === "hubber";
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -46,7 +47,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
 
         if (!error && data) {
           // Se sei nella sezione messaggi, azzera il badge
-          if (currentView === 'messages') {
+          if (currentView === '/messages') {
             setUnreadCount(0);
           } else {
             setUnreadCount(data.length);
@@ -71,43 +72,47 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
     };
   }, [currentUser, activeMode, currentView]);
 
-  // Non mostrare la bottom nav se l'utente non è loggato
-  if (!currentUser) return null;
+  // ✅ Determina il path corretto per la dashboard in base al ruolo
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.roles?.includes('admin');
+  const dashboardPath = isAdmin ? "/admin" : "/dashboard";
+
+  // Non mostrare la bottom nav se l'utente non è loggato o è admin
+  if (!currentUser || isAdmin) return null;
 
   const navItems = [
     {
       id: "home",
       icon: Home,
       label: "Home",
-      view: "home",
+      path: "/",
       show: true,
     },
     {
       id: "dashboard",
       icon: LayoutDashboard,
       label: "Dashboard",
-      view: "dashboard",
+      path: dashboardPath,
       show: true,
     },
     {
       id: "publish",
       icon: PlusCircle,
       label: "Pubblica",
-      view: "publish",
-      show: isHubber && activeMode === "hubber",
+      path: "/publish",
+      show: isHubber && activeMode === "hubber" && !isAdmin,
     },
     {
       id: "messages",
       icon: MessageSquare,
       label: "Messaggi",
-      view: "messages",
+      path: "/messages",
       show: true,
     },
     {
       id: "wallet",
       icon: Wallet,
       label: "Wallet",
-      view: "wallet",
+      path: "/wallet",
       show: true,
     },
   ];
@@ -121,12 +126,15 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
             .filter((item) => item.show)
             .map((item) => {
               const Icon = item.icon;
-              const isActive = currentView === item.view;
+              // ✅ Per dashboard, considera attivo sia /dashboard che /admin
+              const isActive = item.id === "dashboard" 
+                ? (currentView === "/dashboard" || currentView === "/admin")
+                : currentView === item.path;
 
               return (
                 <button
                   key={item.id}
-                  onClick={() => setView(item.view)}
+                  onClick={() => navigate(item.path)}
                   className={`flex flex-col items-center justify-center flex-1 h-full transition-all relative ${
                     isActive ? "text-brand" : "text-gray-500"
                   }`}
