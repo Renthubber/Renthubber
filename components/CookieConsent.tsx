@@ -329,10 +329,10 @@ export const CookieSettingsButton: React.FC = () => {
   return (
     <button
       onClick={reopenPreferences}
-      className="fixed bottom-20 md:bottom-4 right-4 z-[99998] p-3 bg-white border-2 border-gray-300 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
+      className="fixed bottom-20 md:bottom-4 right-4 z-[99998] p-2 bg-brand/90 hover:bg-brand rounded-full shadow-md hover:shadow-lg transition-all"
       title="Gestisci preferenze cookie"
     >
-      <Cookie className="w-5 h-5 text-brand" />
+      <Cookie className="w-4 h-4 text-white" />
     </button>
   );
 };
