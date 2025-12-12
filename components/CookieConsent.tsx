@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { X, Cookie, Shield } from 'lucide-react';
 
 interface CookiePreferences {
@@ -23,6 +24,17 @@ export const CookieConsent: React.FC = () => {
       // Ritarda leggermente per migliorare UX
       setTimeout(() => setShowBanner(true), 1000);
     }
+
+    // Espone la funzione globale per riaprire il popup
+    (window as any).openCookiePreferences = () => {
+      setShowBanner(true);
+      setShowPreferences(false);
+    };
+
+    // Cleanup
+    return () => {
+      delete (window as any).openCookiePreferences;
+    };
   }, []);
 
   // Salva le preferenze
@@ -41,6 +53,9 @@ export const CookieConsent: React.FC = () => {
       // Attiva pixel marketing
       console.log('✅ Marketing abilitato');
     }
+    
+    // Emetti evento per notificare il CookieSettingsButton
+    window.dispatchEvent(new Event('cookie-consent-saved'));
     
     setShowBanner(false);
     setShowPreferences(false);
@@ -77,8 +92,8 @@ export const CookieConsent: React.FC = () => {
     <>
       {/* Banner principale */}
       {!showPreferences && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-gray-200 shadow-2xl">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="fixed bottom-0 left-0 right-0 z-[99999] bg-white border-t-2 border-gray-200 shadow-2xl">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-6">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
               {/* Icona */}
               <div className="flex-shrink-0">
@@ -87,28 +102,28 @@ export const CookieConsent: React.FC = () => {
 
               {/* Testo */}
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1 sm:mb-2">
                   🍪 Questo sito utilizza cookie
                 </h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                   Utilizziamo cookie essenziali per il funzionamento del sito e cookie opzionali 
                   per analisi e miglioramento dell'esperienza utente. Puoi scegliere quali accettare.
                   {' '}
-                  <a 
-                    href="/privacy-policy" 
+                  <Link 
+                    to="/privacy-policy" 
                     className="text-brand hover:underline font-medium"
                     target="_blank"
                   >
                     Privacy Policy
-                  </a>
+                  </Link>
                   {' • '}
-                  <a 
-                    href="/cookie-policy" 
+                  <Link 
+                    to="/cookie-policy" 
                     className="text-brand hover:underline font-medium"
                     target="_blank"
                   >
                     Cookie Policy
-                  </a>
+                  </Link>
                 </p>
               </div>
 
@@ -140,7 +155,7 @@ export const CookieConsent: React.FC = () => {
 
       {/* Modale preferenze dettagliate */}
       {showPreferences && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
@@ -245,9 +260,9 @@ export const CookieConsent: React.FC = () => {
                 <p className="text-sm text-blue-800">
                   💡 <strong>Nota:</strong> Puoi modificare le tue preferenze in qualsiasi momento 
                   cliccando sull'icona cookie in basso a destra o visitando le nostre{' '}
-                  <a href="/cookie-policy" className="underline font-medium" target="_blank">
+                  <Link to="/cookie-policy" className="underline font-medium" target="_blank">
                     Impostazioni Cookie
-                  </a>.
+                  </Link>.
                 </p>
               </div>
             </div>
@@ -279,13 +294,34 @@ export const CookieSettingsButton: React.FC = () => {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    const consent = localStorage.getItem('cookieConsent');
-    setShow(!!consent); // Mostra solo se l'utente ha già dato consenso
+    // Controlla consenso iniziale
+    const checkConsent = () => {
+      const consent = localStorage.getItem('cookieConsent');
+      setShow(!!consent);
+    };
+    
+    checkConsent();
+
+    // Ascolta cambiamenti nel localStorage (quando accetti cookie)
+    window.addEventListener('storage', checkConsent);
+    
+    // Ascolta evento custom per aggiornamento immediato
+    const handleConsentChange = () => {
+      setTimeout(checkConsent, 100); // Piccolo delay per dare tempo al localStorage
+    };
+    window.addEventListener('cookie-consent-saved', handleConsentChange);
+
+    return () => {
+      window.removeEventListener('storage', checkConsent);
+      window.removeEventListener('cookie-consent-saved', handleConsentChange);
+    };
   }, []);
 
   const reopenPreferences = () => {
-    localStorage.removeItem('cookieConsent');
-    window.location.reload(); // Ricarica per mostrare il banner
+    // Chiama la funzione globale invece di ricaricare la pagina
+    if ((window as any).openCookiePreferences) {
+      (window as any).openCookiePreferences();
+    }
   };
 
   if (!show) return null;
@@ -293,7 +329,7 @@ export const CookieSettingsButton: React.FC = () => {
   return (
     <button
       onClick={reopenPreferences}
-      className="fixed bottom-4 right-4 z-40 p-3 bg-white border-2 border-gray-300 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
+      className="fixed bottom-20 md:bottom-4 right-4 z-[99998] p-3 bg-white border-2 border-gray-300 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
       title="Gestisci preferenze cookie"
     >
       <Cookie className="w-5 h-5 text-brand" />
