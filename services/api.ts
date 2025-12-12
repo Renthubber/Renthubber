@@ -2467,6 +2467,61 @@ if (ownerIds.length > 0) {
         };
       }
     },
+
+    /**
+     * 🔹 CARICA TUTTI I BOOKINGS DAL DATABASE SUPABASE
+     * ✅ Usato nella Home per filtrare annunci disponibili per date
+     */
+    getAllFromDb: async (): Promise<BookingRequest[]> => {
+      try {
+        console.log("⚡ bookings.getAllFromDb – carico tutti i bookings dal database...");
+        
+        const { data, error } = await supabase
+          .from("bookings")
+          .select(`
+            id,
+            renter_id,
+            hubber_id,
+            listing_id,
+            start_date,
+            end_date,
+            amount_total,
+            platform_fee,
+            hubber_net_amount,
+            wallet_used_cents,
+            status,
+            payment_id,
+            created_at
+          `)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("❌ Errore fetch tutti i bookings:", error);
+          return [];
+        }
+
+        if (!data) return [];
+
+        console.log(`✅ Caricati ${data.length} bookings dal database`);
+
+        // Mappa i dati dal database al formato app
+        return data.map((row: any) => ({
+          id: row.id,
+          listingId: row.listing_id,
+          renterId: row.renter_id,
+          hubberId: row.hubber_id,
+          startDate: row.start_date,
+          endDate: row.end_date,
+          status: row.status,
+          totalPrice: row.amount_total ? row.amount_total / 100 : 0,
+          createdAt: row.created_at,
+          paymentStatus: row.payment_id ? 'paid' : 'pending',
+        }));
+      } catch (e) {
+        console.error("❌ Errore inatteso getAllFromDb:", e);
+        return [];
+      }
+    },
   },
 
   // =============================
