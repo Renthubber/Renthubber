@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
 export const SicurezzaPage: React.FC = () => {
@@ -185,12 +186,11 @@ export const SicurezzaPage: React.FC = () => {
               Con protocolli avanzati, controlli interni e una community attiva,
               Renthubber è il posto ideale per condividere e noleggiare responsabilmente.
             </p>
-            <a
-              href="/registrati"
+            <Link to="/Signup"
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
               Inizia ora
-            </a>
+            </Link>
           </div>
         </section>
 

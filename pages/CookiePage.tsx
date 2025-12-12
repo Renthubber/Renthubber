@@ -1,9 +1,21 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
+const LAST_UPDATED = "12 dicembre 2025";
+
 export const CookiePage: React.FC = () => {
+  const openCookiePreferences = () => {
+    // Se usi un CMP (es. Cookiebot/Complianz/Iubenda), qui puoi richiamare il preference center.
+    // Esempi (da adattare al tuo CMP):
+    // (window as any).Cookiebot?.renew?.();
+    // (window as any).complianz?.open?.();
+    // (window as any).iubenda?.cs?.open?.();
+    (window as any).openCookiePreferences?.();
+  };
+
   return (
-    <PageLayout slug="cookie" fallbackTitle="Cookie & tecnologie simili">
+    <PageLayout slug="cookie-policy" fallbackTitle="Cookie Policy">
       <div className="bg-gray-50 text-gray-800">
         {/* HERO */}
         <section className="bg-white py-20 border-b">
@@ -11,11 +23,40 @@ export const CookiePage: React.FC = () => {
             <h1 className="text-4xl font-bold text-gray-900">
               Cookie & tecnologie simili
             </h1>
-            <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto text-justify md:text-center">
+            <p className="mt-3 text-sm text-gray-500">
+              Ultimo aggiornamento:{" "}
+              <span className="font-medium">{LAST_UPDATED}</span>
+            </p>
+            <p className="mt-6 text-lg text-gray-600 max-w-3xl mx-auto text-justify md:text-center">
               Questa pagina spiega cosa sono i cookie, quali tipi utilizziamo su
               Renthubber, per quali finalità e quali scelte hai a disposizione
               per gestirli.
             </p>
+          </div>
+        </section>
+
+        {/* TITOLARE */}
+        <section className="py-12 bg-white border-b">
+          <div className="max-w-6xl mx-auto px-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4 text-left">
+              Titolare del trattamento
+            </h2>
+            <div className="bg-gray-50 border rounded-xl p-5 max-w-3xl">
+              <p className="font-semibold text-gray-900">Amalis Group Srl</p>
+              <p className="text-gray-700">
+                Via San Nicola, snc – 95040 Camporotondo Etneo (CT), Italia
+              </p>
+              <p className="text-gray-700">P.IVA 06169160873</p>
+              <p className="text-gray-700">
+                Email privacy:{" "}
+                <a
+                  href="mailto:privacy@renthubber.com"
+                  className="text-[#0D414B] hover:underline"
+                >
+                  privacy@renthubber.com
+                </a>
+              </p>
+            </div>
           </div>
         </section>
 
@@ -88,11 +129,12 @@ export const CookiePage: React.FC = () => {
                   Cookie statistici (analytics)
                 </h3>
                 <p className="text-gray-600 text-justify">
-                  Ci aiutano a capire come viene utilizzato Renthubber: quante
-                  visite riceviamo, quali pagine sono più consultate, come gli
-                  utenti arrivano sul sito. I dati vengono trattati in forma
-                  aggregata e anonima, ove possibile, per migliorare le
-                  funzionalità e le performance.
+                  Ci aiutano a capire come viene utilizzato Renthubber (es. numero
+                  di visitatori, pagine consultate, performance) per migliorare
+                  funzionalità e stabilità del servizio.  
+                  <span className="font-semibold">
+                    {" "}Questi cookie vengono attivati solo previo consenso.
+                  </span>
                 </p>
               </div>
 
@@ -104,8 +146,10 @@ export const CookiePage: React.FC = () => {
                 <p className="text-gray-600 text-justify">
                   Possono essere utilizzati per mostrarti annunci o contenuti in
                   linea con i tuoi interessi, sia su Renthubber che su altri siti
-                  o social network, tramite partner pubblicitari. Questi cookie
-                  vengono attivati solo se esprimi il tuo consenso.
+                  o social network, tramite partner pubblicitari.  
+                  <span className="font-semibold">
+                    {" "}Questi cookie vengono attivati solo previo consenso.
+                  </span>
                 </p>
               </div>
             </div>
@@ -127,7 +171,7 @@ export const CookiePage: React.FC = () => {
             </p>
             <p className="text-gray-600 leading-relaxed text-justify">
               L’utilizzo di questi cookie è regolato dalle informative privacy e
-              cookie dei rispettivi fornitori. Quando possibile, ti verrà
+              cookie dei rispettivi fornitori. Quando previsto, ti verrà
               richiesto il consenso specifico per attivarli o potrai gestirli
               tramite il pannello di preferenze.
             </p>
@@ -142,15 +186,14 @@ export const CookiePage: React.FC = () => {
                 Come gestire il consenso ai cookie
               </h2>
               <p className="text-gray-600 leading-relaxed text-justify mb-4">
-                Al primo accesso a Renthubber viene mostrato un banner informativo
-                che ti permette di accettare tutti i cookie, rifiutare quelli non
+                Al primo accesso a Renthubber viene mostrato un banner che ti
+                permette di accettare tutti i cookie, rifiutare quelli non
                 necessari oppure personalizzare le tue scelte.
               </p>
               <p className="text-gray-600 leading-relaxed text-justify">
-                Puoi in qualsiasi momento modificare le preferenze sui cookie
+                Puoi in qualsiasi momento modificare o revocare le preferenze
                 richiamando il pannello dedicato (ad esempio tramite il link
-                “Impostazioni cookie” presente nel footer del sito, se
-                disponibile).
+                “Impostazioni cookie” nel footer, se disponibile).
               </p>
             </div>
 
@@ -159,58 +202,46 @@ export const CookiePage: React.FC = () => {
                 Impostazioni del browser
               </h3>
               <p className="text-gray-600 text-sm md:text-base text-justify mb-3">
-                Oltre agli strumenti messi a disposizione dal sito, puoi gestire
-                i cookie anche direttamente dal tuo browser, ad esempio:
+                Puoi gestire i cookie anche direttamente dal tuo browser, ad esempio:
               </p>
               <ul className="list-disc list-inside text-gray-700 text-sm md:text-base space-y-1">
                 <li className="text-justify">cancellando i cookie esistenti;</li>
-                <li className="text-justify">
-                  bloccando l’installazione di tutti o di alcuni cookie;
-                </li>
-                <li className="text-justify">
-                  richiedendo una notifica prima che un cookie venga memorizzato.
-                </li>
+                <li className="text-justify">bloccando l’installazione di tutti o di alcuni cookie;</li>
+                <li className="text-justify">richiedendo una notifica prima che un cookie venga memorizzato.</li>
               </ul>
               <p className="text-gray-600 text-sm md:text-base text-justify mt-3">
-                Tieni presente che disattivare alcuni cookie tecnici o funzionali
-                potrebbe compromettere il corretto funzionamento di alcune parti
-                del sito.
+                Disattivare alcuni cookie tecnici o funzionali potrebbe compromettere
+                il corretto funzionamento di alcune parti del sito.
               </p>
             </div>
           </div>
         </section>
 
-        {/* PERIODO DI CONSERVAZIONE */}
+        {/* DURATA */}
         <section className="py-20 bg-white border-y">
           <div className="max-w-6xl mx-auto px-6">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4 text-left">
               Durata dei cookie
             </h2>
             <p className="text-gray-600 leading-relaxed text-justify mb-4">
-              I cookie possono avere una durata diversa:
+              I cookie possono avere durata diversa:
             </p>
             <ul className="list-disc list-inside text-gray-700 text-sm md:text-base space-y-2 max-w-3xl">
               <li className="text-justify">
-                <span className="font-semibold">Cookie di sessione</span>:
-                vengono cancellati automaticamente alla chiusura del browser.
+                <span className="font-semibold">Cookie di sessione</span>: vengono cancellati automaticamente alla chiusura del browser.
               </li>
               <li className="text-justify">
-                <span className="font-semibold">Cookie persistenti</span>:
-                restano memorizzati sul dispositivo per un periodo più lungo,
-                definito dal singolo cookie (ad esempio giorni, mesi o anni),
-                salvo cancellazione manuale da parte tua.
+                <span className="font-semibold">Cookie persistenti</span>: restano memorizzati per un periodo definito, salvo cancellazione manuale.
               </li>
             </ul>
             <p className="text-gray-600 leading-relaxed text-justify mt-4 max-w-3xl">
-              I dettagli specifici (nome del cookie, tipo, finalità, durata)
-              possono essere riportati in un elenco tecnico aggiornato,
-              accessibile dal banner o dal pannello di gestione dei cookie, se
-              presente.
+              I dettagli tecnici (nome, finalità, durata) possono essere mostrati nel banner
+              o nel pannello di gestione dei cookie, se presente.
             </p>
           </div>
         </section>
 
-        {/* COLLEGAMENTO A PRIVACY & NOTE FINALI */}
+        {/* LINK PRIVACY + AGGIORNAMENTI */}
         <section className="py-20">
           <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-start">
             <div>
@@ -218,16 +249,14 @@ export const CookiePage: React.FC = () => {
                 Privacy e trattamento dei dati
               </h2>
               <p className="text-gray-600 leading-relaxed text-justify mb-4">
-                Per maggiori informazioni su come trattiamo i dati personali, sui
-                diritti degli utenti e sui contatti del titolare del trattamento,
-                ti invitiamo a consultare la nostra Informativa Privacy.
+                Per maggiori informazioni sul trattamento dei dati personali e sui diritti degli utenti,
+                consulta la Privacy Policy.
               </p>
-              <a
-                href="#"
+              <Link to="/privacy-policy"
                 className="inline-block mt-2 text-sm font-semibold text-[#0D414B] hover:underline"
               >
                 Leggi l’Informativa Privacy
-              </a>
+              </Link>
             </div>
 
             <div className="bg-white rounded-xl p-8 shadow-sm border">
@@ -235,10 +264,8 @@ export const CookiePage: React.FC = () => {
                 Aggiornamenti di questa informativa
               </h3>
               <p className="text-gray-600 text-sm md:text-base text-justify">
-                Questa pagina può essere aggiornata nel tempo per adeguarsi a
-                modifiche normative, tecniche o organizzative legate a Renthubber.
-                Ti consigliamo di consultarla periodicamente per restare informato
-                sul nostro utilizzo dei cookie e delle tecnologie simili.
+                Questa pagina può essere aggiornata nel tempo per adeguarsi a modifiche normative,
+                tecniche o organizzative legate a Renthubber. Ti consigliamo di consultarla periodicamente.
               </p>
             </div>
           </div>
@@ -254,17 +281,13 @@ export const CookiePage: React.FC = () => {
               Gestisci le tue preferenze sui cookie
             </h2>
             <p className="text-lg text-gray-200 mb-8 text-justify md:text-center">
-              Puoi modificare le tue scelte in qualsiasi momento tramite il banner
-              o il pannello di gestione dei cookie (se presente), oppure
-              intervenendo dalle impostazioni del tuo browser.
+              Puoi modificare le tue scelte in qualsiasi momento tramite il banner o il pannello di gestione dei cookie,
+              oppure dalle impostazioni del tuo browser.
             </p>
             <button
               type="button"
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
-              onClick={() => {
-                // Qui in futuro potrai richiamare il cookie banner o il preference center
-                // ad esempio: window.myCookieManager?.open()
-              }}
+              onClick={openCookiePreferences}
             >
               Apri impostazioni cookie
             </button>

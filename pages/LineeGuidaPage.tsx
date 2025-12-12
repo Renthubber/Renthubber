@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
 export const LineeGuidaPage: React.FC = () => {
@@ -269,12 +270,11 @@ export const LineeGuidaPage: React.FC = () => {
               guida significa aiutare la piattaforma a crescere in modo sano,
               creando opportunità reali di condivisione e collaborazione.
             </p>
-            <a
-              href="/"
+            <Link to="/"
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
               Torna alla home
-            </a>
+            </Link>
           </div>
         </section>
       </div>

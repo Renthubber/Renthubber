@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
 export const MappaSitoPage: React.FC = () => {
@@ -38,9 +39,9 @@ export const MappaSitoPage: React.FC = () => {
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
                   <li>
-                    <a href="/" className="hover:text-[#0D414B]">
+                    <Link to="/" className="hover:text-[#0D414B]">
                       Home
-                    </a>
+                    </Link>
                   </li>
                   <li>
                     <a href="#" className="hover:text-[#0D414B]">
@@ -310,9 +311,9 @@ export const MappaSitoPage: React.FC = () => {
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
                   <li>
-                    <a href="/login" className="hover:text-[#0D414B]">
+                    <Link to="/login" className="hover:text-[#0D414B]">
                       Login / Registrazione
-                    </a>
+                    </Link>
                   </li>
                   <li>
                     <a href="#" className="hover:text-[#0D414B]">
@@ -389,12 +390,11 @@ export const MappaSitoPage: React.FC = () => {
               Usa la mappa del sito per raggiungere rapidamente la pagina che stai
               cercando oppure torna alla home per ricominciare la navigazione.
             </p>
-            <a
-              href="/"
+            <Link to="/"
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
               Torna alla home
-            </a>
+            </Link>
           </div>
         </section>
       </div>

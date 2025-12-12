@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
 export const InvestitoriPage: React.FC = () => {
@@ -260,12 +261,11 @@ export const InvestitoriPage: React.FC = () => {
               investimento o partnership, puoi contattare il team compilando il
               form dedicato o inviando una richiesta dalla sezione “Contattaci”.
             </p>
-            <a
-              href="/contatti" // sostituisci con la tua route reale
+            <Link to="/contatti" // sostituisci con la tua route reale
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
               Vai alla pagina contatti
-            </a>
+            </Link>
           </div>
         </section>
       </div>

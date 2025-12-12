@@ -1,13 +1,10 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { PageLayout } from "../components/PageLayout";
 
-interface ChiSiamoPageProps {
-  setView?: (view: string) => void;
-}
-
-export const ChiSiamoPage: React.FC<ChiSiamoPageProps> = () => {
+export const ChiSiamoPage: React.FC = () => {
   return (
-  <PageLayout slug="SLUG" fallbackTitle="TITOLO">
+  <PageLayout slug="chi-siamo" fallbackTitle="Chi Siamo">
     <div className="bg-gray-50">
       {/* HERO */}
       <section className="bg-white py-20 border-b">
@@ -24,11 +21,11 @@ export const ChiSiamoPage: React.FC<ChiSiamoPageProps> = () => {
         </div>
       </section>
 
-      {/* SEZIONE – COS’È RENTHUBBER */}
+      {/* SEZIONE – COS'È RENTHUBBER */}
       <section className="py-20 bg-white border-y">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-2xl font-semibold text-gray-900 mb-4 text-left">
-            Cos’è Renthubber
+            Cos'è Renthubber
           </h2>
           <p className="text-gray-600 leading-relaxed text-justify mb-4 max-w-3xl">
             Renthubber è una piattaforma di sharing economy che permette a chiunque
@@ -38,7 +35,7 @@ export const ChiSiamoPage: React.FC<ChiSiamoPageProps> = () => {
           </p>
           <p className="text-gray-600 leading-relaxed text-justify max-w-3xl">
             Il nostro obiettivo è ridurre sprechi, costi inutili e acquisti
-            “una tantum”, valorizzando il riutilizzo e la condivisione in modo
+            "una tantum", valorizzando il riutilizzo e la condivisione in modo
             organizzato e tracciabile.
           </p>
         </div>
@@ -54,7 +51,7 @@ export const ChiSiamoPage: React.FC<ChiSiamoPageProps> = () => {
             <p className="text-gray-600 leading-relaxed text-justify mb-4">
               Ogni giorno oggetti e spazi restano inutilizzati, mentre altre
               persone li cercano solo per poche ore o pochi giorni. Da qui
-              l’idea di creare un luogo digitale unico dove far incontrare
+              l'idea di creare un luogo digitale unico dove far incontrare
               chi ha qualcosa in più con chi ne ha bisogno.
             </p>
             <p className="text-gray-600 leading-relaxed text-justify">
@@ -70,10 +67,10 @@ export const ChiSiamoPage: React.FC<ChiSiamoPageProps> = () => {
               Condivisione, non spreco
             </h3>
             <p className="text-gray-600 text-sm md:text-base text-justify">
-              Crediamo che un oggetto “fermo” sia un’opportunità persa. Attraverso
+              Crediamo che un oggetto "fermo" sia un'opportunità persa. Attraverso
               il noleggio, lo stesso bene può essere utilizzato da più persone in
-              momenti diversi, riducendo l’impatto ambientale e migliorando
-              l’efficienza nelle spese di famiglie, professionisti e aziende.
+              momenti diversi, riducendo l'impatto ambientale e migliorando
+              l'efficienza nelle spese di famiglie, professionisti e aziende.
             </p>
           </div>
         </div>
@@ -130,14 +127,14 @@ export const ChiSiamoPage: React.FC<ChiSiamoPageProps> = () => {
               Renthubber e Amalis Group S.r.l.
             </h2>
             <p className="text-gray-600 leading-relaxed text-justify mb-4">
-              Renthubber è un progetto sviluppato all’interno di{" "}
+              Renthubber è un progetto sviluppato all'interno di{" "}
               <span className="font-semibold">Amalis Group S.r.l.</span>, una
               realtà che lavora su soluzioni innovative legate alla
               sostenibilità, ai servizi condivisi e a nuovi modelli di
               economia circolare.
             </p>
             <p className="text-gray-600 leading-relaxed text-justify">
-              L’obiettivo è costruire una piattaforma solida, scalabile e
+              L'obiettivo è costruire una piattaforma solida, scalabile e
               in continua evoluzione, capace di crescere insieme alla
               community e di aprirsi, nel tempo, a nuovi mercati e nuove
               tipologie di noleggio.
@@ -172,12 +169,12 @@ export const ChiSiamoPage: React.FC<ChiSiamoPageProps> = () => {
             o mettere a reddito ciò che già possiedi, Renthubber è il luogo
             giusto per iniziare. Crea il tuo account e inizia a condividere.
           </p>
-          <a
-            href="/login"
+          <Link
+            to="/signup"
             className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
           >
             Inizia ora
-          </a>
+          </Link>
         </div>
       </section>
     </div>

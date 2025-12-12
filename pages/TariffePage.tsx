@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
 export const TariffePage: React.FC = () => {
@@ -219,12 +220,11 @@ export const TariffePage: React.FC = () => {
               di tutti i costi. Il nostro obiettivo è che tu sappia sempre quanto
               paghi, perché lo paghi e quanto guadagni.
             </p>
-            <a
-              href="/registrati" // sostituisci con la tua route reale
+            <Link to="/Signup" // sostituisci con la tua route reale
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
               Inizia a usare Renthubber
-            </a>
+            </Link>
           </div>
         </section>
       </div>

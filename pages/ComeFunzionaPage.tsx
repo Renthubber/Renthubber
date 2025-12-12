@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
 export const ComeFunzionaPage: React.FC = () => {
@@ -215,12 +216,11 @@ export const ComeFunzionaPage: React.FC = () => {
               usare la piattaforma in base alle tue esigenze. Ogni profilo può
               evolversi nel tempo, seguendo le tue necessità reali.
             </p>
-            <a
-              href="/registrati" // sostituisci con la tua route reale
+            <Link to="/Signup" // sostituisci con la tua route reale
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
               Crea il tuo account
-            </a>
+            </Link>
           </div>
         </section>
       </div>

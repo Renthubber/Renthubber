@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
 export const ContattiPage: React.FC = () => {
@@ -240,12 +241,11 @@ export const ContattiPage: React.FC = () => {
               offrirti un supporto chiaro, umano e trasparente. Compila il form
               o utilizza i recapiti indicati: ti risponderemo il prima possibile.
             </p>
-            <a
-              href="/login" // o eventualmente la route alla dashboard / area utente
+            <Link to="/login" // o eventualmente la route alla dashboard / area utente
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
               Accedi alla tua area personale
-            </a>
+            </Link>
           </div>
         </section>
       </div>

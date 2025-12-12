@@ -1,7 +1,11 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
+import { useAuth } from "../contexts/AuthContext";
 
 export const SegnalaPage: React.FC = () => {
+  const { currentUser } = useAuth();
+
   return (
     <PageLayout slug="segnala-problema" fallbackTitle="Segnala un problema">
       <div className="bg-gray-50 text-gray-800">
@@ -36,7 +40,7 @@ export const SegnalaPage: React.FC = () => {
 
               <ul className="list-disc list-inside text-gray-700 space-y-2 text-sm md:text-base">
                 <li className="text-justify">
-                  Mancata consegna o mancata presentazione all’appuntamento (no-show).
+                  Mancata consegna o mancata presentazione all'appuntamento (no-show).
                 </li>
                 <li className="text-justify">
                   Pagamenti richiesti fuori dalla piattaforma.
@@ -87,7 +91,7 @@ export const SegnalaPage: React.FC = () => {
                 Inviare una segnalazione tramite Renthubber è semplice e veloce.
                 Ti consigliamo di farlo direttamente dalla tua area personale
                 per permetterci di identificare automaticamente la prenotazione
-                o l’utente coinvolto.
+                o l'utente coinvolto.
               </p>
 
               <ol className="space-y-3 text-gray-700 text-sm md:text-base">
@@ -96,12 +100,12 @@ export const SegnalaPage: React.FC = () => {
                   Vai nella tua area personale con le tue credenziali.
                 </li>
                 <li className="text-justify">
-                  <span className="font-semibold">2. Apri la sezione “Segnala un problema”</span><br />
+                  <span className="font-semibold">2. Apri la sezione "Segnala un problema"</span><br />
                   Puoi trovarla nel Centro assistenza o nella pagina della prenotazione.
                 </li>
                 <li className="text-justify">
                   <span className="font-semibold">3. Compila il form</span><br />
-                  Indica cosa è successo, la data, l’utente coinvolto e allega eventuali foto o screenshot.
+                  Indica cosa è successo, la data, l'utente coinvolto e allega eventuali foto o screenshot.
                 </li>
                 <li className="text-justify">
                   <span className="font-semibold">4. Invia la segnalazione</span><br />
@@ -132,11 +136,11 @@ export const SegnalaPage: React.FC = () => {
                 vengono gestite in via prioritaria.
               </li>
               <li className="text-justify">
-                Se la segnalazione riguarda una prenotazione in corso, l’assistenza può
+                Se la segnalazione riguarda una prenotazione in corso, l'assistenza può
                 intervenire immediatamente.
               </li>
               <li className="text-justify">
-                In caso di comportamenti scorretti ripetuti, l’account può subire
+                In caso di comportamenti scorretti ripetuti, l'account può subire
                 limitazioni, sospensioni temporanee o la chiusura definitiva.
               </li>
               <li className="text-justify">
@@ -155,7 +159,7 @@ export const SegnalaPage: React.FC = () => {
             </h2>
 
             <p className="text-gray-600 leading-relaxed text-justify mb-4 max-w-3xl">
-              Alcune situazioni richiedono un contatto rapido con l’assistenza.
+              Alcune situazioni richiedono un contatto rapido con l'assistenza.
               In questi casi consigliamo di aprire subito una richiesta urgente.
             </p>
 
@@ -178,16 +182,17 @@ export const SegnalaPage: React.FC = () => {
               Hai bisogno di inviare una segnalazione?
             </h2>
             <p className="text-lg text-gray-200 mb-8 text-justify md:text-center">
-              Accedi alla tua area utente e apri una segnalazione dal Centro assistenza,
-              oppure usa il pulsante dedicato nella pagina della prenotazione.
-              Il nostro team è pronto ad aiutarti.
+              {currentUser
+                ? "Accedi alla sezione Messaggi per inviare una segnalazione al nostro team di supporto."
+                : "Accedi al tuo account per inviare una segnalazione tramite la sezione Messaggi."
+              }
             </p>
-            <a
-              href="/login" // sostituire con route reale
+            <Link 
+              to={currentUser ? "/messages" : "/login"}
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
-              Accedi e invia una segnalazione
-            </a>
+              {currentUser ? "Invia segnalazione" : "Accedi per segnalare"}
+            </Link>
           </div>
         </section>
 

@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
 export const DiventareHubberPage: React.FC = () => {
@@ -11,7 +12,7 @@ export const DiventareHubberPage: React.FC = () => {
             <h1 className="text-4xl font-bold text-gray-900">Diventa un Hubber</h1>
             <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto text-justify md:text-center">
               Entrare nella community degli Hubber di Renthubber significa trasformare
-              ciò che possiedi in un’opportunità di guadagno. Che tu abbia oggetti,
+              ciò che possiedi in un'opportunità di guadagno. Che tu abbia oggetti,
               attrezzature o spazi inutilizzati, puoi metterli a noleggio e iniziare
               a generare entrate extra in modo semplice e sicuro.
             </p>
@@ -31,7 +32,7 @@ export const DiventareHubberPage: React.FC = () => {
               </p>
               <p className="text-gray-600 leading-relaxed text-justify">
                 Puoi pubblicare annunci per attrezzature, strumenti, mezzi, spazi eventi,
-                stanze, terreni, apparecchiature e molto altro. L’obiettivo è valorizzare
+                stanze, terreni, apparecchiature e molto altro. L'obiettivo è valorizzare
                 ciò che già possiedi, senza alcun costo iniziale.
               </p>
             </div>
@@ -130,7 +131,7 @@ export const DiventareHubberPage: React.FC = () => {
                   Spazi & ambienti
                 </h3>
                 <p className="text-gray-600 text-sm text-justify">
-                  Sale per eventi, uffici temporanei, magazzini, terrazze, aree all’aperto.
+                  Sale per eventi, uffici temporanei, magazzini, terrazze, aree all'aperto.
                 </p>
               </div>
 
@@ -215,15 +216,15 @@ export const DiventareHubberPage: React.FC = () => {
               Sei pronto a diventare un Hubber?
             </h2>
             <p className="text-lg text-gray-200 mb-8 text-justify md:text-center">
-              Trasforma ciò che possiedi in un’opportunità di guadagno. Pubblica
+              Trasforma ciò che possiedi in un'opportunità di guadagno. Pubblica
               il tuo primo annuncio e unisciti alla community di Renthubber.
             </p>
-            <a
-              href="/dashboard"
+            <Link
+              to="/signup"
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
-              Pubblica un annuncio
-            </a>
+              Registrati ora
+            </Link>
           </div>
         </section>
       </div>

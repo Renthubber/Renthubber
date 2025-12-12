@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
 export const SuperHubberPage: React.FC = () => {
@@ -18,13 +19,13 @@ export const SuperHubberPage: React.FC = () => {
           </div>
         </section>
 
-        {/* SEZIONE – COS’È */}
+        {/* SEZIONE – COS'È */}
         <section className="py-20 bg-white border-y">
           <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
             {/* TESTO */}
             <div>
               <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
-                Cos’è il badge SuperHubber
+                Cos'è il badge SuperHubber
               </h2>
               <p className="text-gray-600 leading-relaxed text-justify mb-4">
                 Il badge SuperHubber certifica che un Hubber rispetta standard elevati
@@ -71,18 +72,18 @@ export const SuperHubberPage: React.FC = () => {
               <li className="text-justify">
                 <span className="font-semibold text-gray-900">2. Recensioni positive</span><br />
                 La media delle recensioni deve essere pari o superiore a 4.7 stelle per
-                garantire un’esperienza eccellente ai Renter.
+                garantire un'esperienza eccellente ai Renter.
               </li>
 
               <li className="text-justify">
                 <span className="font-semibold text-gray-900">3. Tasso di cancellazione basso</span><br />
                 Gli Hubber devono evitare di cancellare le prenotazioni confermate.
-                Una soglia tipica è un tasso di cancellazione inferiore all’1%.
+                Una soglia tipica è un tasso di cancellazione inferiore all'1%.
               </li>
 
               <li className="text-justify">
                 <span className="font-semibold text-gray-900">4. Affidabilità generale</span><br />
-                L’Hubber deve rispettare gli orari, consegnare oggetti/spazi in buono
+                L'Hubber deve rispettare gli orari, consegnare oggetti/spazi in buono
                 stato e seguire le regole previste negli annunci.
               </li>
             </ul>
@@ -150,7 +151,7 @@ export const SuperHubberPage: React.FC = () => {
 
             <p className="text-gray-600 leading-relaxed text-justify mt-6 max-w-3xl">
               Una volta raggiunti i requisiti, il badge appare automaticamente nel profilo
-              dell’Hubber e in tutti i suoi annunci pubblicati.
+              dell'Hubber e in tutti i suoi annunci pubblicati.
             </p>
           </div>
         </section>
@@ -167,12 +168,12 @@ export const SuperHubberPage: React.FC = () => {
               reputazione e lascia che Renthubber ti aiuti a crescere.
               Il badge SuperHubber è il riconoscimento che premia il tuo impegno.
             </p>
-            <a
-              href="/dashboard"
+            <Link 
+              to="/login"
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
-              Vai alla tua dashboard
-            </a>
+              Accedi per iniziare
+            </Link>
           </div>
         </section>
 

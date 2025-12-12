@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
 export const InvitaAmicoPage: React.FC = () => {
@@ -216,12 +217,11 @@ export const InvitaAmicoPage: React.FC = () => {
               con le persone che potrebbero trovare utile Renthubber. Ogni nuovo utente
               attivo è un valore in più per la community.
             </p>
-            <a
-              href="/login" // o la tua route reale per accedere all'account
+            <Link to="/login" // o la tua route reale per accedere all'account
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
               Vai alla tua area personale
-            </a>
+            </Link>
           </div>
         </section>
       </div>
