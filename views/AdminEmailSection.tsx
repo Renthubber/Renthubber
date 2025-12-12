@@ -841,7 +841,7 @@ export const AdminEmailSection: React.FC<AdminEmailSectionProps> = ({
       onClick={async () => {
         try {
           const response = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-emails`,
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/smooth-action`,
             {
               method: 'POST',
               headers: {
