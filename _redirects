@@ -1,0 +1,48 @@
+# Redirect vecchie pagine WordPress → nuova webapp React
+
+# Città (location-based)
+/Città/milano/*                                    /                     301
+/citta/milano/*                                    /                     301
+/città/*                                           /                     301
+
+# Categorie vecchie → Home (o filtri categoria se implementati)
+/categoria-noleggio/attrezzature-edili/*           /                     301
+/categoria-noleggio/elettronica/*                  /                     301
+/categoria-noleggio/feste-a-tema/*                 /                     301
+/categoria-noleggio/feste-a-tema                   /                     301
+/categoria-noleggio/mare-e-spiaggia/*              /                     301
+/categoria-noleggio/attrezzature-sanitarie/*       /                     301
+/categoria-noleggio/attrezzature-sanitarie         /                     301
+/categoria-noleggio/abbigliamento-e-accessori/*    /                     301
+/categoria-noleggio/abbigliamento-e-accessori      /                     301
+/categoria-noleggio/*                              /                     301
+
+/categoria-annuncio/attrezzature-sanitarie/*       /                     301
+/categoria-annuncio/*                              /                     301
+
+# Pagine comuni WordPress
+/annunci/*                                         /                     301
+/annunci                                           /                     301
+/faq                                               /faq                  301
+/sostenibilita                                     /                     301
+/sostenibilità                                     /                     301
+/contratto-di-noleggio                             /terms                301
+/privacy-policy                                    /privacy-policy       301
+/cookie-policy                                     /cookie-policy        301
+/termini-e-condizioni                              /terms                301
+
+# Single post/page WordPress (wildcard)
+/post/*                                            /                     301
+/page/*                                            /                     301
+/product/*                                         /                     301
+
+# Feed WordPress
+/feed/*                                            /                     301
+/wp-json/*                                         /                     301
+
+# Admin WordPress (blocca accesso)
+/wp-admin/*                                        /                     301
+/wp-login.php                                      /                     301
+
+# SPA fallback - tutte le altre route vanno all'app React
+/*    /index.html   200
