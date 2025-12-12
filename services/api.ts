@@ -4984,15 +4984,21 @@ issued_at: new Date().toISOString()
      ======================================================= */
   disputes: {
     create: async (payload: any) => {
+      // Helper: converte stringhe vuote in null per campi UUID
+      const toUuidOrNull = (value: any) => {
+        if (!value || value === '') return null;
+        return value;
+      };
+
       const { data, error } = await supabase
         .from("disputes")
         .insert({
-          dispute_id: payload.disputeId,
-          contact_id: payload.contactId,
-          booking_id: payload.bookingId,
-          against_user_id: payload.againstUserId,
+          dispute_id: toUuidOrNull(payload.disputeId),
+          contact_id: toUuidOrNull(payload.contactId),
+          booking_id: toUuidOrNull(payload.bookingId),
+          against_user_id: toUuidOrNull(payload.againstUserId),
           against_user_name: payload.againstUserName,
-          opened_by_user_id: payload.openedByUserId || null,
+          opened_by_user_id: toUuidOrNull(payload.openedByUserId),
           opened_by_role: payload.openedByRole || null,
           role: payload.role,
           scope: payload.scope,
