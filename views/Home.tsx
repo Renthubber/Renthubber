@@ -67,9 +67,6 @@ interface HomeProps {
 }
 
 export const Home: React.FC<HomeProps> = ({ onListingClick, listings, bookings = [], currentUser }) => {
-  console.log('🏠 Home component - bookings ricevuti:', bookings?.length);
-  console.log('📦 Bookings data:', bookings);
-  
   const [activeTab, setActiveTab] = useState<ListingCategory>('oggetto');
   
   // ========== SEARCH BAR STATE ==========
@@ -151,7 +148,6 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, bookings =
   };
 
   const handleDateChange = (start: Date | undefined, end: Date | undefined) => {
-    console.log('📅 Date selezionate:', { start, end });
     setSearchDateStart(start);
     setSearchDateEnd(end);
     if (start && end) {
@@ -167,13 +163,8 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, bookings =
   const isListingAvailable = (listingId: string): boolean => {
     // Se non ci sono date selezionate, mostra tutti gli annunci
     if (!searchDateStart || !searchDateEnd) {
-      console.log('🔍 isListingAvailable - Nessuna data selezionata, mostro tutto');
       return true;
     }
-
-    console.log('🔍 isListingAvailable per listing:', listingId);
-    console.log('📅 Date ricerca:', searchDateStart, 'to', searchDateEnd);
-    console.log('📦 Bookings totali:', bookings?.length);
 
     // Trova tutte le prenotazioni confermate/attive per questo listing
     const listingBookings = bookings.filter(b => {
@@ -187,29 +178,21 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, bookings =
       return activeStatuses.includes(b.status);
     });
 
-    console.log('📋 Prenotazioni per questo listing:', listingBookings);
-
     // Controlla sovrapposizioni con le date di ricerca
     const searchStart = searchDateStart.toISOString().split('T')[0];
     const searchEnd = searchDateEnd.toISOString().split('T')[0];
-
-    console.log('📅 searchStart:', searchStart, 'searchEnd:', searchEnd);
 
     for (const booking of listingBookings) {
       const bookingStart = (booking.start_date || booking.startDate || '').split('T')[0];
       const bookingEnd = (booking.end_date || booking.endDate || '').split('T')[0];
 
-      console.log('🔄 Controllo booking:', { bookingStart, bookingEnd });
-
       // Controlla sovrapposizione: booking si sovrappone se:
       // start_booking <= end_ricerca AND end_booking >= start_ricerca
       if (bookingStart <= searchEnd && bookingEnd >= searchStart) {
-        console.log('❌ OCCUPATO! Sovrapposizione trovata');
         return false; // ❌ Occupato in quel periodo
       }
     }
 
-    console.log('✅ DISPONIBILE!');
     return true; // ✅ Disponibile
   };
 
