@@ -19,6 +19,7 @@ import {
   MOCK_DISPUTES,
 } from "../constants";
 import { supabase } from "../lib/supabase";
+import { getCancelRenterMessages, getCancelHubberMessages } from "./bookingMessages";
 
 /* ------------------------------------------------------
    HELPER: conversione centesimi <-> euro (NUOVO)
@@ -424,18 +425,10 @@ async function sendBookingSystemMessage(params: {
 
   // Sync su Supabase
   try {
-    // ✅ FIX: Recupera renter e hubber dalla conversazione
-    const { data: conv } = await supabase
-      .from("conversations")
-      .select("renter_id, hubber_id")
-      .eq("id", conversationId)
-      .single();
-
     await supabase.from("messages").insert({
       id: messageId,
       conversation_id: conversationId,
-      from_user_id: conv?.hubber_id || conv?.renter_id || "system",
-      to_user_id: conv?.renter_id || conv?.hubber_id || "system",
+      from_user_id: null, // system
       text: messageText,
       created_at: now,
       is_system_message: true,
@@ -887,9 +880,21 @@ export const api = {
       if (!userId) throw new Error("ID utente non recuperabile.");
 
       const userRole = userData.role || "renter";
-      const userRoles = userData.roles || [userRole];
+      
+      // ✅ LOGICA CORRETTA RUOLI:
+      // - Se si registra come renter → roles: ['renter']
+      // - Se si registra come hubber → roles: ['hubber', 'renter'] (SEMPRE entrambi!)
+      let userRoles: string[];
+      if (userRole === 'hubber') {
+        // Hubber deve avere SEMPRE entrambi i ruoli
+        userRoles = ['hubber', 'renter'];
+      } else {
+        // Renter ha solo il ruolo renter
+        userRoles = ['renter'];
+      }
 
       console.log("✅ Auth creato, userId:", userId);
+      console.log("📝 Ruoli assegnati:", { role: userRole, roles: userRoles });
 
       // ✅ STEP 1: Prova INSERT
       // NOTA: hubber_balance deve essere NULL per evitare che il trigger sync_wallet_from_user
@@ -901,7 +906,7 @@ export const api = {
         first_name: firstName,
         last_name: lastName,
         role: userRole,
-        roles: userRoles,
+        roles: userRoles,  // ✅ Array corretto
         referral_code: userData.referralCode || null,
         renter_balance: userData.renterBalance || 0,
         hubber_balance: null,  // ✅ NULL per evitare trigger wallet
@@ -928,7 +933,7 @@ export const api = {
             first_name: firstName,
             last_name: lastName,
             role: userRole,
-            roles: userRoles,
+            roles: userRoles,  // ✅ Array corretto anche in UPDATE
             referral_code: userData.referralCode || null,
             renter_balance: userData.renterBalance || 0,
           })
@@ -1817,10 +1822,6 @@ if (ownerIds.length > 0) {
           return { success: false, error: "Prenotazione non trovata." };
         }
 
-        // ✅ Definisci listingTitle e bookingNumber per usarli dopo
-        const listingTitle = booking.listing?.title || "l'annuncio";
-        const bookingNumber = bookingId.substring(0, 8).toUpperCase();
-
         // 2. Verifica che la prenotazione sia cancellabile
         const cancellableStatuses = ['pending', 'confirmed', 'accepted'];
         if (!cancellableStatuses.includes(booking.status)) {
@@ -1925,17 +1926,6 @@ if (ownerIds.length > 0) {
                 .from("users")
                 .update({ renter_balance: newBalance })
                 .eq("id", renterId);
-              
-              // ✅ Crea record in wallet_transactions
-              await supabase.from("wallet_transactions").insert({
-                user_id: renterId,
-                amount_cents: Math.round(walletRefunded * 100),
-                balance_after_cents: Math.round(newBalance * 100),
-                type: 'credit',
-                source: 'refund',
-                description: `Rimborso per prenotazione #${bookingNumber} (${listingTitle})`,
-                related_booking_id: bookingId,
-              });
             }
           } else {
             // CARTA - rimborso proporzionale al metodo di pagamento originale
@@ -1956,17 +1946,6 @@ if (ownerIds.length > 0) {
                   .from("users")
                   .update({ renter_balance: newBalance })
                   .eq("id", renterId);
-                
-                // ✅ Crea record in wallet_transactions
-                await supabase.from("wallet_transactions").insert({
-                  user_id: renterId,
-                  amount_cents: Math.round(walletRefunded * 100),
-                  balance_after_cents: Math.round(newBalance * 100),
-                  type: 'credit',
-                  source: 'refund',
-                  description: `Rimborso per prenotazione #${bookingNumber} (${listingTitle})`,
-                  related_booking_id: bookingId,
-                });
               }
             }
             
@@ -1994,15 +1973,82 @@ if (ownerIds.length > 0) {
           cardRefunded,
         });
 
-        // ✅ Invia messaggio di sistema nella chat
-        let cancelMessage = `La prenotazione per "${listingTitle}" è stata cancellata dal Renter.`;
-        if (refundAmount > 0) {
-          cancelMessage += ` Rimborso: €${refundAmount.toFixed(2)}.`;
+        const listingTitle = booking.listing?.title || "l'annuncio";
+        const bookingNumber = bookingId.substring(0, 8).toUpperCase();
+
+        // Recupera nomi pubblici
+        const { data: renterData } = await supabase
+          .from("users")
+          .select("public_name, first_name, last_name")
+          .eq("id", renterId)
+          .single();
+
+        const { data: hubberData } = await supabase
+          .from("users")
+          .select("public_name, first_name, last_name")
+          .eq("id", booking.hubber_id)
+          .single();
+
+        const renterPublicName = renterData?.public_name || 
+          `${renterData?.first_name || 'Renter'} ${renterData?.last_name?.charAt(0) || ''}.`.trim();
+        const hubberPublicName = hubberData?.public_name || 
+          `${hubberData?.first_name || 'Hubber'} ${hubberData?.last_name?.charAt(0) || ''}.`.trim();
+
+        // ✅ Se 0% rimborso, accredita l'hubber
+        if (refundAmount === 0) {
+          const hubberNetAmount = Number(booking.hubber_net_amount) || 0;
+          
+          if (hubberNetAmount > 0) {
+            const { data: hubberWallet } = await supabase
+              .from("users")
+              .select("hubber_balance")
+              .eq("id", booking.hubber_id)
+              .single();
+
+            const currentHubberBalance = hubberWallet?.hubber_balance || 0;
+            const newHubberBalance = currentHubberBalance + hubberNetAmount;
+
+            await supabase
+              .from("users")
+              .update({ hubber_balance: newHubberBalance })
+              .eq("id", booking.hubber_id);
+
+            await supabase.from("wallet_transactions").insert({
+              user_id: booking.hubber_id,
+              amount_cents: Math.round(hubberNetAmount * 100),
+              balance_after_cents: Math.round(newHubberBalance * 100),
+              type: 'credit',
+              source: 'booking_payout',
+              description: `Compenso per prenotazione #${bookingNumber} (${listingTitle}) - Cancellazione tardiva`,
+              related_booking_id: bookingId,
+            });
+          }
         }
-        
+
+        // ✅ Genera messaggi personalizzati
+        const hubberNetAmount = Number(booking.hubber_net_amount) || 0;
+        const { messageForRenter, messageForHubber } = getCancelRenterMessages({
+          listingTitle,
+          renterPublicName,
+          hubberPublicName,
+          refundAmount,
+          refundPercentage,
+          refundMethod,
+          policy,
+          hubberNetAmount,
+        });
+
+        // Invia DUE messaggi separati
         await sendBookingSystemMessage({
           bookingId,
-          messageText: cancelMessage,
+          messageText: messageForRenter,
+          toUserId: renterId,
+        });
+
+        await sendBookingSystemMessage({
+          bookingId,
+          messageText: messageForHubber,
+          toUserId: booking.hubber_id,
         });
 
         // 🔒 Rioscura contatti dopo cancellazione
@@ -2057,10 +2103,6 @@ if (ownerIds.length > 0) {
           return { success: false, error: "Prenotazione non trovata." };
         }
 
-        // ✅ Definisci listingTitle e bookingNumber per usarli dopo
-        const listingTitle = booking.listing?.title || "l'annuncio";
-        const bookingNumber = bookingId.substring(0, 8).toUpperCase();
-
         // 2. Verifica che sia cancellabile
         const cancellableStatuses = ['pending', 'confirmed', 'accepted', 'active'];
         if (!cancellableStatuses.includes(booking.status)) {
@@ -2105,17 +2147,6 @@ if (ownerIds.length > 0) {
               .from("users")
               .update({ renter_balance: newBalance })
               .eq("id", booking.renter_id);
-            
-            // ✅ Crea record in wallet_transactions
-            await supabase.from("wallet_transactions").insert({
-              user_id: booking.renter_id,
-              amount_cents: Math.round(refundAmount * 100),
-              balance_after_cents: Math.round(newBalance * 100),
-              type: 'credit',
-              source: 'refund',
-              description: `Rimborso per prenotazione #${bookingNumber} (${listingTitle}) - Cancellata dall'Hubber`,
-              related_booking_id: bookingId,
-            });
           }
         }
 
@@ -2126,18 +2157,45 @@ if (ownerIds.length > 0) {
           reason,
         });
 
-        // ✅ Invia messaggio di sistema nella chat
-        let cancelMessage = `La prenotazione per "${listingTitle}" è stata cancellata dall'Hubber.`;
-        if (reason) {
-          cancelMessage += ` Motivo: ${reason}`;
-        }
-        if (refundAmount > 0) {
-          cancelMessage += ` Rimborso completo di €${refundAmount.toFixed(2)} accreditato sul tuo Wallet.`;
-        }
-        
+        const listingTitle = booking.listing?.title || "l'annuncio";
+        const bookingNumber = bookingId.substring(0, 8).toUpperCase();
+
+        // Recupera nomi pubblici
+        const { data: renterData } = await supabase
+          .from("users")
+          .select("public_name, first_name, last_name")
+          .eq("id", booking.renter_id)
+          .single();
+
+        const { data: hubberData } = await supabase
+          .from("users")
+          .select("public_name, first_name, last_name")
+          .eq("id", hubberId)
+          .single();
+
+        const renterPublicName = renterData?.public_name || 
+          `${renterData?.first_name || 'Renter'} ${renterData?.last_name?.charAt(0) || ''}.`.trim();
+        const hubberPublicName = hubberData?.public_name || 
+          `${hubberData?.first_name || 'Hubber'} ${hubberData?.last_name?.charAt(0) || ''}.`.trim();
+
+        // ✅ Genera messaggi personalizzati
+        const { messageForRenter, messageForHubber } = getCancelHubberMessages({
+          listingTitle,
+          hubberPublicName,
+          refundAmount,
+        });
+
+        // Invia DUE messaggi separati
         await sendBookingSystemMessage({
           bookingId,
-          messageText: cancelMessage,
+          messageText: messageForRenter,
+          toUserId: booking.renter_id,
+        });
+
+        await sendBookingSystemMessage({
+          bookingId,
+          messageText: messageForHubber,
+          toUserId: hubberId,
         });
 
         // 🔒 Rioscura contatti dopo cancellazione
@@ -2512,61 +2570,6 @@ if (ownerIds.length > 0) {
           totalNet: 0,
           perMonth: [] as { month: number; totalNet: number }[],
         };
-      }
-    },
-
-    /**
-     * 🔹 CARICA TUTTI I BOOKINGS DAL DATABASE SUPABASE
-     * ✅ Usato nella Home per filtrare annunci disponibili per date
-     */
-    getAllFromDb: async (): Promise<BookingRequest[]> => {
-      try {
-        console.log("⚡ bookings.getAllFromDb – carico tutti i bookings dal database...");
-        
-        const { data, error } = await supabase
-          .from("bookings")
-          .select(`
-            id,
-            renter_id,
-            hubber_id,
-            listing_id,
-            start_date,
-            end_date,
-            amount_total,
-            platform_fee,
-            hubber_net_amount,
-            wallet_used_cents,
-            status,
-            payment_id,
-            created_at
-          `)
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          console.error("❌ Errore fetch tutti i bookings:", error);
-          return [];
-        }
-
-        if (!data) return [];
-
-        console.log(`✅ Caricati ${data.length} bookings dal database`);
-
-        // Mappa i dati dal database al formato app
-        return data.map((row: any) => ({
-          id: row.id,
-          listingId: row.listing_id,
-          renterId: row.renter_id,
-          hubberId: row.hubber_id,
-          startDate: row.start_date,
-          endDate: row.end_date,
-          status: row.status,
-          totalPrice: row.amount_total ? row.amount_total / 100 : 0,
-          createdAt: row.created_at,
-          paymentStatus: row.payment_id ? 'paid' : 'pending',
-        }));
-      } catch (e) {
-        console.error("❌ Errore inatteso getAllFromDb:", e);
-        return [];
       }
     },
   },
@@ -5031,51 +5034,34 @@ issued_at: new Date().toISOString()
      ======================================================= */
   disputes: {
     create: async (payload: any) => {
-      // Helper: converte stringhe vuote in null per campi UUID
-      const toUuidOrNull = (value: any) => {
-        if (!value || value === '') return null;
-        return value;
-      };
-
-      // 🐛 DEBUG: Vediamo cosa arriva
-      console.log('🔍 DISPUTES.CREATE - Payload ricevuto:', payload);
-      console.log('🔍 booking_id tipo:', typeof payload.bookingId, 'valore:', payload.bookingId);
-      console.log('🔍 contact_id tipo:', typeof payload.contactId, 'valore:', payload.contactId);
-      console.log('🔍 dispute_id tipo:', typeof payload.disputeId, 'valore:', payload.disputeId);
-
-      const insertData = {
-        dispute_id: toUuidOrNull(payload.disputeId),
-        contact_id: toUuidOrNull(payload.contactId),
-        booking_id: toUuidOrNull(payload.bookingId),
-        against_user_id: toUuidOrNull(payload.againstUserId),
-        against_user_name: payload.againstUserName,
-        opened_by_user_id: toUuidOrNull(payload.openedByUserId),
-        opened_by_role: payload.openedByRole || null,
-        role: payload.role,
-        scope: payload.scope,
-        reason: payload.reason,
-        details: payload.details,
-        refund_amount: payload.refundAmount
-          ? Number(payload.refundAmount)
-          : null,
-        refund_currency: payload.refundCurrency || "EUR",
-        refund_document_name: payload.refundDocumentName || null,
-        evidence_images: payload.evidenceImages || [],
-        status: payload.status || "open",
-        created_at: payload.createdAt || new Date().toISOString(),
-      };
-
-      console.log('🔍 DISPUTES.CREATE - Dati da inserire:', insertData);
-
       const { data, error } = await supabase
         .from("disputes")
-        .insert(insertData)
+        .insert({
+          dispute_id: payload.disputeId,
+          contact_id: payload.contactId,
+          booking_id: payload.bookingId,
+          against_user_id: payload.againstUserId,
+          against_user_name: payload.againstUserName,
+          opened_by_user_id: payload.openedByUserId || null,
+          opened_by_role: payload.openedByRole || null,
+          role: payload.role,
+          scope: payload.scope,
+          reason: payload.reason,
+          details: payload.details,
+          refund_amount: payload.refundAmount
+            ? Number(payload.refundAmount)
+            : null,
+          refund_currency: payload.refundCurrency || "EUR",
+          refund_document_name: payload.refundDocumentName || null,
+          evidence_images: payload.evidenceImages || [],
+          status: payload.status || "open",
+          created_at: payload.createdAt || new Date().toISOString(),
+        })
         .select()
         .single();
 
       if (error) {
-        console.error("❌ Errore salvataggio contestazione Supabase:", error);
-        console.error("❌ Dati che hanno causato errore:", insertData);
+        console.error("Errore salvataggio contestazione Supabase:", error);
         throw error;
       }
 
@@ -5756,6 +5742,84 @@ issued_at: new Date().toISOString()
         .eq("flagged", true);
 
       return count || 0;
+    },
+  },
+
+  /* =======================================================
+     NOTIFICHE
+     ======================================================= */
+  notifications: {
+    getAll: async (userId: string) => {
+      const { data, error } = await supabase
+        .from("admin_notifications")
+        .select("*")
+        .eq("recipient_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Errore caricamento notifiche:", error);
+        return [];
+      }
+
+      return data || [];
+    },
+
+    getUnreadCount: async (userId: string) => {
+      const { count, error } = await supabase
+        .from("admin_notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("recipient_id", userId)
+        .eq("read", false);
+
+      if (error) {
+        console.error("Errore conteggio notifiche non lette:", error);
+        return 0;
+      }
+
+      return count || 0;
+    },
+
+    markAsRead: async (notificationId: string) => {
+      const { error } = await supabase
+        .from("admin_notifications")
+        .update({ read: true })
+        .eq("id", notificationId);
+
+      if (error) {
+        console.error("Errore marcatura notifica letta:", error);
+        return false;
+      }
+
+      return true;
+    },
+
+    markAllAsRead: async (userId: string) => {
+      const { error } = await supabase
+        .from("admin_notifications")
+        .update({ read: true })
+        .eq("recipient_id", userId)
+        .eq("read", false);
+
+      if (error) {
+        console.error("Errore marcatura tutte le notifiche lette:", error);
+        return false;
+      }
+
+      return true;
+    },
+
+    delete: async (notificationId: string) => {
+      const { error } = await supabase
+        .from("admin_notifications")
+        .delete()
+        .eq("id", notificationId);
+
+      if (error) {
+        console.error("Errore eliminazione notifica:", error);
+        return false;
+      }
+
+      return true;
     },
   },
 
