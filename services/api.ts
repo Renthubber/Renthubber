@@ -1932,7 +1932,7 @@ if (ownerIds.length > 0) {
                 amount_cents: Math.round(walletRefunded * 100),
                 balance_after_cents: Math.round(newBalance * 100),
                 type: 'credit',
-                source: 'booking_refund',
+                source: 'refund',
                 description: `Rimborso per prenotazione #${bookingNumber} (${listingTitle})`,
                 related_booking_id: bookingId,
               });
@@ -1963,7 +1963,7 @@ if (ownerIds.length > 0) {
                   amount_cents: Math.round(walletRefunded * 100),
                   balance_after_cents: Math.round(newBalance * 100),
                   type: 'credit',
-                  source: 'booking_refund',
+                  source: 'refund',
                   description: `Rimborso per prenotazione #${bookingNumber} (${listingTitle})`,
                   related_booking_id: bookingId,
                 });
@@ -2112,7 +2112,7 @@ if (ownerIds.length > 0) {
               amount_cents: Math.round(refundAmount * 100),
               balance_after_cents: Math.round(newBalance * 100),
               type: 'credit',
-              source: 'booking_refund',
+              source: 'refund',
               description: `Rimborso per prenotazione #${bookingNumber} (${listingTitle}) - Cancellata dall'Hubber`,
               related_booking_id: bookingId,
             });
