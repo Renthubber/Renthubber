@@ -69,7 +69,14 @@ export const HubberListingEditor: React.FC<HubberListingEditorProps> = ({ listin
     setIsSaving(true);
     // Simulate API call
     setTimeout(() => {
-      onSave(formData);
+      // Converti i valori a number prima di salvare
+      const dataToSave = {
+        ...formData,
+        price: typeof formData.price === 'string' ? parseFloat(formData.price) || 0 : formData.price,
+        deposit: typeof formData.deposit === 'string' ? parseFloat(formData.deposit as any) || 0 : formData.deposit,
+        cleaningFee: typeof (formData as any).cleaningFee === 'string' ? parseFloat((formData as any).cleaningFee) || 0 : (formData as any).cleaningFee
+      };
+      onSave(dataToSave);
       setIsSaving(false);
     }, 1000);
   };
@@ -398,6 +405,8 @@ export const HubberListingEditor: React.FC<HubberListingEditorProps> = ({ listin
                           <option value="sale-feste">Sale Feste</option>
                           <option value="location-matrimoni">Location Matrimoni</option>
                           <option value="spazi-eventi">Spazi Eventi</option>
+                          <option value="disco-club">Disco Club</option>
+                          <option value="villa">Villa</option>
                           <option value="sale-conferenze">Sale Conferenze</option>
                         </optgroup>
                         <optgroup label="📦 STORAGE & DEPOSITI">
@@ -418,12 +427,6 @@ export const HubberListingEditor: React.FC<HubberListingEditorProps> = ({ listin
                           <option value="sale-fitness">Sale Fitness</option>
                           <option value="campi-sportivi">Campi Sportivi</option>
                           <option value="piscine">Piscine</option>
-                        </optgroup>
-                        <optgroup label="🏠 RESIDENZIALI">
-                          <option value="appartamenti">Appartamenti</option>
-                          <option value="ville">Ville</option>
-                          <option value="case-vacanza">Case Vacanza</option>
-                          <option value="b&b">B&B</option>
                         </optgroup>
                         <optgroup label="🍽️ RISTORAZIONE">
                           <option value="cucine-professionali">Cucine Professionali</option>
@@ -533,7 +536,7 @@ export const HubberListingEditor: React.FC<HubberListingEditorProps> = ({ listin
                     <input 
                       type="number" 
                       value={formData.price}
-                      onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})}
+                      onChange={e => setFormData({...formData, price: e.target.value as any})}
                       className="w-full pl-9 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none font-bold"
                     />
                   </div>
@@ -661,7 +664,7 @@ export const HubberListingEditor: React.FC<HubberListingEditorProps> = ({ listin
             </div>
 
             <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-               <h3 className="text-lg font-bold text-gray-900">Regole dell'Host</h3>
+               <h3 className="text-lg font-bold text-gray-900">Regole dell'Hubber</h3>
                <div className="space-y-3">
                   {formData.rules.map((rule, i) => (
                      <div key={i} className="flex gap-2">
@@ -703,7 +706,7 @@ export const HubberListingEditor: React.FC<HubberListingEditorProps> = ({ listin
                      <input 
                        type="number" 
                        value={formData.deposit || ''}
-                       onChange={(e) => setFormData({...formData, deposit: parseFloat(e.target.value)})}
+                       onChange={(e) => setFormData({...formData, deposit: e.target.value as any})}
                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
                        placeholder="0"
                      />
@@ -716,7 +719,7 @@ export const HubberListingEditor: React.FC<HubberListingEditorProps> = ({ listin
                   <input
                     type="number"
                     value={formData.cleaningFee || ''}
-                    onChange={(e) => setFormData({...formData, cleaningFee: parseFloat(e.target.value)})}
+                    onChange={(e) => setFormData({...formData, cleaningFee: e.target.value as any})}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
                     placeholder="0"
                   />
