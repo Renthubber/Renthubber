@@ -328,6 +328,15 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
 
       console.log('DEBUG Publish – newListing:', newListing);
 
+      console.log('🔍 PREZZI PRIMA DI SALVARE:', {
+        price: newListing.price,
+        deposit: newListing.deposit,
+        cleaningFee: newListing.cleaningFee,
+        draft_price: draft.price,
+        draft_deposit: draft.deposit,
+        draft_cleaningFee: draft.cleaningFee
+      });
+
       // chiama il callback fornito da App.tsx e aspetta che finisca
       await onPublish(newListing);
     } catch (error) {
@@ -524,6 +533,8 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
                 <option value="sale-feste">Sale Feste</option>
                 <option value="location-matrimoni">Location Matrimoni</option>
                 <option value="spazi-eventi">Spazi Eventi</option>
+                <option value="disco-club">Disco Club</option>
+                <option value="villa">Villa</option>
                 <option value="sale-conferenze">Sale Conferenze</option>
               </optgroup>
 
@@ -547,13 +558,6 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
                 <option value="sale-fitness">Sale Fitness</option>
                 <option value="campi-sportivi">Campi Sportivi</option>
                 <option value="piscine">Piscine</option>
-              </optgroup>
-
-              <optgroup label="🏠 RESIDENZIALI">
-                <option value="appartamenti">Appartamenti</option>
-                <option value="ville">Ville</option>
-                <option value="case-vacanza">Case Vacanza</option>
-                <option value="b&b">B&B</option>
               </optgroup>
 
               <optgroup label="🍽️ RISTORAZIONE">
