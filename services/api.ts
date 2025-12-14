@@ -424,7 +424,7 @@ async function sendBookingSystemMessage(params: {
 
   // Sync su Supabase
   try {
-    // ✅ FIX: Recupera renter e hubber dalla conversazione per from_user_id e to_user_id
+    // ✅ FIX: Recupera renter e hubber dalla conversazione
     const { data: conv } = await supabase
       .from("conversations")
       .select("renter_id, hubber_id")
@@ -434,8 +434,8 @@ async function sendBookingSystemMessage(params: {
     await supabase.from("messages").insert({
       id: messageId,
       conversation_id: conversationId,
-      from_user_id: conv?.hubber_id || conv?.renter_id || "system", // ✅ FIX: Usa hubber come mittente
-      to_user_id: conv?.renter_id || conv?.hubber_id || "system",   // ✅ FIX: Usa renter come destinatario
+      from_user_id: conv?.hubber_id || conv?.renter_id || "system",
+      to_user_id: conv?.renter_id || conv?.hubber_id || "system",
       text: messageText,
       created_at: now,
       is_system_message: true,
@@ -1817,6 +1817,10 @@ if (ownerIds.length > 0) {
           return { success: false, error: "Prenotazione non trovata." };
         }
 
+        // ✅ Definisci listingTitle e bookingNumber per usarli dopo
+        const listingTitle = booking.listing?.title || "l'annuncio";
+        const bookingNumber = bookingId.substring(0, 8).toUpperCase();
+
         // 2. Verifica che la prenotazione sia cancellabile
         const cancellableStatuses = ['pending', 'confirmed', 'accepted'];
         if (!cancellableStatuses.includes(booking.status)) {
@@ -1922,8 +1926,7 @@ if (ownerIds.length > 0) {
                 .update({ renter_balance: newBalance })
                 .eq("id", renterId);
               
-              // ✅ FIX: Crea record in wallet_transactions
-              const bookingNumber = bookingId.substring(0, 8).toUpperCase();
+              // ✅ Crea record in wallet_transactions
               await supabase.from("wallet_transactions").insert({
                 user_id: renterId,
                 amount_cents: Math.round(walletRefunded * 100),
@@ -1954,8 +1957,7 @@ if (ownerIds.length > 0) {
                   .update({ renter_balance: newBalance })
                   .eq("id", renterId);
                 
-                // ✅ FIX: Crea record in wallet_transactions
-                const bookingNumber = bookingId.substring(0, 8).toUpperCase();
+                // ✅ Crea record in wallet_transactions
                 await supabase.from("wallet_transactions").insert({
                   user_id: renterId,
                   amount_cents: Math.round(walletRefunded * 100),
@@ -1993,7 +1995,6 @@ if (ownerIds.length > 0) {
         });
 
         // ✅ Invia messaggio di sistema nella chat
-        const listingTitle = booking.listing?.title || "l'annuncio";
         let cancelMessage = `La prenotazione per "${listingTitle}" è stata cancellata dal Renter.`;
         if (refundAmount > 0) {
           cancelMessage += ` Rimborso: €${refundAmount.toFixed(2)}.`;
@@ -2056,6 +2057,10 @@ if (ownerIds.length > 0) {
           return { success: false, error: "Prenotazione non trovata." };
         }
 
+        // ✅ Definisci listingTitle e bookingNumber per usarli dopo
+        const listingTitle = booking.listing?.title || "l'annuncio";
+        const bookingNumber = bookingId.substring(0, 8).toUpperCase();
+
         // 2. Verifica che sia cancellabile
         const cancellableStatuses = ['pending', 'confirmed', 'accepted', 'active'];
         if (!cancellableStatuses.includes(booking.status)) {
@@ -2101,8 +2106,7 @@ if (ownerIds.length > 0) {
               .update({ renter_balance: newBalance })
               .eq("id", booking.renter_id);
             
-            // ✅ FIX: Crea record in wallet_transactions
-            const bookingNumber = bookingId.substring(0, 8).toUpperCase();
+            // ✅ Crea record in wallet_transactions
             await supabase.from("wallet_transactions").insert({
               user_id: booking.renter_id,
               amount_cents: Math.round(refundAmount * 100),
@@ -2123,7 +2127,6 @@ if (ownerIds.length > 0) {
         });
 
         // ✅ Invia messaggio di sistema nella chat
-        const listingTitle = booking.listing?.title || "l'annuncio";
         let cancelMessage = `La prenotazione per "${listingTitle}" è stata cancellata dall'Hubber.`;
         if (reason) {
           cancelMessage += ` Motivo: ${reason}`;
@@ -5034,6 +5037,12 @@ issued_at: new Date().toISOString()
         return value;
       };
 
+      // 🐛 DEBUG: Vediamo cosa arriva
+      console.log('🔍 DISPUTES.CREATE - Payload ricevuto:', payload);
+      console.log('🔍 booking_id tipo:', typeof payload.bookingId, 'valore:', payload.bookingId);
+      console.log('🔍 contact_id tipo:', typeof payload.contactId, 'valore:', payload.contactId);
+      console.log('🔍 dispute_id tipo:', typeof payload.disputeId, 'valore:', payload.disputeId);
+
       const insertData = {
         dispute_id: toUuidOrNull(payload.disputeId),
         contact_id: toUuidOrNull(payload.contactId),
@@ -5056,6 +5065,8 @@ issued_at: new Date().toISOString()
         created_at: payload.createdAt || new Date().toISOString(),
       };
 
+      console.log('🔍 DISPUTES.CREATE - Dati da inserire:', insertData);
+
       const { data, error } = await supabase
         .from("disputes")
         .insert(insertData)
@@ -5063,7 +5074,8 @@ issued_at: new Date().toISOString()
         .single();
 
       if (error) {
-        console.error("Errore salvataggio contestazione Supabase:", error);
+        console.error("❌ Errore salvataggio contestazione Supabase:", error);
+        console.error("❌ Dati che hanno causato errore:", insertData);
         throw error;
       }
 
@@ -5309,7 +5321,7 @@ issued_at: new Date().toISOString()
     },
 
     // Ottieni messaggi di una conversazione
-    getMessagesForConversation: async (conversationId: string, currentUserId?: string) => {
+    getMessagesForConversation: async (conversationId: string) => {
       // 1. Carica messaggi
       const { data, error } = await supabase
         .from("messages")
@@ -5353,32 +5365,23 @@ issued_at: new Date().toISOString()
         }
       }
 
-      // 3. Filtra messaggi privati e restituisci
-      return (data || [])
-        .filter((m: any) => {
-          // ✅ Filtra messaggi privati: visibili SOLO al mittente
-          if (m.private_to_sender === true && m.from_user_id !== currentUserId) {
-            return false; // Nascondo messaggi privati di altri
-          }
-          return true; // Mostro tutti gli altri messaggi
-        })
-        .map((m: any) => ({
-          id: m.id,
-          conversationId: m.conversation_id,
-          fromUserId: m.from_user_id,
-          toUserId: m.to_user_id,
-          text: m.text,
-          createdAt: m.created_at,
-          read: m.read,
-          flagged: m.flagged,
-          flagReason: m.flag_reason,
-          isAdminMessage: m.is_admin_message,
-          adminId: m.admin_id,
-          hasConfirmedBooking: shouldHideContacts ? false : m.has_confirmed_booking,
-          isSupport: m.is_support,
-          isSystemMessage: m.is_system_message,
-          privateToSender: m.private_to_sender, // ✅ Includo flag per riferimento
-        }));
+      // 3. Restituisci messaggi con hasConfirmedBooking aggiornato
+      return (data || []).map((m: any) => ({
+        id: m.id,
+        conversationId: m.conversation_id,
+        fromUserId: m.from_user_id,
+        toUserId: m.to_user_id,
+        text: m.text,
+        createdAt: m.created_at,
+        read: m.read,
+        flagged: m.flagged,
+        flagReason: m.flag_reason,
+        isAdminMessage: m.is_admin_message,
+        adminId: m.admin_id,
+        hasConfirmedBooking: shouldHideContacts ? false : m.has_confirmed_booking,
+        isSupport: m.is_support,
+        isSystemMessage: m.is_system_message,
+      }));
     },
 
     // Conta messaggi non letti
