@@ -876,7 +876,7 @@ export const Messages: React.FC<MessagesProps> = ({
     if (activeContact.isRealConversation) {
       const loadConversationMessages = async () => {
         try {
-          const msgs = await api.messages.getMessagesForConversation(activeChatId);
+          const msgs = await api.messages.getMessagesForConversation(activeChatId, currentUser?.id);
           
           const conversationMessages = msgs.map((m: any) => {
   const isFromMe = m.fromUserId === currentUser?.id;
@@ -1248,7 +1248,7 @@ export const Messages: React.FC<MessagesProps> = ({
         // Non blocchiamo: la contestazione esiste comunque nell'app
       }
 
-      // 2) Salva messaggio della contestazione nel database
+      // 2) Salva messaggio PRIVATO della contestazione nel database
       try {
         const { supabase } = await import('../lib/supabase');
         const msgId = `msg-dispute-${Date.now()}`;
@@ -1256,7 +1256,7 @@ export const Messages: React.FC<MessagesProps> = ({
         
         await supabase.from("messages").insert({
           id: msgId,
-          conversation_id: activeContact.id, // conversationId
+          conversation_id: activeContact.id,
           from_user_id: currentUser?.id || null,
           to_user_id: activeContact.contactId || null,
           text: messageText,
@@ -1265,6 +1265,7 @@ export const Messages: React.FC<MessagesProps> = ({
           flagged: false,
           is_support: false,
           is_admin_message: false,
+          private_to_sender: true, // ✅ Flag: visibile SOLO al mittente
         });
       } catch (err) {
         console.error("Errore salvataggio messaggio contestazione:", err);
