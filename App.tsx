@@ -57,7 +57,7 @@ import {
 } from "./types";
 
 import { DEFAULT_SYSTEM_CONFIG, DEMO_ADMIN } from "./constants";
-import { api } from "./services/api";
+import { api } from "./services/api_prima_della_modifica_del_ruolo";
 import { supabase } from "./lib/supabase";
 
 /* ------------------------------------------------------
@@ -114,6 +114,7 @@ const App: React.FC = () => {
     useState<SystemConfig>(DEFAULT_SYSTEM_CONFIG);
 
   const [activeMode, setActiveMode] = useState<ActiveMode>("renter");
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   // ✅ Utenti completi per Admin (da Supabase)
   const [adminUsers, setAdminUsers] = useState<User[]>([]);
@@ -145,6 +146,9 @@ const App: React.FC = () => {
     isInitialized.current = true;
 
     console.log("🔄 useEffect INIT chiamato - timestamp:", Date.now());
+    
+    // ✅ Salva URL corrente per preservarlo dopo auth
+    const currentPath = window.location.pathname;
 
     // ✅ CHECK: Se l'utente arriva dal link email di reset password
     const hash = window.location.hash;
@@ -159,22 +163,26 @@ const App: React.FC = () => {
 
       await api.init();
 
-      // Carico dati base
+      // ✅ PRIMA: Check sessione (veloce)
+      const { data } = await supabase.auth.getSession();
+      const session = data.session;
+      
+      // ✅ Nascondi spinner SUBITO dopo auth check
+      setIsAuthChecking(false);
+
+      // DOPO: Carico dati base (l'app è già visibile)
       const loadedListings = await api.admin.getAllListings();
       console.log("🧩 App.init – listings da Supabase:", loadedListings);
       setListings(loadedListings);
 
       setTransactions(await api.wallet.getTransactions());
-      setBookings(await api.bookings.getAllFromDb()); // ✅ USA BOOKINGS REALI DA SUPABASE
+      setBookings(await api.bookings.getAll());
       setPayoutRequests(await api.payouts.getAll());
       setDisputes(await api.admin.getDisputes());
       setReviews(await api.admin.getReviews());
       setInvoices(await api.admin.getInvoices());
 
-      // Controllo sessione
-      const { data } = await supabase.auth.getSession();
-      const session = data.session;
-
+      // Processo sessione
      if (session?.user) {
         const email = session.user.email || "";
         const isAdmin =
@@ -188,7 +196,11 @@ const App: React.FC = () => {
           };
           setCurrentUser(adminUser);
           setActiveMode("hubber");
-          navigate('/admin');
+          
+          // ✅ Redirect solo se sulla home, NON se su altre pagine
+          if (currentPath === '/' || currentPath === '/login') {
+            navigate('/admin');
+          }
           hasProcessedAuth.current = true;
 
           await loadAdminUsers();
@@ -212,7 +224,11 @@ const App: React.FC = () => {
               if (dbUser.role === "admin" || userRoles.includes("admin")) {
                 console.log("🔑 Admin riconosciuto dal ruolo DB!");
                 setActiveMode("hubber");
-                navigate('/admin');
+                
+                // ✅ Redirect solo se sulla home, NON se su altre pagine
+                if (currentPath === '/' || currentPath === '/login') {
+                  navigate('/admin');
+                }
                 hasProcessedAuth.current = true;
                 await loadAdminUsers();
                 return;
@@ -396,6 +412,18 @@ const App: React.FC = () => {
       />
     );
   };
+
+  // ✅ Mostra spinner durante auth check (solo ~1 secondo)
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#0A4D68] mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg font-medium">Caricamento...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <BrandingProvider>
