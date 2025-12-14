@@ -57,7 +57,7 @@ import {
 } from "./types";
 
 import { DEFAULT_SYSTEM_CONFIG, DEMO_ADMIN } from "./constants";
-import { api } from "./services/api_prima_della_modifica_del_ruolo";
+import { api } from "./services/api";
 import { supabase } from "./lib/supabase";
 
 /* ------------------------------------------------------
