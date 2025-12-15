@@ -3355,9 +3355,12 @@ const handleIdFileChange =
                       className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
                       title="Scarica PDF"
                       onClick={() => {
-                        console.log('Download fattura:', inv.invoice_number);
-                        alert(`Download ${inv.invoice_number} - Funzionalità in arrivo!`);
-                      }}
+  if (inv.pdf_url) {
+    window.open(inv.pdf_url, '_blank');
+  } else {
+    alert(`PDF non disponibile per ${inv.invoice_number}`);
+  }
+}}
                     >
                       <Download className="w-4 h-4" />
                     </button>
@@ -3454,8 +3457,11 @@ const handleIdFileChange =
                                     className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
                                     title="Scarica PDF"
                                     onClick={() => {
-                                      console.log('Download fattura:', inv.invoice_number);
-                                      alert(`Download ${inv.invoice_number} - Funzionalità in arrivo!`);
+                                      if (inv.pdf_url) {
+                                        window.open(inv.pdf_url, '_blank');
+                                      } else {
+                                        alert(`PDF non disponibile per ${inv.invoice_number}`);
+                                      }
                                     }}
                                   >
                                     <Download className="w-4 h-4" />
@@ -3542,8 +3548,11 @@ const handleIdFileChange =
                                 className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
                                 title="Scarica PDF"
                                 onClick={() => {
-                                  console.log('Download fattura:', inv.invoice_number);
-                                  alert(`Download ${inv.invoice_number} - Funzionalità in arrivo!`);
+                                  if (inv.pdf_url) {
+                                    window.open(inv.pdf_url, '_blank');
+                                  } else {
+                                    alert(`PDF non disponibile per ${inv.invoice_number}`);
+                                  }
                                 }}
                               >
                                 <Download className="w-4 h-4" />
@@ -3571,7 +3580,7 @@ const handleIdFileChange =
     </div>
     );
   };
-
+  
   // --- PRENOTAZIONI RENTER ---
   const renderRenterBookings = () => {
     const today = new Date();
