@@ -37,6 +37,7 @@ interface InvoiceData {
   notes?: string;
   listing_title?: string;
   listing_id?: string;
+  listing_price?: number; // Prezzo base noleggio
 }
 
 interface LineItem {
@@ -191,7 +192,75 @@ export async function generateInvoicePDF(
   yPos += recipientLines.length * 5 + 15;
 
   // ============================
-  // TABELLA DETTAGLI
+  // BOX DETTAGLIO PRENOTAZIONE
+  // ============================
+  if (invoice.booking_id && invoice.listing_title) {
+    // Box con sfondo
+    doc.setFillColor(245, 247, 250); // Grigio chiaro
+    doc.setDrawColor(COLORS.border);
+    doc.roundedRect(margin, yPos, pageWidth - margin * 2, 30, 2, 2, 'FD');
+    
+    yPos += 5;
+    
+    // Titolo sezione
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.primary);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DETTAGLIO PRENOTAZIONE', margin + 5, yPos + 5);
+    
+    yPos += 10;
+    
+    // Dati prenotazione
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(COLORS.text);
+    
+    // Riga 1: Prenotazione e Oggetto
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Prenotazione:`, margin + 5, yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`#${invoice.booking_id.substring(0, 8).toUpperCase()}`, margin + 35, yPos);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Oggetto:`, margin + 80, yPos);
+    doc.setFont('helvetica', 'normal');
+    const titleText = invoice.listing_title.length > 30 ? invoice.listing_title.substring(0, 27) + '...' : invoice.listing_title;
+    doc.text(titleText, margin + 100, yPos);
+    
+    yPos += 5;
+    
+    // Riga 2: Periodo e Importo
+    if (invoice.period_start && invoice.period_end) {
+      const periodStart = new Date(invoice.period_start).toLocaleDateString('it-IT');
+      const periodEnd = new Date(invoice.period_end).toLocaleDateString('it-IT');
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Periodo:`, margin + 5, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${periodStart} al ${periodEnd}`, margin + 35, yPos);
+    }
+    
+    if (invoice.listing_price) {
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Importo noleggio:`, margin + 80, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`€ ${invoice.listing_price.toFixed(2)}`, margin + 115, yPos);
+    }
+    
+    yPos += 15;
+  }
+
+  // ============================
+  // COMMISSIONI RENTHUBBER
+  // ============================
+  doc.setFontSize(10);
+  doc.setTextColor(COLORS.primary);
+  doc.setFont('helvetica', 'bold');
+  doc.text('COMMISSIONI RENTHUBBER', margin, yPos);
+  yPos += 8;
+
+  // ============================
+  // TABELLA SEMPLIFICATA
   // ============================
   
   // Header tabella
@@ -203,23 +272,14 @@ export async function generateInvoicePDF(
   doc.setFont('helvetica', 'bold');
   
   const colWidths = {
-    description: 80,
-    period: 40,
-    quantity: 20,
-    unitPrice: 25,
-    total: 25,
+    description: 130,
+    total: 40,
   };
   
   let xPos = margin + 3;
   doc.text('Descrizione', xPos, yPos + 7);
   xPos += colWidths.description;
-  doc.text('Periodo', xPos, yPos + 7);
-  xPos += colWidths.period;
-  doc.text('Qtà', xPos, yPos + 7);
-  xPos += colWidths.quantity;
-  doc.text('Prezzo', xPos, yPos + 7);
-  xPos += colWidths.unitPrice;
-  doc.text('Totale', xPos, yPos + 7);
+  doc.text('Importo', xPos, yPos + 7);
 
   yPos += 12;
 
@@ -227,20 +287,11 @@ export async function generateInvoicePDF(
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(COLORS.text);
 
-  // Formatta periodo
-  const periodStart = invoice.period_start 
-    ? new Date(invoice.period_start).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })
-    : '';
-  const periodEnd = invoice.period_end 
-    ? new Date(invoice.period_end).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })
-    : '';
-  const periodText = periodStart && periodEnd ? `${periodStart} - ${periodEnd}` : '';
-
   // Se ci sono line_items, usali
   const items = invoice.line_items && invoice.line_items.length > 0 
     ? invoice.line_items 
     : [{
-        description: invoice.description || `Commissione servizio RentHubber${invoice.listing_title ? ` - ${invoice.listing_title}` : ''}`,
+        description: invoice.description || `Commissione servizio RentHubber`,
         quantity: 1,
         unitPrice: invoice.subtotal,
         total: invoice.subtotal,
@@ -255,29 +306,15 @@ export async function generateInvoicePDF(
 
     xPos = margin + 3;
     
-    // Descrizione (troncata se troppo lunga)
-    const descText = item.description.length > 45 
-      ? item.description.substring(0, 42) + '...' 
+    // Descrizione
+    const descText = item.description.length > 70 
+      ? item.description.substring(0, 67) + '...' 
       : item.description;
     doc.text(descText, xPos, yPos + 4);
     xPos += colWidths.description;
     
-    // Periodo (solo sulla prima riga)
-    if (index === 0) {
-      doc.text(periodText, xPos, yPos + 4);
-    }
-    xPos += colWidths.period;
-    
-    // Quantità
-    doc.text(String(item.quantity || 1), xPos, yPos + 4);
-    xPos += colWidths.quantity;
-    
-    // Prezzo unitario
-    doc.text(`€ ${(item.unitPrice || 0).toFixed(2)}`, xPos, yPos + 4);
-    xPos += colWidths.unitPrice;
-    
-    // Totale riga
-    doc.text(`€ ${(item.total || 0).toFixed(2)}`, xPos, yPos + 4);
+    // Totale riga (allineato a destra)
+    doc.text(`€ ${(item.total || 0).toFixed(2)}`, xPos + colWidths.total - 5, yPos + 4, { align: 'right' });
 
     yPos += 8;
   });
@@ -323,60 +360,32 @@ export async function generateInvoicePDF(
   yPos += 25;
 
   // ============================
-  // METODO DI PAGAMENTO
+  // NOTE (solo per hubber)
   // ============================
-  if (companySettings.iban) {
-    doc.setFontSize(10);
-    doc.setTextColor(COLORS.textLight);
-    doc.setFont('helvetica', 'bold');
-    doc.text('MODALITÀ DI PAGAMENTO', margin, yPos);
-    yPos += 6;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(COLORS.text);
-    doc.text(`Bonifico bancario su IBAN: ${companySettings.iban}`, margin, yPos);
-    if (companySettings.bank_name) {
-      yPos += 5;
-      doc.text(`Banca: ${companySettings.bank_name}`, margin, yPos);
-    }
-    yPos += 10;
-  }
-
-  // ============================
-  // NOTE
-  // ============================
-  if (invoice.notes) {
+  if (invoice.invoice_type === 'hubber' && invoice.notes) {
     doc.setFontSize(9);
     doc.setTextColor(COLORS.textLight);
-    doc.setFont('helvetica', 'italic');
-    
-    const notesLines = doc.splitTextToSize(invoice.notes, pageWidth - margin * 2);
-    doc.text(notesLines, margin, yPos);
-    yPos += notesLines.length * 4 + 5;
+    doc.setFont('helvetica', 'normal');
+    doc.text('Note:', margin, yPos);
+    yPos += 5;
+    doc.setTextColor(COLORS.text);
+    doc.text(invoice.notes, margin, yPos);
+    yPos += 10;
   }
 
   // ============================
   // FOOTER
   // ============================
-  const footerY = pageHeight - 15;
-  
+  const footerY = pageHeight - 20;
   doc.setFontSize(8);
   doc.setTextColor(COLORS.textLight);
   doc.setFont('helvetica', 'normal');
   
-  doc.text(
-    `${companySettings.company_name || 'RentHubber SRL'} - Documento generato automaticamente`,
-    pageWidth / 2,
-    footerY,
-    { align: 'center' }
-  );
+  const footerText = `${companySettings.company_name || 'Renthubber - Amalis Group s.r.l'} - Documento generato automaticamente`;
+  doc.text(footerText, pageWidth / 2, footerY, { align: 'center' });
   
-  doc.text(
-    `Pagina 1 di 1`,
-    pageWidth / 2,
-    footerY + 4,
-    { align: 'center' }
-  );
+  doc.setFontSize(7);
+  doc.text(`Pagina 1 di 1`, pageWidth / 2, footerY + 5, { align: 'center' });
 
   // Genera blob
   return doc.output('blob');
@@ -485,25 +494,7 @@ export async function loadCompanySettings(): Promise<CompanySettings> {
   }
 }
 
-/**
- * Carica logo come Base64
- */
 export async function loadLogoBase64(): Promise<string | undefined> {
-  try {
-    // Prova a caricare da assets locali
-    const response = await fetch('/assets/logo-renthubber.png');
-    if (response.ok) {
-      const blob = await response.blob();
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-    }
-  } catch (e) {
-    console.warn('Logo non trovato in assets, provo da Supabase');
-  }
-
   try {
     // Prova da Supabase Storage
     const { data } = supabase.storage
