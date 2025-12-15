@@ -2119,6 +2119,19 @@ useEffect(() => {
           setLocalBookings(prev => prev.map(b => 
             b.id === bookingId ? { ...b, status: 'completed' } : b
           ));
+          
+          // ✅ Ricarica i wallet per mostrare i saldi aggiornati
+          try {
+            const updatedWallets = await api.admin.getAllWallets();
+            setLocalWallets(updatedWallets || []);
+            
+            const updatedWalletTx = await api.admin.getAllWalletTransactions();
+            setLocalWalletTransactions(updatedWalletTx || []);
+          } catch (walletError) {
+            console.error('Errore ricaricamento wallet:', walletError);
+            // Non bloccare il flusso se il refresh wallet fallisce
+          }
+          
           alert('✅ Prenotazione completata! Fatture generate automaticamente.');
         } else {
           alert('❌ Errore: Impossibile completare la prenotazione');

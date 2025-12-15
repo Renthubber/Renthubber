@@ -27,6 +27,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { api } from '../services/api';
+import { referralApi } from '../services/referralApi';
 import { supabase } from '../lib/supabase';
 import { StripeStatusBanner } from '../components/StripeStatusBanner'; 
 import { PayoutRequestButton } from '../components/PayoutRequestButton'; 
@@ -83,6 +84,9 @@ export const Wallet: React.FC<WalletProps> = ({
   // ✅ BONUS IN ATTESA (referral registrati ma non ancora completati)
   const [pendingBonus, setPendingBonus] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+
+  // ✅ BONUS REFERRAL DINAMICO (caricato da database)
+  const [referralBonus, setReferralBonus] = useState(5.00);
 
   // 🔹 Saldo e movimenti REALI per HUBBER (wallets + wallet_transactions)
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
@@ -311,6 +315,23 @@ export const Wallet: React.FC<WalletProps> = ({
     loadRenterTransactions();
     loadPendingReferrals();
   }, [currentUser.id]);
+
+  // ✅ CARICA IMPOSTAZIONI REFERRAL DAL DATABASE
+  useEffect(() => {
+    const loadReferralSettings = async () => {
+      try {
+        const settings = await referralApi.getSettings();
+        if (settings) {
+          // Usa il bonus per chi invita (inviter)
+          setReferralBonus(settings.inviterBonusCents / 100);
+        }
+      } catch (err) {
+        console.error('Errore caricando impostazioni referral:', err);
+      }
+    };
+    
+    loadReferralSettings();
+  }, []); // Solo al mount
 
   // 📋 Gestione modal dettaglio prenotazione
   const handleBookingClick = async (bookingId: string) => {
@@ -615,8 +636,6 @@ export const Wallet: React.FC<WalletProps> = ({
   }
 };
 
-// Programma Invita un Amico: sempre attivo, default 5€
-  const referralBonus = systemConfig.referral?.bonusAmount ?? 5;
   // ===========================
   //        RENTER VIEW
   // ===========================

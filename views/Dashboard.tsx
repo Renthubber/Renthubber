@@ -22,6 +22,7 @@ import {
   Gift,
   ArrowRight,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -421,6 +422,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
   const [isVerifyingEmailOtp, setIsVerifyingEmailOtp] = useState(false);
   const [emailOtpSentTo, setEmailOtpSentTo] = useState('');
+
+  // ✅ ELIMINA ACCOUNT
+  const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // PROSSIMA PRENOTAZIONE RENTER (per Panoramica)
   const [nextUpcomingBooking, setNextUpcomingBooking] = useState<{
@@ -1992,6 +1999,33 @@ const handleIdFileChange =
     await handleSendEmailOtp();
   };
 
+  // ✅ GESTIONE ELIMINAZIONE ACCOUNT
+  const handleDeleteAccount = async () => {
+    // Verifica che l'utente abbia digitato "DELETE"
+    if (deleteConfirmText !== 'DELETE') {
+      setDeleteError('Devi digitare DELETE per confermare');
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    setDeleteError(null);
+
+    try {
+      // Chiama API per eliminare account
+      await api.users.deleteMyAccount(user.id);
+
+      // Logout e redirect
+      await api.auth.logout();
+      
+      // Reindirizza alla home
+      window.location.href = '/';
+    } catch (err: any) {
+      console.error('Errore eliminazione account:', err);
+      setDeleteError(err.message || 'Errore durante l\'eliminazione. Riprova.');
+      setIsDeletingAccount(false);
+    }
+  };
+
   // --- HELPER: BADGE STATO PRENOTAZIONE ---
   const renderBookingStatusBadge = (status: string) => {
     let label = status;
@@ -2237,6 +2271,41 @@ const handleIdFileChange =
               verifica manuale. In caso di modifica del documento è necessario
               rifare la verifica.
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 🔴 DANGER ZONE - Elimina Account */}
+      <div className="bg-white rounded-2xl border-2 border-red-200 shadow-sm p-6">
+        <h3 className="font-bold text-red-600 mb-2 flex items-center">
+          <AlertTriangle className="w-6 h-6 mr-2" /> Zona Pericolosa
+        </h3>
+        <p className="text-gray-600 text-sm mb-6">
+          Azioni irreversibili sul tuo account
+        </p>
+
+        <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <Trash2 className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-bold text-red-900 mb-1">
+                Elimina il mio account
+              </h4>
+              <p className="text-sm text-red-700 mb-3">
+                Questa azione è permanente e cancellerà tutti i tuoi dati:
+                prenotazioni, recensioni, messaggi e informazioni personali.
+              </p>
+              <button
+                onClick={() => {
+                  setDeleteAccountModalOpen(true);
+                  setDeleteConfirmText('');
+                  setDeleteError(null);
+                }}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors text-sm"
+              >
+                Elimina Account
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -7264,6 +7333,91 @@ const renderRenterPayments = () => {
     );
   };
 
+  // --- MODALE ELIMINA ACCOUNT ---
+  const renderDeleteAccountModal = () => {
+    if (!deleteAccountModalOpen) return null;
+
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+          <button
+            onClick={() => !isDeletingAccount && setDeleteAccountModalOpen(false)}
+            disabled={isDeletingAccount}
+            className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100 disabled:opacity-50"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              Elimina Account
+            </h3>
+            <p className="text-sm text-gray-600">
+              Questa azione è <strong>permanente e irreversibile</strong>
+            </p>
+          </div>
+
+          {/* Informazioni su cosa verrà eliminato */}
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <p className="text-sm text-red-900 font-semibold mb-2">
+              Verranno eliminati:
+            </p>
+            <ul className="text-sm text-red-800 space-y-1 ml-4 list-disc">
+              <li>Tutti i tuoi dati personali</li>
+              <li>Le tue prenotazioni e cronologia</li>
+              <li>Le recensioni ricevute e scritte</li>
+              <li>I messaggi e le conversazioni</li>
+              <li>Il saldo wallet (se presente)</li>
+            </ul>
+          </div>
+
+          {/* Input conferma */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Per confermare, digita <span className="text-red-600 font-mono">DELETE</span>
+            </label>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              disabled={isDeletingAccount}
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed font-mono"
+            />
+          </div>
+
+          {/* Errore */}
+          {deleteError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+              <p className="text-sm text-red-700">{deleteError}</p>
+            </div>
+          )}
+
+          {/* Pulsanti */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => setDeleteAccountModalOpen(false)}
+              disabled={isDeletingAccount}
+              className="flex-1 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            >
+              Annulla
+            </button>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={isDeletingAccount || deleteConfirmText !== 'DELETE'}
+              className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isDeletingAccount ? 'Eliminazione...' : 'Elimina Definitivamente'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // --- RENDER FINALE ---
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -7278,6 +7432,7 @@ const renderRenterPayments = () => {
       {renderHubberCancelModal()}
       {renderPhoneVerificationModal()}
       {renderEmailVerificationModal()}
+      {renderDeleteAccountModal()}
       {/* ✅ MODALE RECENSIONI */}
       {reviewModalOpen && bookingToReview && (
         <WriteReviewModal
