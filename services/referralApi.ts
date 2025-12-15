@@ -275,7 +275,7 @@ export const referralApi = {
       await referralApi.creditBonus(
         referral.inviter_id,
         referral.inviter_bonus_cents,
-        `Bonus Invita un Amico`,
+        `Bonus Invita Amico - Un tuo amico ha completato la prima prenotazione`,
         referral.id,
         "inviter"
       );
@@ -284,7 +284,7 @@ export const referralApi = {
       await referralApi.creditBonus(
         referral.invitee_id,
         referral.invitee_bonus_cents,
-        `Bonus di Benvenuto tramite Invito`,
+        `Bonus di Benvenuto - Hai completato la tua prima prenotazione`,
         referral.id,
         "invitee"
       );
@@ -375,7 +375,8 @@ export const referralApi = {
           amount_cents: amountCents,
           balance_after_cents: newReferralBalanceCents,
           type: "credit",
-          source: "adjustment", // Usiamo adjustment come da vincolo DB
+          source: "referral_bonus", // Usiamo adjustment come da vincolo DB
+          wallet_type: "renter", // ✅ AGGIUNTO: wallet_type renter
           description: description,
           related_booking_id: null,
         });
