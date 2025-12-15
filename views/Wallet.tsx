@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Clock,
   Calendar,
+  Users,
 } from 'lucide-react';
 import { User, ActiveMode, SystemConfig, BankDetails } from '../types';
 import {
@@ -87,6 +88,11 @@ export const Wallet: React.FC<WalletProps> = ({
 
   // ✅ BONUS REFERRAL DINAMICO (caricato da database)
   const [referralBonus, setReferralBonus] = useState(5.00);
+
+  // ✅ DRAWER INVITI
+  const [showReferralDrawer, setShowReferralDrawer] = useState(false);
+  const [referralsList, setReferralsList] = useState<any[]>([]);
+  const [referralsLoading, setReferralsLoading] = useState(false);
 
   // 🔹 Saldo e movimenti REALI per HUBBER (wallets + wallet_transactions)
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
@@ -478,6 +484,35 @@ export const Wallet: React.FC<WalletProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // ✅ CARICA LISTA REFERRAL DELL'UTENTE
+  const loadReferralsList = async () => {
+    setReferralsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('referral_tracking')
+        .select(`
+          *,
+          invitee:invitee_id(first_name, last_name)
+        `)
+        .eq('inviter_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setReferralsList(data);
+      }
+    } catch (err) {
+      console.error('Errore caricamento referral:', err);
+    } finally {
+      setReferralsLoading(false);
+    }
+  };
+
+  // Handler per aprire drawer e caricare lista
+  const handleOpenReferralDrawer = () => {
+    setShowReferralDrawer(true);
+    loadReferralsList();
+  };
+
   // SALVATAGGIO DATI BANCARI → bank_details + sync in currentUser
   const handleSaveBankDetails = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -668,7 +703,7 @@ export const Wallet: React.FC<WalletProps> = ({
                 </h2>
                 
                 {/* ✅ DETTAGLIO SALDI SEPARATI */}
-                <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                   {/* Box Wallet (credito admin) */}
                   <div className="bg-white/10 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-1">
@@ -752,6 +787,15 @@ export const Wallet: React.FC<WalletProps> = ({
                     <Copy className="w-4 h-4 text-gray-400" />
                   )}
                 </div>
+                
+                {/* Bottone per vedere lista inviti */}
+                <button
+                  onClick={handleOpenReferralDrawer}
+                  className="mt-3 w-full text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center justify-center gap-1 py-2 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  <Users className="w-3 h-3" />
+                  Vedi i tuoi inviti
+                </button>
               </div>
             </div>
           </div>
@@ -814,6 +858,127 @@ export const Wallet: React.FC<WalletProps> = ({
               )}
             </div>
           </div>
+
+          {/* ✅ DRAWER LISTA INVITI */}
+          {showReferralDrawer && (
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-end md:items-center md:justify-center"
+              onClick={() => setShowReferralDrawer(false)}
+            >
+              <div 
+                className="bg-white w-full md:w-[500px] rounded-t-3xl md:rounded-2xl shadow-2xl max-h-[85vh] overflow-hidden flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">I Tuoi Inviti</h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {referralsList.length} {referralsList.length === 1 ? 'invito' : 'inviti'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowReferralDrawer(false)}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+
+                {/* Lista Inviti */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  {referralsLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                    </div>
+                  ) : referralsList.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500 text-sm">
+                        Non hai ancora invitato nessuno.
+                      </p>
+                      <p className="text-gray-400 text-xs mt-1">
+                        Condividi il tuo codice per iniziare!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {referralsList.map((ref) => {
+                        const invitee = ref.invitee as any;
+                        const firstName = invitee?.first_name || 'Utente';
+                        const lastNameInitial = invitee?.last_name?.[0] || '';
+                        const displayName = `${firstName} ${lastNameInitial}.`;
+                        
+                        // Determina stato e colore pallino
+                        let statusColor = 'bg-yellow-400'; // Default: in attesa
+                        let statusText = 'In attesa prima prenotazione';
+                        let statusDate = new Date(ref.created_at).toLocaleDateString('it-IT');
+                        
+                        if (ref.status === 'completed' || ref.status === 'bonus_paid') {
+                          statusColor = 'bg-green-500';
+                          statusText = 'Bonus completato';
+                          statusDate = ref.booking_completed_at 
+                            ? new Date(ref.booking_completed_at).toLocaleDateString('it-IT')
+                            : statusDate;
+                        } else if (ref.status === 'expired') {
+                          statusColor = 'bg-red-500';
+                          statusText = 'Invito scaduto';
+                        }
+
+                        return (
+                          <div 
+                            key={ref.id}
+                            className="bg-gray-50 rounded-lg p-4 flex items-start gap-3"
+                          >
+                            {/* Pallino colorato */}
+                            <div className={`w-3 h-3 rounded-full ${statusColor} mt-1 flex-shrink-0`} />
+                            
+                            {/* Contenuto */}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-gray-900">{displayName}</p>
+                              <p className="text-sm text-gray-600">{statusText}</p>
+                              <div className="flex items-center gap-4 mt-2">
+                                <p className="text-xs text-gray-400 flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {statusDate}
+                                </p>
+                                {(ref.status === 'completed' || ref.status === 'bonus_paid') && (
+                                  <p className="text-xs font-semibold text-green-600">
+                                    €{(ref.inviter_bonus_cents / 100).toFixed(2)}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer con statistiche */}
+                {referralsList.length > 0 && (
+                  <div className="border-t border-gray-100 p-6 bg-gray-50">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Totale Inviti</p>
+                        <p className="text-2xl font-bold text-gray-900">{referralsList.length}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Bonus Guadagnati</p>
+                        <p className="text-2xl font-bold text-green-600">
+                          €{referralsList
+                            .filter(r => r.status === 'completed' || r.status === 'bonus_paid')
+                            .reduce((sum, r) => sum + (r.inviter_bonus_cents / 100), 0)
+                            .toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
