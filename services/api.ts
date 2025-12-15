@@ -20,6 +20,7 @@ import {
 } from "../constants";
 import { supabase } from "../lib/supabase";
 import { referralApi } from './referralApi';
+import { generateAndSaveInvoicePDF } from '../services/invoicePdfGenerator';
 /* ------------------------------------------------------
    HELPER: conversione centesimi <-> euro (NUOVO)
 -------------------------------------------------------*/
@@ -3434,13 +3435,21 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
 
     console.log("🧾 Commissioni:", { renterCommissionPct, hubberCommissionPct, superHubberCommissionPct, fixedFee });
 
-    // 3. Recupera i dati della prenotazione con renter, hubber e listing
+    // 3. Recupera i dati della prenotazione con renter, hubber, listing + DATI FISCALI
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .select(`
         *,
-        renter:renter_id(id, first_name, last_name, public_name, email, address, phone_number),
-        hubber:hubber_id(id, first_name, last_name, public_name, email, address, phone_number, is_super_hubber),
+        renter:renter_id(
+          id, first_name, last_name, public_name, email, address, phone_number,
+          fiscal_code, vat_number, company_name, pec, sdi_code, user_type,
+          billing_address, billing_city, billing_zip, billing_province, billing_country
+        ),
+        hubber:hubber_id(
+          id, first_name, last_name, public_name, email, address, phone_number, is_super_hubber,
+          fiscal_code, vat_number, company_name, pec, sdi_code, user_type,
+          billing_address, billing_city, billing_zip, billing_province, billing_country
+        ),
         listing:listing_id(id, title, price, price_unit)
       `)
       .eq("id", bookingId)
@@ -3464,9 +3473,9 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
     const isSuperHubber = booking.hubber?.is_super_hubber || false;
     const actualHubberCommissionPct = isSuperHubber ? superHubberCommissionPct : hubberCommissionPct;
 
-    // Calcola prezzo base dal netto hubber
+    // ✅ PREZZO BASE = prezzo del listing (CORRETTO)
+    const prezzoBase = Number(booking.listing?.price) || 0;
     const hubberNet = Number(booking.hubber_net_amount) || 0;
-    const prezzoBase = hubberNet / (1 - actualHubberCommissionPct / 100);
 
     console.log("🧾 Calcoli:", { prezzoBase, hubberNet, isSuperHubber, actualHubberCommissionPct });
 
@@ -3500,7 +3509,12 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
           recipientId: booking.renter_id,
           recipientName: renterName,
           recipientEmail: booking.renter.email || '',
-          recipientAddress: booking.renter.address || '',
+          recipientVatNumber: booking.renter.vat_number || undefined,
+          recipientFiscalCode: booking.renter.fiscal_code || undefined,
+          recipientAddress: booking.renter.billing_address || booking.renter.address || '',
+          recipientCity: booking.renter.billing_city || undefined,
+          recipientZip: booking.renter.billing_zip || undefined,
+          recipientCountry: booking.renter.billing_country || 'Italia',
           bookingId: bookingId,
           periodStart: booking.start_date,
           periodEnd: booking.end_date,
@@ -3511,11 +3525,25 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
             { description: `Commissione variabile (${renterCommissionPct}%)`, quantity: 1, unitPrice: Math.round(renterCommissionVar * 100) / 100, total: Math.round(renterCommissionVar * 100) / 100 },
             { description: 'Fee fissa servizio', quantity: 1, unitPrice: fixedFee, total: fixedFee }
           ],
-          notes: `Prenotazione #${bookingId.slice(0, 8)}`
+          notes: `Prenotazione #${bookingId.slice(0, 8)}`,
+          listing_title: booking.listing?.title,
+          listing_price: prezzoBase
         });
 
         renterInvoiceId = invoice?.id;
         console.log("✅ Fattura RENTER creata:", renterInvoiceId, "- Imponibile:", subtotal, "+ IVA:", vatAmount, "= Totale:", total);
+        
+        // ✅ GENERA PDF AUTOMATICAMENTE
+        if (invoice?.id) {
+          try {
+            const pdfUrl = await generateAndSaveInvoicePDF(invoice);
+            if (pdfUrl) {
+              console.log("✅ PDF Renter generato:", pdfUrl);
+            }
+          } catch (pdfErr) {
+            console.error("⚠️ Errore generazione PDF renter (non bloccante):", pdfErr);
+          }
+        }
       } catch (err: any) {
         console.error("❌ Errore fattura renter:", err);
         errors.push(`Fattura renter: ${err.message || 'errore sconosciuto'}`);
@@ -3549,7 +3577,12 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
           recipientId: booking.hubber_id,
           recipientName: hubberName,
           recipientEmail: booking.hubber.email || '',
-          recipientAddress: booking.hubber.address || '',
+          recipientVatNumber: booking.hubber.vat_number || undefined,
+          recipientFiscalCode: booking.hubber.fiscal_code || undefined,
+          recipientAddress: booking.hubber.billing_address || booking.hubber.address || '',
+          recipientCity: booking.hubber.billing_city || undefined,
+          recipientZip: booking.hubber.billing_zip || undefined,
+          recipientCountry: booking.hubber.billing_country || 'Italia',
           bookingId: bookingId,
           periodStart: booking.start_date,
           periodEnd: booking.end_date,
@@ -3560,11 +3593,25 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
             { description: `Commissione variabile (${actualHubberCommissionPct}%)`, quantity: 1, unitPrice: Math.round(hubberCommissionVar * 100) / 100, total: Math.round(hubberCommissionVar * 100) / 100 },
             { description: 'Fee fissa servizio', quantity: 1, unitPrice: fixedFee, total: fixedFee }
           ],
-          notes: `Prenotazione #${bookingId.slice(0, 8)} - Netto accreditato: €${hubberNet.toFixed(2)}`
+          notes: `Prenotazione #${bookingId.slice(0, 8)} - Netto accreditato: €${hubberNet.toFixed(2)}`,
+          listing_title: booking.listing?.title,
+          listing_price: prezzoBase
         });
 
         hubberInvoiceId = invoice?.id;
         console.log("✅ Fattura HUBBER creata:", hubberInvoiceId, "- Imponibile:", subtotal, "+ IVA:", vatAmount, "= Totale:", total);
+        
+        // ✅ GENERA PDF AUTOMATICAMENTE
+        if (invoice?.id) {
+          try {
+            const pdfUrl = await generateAndSaveInvoicePDF(invoice);
+            if (pdfUrl) {
+              console.log("✅ PDF Hubber generato:", pdfUrl);
+            }
+          } catch (pdfErr) {
+            console.error("⚠️ Errore generazione PDF hubber (non bloccante):", pdfErr);
+          }
+        }
       } catch (err: any) {
         console.error("❌ Errore fattura hubber:", err);
         errors.push(`Fattura hubber: ${err.message || 'errore sconosciuto'}`);
@@ -4595,6 +4642,8 @@ getAllRefunds: async () => {
       description?: string;
       lineItems?: any[];
       notes?: string;
+      listing_title?: string;     //
+      listing_price?: number;
     }) {
       // Ottieni impostazioni per numero fattura
       const { data: settings } = await supabase
@@ -4644,6 +4693,8 @@ getAllRefunds: async () => {
           description: invoiceData.description || null,
           line_items: invoiceData.lineItems || [],
           notes: invoiceData.notes || null,
+          listing_title: invoiceData.listing_title || null,
+          listing_price: invoiceData.listing_price || null,
           status: 'issued',
 issued_at: new Date().toISOString()
         })
