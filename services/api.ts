@@ -5078,6 +5078,22 @@ issued_at: new Date().toISOString()
           } catch (payoutErr) {
             console.error("⚠️ Errore accredito hubber (non bloccante):", payoutErr);
           }
+
+          // 3. ✅ COMPLETA IL REFERRAL SE ESISTE
+          try {
+            const { data: booking } = await supabase
+              .from("bookings")
+              .select("renter_id")
+              .eq("id", bookingId)
+              .single();
+
+            if (booking) {
+              await referralApi.completeReferral(booking.renter_id, bookingId);
+              console.log("✅ Referral completato (se esistente)");
+            }
+          } catch (refErr) {
+            console.error("⚠️ Errore completamento referral (non bloccante):", refErr);
+          }
         }
 
         return true;
