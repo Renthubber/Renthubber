@@ -19,7 +19,6 @@ import {
   MOCK_DISPUTES,
 } from "../constants";
 import { supabase } from "../lib/supabase";
-import { getCancelRenterMessages, getCancelHubberMessages } from "./bookingMessages";
 
 /* ------------------------------------------------------
    HELPER: conversione centesimi <-> euro (NUOVO)
@@ -880,21 +879,9 @@ export const api = {
       if (!userId) throw new Error("ID utente non recuperabile.");
 
       const userRole = userData.role || "renter";
-      
-      // ✅ LOGICA CORRETTA RUOLI:
-      // - Se si registra come renter → roles: ['renter']
-      // - Se si registra come hubber → roles: ['hubber', 'renter'] (SEMPRE entrambi!)
-      let userRoles: string[];
-      if (userRole === 'hubber') {
-        // Hubber deve avere SEMPRE entrambi i ruoli
-        userRoles = ['hubber', 'renter'];
-      } else {
-        // Renter ha solo il ruolo renter
-        userRoles = ['renter'];
-      }
+      const userRoles = userData.roles || [userRole];
 
       console.log("✅ Auth creato, userId:", userId);
-      console.log("📝 Ruoli assegnati:", { role: userRole, roles: userRoles });
 
       // ✅ STEP 1: Prova INSERT
       // NOTA: hubber_balance deve essere NULL per evitare che il trigger sync_wallet_from_user
@@ -906,7 +893,7 @@ export const api = {
         first_name: firstName,
         last_name: lastName,
         role: userRole,
-        roles: userRoles,  // ✅ Array corretto
+        roles: userRoles,
         referral_code: userData.referralCode || null,
         renter_balance: userData.renterBalance || 0,
         hubber_balance: null,  // ✅ NULL per evitare trigger wallet
@@ -933,7 +920,7 @@ export const api = {
             first_name: firstName,
             last_name: lastName,
             role: userRole,
-            roles: userRoles,  // ✅ Array corretto anche in UPDATE
+            roles: userRoles,
             referral_code: userData.referralCode || null,
             renter_balance: userData.renterBalance || 0,
           })
@@ -1911,41 +1898,97 @@ if (ownerIds.length > 0) {
         // 7. Gestisci rimborso in base al metodo scelto
         if (refundAmount > 0) {
           if (refundMethod === 'wallet') {
-            // TUTTO su wallet - accredito immediato
+            // TUTTO su wallet - accredito immediato su refund_balance_cents
             walletRefunded = refundAmount;
             
-            const { data: userData } = await supabase
-              .from("users")
-              .select("renter_balance")
-              .eq("id", renterId)
+            // Leggi saldo attuale da wallets
+            const { data: walletData } = await supabase
+              .from("wallets")
+              .select("refund_balance_cents, referral_balance_cents")
+              .eq("user_id", renterId)
               .single();
 
-            if (userData) {
-              const newBalance = (userData.renter_balance || 0) + walletRefunded;
-              await supabase
-                .from("users")
-                .update({ renter_balance: newBalance })
-                .eq("id", renterId);
-            }
-          } else {
-            // CARTA - rimborso proporzionale al metodo di pagamento originale
-            // La parte pagata con wallet viene comunque rimborsata su wallet
-            if (walletUsedEur > 0) {
-              const walletRefundProportion = (walletUsedEur / totalPaid) * refundAmount;
-              walletRefunded = Math.min(walletRefundProportion, walletUsedEur);
+            if (walletData) {
+              const currentRefundCents = walletData.refund_balance_cents || 0;
+              const newRefundCents = currentRefundCents + Math.round(walletRefunded * 100);
               
+              // Aggiorna wallets.refund_balance_cents
+              await supabase
+                .from("wallets")
+                .update({ refund_balance_cents: newRefundCents })
+                .eq("user_id", renterId);
+
+              // Leggi users.renter_balance per calcolare balance_after totale
               const { data: userData } = await supabase
                 .from("users")
                 .select("renter_balance")
                 .eq("id", renterId)
                 .single();
+              
+              const renterBalance = userData?.renter_balance || 0;
+              const referralBalance = (walletData.referral_balance_cents || 0) / 100;
+              const newRefundBalance = newRefundCents / 100;
+              const totalBalance = renterBalance + referralBalance + newRefundBalance;
 
-              if (userData) {
-                const newBalance = (userData.renter_balance || 0) + walletRefunded;
+              // ✅ Crea transazione wallet
+              await supabase.from("wallet_transactions").insert({
+                user_id: renterId,
+                amount_cents: Math.round(walletRefunded * 100),
+                balance_after_cents: Math.round(totalBalance * 100),
+                type: 'credit',
+                source: 'refund',
+                wallet_type: 'renter',
+                description: `Rimborso cancellazione prenotazione #${bookingId.substring(0, 8).toUpperCase()} (${booking.listing?.title || 'Noleggio'}) - ${refundPercentage}%`,
+                related_booking_id: bookingId,
+              });
+            }
+          } else {
+            // CARTA - rimborso proporzionale al metodo di pagamento originale
+            // La parte pagata con wallet viene comunque rimborsata su wallet (refund_balance_cents)
+            if (walletUsedEur > 0) {
+              const walletRefundProportion = (walletUsedEur / totalPaid) * refundAmount;
+              walletRefunded = Math.min(walletRefundProportion, walletUsedEur);
+              
+              // Leggi saldo attuale da wallets
+              const { data: walletData } = await supabase
+                .from("wallets")
+                .select("refund_balance_cents, referral_balance_cents")
+                .eq("user_id", renterId)
+                .single();
+
+              if (walletData) {
+                const currentRefundCents = walletData.refund_balance_cents || 0;
+                const newRefundCents = currentRefundCents + Math.round(walletRefunded * 100);
+                
+                // Aggiorna wallets.refund_balance_cents
                 await supabase
+                  .from("wallets")
+                  .update({ refund_balance_cents: newRefundCents })
+                  .eq("user_id", renterId);
+
+                // Leggi users.renter_balance per calcolare balance_after totale
+                const { data: userData } = await supabase
                   .from("users")
-                  .update({ renter_balance: newBalance })
-                  .eq("id", renterId);
+                  .select("renter_balance")
+                  .eq("id", renterId)
+                  .single();
+                
+                const renterBalance = userData?.renter_balance || 0;
+                const referralBalance = (walletData.referral_balance_cents || 0) / 100;
+                const newRefundBalance = newRefundCents / 100;
+                const totalBalance = renterBalance + referralBalance + newRefundBalance;
+
+                // ✅ Crea transazione wallet
+                await supabase.from("wallet_transactions").insert({
+                  user_id: renterId,
+                  amount_cents: Math.round(walletRefunded * 100),
+                  balance_after_cents: Math.round(totalBalance * 100),
+                  type: 'credit',
+                  source: 'refund',
+                  wallet_type: 'renter',
+                  description: `Rimborso parziale cancellazione prenotazione #${bookingId.substring(0, 8).toUpperCase()} (${booking.listing?.title || 'Noleggio'}) - ${refundPercentage}%`,
+                  related_booking_id: bookingId,
+                });
               }
             }
             
@@ -1973,82 +2016,16 @@ if (ownerIds.length > 0) {
           cardRefunded,
         });
 
+        // ✅ Invia messaggio di sistema nella chat
         const listingTitle = booking.listing?.title || "l'annuncio";
-        const bookingNumber = bookingId.substring(0, 8).toUpperCase();
-
-        // Recupera nomi pubblici
-        const { data: renterData } = await supabase
-          .from("users")
-          .select("public_name, first_name, last_name")
-          .eq("id", renterId)
-          .single();
-
-        const { data: hubberData } = await supabase
-          .from("users")
-          .select("public_name, first_name, last_name")
-          .eq("id", booking.hubber_id)
-          .single();
-
-        const renterPublicName = renterData?.public_name || 
-          `${renterData?.first_name || 'Renter'} ${renterData?.last_name?.charAt(0) || ''}.`.trim();
-        const hubberPublicName = hubberData?.public_name || 
-          `${hubberData?.first_name || 'Hubber'} ${hubberData?.last_name?.charAt(0) || ''}.`.trim();
-
-        // ✅ Se 0% rimborso, accredita l'hubber
-        if (refundAmount === 0) {
-          const hubberNetAmount = Number(booking.hubber_net_amount) || 0;
-          
-          if (hubberNetAmount > 0) {
-            const { data: hubberWallet } = await supabase
-              .from("users")
-              .select("hubber_balance")
-              .eq("id", booking.hubber_id)
-              .single();
-
-            const currentHubberBalance = hubberWallet?.hubber_balance || 0;
-            const newHubberBalance = currentHubberBalance + hubberNetAmount;
-
-            await supabase
-              .from("users")
-              .update({ hubber_balance: newHubberBalance })
-              .eq("id", booking.hubber_id);
-
-            await supabase.from("wallet_transactions").insert({
-              user_id: booking.hubber_id,
-              amount_cents: Math.round(hubberNetAmount * 100),
-              balance_after_cents: Math.round(newHubberBalance * 100),
-              type: 'credit',
-              source: 'booking_payout',
-              description: `Compenso per prenotazione #${bookingNumber} (${listingTitle}) - Cancellazione tardiva`,
-              related_booking_id: bookingId,
-            });
-          }
+        let cancelMessage = `La prenotazione per "${listingTitle}" è stata cancellata dal Renter.`;
+        if (refundAmount > 0) {
+          cancelMessage += ` Rimborso: €${refundAmount.toFixed(2)}.`;
         }
-
-        // ✅ Genera messaggi personalizzati
-        const hubberNetAmount = Number(booking.hubber_net_amount) || 0;
-        const { messageForRenter, messageForHubber } = getCancelRenterMessages({
-          listingTitle,
-          renterPublicName,
-          hubberPublicName,
-          refundAmount,
-          refundPercentage,
-          refundMethod,
-          policy,
-          hubberNetAmount,
-        });
-
-        // Invia DUE messaggi separati
+        
         await sendBookingSystemMessage({
           bookingId,
-          messageText: messageForRenter,
-          toUserId: renterId,
-        });
-
-        await sendBookingSystemMessage({
-          bookingId,
-          messageText: messageForHubber,
-          toUserId: booking.hubber_id,
+          messageText: cancelMessage,
         });
 
         // 🔒 Rioscura contatti dopo cancellazione
@@ -2133,20 +2110,51 @@ if (ownerIds.length > 0) {
           return { success: false, error: "Errore durante la cancellazione." };
         }
 
-        // 5. Accredita rimborso sul wallet del renter
+        // 5. Accredita rimborso sul wallet del renter (refund_balance_cents)
         if (refundAmount > 0) {
-          const { data: userData } = await supabase
-            .from("users")
-            .select("renter_balance")
-            .eq("id", booking.renter_id)
+          // Leggi saldo attuale da wallets
+          const { data: walletData } = await supabase
+            .from("wallets")
+            .select("refund_balance_cents, referral_balance_cents")
+            .eq("user_id", booking.renter_id)
             .single();
 
-          if (userData) {
-            const newBalance = (userData.renter_balance || 0) + refundAmount;
+          if (walletData) {
+            const currentRefundCents = walletData.refund_balance_cents || 0;
+            const newRefundCents = currentRefundCents + Math.round(refundAmount * 100);
+            
+            // Aggiorna wallets.refund_balance_cents
             await supabase
+              .from("wallets")
+              .update({ refund_balance_cents: newRefundCents })
+              .eq("user_id", booking.renter_id);
+
+            // Leggi users.renter_balance per calcolare balance_after totale
+            const { data: userData } = await supabase
               .from("users")
-              .update({ renter_balance: newBalance })
-              .eq("id", booking.renter_id);
+              .select("renter_balance")
+              .eq("id", booking.renter_id)
+              .single();
+            
+            const renterBalance = userData?.renter_balance || 0;
+            const referralBalance = (walletData.referral_balance_cents || 0) / 100;
+            const newRefundBalance = newRefundCents / 100;
+            const totalBalance = renterBalance + referralBalance + newRefundBalance;
+
+            // ✅ Crea transazione wallet
+            const listingTitle = booking.listing?.title || "Noleggio";
+            const bookingNumber = bookingId.substring(0, 8).toUpperCase();
+
+            await supabase.from("wallet_transactions").insert({
+              user_id: booking.renter_id,
+              amount_cents: Math.round(refundAmount * 100),
+              balance_after_cents: Math.round(totalBalance * 100),
+              type: 'credit',
+              source: 'refund',
+              wallet_type: 'renter',
+              description: `Rimborso completo cancellazione da Hubber - Prenotazione #${bookingNumber} (${listingTitle})`,
+              related_booking_id: bookingId,
+            });
           }
         }
 
@@ -2157,45 +2165,19 @@ if (ownerIds.length > 0) {
           reason,
         });
 
+        // ✅ Invia messaggio di sistema nella chat
         const listingTitle = booking.listing?.title || "l'annuncio";
-        const bookingNumber = bookingId.substring(0, 8).toUpperCase();
-
-        // Recupera nomi pubblici
-        const { data: renterData } = await supabase
-          .from("users")
-          .select("public_name, first_name, last_name")
-          .eq("id", booking.renter_id)
-          .single();
-
-        const { data: hubberData } = await supabase
-          .from("users")
-          .select("public_name, first_name, last_name")
-          .eq("id", hubberId)
-          .single();
-
-        const renterPublicName = renterData?.public_name || 
-          `${renterData?.first_name || 'Renter'} ${renterData?.last_name?.charAt(0) || ''}.`.trim();
-        const hubberPublicName = hubberData?.public_name || 
-          `${hubberData?.first_name || 'Hubber'} ${hubberData?.last_name?.charAt(0) || ''}.`.trim();
-
-        // ✅ Genera messaggi personalizzati
-        const { messageForRenter, messageForHubber } = getCancelHubberMessages({
-          listingTitle,
-          hubberPublicName,
-          refundAmount,
-        });
-
-        // Invia DUE messaggi separati
+        let cancelMessage = `La prenotazione per "${listingTitle}" è stata cancellata dall'Hubber.`;
+        if (reason) {
+          cancelMessage += ` Motivo: ${reason}`;
+        }
+        if (refundAmount > 0) {
+          cancelMessage += ` Rimborso completo di €${refundAmount.toFixed(2)} accreditato sul tuo Wallet.`;
+        }
+        
         await sendBookingSystemMessage({
           bookingId,
-          messageText: messageForRenter,
-          toUserId: booking.renter_id,
-        });
-
-        await sendBookingSystemMessage({
-          bookingId,
-          messageText: messageForHubber,
-          toUserId: hubberId,
+          messageText: cancelMessage,
         });
 
         // 🔒 Rioscura contatti dopo cancellazione
@@ -2338,20 +2320,51 @@ if (ownerIds.length > 0) {
             refundedWallet = refundAmount - refundedCard;
           }
 
-          // Aggiorna wallet se necessario
+          // Aggiorna wallet se necessario (refund_balance_cents)
           if (refundedWallet > 0) {
-            const { data: userData } = await supabase
-              .from("users")
-              .select("renter_balance")
-              .eq("id", renterId)
+            // Leggi saldo attuale da wallets
+            const { data: walletData } = await supabase
+              .from("wallets")
+              .select("refund_balance_cents, referral_balance_cents")
+              .eq("user_id", renterId)
               .single();
 
-            if (userData) {
-              const newBalance = (userData.renter_balance || 0) + refundedWallet;
+            if (walletData) {
+              const currentRefundCents = walletData.refund_balance_cents || 0;
+              const newRefundCents = currentRefundCents + Math.round(refundedWallet * 100);
+              
+              // Aggiorna wallets.refund_balance_cents
               await supabase
+                .from("wallets")
+                .update({ refund_balance_cents: newRefundCents })
+                .eq("user_id", renterId);
+
+              // Leggi users.renter_balance per calcolare balance_after totale
+              const { data: userData } = await supabase
                 .from("users")
-                .update({ renter_balance: newBalance })
-                .eq("id", renterId);
+                .select("renter_balance")
+                .eq("id", renterId)
+                .single();
+              
+              const renterBalance = userData?.renter_balance || 0;
+              const referralBalance = (walletData.referral_balance_cents || 0) / 100;
+              const newRefundBalance = newRefundCents / 100;
+              const totalBalance = renterBalance + referralBalance + newRefundBalance;
+
+              // ✅ Crea transazione wallet
+              const listingTitle = booking.listing?.title || "Noleggio";
+              const bookingNumber = bookingId.substring(0, 8).toUpperCase();
+
+              await supabase.from("wallet_transactions").insert({
+                user_id: renterId,
+                amount_cents: Math.round(refundedWallet * 100),
+                balance_after_cents: Math.round(totalBalance * 100),
+                type: 'credit',
+                source: 'refund',
+                wallet_type: 'renter',
+                description: `Rimborso modifica date (accorciamento) - Prenotazione #${bookingNumber} (${listingTitle})`,
+                related_booking_id: bookingId,
+              });
             }
           }
 
@@ -3050,22 +3063,35 @@ if (ownerIds.length > 0) {
       // Ottieni il wallet corrente
       const { data: wallet } = await supabase
         .from("wallets")
-        .select("*")
+        .select("refund_balance_cents, referral_balance_cents")
         .eq("user_id", renterId)
         .single();
 
       const currentRefundCents = wallet?.refund_balance_cents || 0;
-      const deltaCents = toCents(amount);
-      const newRefundBalanceCents = currentRefundCents + deltaCents;
+      const newRefundBalanceCents = currentRefundCents + Math.round(amount * 100);
 
+      // Leggi users.renter_balance per calcolare balance_after totale
+      const { data: userData } = await supabase
+        .from("users")
+        .select("renter_balance")
+        .eq("id", renterId)
+        .single();
+      
+      const renterBalance = userData?.renter_balance || 0;
+      const referralBalance = (wallet?.referral_balance_cents || 0) / 100;
+      const newRefundBalance = newRefundBalanceCents / 100;
+      const totalBalance = renterBalance + referralBalance + newRefundBalance;
+
+      // 1. Crea transazione
       const { error: txError } = await supabase
         .from("wallet_transactions")
         .insert({
           user_id: renterId,
-          amount_cents: deltaCents,
-          balance_after_cents: newRefundBalanceCents,
+          amount_cents: Math.round(amount * 100),
+          balance_after_cents: Math.round(totalBalance * 100),
           type: "credit",
           source: "refund",
+          wallet_type: 'renter',
           description: reason,
           related_booking_id: bookingId,
         });
@@ -3075,7 +3101,7 @@ if (ownerIds.length > 0) {
         throw txError;
       }
 
-      // ✅ Aggiorna refund_balance_cents invece di balance_cents
+      // 2. Aggiorna refund_balance_cents
       const { error: updateError } = await supabase
         .from("wallets")
         .update({
@@ -3089,7 +3115,7 @@ if (ownerIds.length > 0) {
         throw updateError;
       }
 
-      return { newBalance: fromCents(newRefundBalanceCents) };
+      return { newBalance: newRefundBalance };
     },
 
     /**
@@ -3103,23 +3129,47 @@ if (ownerIds.length > 0) {
       if (!renterId) throw new Error("Missing renterId");
       if (amount <= 0) throw new Error("Amount must be > 0");
 
-      const currentBalance = await api.wallet.getBalanceFromDb(renterId);
-      const currentCents = toCents(currentBalance);
-      const deltaCents = toCents(amount);
-      const newBalanceCents = currentCents + deltaCents;
+      // Leggi saldo attuale da wallets
+      const { data: walletData, error: readError } = await supabase
+        .from("wallets")
+        .select("referral_balance_cents, refund_balance_cents")
+        .eq("user_id", renterId)
+        .single();
+
+      if (readError) {
+        console.error('Errore lettura wallet:', readError);
+        throw readError;
+      }
+
+      const currentReferralCents = walletData?.referral_balance_cents || 0;
+      const newReferralCents = currentReferralCents + Math.round(amount * 100);
+
+      // Leggi users.renter_balance per calcolare balance_after totale
+      const { data: userData } = await supabase
+        .from("users")
+        .select("renter_balance")
+        .eq("id", renterId)
+        .single();
+      
+      const renterBalance = userData?.renter_balance || 0;
+      const refundBalance = (walletData?.refund_balance_cents || 0) / 100;
+      const newReferralBalance = newReferralCents / 100;
+      const totalBalance = renterBalance + refundBalance + newReferralBalance;
 
       const description = referredUserName 
         ? `Bonus Invita un Amico: ${referredUserName} si è iscritto!`
         : `Bonus Invita un Amico`;
 
+      // 1. Crea transazione
       const { error: txError } = await supabase
         .from("wallet_transactions")
         .insert({
           user_id: renterId,
-          amount_cents: deltaCents,
-          balance_after_cents: newBalanceCents,
+          amount_cents: Math.round(amount * 100),
+          balance_after_cents: Math.round(totalBalance * 100),
           type: "credit",
           source: "referral_bonus",
+          wallet_type: 'renter',
           description,
           related_booking_id: null,
         });
@@ -3129,10 +3179,11 @@ if (ownerIds.length > 0) {
         throw txError;
       }
 
+      // 2. Aggiorna wallets.referral_balance_cents
       const { error: updateError } = await supabase
         .from("wallets")
         .update({
-          balance_cents: newBalanceCents,
+          referral_balance_cents: newReferralCents,
           updated_at: new Date().toISOString(),
         })
         .eq("user_id", renterId);
@@ -3142,7 +3193,7 @@ if (ownerIds.length > 0) {
         throw updateError;
       }
 
-      return { newBalance: fromCents(newBalanceCents) };
+      return { newBalance: newReferralBalance };
     },
   },
 
@@ -3249,51 +3300,6 @@ if (ownerIds.length > 0) {
     getReviews: async (): Promise<Review[]> => MOCK_REVIEWS,
     getInvoices: async (): Promise<Invoice[]> => MOCK_INVOICES,
 
-    // ==========================================
-// WALLET TRANSACTIONS (per Admin Dashboard)
-// ==========================================
-getAllWalletTransactions: async (): Promise<any[]> => {
-  console.log('👑 admin.getAllWalletTransactions – inizio');
-  try {
-    const { data: txData, error: txError } = await supabase
-      .from('wallet_transactions')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100);
-
-    if (txError) {
-      console.error('❌ admin.getAllWalletTransactions – errore:', txError);
-      return [];
-    }
-
-    if (!txData || txData.length === 0) {
-      console.log('👑 admin.getAllWalletTransactions – nessuna transazione');
-      return [];
-    }
-
-    // Prendi gli utenti dalla tabella USERS
-    const userIds = [...new Set(txData.map(tx => tx.user_id))];
-    const { data: usersData } = await supabase
-      .from('users')
-      .select('id, first_name, last_name, name, email, avatar_url, role, roles')
-      .in('id', userIds);
-
-    const usersMap = new Map((usersData || []).map(u => [u.id, u]));
-
-    const result = txData.map((tx: any) => ({
-      ...tx,
-      user: usersMap.get(tx.user_id) || null,
-      amountEur: tx.amount_cents ? tx.amount_cents / 100 : 0,
-      balanceAfterEur: tx.balance_after_cents ? tx.balance_after_cents / 100 : 0,
-    }));
-
-    console.log('✅ admin.getAllWalletTransactions – trovate:', result.length);
-    return result;
-  } catch (e) {
-    console.error('❌ admin.getAllWalletTransactions – eccezione:', e);
-    return [];
-  }
-},
 
 // ==========================================
 // GET ALL WALLETS (per Admin Dashboard)
@@ -3301,43 +3307,87 @@ getAllWalletTransactions: async (): Promise<any[]> => {
 getAllWallets: async (): Promise<any[]> => {
   console.log('👑 admin.getAllWallets – inizio');
   try {
-    // 💰 Leggi DIRETTAMENTE da users invece che da wallets
+    // 💰 Leggi da users E fai JOIN con wallets per avere tutti i wallet renter
     const { data: usersData, error: usersError } = await supabase
       .from('users')
-      .select('id, first_name, last_name, name, email, avatar_url, role, roles, hubber_balance, renter_balance, updated_at')
+      .select(`
+        id, 
+        first_name, 
+        last_name, 
+        name, 
+        email, 
+        avatar_url, 
+        role, 
+        roles, 
+        hubber_balance, 
+        renter_balance, 
+        updated_at
+      `)
       .order('updated_at', { ascending: false });
 
     if (usersError) {
-      console.error('❌ admin.getAllWallets – errore:', usersError);
+      console.error('❌ admin.getAllWallets – errore users:', usersError);
       return [];
     }
 
     if (!usersData || usersData.length === 0) {
-      console.log('👑 admin.getAllWallets – nessun wallet');
+      console.log('👑 admin.getAllWallets – nessun utente');
       return [];
     }
 
-    const result = usersData.map((u: any) => ({
-      user_id: u.id,
-      user: {
-        id: u.id,
-        first_name: u.first_name,
-        last_name: u.last_name,
-        name: u.name,
-        email: u.email,
-        avatar_url: u.avatar_url,
-        role: u.role,
-        roles: u.roles,
-      },
-      hubberBalanceEur: u.hubber_balance || 0, // ✨ Saldo hubber separato
-      renterBalanceEur: u.renter_balance || 0, // ✨ Saldo renter separato
-      balanceEur: (u.hubber_balance || 0) + (u.renter_balance || 0), // Totale per compatibilità
-      currency: 'EUR',
-      updated_at: u.updated_at,
-    }));
+    // Leggi tutti i wallets
+    const { data: walletsData, error: walletsError } = await supabase
+      .from('wallets')
+      .select('user_id, referral_balance_cents, refund_balance_cents');
+
+    if (walletsError) {
+      console.error('❌ admin.getAllWallets – errore wallets:', walletsError);
+    }
+
+    // Crea una mappa user_id -> wallet
+    const walletsMap = new Map();
+    if (walletsData) {
+      walletsData.forEach((w: any) => {
+        walletsMap.set(w.user_id, w);
+      });
+    }
+
+    const result = usersData.map((u: any) => {
+      const wallet = walletsMap.get(u.id);
+      const referralBalanceEur = wallet ? (wallet.referral_balance_cents || 0) / 100 : 0;
+      const refundBalanceEur = wallet ? (wallet.refund_balance_cents || 0) / 100 : 0;
+      const renterBalanceEur = (u.renter_balance || 0);
+      
+      // Totale renter = somma dei 3 wallet
+      const totalRenterBalance = renterBalanceEur + referralBalanceEur + refundBalanceEur;
+
+      return {
+        user_id: u.id,
+        user: {
+          id: u.id,
+          first_name: u.first_name,
+          last_name: u.last_name,
+          name: u.name,
+          email: u.email,
+          avatar_url: u.avatar_url,
+          role: u.role,
+          roles: u.roles,
+        },
+        hubberBalanceEur: u.hubber_balance || 0, // ✨ Saldo hubber
+        renterBalanceEur: totalRenterBalance, // ✨ Totale renter (somma dei 3)
+        // Dettaglio wallet renter (per future espansioni UI)
+        renterWalletDetail: {
+          wallet: renterBalanceEur,
+          referral: referralBalanceEur,
+          refund: refundBalanceEur,
+        },
+        balanceEur: (u.hubber_balance || 0) + totalRenterBalance, // Totale generale
+        currency: 'EUR',
+        updated_at: u.updated_at,
+      };
+    });
 
     console.log('✅ admin.getAllWallets – trovati:', result.length);
-    console.log('🔍 PRIMO WALLET DEBUG:', JSON.stringify(result[0], null, 2)); // ← DEBUG
     return result;
   } catch (e) {
     console.error('❌ admin.getAllWallets – eccezione:', e);
@@ -3908,54 +3958,6 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
       }
     },
 
-    // 🔹 WALLETS per Admin (tutti i saldi utenti)
-    getAllWallets: async () => {
-      try {
-        console.log("👑 admin.getAllWallets – inizio");
-        
-        // 💰 Leggi DIRETTAMENTE da users invece che da wallets
-        const { data: usersData, error: usersError } = await supabase
-          .from('users')
-          .select('id, first_name, last_name, name, email, avatar_url, role, roles, hubber_balance, renter_balance, updated_at')
-          .order('updated_at', { ascending: false });
-
-        if (usersError) {
-          console.error("❌ admin.getAllWallets – errore:", usersError);
-          return [];
-        }
-
-        if (!usersData || usersData.length === 0) {
-          console.log("👑 admin.getAllWallets – nessun wallet");
-          return [];
-        }
-
-        const result = usersData.map((u: any) => ({
-          user_id: u.id,
-          user: {
-            id: u.id,
-            first_name: u.first_name,
-            last_name: u.last_name,
-            name: u.name,
-            email: u.email,
-            avatar_url: u.avatar_url,
-            role: u.role,
-            roles: u.roles,
-          },
-          hubberBalanceEur: u.hubber_balance || 0, // ✨ Saldo hubber separato
-          renterBalanceEur: u.renter_balance || 0, // ✨ Saldo renter separato
-          balanceEur: (u.hubber_balance || 0) + (u.renter_balance || 0), // Totale per compatibilità
-          currency: 'EUR',
-          updated_at: u.updated_at,
-        }));
-
-        console.log("✅ admin.getAllWallets – trovati:", result.length);
-        console.log("🔍 PRIMO WALLET DEBUG:", JSON.stringify(result[0], null, 2)); // ← DEBUG
-        return result;
-      } catch (err) {
-        console.error("❌ admin.getAllWallets – errore inatteso:", err);
-        return [];
-      }
-    },
 
     // 🔹 WALLET TRANSACTIONS per Admin (tutti i movimenti)
     getAllWalletTransactions: async () => {
@@ -4989,8 +4991,9 @@ issued_at: new Date().toISOString()
     // AGGIORNA STATO PRENOTAZIONE (con fatturazione automatica)
     // ==========================================
     updateBookingStatus: async (bookingId: string, status: string): Promise<boolean> => {
+      console.log("👑 admin.updateBookingStatus –", bookingId, status);
+      
       try {
-        console.log("👑 admin.updateBookingStatus –", bookingId, status);
 
         const { error } = await supabase.from("bookings").update({ status }).eq("id", bookingId);
 
@@ -5001,10 +5004,11 @@ issued_at: new Date().toISOString()
 
         console.log("✅ admin.updateBookingStatus – stato aggiornato");
 
-        // ✅ Se lo stato diventa 'completed', genera fatture automatiche
+        // ✅ Se lo stato diventa 'completed', genera fatture automatiche E accredita hubber
         if (status === 'completed') {
-          console.log("🧾 Stato = completed, avvio generazione fatture...");
+          console.log("🧾 Stato = completed, avvio generazione fatture e accredito hubber...");
           
+          // 1. Genera fatture
           try {
             const result = await api.admin.generateInvoicesOnCheckout(bookingId);
             
@@ -5019,6 +5023,60 @@ issued_at: new Date().toISOString()
           } catch (invoiceErr) {
             // Non bloccare il cambio stato se la fatturazione fallisce
             console.error("⚠️ Errore fatturazione (non bloccante):", invoiceErr);
+          }
+
+          // 2. Accredita l'hubber sul wallet
+          try {
+            // Recupera dati prenotazione
+            const { data: booking, error: fetchError } = await supabase
+              .from("bookings")
+              .select(`
+                *,
+                listing:listing_id(title)
+              `)
+              .eq("id", bookingId)
+              .single();
+
+            if (!fetchError && booking) {
+              const hubberNetAmount = Number(booking.hubber_net_amount) || 0;
+              
+              if (hubberNetAmount > 0) {
+                // Recupera saldo attuale hubber
+                const { data: hubberData } = await supabase
+                  .from("users")
+                  .select("hubber_balance")
+                  .eq("id", booking.hubber_id)
+                  .single();
+
+                const currentBalance = hubberData?.hubber_balance || 0;
+                const newBalance = currentBalance + hubberNetAmount;
+
+                // Aggiorna saldo hubber
+                await supabase
+                  .from("users")
+                  .update({ hubber_balance: newBalance })
+                  .eq("id", booking.hubber_id);
+
+                // Crea transazione wallet
+                const listingTitle = booking.listing?.title || "Noleggio";
+                const bookingNumber = bookingId.substring(0, 8).toUpperCase();
+
+                await supabase.from("wallet_transactions").insert({
+                  user_id: booking.hubber_id,
+                  amount_cents: Math.round(hubberNetAmount * 100),
+                  balance_after_cents: Math.round(newBalance * 100),
+                  type: 'credit',
+                  source: 'booking_payout',
+                  wallet_type: 'hubber',
+                  description: `Guadagno per prenotazione #${bookingNumber} (${listingTitle}) completata`,
+                  related_booking_id: bookingId,
+                });
+
+                console.log(`✅ Accreditati €${hubberNetAmount.toFixed(2)} all'Hubber ${booking.hubber_id}`);
+              }
+            }
+          } catch (payoutErr) {
+            console.error("⚠️ Errore accredito hubber (non bloccante):", payoutErr);
           }
         }
 
