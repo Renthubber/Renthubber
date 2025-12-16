@@ -323,10 +323,23 @@ setIsAuthChecking(false);
     navigate('/');
   };
 
-  const handleAddListing = (listing: Listing) => {
-    setListings((prev) => [...prev, listing]);
+  const handleAddListing = async (listing: Listing) => {
+  try {
+    console.log('💾 Salvataggio listing su Supabase...', listing);
+    
+    // 👇 SALVA SU SUPABASE (questa chiamata mancava!)
+    const savedListing = await api.listings.create(listing);
+    
+    console.log('✅ Listing salvato con successo!', savedListing);
+    
+    // 👇 POI aggiorna lo stato locale
+    setListings((prev) => [...prev, savedListing]);
     navigate('/my-listings');
-  };
+  } catch (error) {
+    console.error('❌ ERRORE salvataggio listing:', error);
+    alert('Errore durante la pubblicazione. Riprova tra qualche istante.');
+  }
+};
 
   const handleUpdateListing = (updated: Listing) => {
     setListings((prev) =>

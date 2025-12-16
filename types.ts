@@ -303,6 +303,7 @@ export interface SpaceSpecs {
 export interface Listing {
   id: string;
   hostId: string; // 🔥 NECESSARIO per assegnare l'annuncio
+  owner_id?: string; // 🔥 NECESSARIO per RLS policies su Supabase
   title: string;
   category: ListingCategory;
   subCategory: string;
@@ -333,6 +334,12 @@ export interface Listing {
   maxGuests?: number;
   manualBadges?: string[];
   hostRules?: string[];
+
+  // 🔥 CAMPI AGGIUNTIVI PER INDIRIZZO RITIRO/SPAZIO
+  pickupAddress?: string;
+  pickupCity?: string;
+  pickupInstructions?: string;
+  cleaningFee?: number;
 
   createdAt?: string; // 🔥 AGGIUNTO per ordinamento e compatibilità
   view_count?: number; // 🔥 CONTEGGIO VISUALIZZAZIONI REALI
