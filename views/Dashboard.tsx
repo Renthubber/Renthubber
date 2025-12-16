@@ -131,6 +131,14 @@ const mapDbBookingToUiBooking = (raw: any): BookingRequest => {
       ? raw.hubber_net_amount
       : raw.netEarnings || 0;
 
+  // ✅ cleaning_fee = costo pulizia (es. €5.00)
+  const cleaningFee =
+    typeof raw.cleaningFee === 'number'
+      ? raw.cleaningFee
+      : typeof raw.cleaning_fee === 'number'
+      ? raw.cleaning_fee
+      : 0;
+
   // ✅ Prezzo base dell'oggetto = netto hubber + commissione hubber
   // Esempio: €2.50 (netto) + €2.50 (comm) = €5.00 (prezzo base)
   const baseRentalPrice = netEarnings + hubberCommission;
@@ -176,6 +184,7 @@ const mapDbBookingToUiBooking = (raw: any): BookingRequest => {
     commission: hubberCommission,     // Commissione trattenuta all'hubber
     netEarnings,                      // Netto che riceve l'hubber
     status: raw.status || 'pending',
+    cleaningFee,                      // ✅ NUOVO: Costo pulizia
   } as BookingRequest & { 
     start_date?: string; 
     end_date?: string; 
@@ -184,6 +193,7 @@ const mapDbBookingToUiBooking = (raw: any): BookingRequest => {
     listingPrice?: number;
     priceUnit?: string;
     cancellationPolicy?: string;
+    cleaningFee?: number;           // ✅ NUOVO
   };
 };
 
@@ -4879,14 +4889,27 @@ const handleIdFileChange =
                     <p className="text-xs text-gray-400 uppercase font-semibold">
                       Il renter ha pagato
                     </p>
+                    {/* ✅ Prezzo base senza pulizia */}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">
                         Noleggio
                       </span>
                       <span className="font-medium text-gray-900">
-                        €{selectedBooking.totalPrice.toFixed(2)}
+                        €{(selectedBooking.totalPrice - ((selectedBooking as any).cleaningFee || 0)).toFixed(2)}
                       </span>
                     </div>
+                    {/* ✅ Costo pulizia (se presente) */}
+                    {((selectedBooking as any).cleaningFee || 0) > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">
+                          Costo pulizia
+                        </span>
+                        <span className="font-medium text-gray-900">
+                          €{((selectedBooking as any).cleaningFee || 0).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    {/* ✅ Commissione servizio (calcolata sul totale base+pulizia) */}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">
                         Commissione servizio
@@ -4910,14 +4933,26 @@ const handleIdFileChange =
                     <p className="text-xs text-gray-400 uppercase font-semibold">
                       Compenso dell'hubber
                     </p>
+                    {/* ✅ Importo base senza pulizia */}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">
                         Importo noleggio
                       </span>
                       <span className="font-medium text-gray-900">
-                        €{selectedBooking.totalPrice.toFixed(2)}
+                        €{(selectedBooking.totalPrice - ((selectedBooking as any).cleaningFee || 0)).toFixed(2)}
                       </span>
                     </div>
+                    {/* ✅ Costo pulizia (se presente) */}
+                    {((selectedBooking as any).cleaningFee || 0) > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">
+                          Costo pulizia
+                        </span>
+                        <span className="font-medium text-gray-900">
+                          €{((selectedBooking as any).cleaningFee || 0).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">
                         Commissione piattaforma
