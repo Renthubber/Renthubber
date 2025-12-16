@@ -842,19 +842,18 @@ export const api = {
       password: string,
       userData: Partial<User>
     ) => {
-      // ✅ Splitta il nome in first_name e last_name PRIMA della registrazione
-      const fullName = userData.name || "";
-      const nameParts = fullName.trim().split(" ");
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.slice(1).join(" ") || "";
+      // ✅ Usa firstName/lastName se passati, altrimenti estrai dal fullName
+const fullName = userData.name || "";
+const firstName = userData.firstName || (fullName ? fullName.trim().split(" ")[0] : "") || "";
+const lastName = userData.lastName || (fullName ? fullName.trim().split(" ").slice(1).join(" ") : "") || "";
 
-      console.log("📝 Registrazione - Dati ricevuti:", { 
-        fullName, 
-        firstName, 
-        lastName, 
-        email,
-        userData 
-      });
+console.log("📝 Registrazione - Dati ricevuti:", { 
+  fullName, 
+  firstName, 
+  lastName, 
+  email,
+  userData 
+});
 
       // ✅ Registra con metadata per salvare nome in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
