@@ -8,6 +8,7 @@ interface HeaderProps {
   activeMode: ActiveMode;
   onSwitchMode: (mode: ActiveMode) => void;
   onLogout: () => void;
+  onPublish?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -15,6 +16,7 @@ export const Header: React.FC<HeaderProps> = ({
   activeMode,
   onSwitchMode,
   onLogout,
+  onPublish,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -100,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => navigate("/")}
           >
             <img 
-              src="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png.png" 
+              src="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png" 
               alt="Renthubber" 
               className="h-16 w-auto"
             />
@@ -168,7 +170,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {/* ✅ Pubblica - SOLO se l'utente è hubber E in modalità hubber */}
                   {isHubber && activeMode === "hubber" && (
                     <button
-                      onClick={() => navigate("/publish")}
+                      onClick={() => onPublish?.()}
                       className={`flex items-center text-sm font-medium hover:text-brand ${
                         currentView === "/publish" ? "text-brand" : "text-gray-500"
                       }`}
