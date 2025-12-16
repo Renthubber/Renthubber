@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
@@ -47,7 +46,6 @@ interface PublishProps {
 }
 
 export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
-  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -57,17 +55,6 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
   
   // 🖼️ Stato per il processing delle immagini
   const [isProcessingImages, setIsProcessingImages] = useState(false);
-
-  // 📱 Handler chiusura modale (con conferma se ci sono dati)
-  const handleClose = () => {
-    if (draft.title || draft.description || draft.images.length > 0) {
-      if (window.confirm("Vuoi davvero uscire? I dati inseriti andranno persi.")) {
-        navigate(-1);
-      }
-    } else {
-      navigate(-1);
-    }
-  };
 
   // --- DRAFT STATE ---
   const [draft, setDraft] = useState<ListingDraft>({
@@ -290,6 +277,7 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
         // 👇 lasciamo vuoto: sarà api.listings.create a generare un UUID valido per Supabase
         id: '',
         hostId: currentUser.id,
+        owner_id: currentUser.id,
         title: draft.title,
         category: draft.category,
         subCategory: draft.subCategory,
@@ -1235,57 +1223,8 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
 
   // --- RENDER ROOT ---
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:min-h-0">
-      {/* 📱 MOBILE: Header modale fisso con X */}
-      <div className="md:hidden bg-white border-b border-gray-200 sticky top-0 z-50 safe-top">
-        <div className="px-4 h-14 flex items-center justify-between">
-          <button
-            onClick={handleClose}
-            className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-700" />
-          </button>
-          
-          <div className="flex-1 text-center">
-            <h2 className="font-bold text-gray-900 text-sm">Nuovo Annuncio</h2>
-            <p className="text-xs text-gray-500">Step {currentStep} di {STEPS.length}</p>
-          </div>
-
-          {autoSaved && (
-            <div className="flex items-center text-xs text-green-600">
-              <Save className="w-3 h-3" />
-            </div>
-          )}
-          {!autoSaved && <div className="w-8" />}
-        </div>
-
-        {/* Progress bar mobile */}
-        <div className="h-1 bg-gray-100 w-full">
-          <div
-            className="h-full bg-brand transition-all duration-500"
-            style={{ width: `${(currentStep / STEPS.length) * 100}%` }}
-          ></div>
-        </div>
-
-        {/* Dots indicator mobile */}
-        <div className="flex justify-center gap-1.5 py-3 px-4">
-          {STEPS.map(step => (
-            <div
-              key={step.id}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                step.id === currentStep
-                  ? 'w-6 bg-brand'
-                  : step.id < currentStep
-                    ? 'w-1.5 bg-brand/40'
-                    : 'w-1.5 bg-gray-200'
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* 💻 DESKTOP: Header normale */}
-      <div className="hidden md:block bg-white border-b border-gray-200 sticky top-0 z-30">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <h1 className="font-bold text-gray-900 flex items-center">
             <Box className="w-5 h-5 mr-2 text-brand" /> Nuova Inserzione
@@ -1307,9 +1246,7 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
         </div>
       </div>
 
-      {/* CONTENT AREA */}
-      <div className="flex-1 md:max-w-4xl md:mx-auto w-full md:px-4 md:py-8 md:grid md:grid-cols-1 lg:grid-cols-12 md:gap-8 overflow-y-auto">
-        {/* Desktop sidebar */}
+      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="hidden lg:block lg:col-span-3 space-y-2">
           {STEPS.map(step => (
             <div
@@ -1329,11 +1266,9 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
           ))}
         </div>
 
-        {/* Main content */}
-        <div className="md:lg:col-span-9 flex flex-col h-full">
-          {/* 📱 MOBILE: Content senza padding esterno, con scroll interno */}
-          <div className="flex-1 bg-white md:rounded-2xl md:shadow-sm md:border md:border-gray-100 flex flex-col">
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6">
+        <div className="lg:col-span-9">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 min-h-[400px] flex flex-col">
+            <div className="flex-1">
               {currentStep === 1 && renderStepCategory()}
               {currentStep === 2 && renderStepInfo()}
               {currentStep === 3 && renderStepDetails()}
@@ -1342,47 +1277,7 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
               {currentStep === 6 && renderStepSummary()}
             </div>
 
-            {/* 📱 MOBILE: Bottoni fissi in basso */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 safe-bottom z-40">
-              <div className="flex gap-3">
-                <button
-                  onClick={handleBack}
-                  disabled={currentStep === 1 || isPublishing}
-                  className="flex-shrink-0 w-12 h-12 rounded-xl border-2 border-gray-300 text-gray-600 font-medium hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-all"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-
-                {currentStep < STEPS.length ? (
-                  <button
-                    onClick={handleNext}
-                    disabled={isPublishing}
-                    className="flex-1 h-12 rounded-xl bg-brand text-white font-bold hover:bg-brand-dark shadow-lg active:scale-95 transition-all flex items-center justify-center disabled:opacity-50"
-                  >
-                    Continua <ChevronRight className="w-5 h-5 ml-2" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={handlePublish}
-                    disabled={isPublishing}
-                    className={`flex-1 h-12 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center ${
-                      !isPublishing ? 'bg-brand-accent text-brand-dark hover:bg-amber-400 active:scale-95' : 'bg-gray-200 text-gray-600'
-                    }`}
-                  >
-                    {isPublishing ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Pubblicazione...
-                      </>
-                    ) : (
-                      'Pubblica Annuncio'
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* 💻 DESKTOP: Bottoni normali in basso */}
-            <div className="hidden md:flex mt-10 pt-6 border-t border-gray-100 justify-between items-center px-6 pb-6">
+            <div className="mt-10 pt-6 border-t border-gray-100 flex justify-between items-center">
               <button
                 onClick={handleBack}
                 disabled={currentStep === 1 || isPublishing}
