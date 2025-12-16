@@ -429,6 +429,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // ✅ CAMBIO PASSWORD
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
   // PROSSIMA PRENOTAZIONE RENTER (per Panoramica)
   const [nextUpcomingBooking, setNextUpcomingBooking] = useState<{
     id: string;
@@ -2023,6 +2032,64 @@ const handleIdFileChange =
       console.error('Errore eliminazione account:', err);
       setDeleteError(err.message || 'Errore durante l\'eliminazione. Riprova.');
       setIsDeletingAccount(false);
+    }
+  };
+
+  // ✅ GESTIONE CAMBIO PASSWORD
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Reset errori
+    setPasswordError(null);
+    setPasswordSuccess(false);
+
+    // Validazione
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError('Compila tutti i campi');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordError('La nuova password deve contenere almeno 8 caratteri');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Le password non coincidono');
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordError('La nuova password deve essere diversa da quella attuale');
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      // Chiama API Supabase per cambiare password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      // Successo!
+      setPasswordSuccess(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      
+      // Chiudi il modale dopo 2 secondi
+      setTimeout(() => {
+        setChangePasswordModalOpen(false);
+        setPasswordSuccess(false);
+      }, 2000);
+    } catch (err: any) {
+      console.error('Errore cambio password:', err);
+      setPasswordError(err.message || 'Errore durante il cambio password. Riprova.');
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -4807,13 +4874,45 @@ const handleIdFileChange =
                     </div>
                   </div>
 
+                  {/* ✅ SEZIONE 1: IL RENTER HA PAGATO */}
                   <div className="border-t border-gray-100 pt-4 mt-2 space-y-2">
                     <p className="text-xs text-gray-400 uppercase font-semibold">
-                      Dettaglio importi
+                      Il renter ha pagato
                     </p>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">
-                        Prezzo base noleggio
+                        Noleggio
+                      </span>
+                      <span className="font-medium text-gray-900">
+                        €{selectedBooking.totalPrice.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">
+                        Commissione servizio
+                      </span>
+                      <span className="font-medium text-gray-900">
+                        €{(((selectedBooking as any).renterTotalPaid || 0) - selectedBooking.totalPrice).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
+                      <span className="text-gray-800 font-semibold">
+                        Totale (EUR)
+                      </span>
+                      <span className="font-bold text-gray-900">
+                        €{((selectedBooking as any).renterTotalPaid || 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* ✅ SEZIONE 2: COMPENSO DELL'HUBBER */}
+                  <div className="border-t border-gray-100 pt-4 mt-4 space-y-2">
+                    <p className="text-xs text-gray-400 uppercase font-semibold">
+                      Compenso dell'hubber
+                    </p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">
+                        Importo noleggio
                       </span>
                       <span className="font-medium text-gray-900">
                         €{selectedBooking.totalPrice.toFixed(2)}
@@ -4824,22 +4923,15 @@ const handleIdFileChange =
                         Commissione piattaforma
                       </span>
                       <span className="font-medium text-red-500">
-                        - €
-                        {selectedBooking.commission?.toFixed(2) ||
-                          '0.00'}
+                        -€{(selectedBooking.commission || 0).toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
                       <span className="text-gray-800 font-semibold">
-                        Netto per te
+                        Totale (EUR)
                       </span>
                       <span className="font-bold text-green-600">
-                        €
-                        {(
-                          selectedBooking.netEarnings ??
-                          selectedBooking.totalPrice -
-                            (selectedBooking.commission || 0)
-                        ).toFixed(2)}
+                        €{(selectedBooking.netEarnings ?? (selectedBooking.totalPrice - (selectedBooking.commission || 0))).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -7319,6 +7411,27 @@ const renderRenterPayments = () => {
               </div>
             </div>
 
+            {/* ✅ SEPARATORE SICUREZZA */}
+            <div className="border-t border-gray-200 pt-4 mt-6">
+              <h3 className="text-sm font-bold text-gray-700 mb-3">Sicurezza</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsProfileModalOpen(false);
+                  setChangePasswordModalOpen(true);
+                }}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-lg border-2 border-gray-200 hover:border-brand hover:bg-brand/5 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <Lock className="w-5 h-5 text-gray-400 group-hover:text-brand" />
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-brand">
+                    Cambia Password
+                  </span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-brand" />
+              </button>
+            </div>
+
             <div className="flex justify-end gap-2 pt-4">
               <button
                 type="button"
@@ -7334,6 +7447,126 @@ const renderRenterPayments = () => {
                 disabled={isSavingProfile}
               >
                 {isSavingProfile ? 'Salvataggio...' : 'Salva modifiche'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  // --- MODALE CAMBIO PASSWORD ---
+  const renderChangePasswordModal = () => {
+    if (!changePasswordModalOpen) return null;
+
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+          <button
+            onClick={() => !isChangingPassword && setChangePasswordModalOpen(false)}
+            disabled={isChangingPassword}
+            className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100 disabled:opacity-50"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-brand" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">Cambia Password</h2>
+            <p className="text-sm text-gray-500 mt-2">
+              Scegli una nuova password per il tuo account
+            </p>
+          </div>
+
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            {/* Password attuale */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Password Attuale
+              </label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                disabled={isChangingPassword || passwordSuccess}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-brand disabled:bg-gray-100 disabled:cursor-not-allowed"
+              />
+            </div>
+
+            {/* Nuova password */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Nuova Password
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                disabled={isChangingPassword || passwordSuccess}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-brand disabled:bg-gray-100 disabled:cursor-not-allowed"
+              />
+              <p className="text-xs text-gray-500 mt-1">Minimo 8 caratteri</p>
+            </div>
+
+            {/* Conferma password */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Conferma Nuova Password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={isChangingPassword || passwordSuccess}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-brand disabled:bg-gray-100 disabled:cursor-not-allowed"
+              />
+            </div>
+
+            {/* Errore */}
+            {passwordError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                <p className="text-sm text-red-700">{passwordError}</p>
+              </div>
+            )}
+
+            {/* Successo */}
+            {passwordSuccess && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                <p className="text-sm text-green-700 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Password cambiata con successo!
+                </p>
+              </div>
+            )}
+
+            {/* Pulsanti */}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setChangePasswordModalOpen(false)}
+                disabled={isChangingPassword || passwordSuccess}
+                className="flex-1 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                type="submit"
+                disabled={isChangingPassword || passwordSuccess}
+                className="flex-1 py-3 rounded-xl bg-brand hover:bg-brand-dark text-white font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              >
+                {isChangingPassword ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Cambio in corso...
+                  </>
+                ) : (
+                  'Cambia Password'
+                )}
               </button>
             </div>
           </form>
@@ -7441,6 +7674,7 @@ const renderRenterPayments = () => {
       {renderHubberCancelModal()}
       {renderPhoneVerificationModal()}
       {renderEmailVerificationModal()}
+      {renderChangePasswordModal()}
       {renderDeleteAccountModal()}
       {/* ✅ MODALE RECENSIONI */}
       {reviewModalOpen && bookingToReview && (
