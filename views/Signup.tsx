@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { User, Briefcase, Check, Upload, ShieldCheck, ArrowRight, ChevronLeft, Camera, LogIn, Gift, Loader2, Eye, EyeOff } from 'lucide-react';
 import { User as UserType } from '../types';
 import { api } from '../services/api';
@@ -38,6 +39,27 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
     password: '',
     referralCode: '',
   });
+
+  // ✅ NUOVO: Leggi il codice referral dall'URL
+  const [searchParams] = useSearchParams();
+  
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    const openSignup = searchParams.get('openSignup');
+    
+    if (refCode) {
+      setFormData(prev => ({
+        ...prev,
+        referralCode: refCode.toUpperCase()
+      }));
+    }
+    
+    // Se arriva da link invito, salta alla selezione ruolo
+    if (openSignup === 'true' && step === 'role') {
+      // Non cambiare step automaticamente, lascia che l'utente scelga
+      // ma il codice referral è già pre-compilato
+    }
+  }, [searchParams]);
 
   const handleRoleSelect = (selectedRole: Role) => {
     setRole(selectedRole);
@@ -82,6 +104,8 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
        // ✅ MODIFICATO: rimosso renterBalance e referralCode - il bonus arriva dopo la prima prenotazione
        const user = await api.auth.register(formData.email, formData.password, {
           name: fullName,
+          firstName: formData.firstName.trim(),  // ✅ AGGIUNGO firstName
+          lastName: formData.lastName.trim(),    // ✅ AGGIUNGO lastName
           role: selectedRole,
           roles: selectedRole === 'hubber' ? ['hubber', 'renter'] : ['renter'],
        });
