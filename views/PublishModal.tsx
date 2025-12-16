@@ -38,15 +38,15 @@ export const PublishModal: React.FC<PublishModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+    <div className="fixed inset-0 z-[100]">
       {/* 🌑 Overlay scuro */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={handleClose}
-      />
+<div
+  className="hidden md:block absolute inset-0 bg-black/30 backdrop-blur-sm"
+  onClick={handleClose}
+/>
 
       {/* 📦 Container modale */}
-      <div className="relative w-full h-full md:h-auto md:max-w-5xl md:max-h-[90vh] bg-gray-50 md:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      <div className="w-full h-full bg-gray-50 md:max-w-6xl md:max-h-[95vh] md:absolute md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* ❌ Pulsante chiudi - Mobile in alto a destra */}
         <button
           onClick={handleClose}
