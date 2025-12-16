@@ -62,7 +62,7 @@ export const ReferralLanding: React.FC = () => {
   };
 
   const handleRegister = () => {
-    navigate(`/?ref=${code?.toUpperCase()}&openSignup=true`);
+    navigate(`/signup?ref=${code?.toUpperCase()}`);
   };
 
   if (loading) {
@@ -98,20 +98,6 @@ export const ReferralLanding: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand/5 via-white to-brand-light/10">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand to-brand-light flex items-center justify-center mr-3">
-                <span className="text-white font-bold text-2xl">R</span>
-              </div>
-              <span className="font-bold text-2xl tracking-tight text-brand">Renthubber</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="max-w-2xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
@@ -121,7 +107,7 @@ export const ReferralLanding: React.FC = () => {
               <Gift className="w-10 h-10" />
             </div>
             <h1 className="text-3xl font-bold mb-2">Sei stato invitato!</h1>
-            <p className="text-brand-light/90 text-lg">Registrati e ricevi un bonus di benvenuto</p>
+            <p className="text-white text-lg">Registrati e ricevi un bonus di benvenuto</p>
           </div>
 
           {/* Referrer Info */}
