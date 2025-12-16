@@ -164,12 +164,18 @@ const App: React.FC = () => {
 
       await api.init();
 
-      // ✅ PRIMA: Check sessione (veloce)
-      const { data } = await supabase.auth.getSession();
-      const session = data.session;
-      
-      // ✅ Nascondi spinner SUBITO dopo auth check
-      setIsAuthChecking(false);
+     // ✅ PRIMA: Check sessione (veloce)
+const { data } = await supabase.auth.getSession();
+const session = data.session;
+
+if (session?.user) {
+  setCurrentUser(session.user);
+  setIsAuthChecking(false);
+} else {
+  setCurrentUser(null);
+  setIsAuthChecking(false);
+}
+
 
       // DOPO: Carico dati base (l'app è già visibile)
       const loadedListings = await api.admin.getAllListings();
