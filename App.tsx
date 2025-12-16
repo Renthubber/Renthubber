@@ -6,6 +6,7 @@ import { Footer } from "./components/Footer";
 import { CookieConsent, CookieSettingsButton } from './components/CookieConsent';
 import { Home } from "./views/Home";
 import { Publish } from "./views/Publish";
+import { PublishModal } from "./views/PublishModal";
 import { Wallet } from "./views/Wallet";
 import { Messages } from "./views/Messages";
 import { ListingDetail } from "./views/ListingDetail";
@@ -116,6 +117,7 @@ const App: React.FC = () => {
 
   const [activeMode, setActiveMode] = useState<ActiveMode>("renter");
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
 
   // ✅ Utenti completi per Admin (da Supabase)
   const [adminUsers, setAdminUsers] = useState<User[]>([]);
@@ -600,7 +602,7 @@ setIsAuthChecking(false);
               <MyListings
                 currentUser={currentUser}
                 listings={listings}
-                onCreateNew={() => navigate('/publish')}
+                onCreateNew={() => setIsPublishModalOpen(true)}
                 onEditListing={(listing) => {
                   setEditingListing(listing);
                   navigate('/edit-listing');
@@ -616,13 +618,13 @@ setIsAuthChecking(false);
             )
           } />
 
-          <Route path="/publish" element={
+          {/* <Route path="/publish" element={
             currentUser ? (
               <Publish onPublish={handleAddListing} currentUser={currentUser} />
             ) : (
               <Navigate to="/" />
             )
-          } />
+          } /> */}
 
           <Route path="/messages" element={
             currentUser ? (
@@ -710,8 +712,21 @@ setIsAuthChecking(false);
       <Footer />
     </div>
 
-<CookieConsent />
+    <CookieConsent />
     <CookieSettingsButton />
+
+    {/* 🎨 MODALE PUBLISH */}
+    {currentUser && (
+      <PublishModal
+        isOpen={isPublishModalOpen}
+        onClose={() => setIsPublishModalOpen(false)}
+        onPublish={async (listing) => {
+          await handleAddListing(listing);
+          setIsPublishModalOpen(false);
+        }}
+        currentUser={currentUser}
+      />
+    )}
 
     </BrandingProvider> 
   );
