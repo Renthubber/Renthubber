@@ -12,6 +12,7 @@ import { ListingDetail } from "./views/ListingDetail";
 import { Signup } from "./views/Signup";
 import { ForgotPassword } from "./views/ForgotPassword";
 import { ResetPassword } from "./views/ResetPassword";
+import { ReferralLanding } from "./views/ReferralLanding";
 import { Dashboard } from "./views/Dashboard";
 import { MyListings } from "./views/MyListings";
 import { HubberListingEditor } from "./views/HubberListingEditor";
@@ -504,6 +505,9 @@ const App: React.FC = () => {
           <Route path="/reset-password" element={
             <ResetPassword onSuccess={() => navigate('/')} />
           } />
+
+          {/* REFERRAL LANDING */}
+          <Route path="/invito/:code" element={<ReferralLanding />} />
 
           {/* DASHBOARD & USER VIEWS */}
           <Route path="/dashboard" element={
