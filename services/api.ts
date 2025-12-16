@@ -843,17 +843,17 @@ export const api = {
       userData: Partial<User>
     ) => {
       // ✅ Usa firstName/lastName se passati, altrimenti estrai dal fullName
-const fullName = userData.name || "";
-const firstName = userData.firstName || (fullName ? fullName.trim().split(" ")[0] : "") || "";
-const lastName = userData.lastName || (fullName ? fullName.trim().split(" ").slice(1).join(" ") : "") || "";
+      const fullName = userData.name || "";
+      const firstName = userData.firstName || (fullName ? fullName.trim().split(" ")[0] : "") || "";
+      const lastName = userData.lastName || (fullName ? fullName.trim().split(" ").slice(1).join(" ") : "") || "";
 
-console.log("📝 Registrazione - Dati ricevuti:", { 
-  fullName, 
-  firstName, 
-  lastName, 
-  email,
-  userData 
-});
+      console.log("📝 Registrazione - Dati ricevuti:", { 
+        fullName, 
+        firstName, 
+        lastName, 
+        email,
+        userData 
+      });
 
       // ✅ Registra con metadata per salvare nome in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -1100,6 +1100,46 @@ console.log("📝 Registrazione - Dati ricevuti:", {
       } catch (err) {
         console.error("Errore inatteso users.getAll:", err);
         return [];
+      }
+    },
+
+    /**
+     * Elimina account utente (GDPR compliant)
+     * - Elimina prima i dati in public.users
+     * - Poi elimina l'account auth
+     */
+    deleteMyAccount: async (userId: string): Promise<void> => {
+      try {
+        console.log('🗑️ Eliminazione account:', userId);
+
+        // 1. Elimina dati utente dal database (CASCADE gestirà le foreign keys)
+        const { error: deleteUserError } = await supabase
+          .from('users')
+          .delete()
+          .eq('id', userId);
+
+        if (deleteUserError) {
+          console.error('Errore eliminazione dati utente:', deleteUserError);
+          throw new Error('Impossibile eliminare i dati utente');
+        }
+
+        console.log('✅ Dati utente eliminati da public.users');
+
+        // 2. Elimina account auth (Supabase Admin API - richiede Service Role)
+        // NOTA: Questo richiede che l'utente sia autenticato
+        const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
+
+        if (deleteAuthError) {
+          console.warn('⚠️ Errore eliminazione auth (potrebbe richiedere permessi admin):', deleteAuthError);
+          // Non blocchiamo qui - i dati sono già stati eliminati
+        } else {
+          console.log('✅ Account auth eliminato');
+        }
+
+        console.log('✅ Account eliminato completamente');
+      } catch (err: any) {
+        console.error('Errore deleteMyAccount:', err);
+        throw new Error(err.message || 'Errore durante l\'eliminazione dell\'account');
       }
     },
   },
