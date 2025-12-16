@@ -297,6 +297,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
           renterFee: platformFeeEur,
           hubberFee: amounts.hubberTotalFeeCents / 100,
           deposit: depositEur,
+          cleaningFee: cleaningFeeEur, // ✅ AGGIUNTO: Costo pulizia
           totalAmount: totalAmountEur,
           useWallet: walletUsedEur > 0,
           refundBalanceToUse: walletUsedEur, // Semplificato - puoi dividere tra refund/referral
