@@ -14,12 +14,14 @@ interface BottomNavBarProps {
   currentUser: UserType | null;
   activeMode: ActiveMode;
   onSwitchMode: (mode: ActiveMode) => void;
+  onPublish?: () => void;
 }
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   currentUser,
   activeMode,
   onSwitchMode,
+  onPublish,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -132,12 +134,18 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
                 : currentView === item.path;
 
               return (
-                <button
-                  key={item.id}
-                  onClick={() => navigate(item.path)}
-                  className={`flex flex-col items-center justify-center flex-1 h-full transition-all relative ${
-                    isActive ? "text-brand" : "text-gray-500"
-                  }`}
+  <button
+    key={item.id}
+    onClick={() => {
+      if (item.id === "publish" && onPublish) {
+        onPublish();
+      } else {
+        navigate(item.path);
+      }
+    }}
+    className={`flex flex-col items-center justify-center flex-1 h-full transition-all relative ${
+      isActive ? "text-brand" : "text-gray-500"
+    }`}
                 >
                   <div className="relative">
                     <Icon className={`w-6 h-6 mb-1 ${isActive ? "stroke-2" : ""}`} />
