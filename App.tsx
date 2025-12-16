@@ -168,13 +168,9 @@ const App: React.FC = () => {
 const { data } = await supabase.auth.getSession();
 const session = data.session;
 
-if (session?.user) {
-  setCurrentUser(session.user);
-  setIsAuthChecking(false);
-} else {
-  setCurrentUser(null);
-  setIsAuthChecking(false);
-}
+// ✅ Nascondi spinner SUBITO dopo auth check
+setIsAuthChecking(false);
+
 
 
       // DOPO: Carico dati base (l'app è già visibile)
