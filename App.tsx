@@ -708,6 +708,7 @@ setIsAuthChecking(false);
         currentUser={currentUser}
         activeMode={activeMode}
         onSwitchMode={setActiveMode}
+        onPublish={() => setIsPublishModalOpen(true)}
       />
 
       <Footer />
