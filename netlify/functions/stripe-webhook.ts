@@ -137,6 +137,7 @@ async function handlePaymentIntentSucceeded(
   const renterFee = parseFloat(metadata.renthubber_renter_fee || '0');
   const hubberFee = parseFloat(metadata.renthubber_hubber_fee || '0');
   const deposit = parseFloat(metadata.renthubber_deposit || '0');
+  const cleaningFee = parseFloat(metadata.renthubber_cleaning_fee || '0');
   const totalAmount = parseFloat(metadata.renthubber_total_amount || '0');
   const walletUsed = parseFloat(metadata.renthubber_wallet_used || '0');
   const refundUsed = parseFloat(metadata.renthubber_refund_used || '0');
@@ -165,8 +166,9 @@ async function handlePaymentIntentSucceeded(
         start_date: startDate,
         end_date: endDate,
         amount_total: totalAmount,
-        platform_fee: renterFee + hubberFee,
-        hubber_net_amount: basePrice - hubberFee,
+        platform_fee: hubberFee,
+        hubber_net_amount: basePrice + cleaningFee - hubberFee,
+        cleaning_fee: cleaningFee,
         wallet_used_cents: Math.round(walletUsed * 100),
         status: 'confirmed',
         stripe_payment_intent_id: paymentIntent.id,
