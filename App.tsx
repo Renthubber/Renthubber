@@ -451,6 +451,7 @@ setIsAuthChecking(false);
         activeMode={activeMode}
         onSwitchMode={setActiveMode}
         onLogout={handleLogout}
+        onPublish={() => setIsPublishModalOpen(true)}
       />
 
       <main className="flex-1">
