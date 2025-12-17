@@ -282,18 +282,36 @@ export const MyListings: React.FC<MyListingsProps> = ({
 
             {/* Contenuto Preview */}
             <div className="p-6">
-              {/* Galleria Immagini */}
-              <div className="grid grid-cols-2 gap-2 mb-6">
-                {previewListing.images?.slice(0, 4).map((img, idx) => (
-                  <img
-                    key={idx}
-                    src={img}
-                    alt={`${previewListing.title} - ${idx + 1}`}
-                    className={`rounded-lg object-cover ${
-                      idx === 0 ? 'col-span-2 h-64' : 'h-32'
-                    }`}
-                  />
-                ))}
+             {/* Galleria Immagini */}
+              <div className="mb-6 -mx-6">
+                {previewListing.images && previewListing.images.length > 0 && (
+                  <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[500px]">
+                    {/* Prima immagine - grande a sinistra */}
+                    <div className="col-span-2 row-span-2">
+                      <img
+                        src={previewListing.images[0]}
+                        alt={`${previewListing.title} - 1`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    
+                    {/* Altre 4 immagini - 2x2 a destra */}
+                    {previewListing.images.slice(1, 5).map((img, idx) => (
+                      <div key={idx} className="col-span-1 row-span-1">
+                        <img
+                          src={img}
+                          alt={`${previewListing.title} - ${idx + 2}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                    
+                    {/* Riempi spazi vuoti se mancano immagini */}
+                    {Array.from({ length: Math.max(0, 5 - (previewListing.images?.length || 0)) }).map((_, idx) => (
+                      <div key={`empty-${idx}`} className="col-span-1 row-span-1 bg-gray-100"></div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Info Principale */}
