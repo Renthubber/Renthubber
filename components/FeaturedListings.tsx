@@ -110,7 +110,7 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
           {isSuperHubber && (
             <div className="absolute bottom-2 left-2 bg-brand text-white px-2 py-0.5 rounded-full text-[9px] font-bold flex items-center gap-1 shadow-md">
               <Star className="w-2.5 h-2.5 fill-current" />
-              SUPER
+              SUPERHUBBER
             </div>
           )}
         </div>
