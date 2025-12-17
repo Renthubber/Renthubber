@@ -659,6 +659,7 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, bookings =
           listings={filteredListings}
           userCity={currentUser?.city}
           onListingClick={onListingClick}
+          currentUser={currentUser}
         />
       </div>
     </div>
