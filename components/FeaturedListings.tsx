@@ -1,17 +1,20 @@
-import React from 'react';
-import { TrendingUp, Star, MapPin, Sparkles, Clock, ArrowRight } from 'lucide-react';
+import React, { useRef } from 'react';
+import { TrendingUp, Star, MapPin, Sparkles, Clock, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Listing } from '../types';
+import { FavoriteButton } from './FavoriteButton';
 
 interface FeaturedListingsProps {
   listings: Listing[];
   userCity?: string;
   onListingClick: (listing: Listing) => void;
+  userId?: string; // Per FavoriteButton
 }
 
 export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
   listings,
   userCity,
   onListingClick,
+  userId,
 }) => {
   
   // ========== SEZIONE 1: PIÙ POPOLARI (per visualizzazioni) ==========
@@ -64,26 +67,23 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
             alt={listing.title}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
           />
-          {/* Badge categoria */}
-          <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-bold text-gray-700">
-            {listing.category === 'oggetto' ? '📦 Oggetto' : '🏠 Spazio'}
-          </div>
-          {/* Cuore preferiti */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              // TODO: Implementare logica salva preferiti
-              console.log('Salva preferito:', listing.id);
-            }}
-            className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white transition-colors"
-          >
-            <svg className="w-4 h-4 text-gray-700 hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </button>
-          {/* Badge SuperHubber */}
+          {/* Badge categoria specifica */}
+          {listing.subCategory && (
+            <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-bold text-gray-700 uppercase shadow-sm">
+              {listing.subCategory}
+            </div>
+          )}
+          
+          {/* Cuore preferiti - SEMPRE VISIBILE */}
+          <FavoriteButton 
+            listingId={listing.id} 
+            userId={userId}
+            variant="card"
+          />
+          
+          {/* Badge SuperHubber - Colori brand RentHubber */}
           {isSuperHubber && (
-            <div className="absolute bottom-2 left-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-2 py-0.5 rounded-full text-[9px] font-bold flex items-center gap-1 shadow-md">
+            <div className="absolute bottom-2 left-2 bg-brand text-white px-2 py-0.5 rounded-full text-[9px] font-bold flex items-center gap-1 shadow-md">
               <Star className="w-2.5 h-2.5 fill-current" />
               SUPER
             </div>
@@ -92,8 +92,8 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
 
         {/* Info */}
         <div className="p-2.5 sm:p-3">
-          <h3 className="font-bold text-gray-900 text-xs sm:text-sm mb-1 truncate">
-            {listing.title}
+          <h3 className="font-bold text-gray-900 text-xs sm:text-sm mb-1 h-8 overflow-hidden">
+            {listing.title.length > 30 ? listing.title.substring(0, 30) : listing.title}
           </h3>
           <p className="text-[10px] sm:text-xs text-gray-500 mb-1.5 flex items-center gap-0.5 truncate">
             <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
@@ -127,6 +127,19 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
     // Non mostrare se 0 annunci
     if (listings.length === 0) return null;
 
+    // Ref per scroll programmatico
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    const scroll = (direction: 'left' | 'right') => {
+      if (scrollRef.current) {
+        const scrollAmount = 700; // Scroll di ~3 card
+        scrollRef.current.scrollBy({
+          left: direction === 'left' ? -scrollAmount : scrollAmount,
+          behavior: 'smooth'
+        });
+      }
+    };
+
     return (
       <div className="mb-12">
         {/* Header sezione */}
@@ -150,8 +163,29 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
 
         {/* Carousel scorrevole */}
         <div className="relative">
-          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
+          <div 
+            ref={scrollRef}
+            className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
+          >
             {listings.map(listing => renderCard(listing))}
+          </div>
+
+          {/* Frecce navigazione - SOLO DESKTOP - A DESTRA */}
+          <div className="hidden sm:flex items-center justify-end gap-2 mt-4">
+            <button
+              onClick={() => scroll('left')}
+              className="p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-brand transition-all shadow-sm"
+              aria-label="Scorri a sinistra"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <button
+              onClick={() => scroll('right')}
+              className="p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-brand transition-all shadow-sm"
+              aria-label="Scorri a destra"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600" />
+            </button>
           </div>
         </div>
       </div>
