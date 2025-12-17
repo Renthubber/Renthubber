@@ -248,11 +248,42 @@ async function handlePaymentIntentSucceeded(
           }
         );
         console.log('✅ Wallets table updated');
-      } catch (walletError) {
+     } catch (walletError) {
         console.error('⚠️ Wallet update failed, but users updated:', walletError);
         // Continua comunque - almeno users è aggiornato
       }
 
+      // ⬇️ NUOVO BLOCCO QUI
+      // Crea transazione wallet per tracciamento
+      try {
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/wallet_transactions`,
+          {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation',
+            },
+            body: JSON.stringify({
+              user_id: renterId,
+              amount_cents: -Math.round(walletUsed * 100),
+              type: 'debit',
+              source: 'booking_payment',
+              wallet_type: 'renter',
+              description: `Pagamento prenotazione - Wallet usato: €${walletUsed.toFixed(2)}`,
+              related_booking_id: booking.id,
+            }),
+          }
+        );
+        console.log('✅ Wallet transaction created');
+      } catch (txError) {
+        console.error('⚠️ Transaction record failed:', txError);
+      }
+      // ⬆️ FINE NUOVO BLOCCO
+
+      // ⬇️ QUESTO RIMANE!
       console.log('✅ Wallet deducted:', { refundUsed, referralUsed });
     }
   }
