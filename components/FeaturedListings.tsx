@@ -47,53 +47,75 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
     .slice(0, 12);
 
   // ========== RENDER SINGOLA CARD ==========
-  const renderCard = (listing: Listing) => (
-    <div
-      key={listing.id}
-      onClick={() => onListingClick(listing)}
-      className="flex-shrink-0 w-[280px] bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer group"
-    >
-      {/* Immagine */}
-      <div className="relative h-[200px] overflow-hidden">
-        <img
-          src={listing.images?.[0] || '/placeholder.jpg'}
-          alt={listing.title}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-        />
-        {/* Badge categoria */}
-        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-gray-700">
-          {listing.category === 'oggetto' ? '📦 Oggetto' : '🏠 Spazio'}
-        </div>
-        {/* Rating */}
-        {listing.rating && listing.rating > 0 && (
-          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-bold text-gray-700 flex items-center gap-1">
-            <Star className="w-3 h-3 text-yellow-400 fill-current" />
-            {listing.rating.toFixed(1)}
+  const renderCard = (listing: Listing) => {
+    // Check se superhubber (adatta in base alla tua struttura dati)
+    const isSuperHubber = (listing as any).owner?.isSuperHubber || (listing as any).isSuperHubber || false;
+    
+    return (
+      <div
+        key={listing.id}
+        onClick={() => onListingClick(listing)}
+        className="flex-shrink-0 w-[160px] sm:w-[200px] md:w-[220px] bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer group"
+      >
+        {/* Immagine */}
+        <div className="relative h-[140px] sm:h-[160px] overflow-hidden">
+          <img
+            src={listing.images?.[0] || '/placeholder.jpg'}
+            alt={listing.title}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+          />
+          {/* Badge categoria */}
+          <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-bold text-gray-700">
+            {listing.category === 'oggetto' ? '📦 Oggetto' : '🏠 Spazio'}
           </div>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="p-4">
-        <h3 className="font-bold text-gray-900 text-base mb-1 truncate">
-          {listing.title}
-        </h3>
-        <p className="text-sm text-gray-500 mb-2 flex items-center gap-1">
-          <MapPin className="w-3 h-3" />
-          {listing.location}
-        </p>
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-xl font-bold text-brand">€{listing.price}</span>
-            <span className="text-sm text-gray-500">/{listing.priceUnit}</span>
-          </div>
-          {listing.view_count && listing.view_count > 0 && (
-            <span className="text-xs text-gray-400">{listing.view_count} views</span>
+          {/* Cuore preferiti */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              // TODO: Implementare logica salva preferiti
+              console.log('Salva preferito:', listing.id);
+            }}
+            className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white transition-colors"
+          >
+            <svg className="w-4 h-4 text-gray-700 hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </button>
+          {/* Badge SuperHubber */}
+          {isSuperHubber && (
+            <div className="absolute bottom-2 left-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-2 py-0.5 rounded-full text-[9px] font-bold flex items-center gap-1 shadow-md">
+              <Star className="w-2.5 h-2.5 fill-current" />
+              SUPER
+            </div>
           )}
         </div>
+
+        {/* Info */}
+        <div className="p-2.5 sm:p-3">
+          <h3 className="font-bold text-gray-900 text-xs sm:text-sm mb-1 truncate">
+            {listing.title}
+          </h3>
+          <p className="text-[10px] sm:text-xs text-gray-500 mb-1.5 flex items-center gap-0.5 truncate">
+            <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
+            {listing.location}
+          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm sm:text-base font-bold text-brand">€{listing.price}</span>
+              <span className="text-[10px] sm:text-xs text-gray-500">/{listing.priceUnit}</span>
+            </div>
+            {/* Rating stelle */}
+            {listing.rating && listing.rating > 0 && (
+              <div className="flex items-center gap-0.5">
+                <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                <span className="text-[10px] sm:text-xs font-semibold text-gray-700">{listing.rating.toFixed(1)}</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // ========== RENDER SEZIONE CAROUSEL ==========
   const renderSection = (
