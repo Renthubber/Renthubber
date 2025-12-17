@@ -7,14 +7,14 @@ interface FeaturedListingsProps {
   listings: Listing[];
   userCity?: string;
   onListingClick: (listing: Listing) => void;
-  userId?: string; // Per FavoriteButton
+  currentUser?: any; // User | null - riceve user intero come ListingCard
 }
 
 export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
   listings,
   userCity,
   onListingClick,
-  userId,
+  currentUser,
 }) => {
   
   // Refs per ogni sezione carousel
@@ -102,7 +102,7 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
           {/* Cuore preferiti - SEMPRE VISIBILE - LATO DESTRO */}
           <FavoriteButton 
             listingId={listing.id} 
-            userId={userId}
+            userId={currentUser?.id}
             variant="card"
           />
           
@@ -129,13 +129,13 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
               <span className="text-sm sm:text-base font-bold text-brand">€{listing.price}</span>
               <span className="text-[10px] sm:text-xs text-gray-500">/{listing.priceUnit}</span>
             </div>
-            {/* Rating stelle - SOLO se esiste e > 0 */}
-            {listing.rating && Number(listing.rating) > 0 && (
-              <div className="flex items-center gap-0.5">
-                <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                <span className="text-[10px] sm:text-xs font-semibold text-gray-700">{Number(listing.rating).toFixed(1)}</span>
-              </div>
-            )}
+            {/* Rating - Sempre visibile come ListingCard */}
+            <div className="flex items-center gap-0.5">
+              <Star className="w-3 h-3 text-yellow-400 fill-current" />
+              <span className="text-[10px] sm:text-xs font-semibold text-gray-700">
+                {(listing.rating && listing.rating > 0) ? listing.rating.toFixed(1) : 'Nuovo'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
