@@ -286,14 +286,18 @@ export const MyListings: React.FC<MyListingsProps> = ({
 <div className="mb-6 -mx-6 sm:mx-0">
   {previewListing.images && previewListing.images.length > 0 && (
     <>
-      {/* MOBILE: Solo prima immagine grande */}
-      <div className="sm:hidden">
-        <img
-          src={previewListing.images[0]}
-          alt={previewListing.title}
-          className="w-full h-[400px] object-cover"
-        />
-      </div>
+      {/* MOBILE: Carosello immagini scorrevole */}
+<div className="sm:hidden overflow-x-auto snap-x snap-mandatory flex">
+  {previewListing.images.map((img, idx) => (
+    <div key={idx} className="flex-shrink-0 w-full snap-center">
+      <img
+        src={img}
+        alt={`${previewListing.title} - ${idx + 1}`}
+        className="w-full h-[400px] object-cover"
+      />
+    </div>
+  ))}
+</div>
       
       {/* DESKTOP: Grid che hai già (funziona) */}
       <div className="hidden sm:grid grid-cols-4 grid-rows-2 gap-2 h-[500px]">
