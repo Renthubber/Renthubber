@@ -663,6 +663,7 @@ const mapDbBookingToAppBooking = (row: any) => {
     amountTotal: Number(row.amount_total || 0),
     platformFee: Number(row.platform_fee || 0),
     hubberNetAmount: Number(row.hubber_net_amount || 0),
+    cleaningFee: Number(row.cleaning_fee || 0),
     walletUsedCents: row.wallet_used_cents || 0,
     status: row.status,
     paymentId: row.payment_id,
