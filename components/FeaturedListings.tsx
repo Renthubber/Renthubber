@@ -74,7 +74,7 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
             </div>
           )}
           
-          {/* Cuore preferiti - SEMPRE VISIBILE */}
+          {/* Cuore preferiti - SEMPRE VISIBILE - LATO DESTRO */}
           <FavoriteButton 
             listingId={listing.id} 
             userId={userId}
@@ -92,8 +92,8 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
 
         {/* Info */}
         <div className="p-2.5 sm:p-3">
-          <h3 className="font-bold text-gray-900 text-xs sm:text-sm mb-1 h-8 overflow-hidden">
-            {listing.title.length > 30 ? listing.title.substring(0, 30) : listing.title}
+          <h3 className="font-bold text-gray-900 text-xs sm:text-sm mb-1 whitespace-nowrap overflow-hidden">
+            {listing.title.length > 25 ? listing.title.substring(0, 25) : listing.title}
           </h3>
           <p className="text-[10px] sm:text-xs text-gray-500 mb-1.5 flex items-center gap-0.5 truncate">
             <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
@@ -104,7 +104,7 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
               <span className="text-sm sm:text-base font-bold text-brand">€{listing.price}</span>
               <span className="text-[10px] sm:text-xs text-gray-500">/{listing.priceUnit}</span>
             </div>
-            {/* Rating stelle */}
+            {/* Rating stelle - SOLO se > 0 */}
             {listing.rating && listing.rating > 0 && (
               <div className="flex items-center gap-0.5">
                 <Star className="w-3 h-3 text-yellow-400 fill-current" />
@@ -165,7 +165,17 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
         <div className="relative">
           <div 
             ref={scrollRef}
-            className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
+            className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch'
+            }}
+            css={{
+              '&::-webkit-scrollbar': {
+                display: 'none'
+              }
+            }}
           >
             {listings.map(listing => renderCard(listing))}
           </div>
