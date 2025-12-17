@@ -298,10 +298,13 @@ export const Header: React.FC<HeaderProps> = ({
                       Dashboard
                     </button>
 
-                    {/* ✅ I miei annunci - SOLO se l'utente è hubber E NON admin */}
-                    {isHubber && !isAdmin && (
+                   {/* ✅ I miei annunci - SOLO se l'utente è hubber E in modalità hubber E NON admin */}
+                    {isHubber && activeMode === 'hubber' && !isAdmin && (
                       <button
-                        onClick={() => navigate("/my-listings")}
+                        onClick={() => {
+                          navigate("/my-listings");
+                          setMenuOpen(false);
+                        }}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
                       >
                         <PlusCircle className="w-4 h-4 mr-2" />
@@ -310,7 +313,10 @@ export const Header: React.FC<HeaderProps> = ({
                     )}
 
                     <button
-                      onClick={() => navigate("/wallet")}
+                      onClick={() => {
+                        navigate("/wallet");
+                        setMenuOpen(false);
+                      }}
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
                     >
                       <Wallet className="w-4 h-4 mr-2" />
