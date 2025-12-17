@@ -233,14 +233,17 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
     const walletCents = Math.round(walletUsedEur * 100);
     const cardCents = Math.max(totalCents - walletCents, 0);
 
-    // ✅ CALCOLO CORRETTO COMMISSIONE HUBBER
-    // Commissione hubber = (prezzo base × % hubber) + fee fissa
-    const hubberVariableFeeEur = (rentalAmountEur * hubberFeePercentage) / 100;
+    // ✅ CALCOLO CORRETTO COMMISSIONE HUBBER (include pulizia!)
+    // Subtotale completo = prezzo base + pulizia
+    const completeSubtotalEur = rentalAmountEur + cleaningFeeEur;
+    
+    // Commissione hubber = (subtotale completo × % hubber) + fee fissa
+    const hubberVariableFeeEur = (completeSubtotalEur * hubberFeePercentage) / 100;
     const hubberTotalFeeEur = hubberVariableFeeEur + fixedFee;
     const hubberTotalFeeCents = Math.round(hubberTotalFeeEur * 100);
     
-    // ✅ NETTO HUBBER = prezzo base - commissione hubber
-    const hubberNetEur = rentalAmountEur - hubberTotalFeeEur;
+    // ✅ NETTO HUBBER = subtotale completo - commissione hubber
+    const hubberNetEur = completeSubtotalEur - hubberTotalFeeEur;
     const hubberNetCents = Math.round(hubberNetEur * 100);
 
     return {
@@ -253,7 +256,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       hubberNetCents,
       hubberTotalFeeCents,
     };
-  }, [totalAmountEur, rentalAmountEur, platformFeeEur, depositEur, walletUsedEur, platformFees]);
+  }, [totalAmountEur, rentalAmountEur, platformFeeEur, depositEur, walletUsedEur, platformFees, cleaningFeeEur]);
 
   if (!isOpen) return null;
 
