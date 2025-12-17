@@ -183,6 +183,12 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // ✅ Saldi wallet
+  const [refundBalance, setRefundBalance] = useState(0);
+  const [referralBalance, setReferralBalance] = useState(0);
+  const [walletType, setWalletType] = useState<'referral' | 'refund'>('referral');
+  const [loadingBalances, setLoadingBalances] = useState(false);
+
   // ✅ Carica le fee dal database per calcolare correttamente il netto hubber
   const [platformFees, setPlatformFees] = useState<{
     renterPercentage: number;
@@ -209,6 +215,33 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
     };
     loadFees();
   }, []);
+
+  // ✅ Carica saldi wallet all'apertura del modal
+  useEffect(() => {
+    const loadWalletBalances = async () => {
+      if (!isOpen || !renter.id) return;
+      
+      setLoadingBalances(true);
+      try {
+        const { data: wallet, error } = await supabase
+          .from('wallets')
+          .select('referral_balance_cents, refund_balance_cents')
+          .eq('user_id', renter.id)
+          .single();
+        
+        if (!error && wallet) {
+          setReferralBalance((wallet.referral_balance_cents || 0) / 100);
+          setRefundBalance((wallet.refund_balance_cents || 0) / 100);
+        }
+      } catch (err) {
+        console.error('Errore caricamento saldi wallet:', err);
+      } finally {
+        setLoadingBalances(false);
+      }
+    };
+
+    loadWalletBalances();
+  }, [isOpen, renter.id]);
 
   const amounts = useMemo(() => {
     // Usa le fee dal database, con fallback a valori default
@@ -268,7 +301,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       return;
     }
 
-    if (!stripe || !elements) {
+   if (!stripe || !elements) {
       setErrorMsg("Stripe non è ancora pronto. Riprova tra un momento.");
       return;
     }
@@ -276,6 +309,19 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
     try {
       setLoading(true);
       setErrorMsg(null);
+
+      // ✅ Validazione saldo wallet
+      if (walletUsedEur > 0) {
+        const maxUsable = walletType === 'referral' 
+          ? Math.min(referralBalance, platformFeeEur * 0.30)
+          : refundBalance;
+        
+        if (walletUsedEur > maxUsable) {
+          setErrorMsg(`Saldo insufficiente. Disponibile: €${maxUsable.toFixed(2)}`);
+          setLoading(false);
+          return;
+        }
+      }
 
       const cardElement = elements.getElement(CardElement);
       if (!cardElement) {
@@ -303,8 +349,8 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
           cleaningFee: cleaningFeeEur, // ✅ AGGIUNTO: Costo pulizia
           totalAmount: totalAmountEur,
           useWallet: walletUsedEur > 0,
-          refundBalanceToUse: walletUsedEur, // Semplificato - puoi dividere tra refund/referral
-          referralBalanceToUse: 0,
+          refundBalanceToUse: walletType === 'refund' ? walletUsedEur : 0,
+          referralBalanceToUse: walletType === 'referral' ? walletUsedEur : 0,
         }),
       });
 
@@ -468,6 +514,55 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
             <span>Totale prenotazione</span>
             <span>{totalAmountEur.toFixed(2)} €</span>
           </div>
+
+{/* ✅ Scelta tipo wallet */}
+          {walletUsedEur > 0 && (
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <p className="text-sm font-medium text-gray-900 mb-3">
+                Seleziona quale credito usare:
+              </p>
+              
+              {loadingBalances ? (
+                <div className="text-sm text-gray-500">Caricamento saldi...</div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="walletType"
+                      value="referral"
+                      checked={walletType === 'referral'}
+                      onChange={(e) => setWalletType('referral')}
+                      className="mr-3"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">Bonus Referral</div>
+                      <div className="text-xs text-gray-500">
+                        Disponibile: €{referralBalance.toFixed(2)} - Max 30% commissioni
+                      </div>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="walletType"
+                      value="refund"
+                      checked={walletType === 'refund'}
+                      onChange={(e) => setWalletType('refund')}
+                      className="mr-3"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">Credito Rimborsi</div>
+                      <div className="text-xs text-gray-500">
+                        Disponibile: €{refundBalance.toFixed(2)} - Utilizzo illimitato
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
 
           {walletUsedEur > 0 && (
             <div className="flex justify-between text-emerald-700 text-xs">
