@@ -240,8 +240,22 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       }
     };
 
-    loadWalletBalances();
+   loadWalletBalances();
   }, [isOpen, renter.id]);
+
+  // ✅ Calcola quanto wallet può essere usato in base alla scelta
+  const actualWalletUsable = useMemo(() => {
+    if (walletUsedEur === 0) return 0;
+    
+    if (walletType === 'referral') {
+      // Referral: max 30% delle commissioni
+      const maxReferralUsable = platformFeeEur * 0.30;
+      return Math.min(referralBalance, maxReferralUsable);
+    } else {
+      // Refund: max 100% del totale
+      return Math.min(refundBalance, totalAmountEur);
+    }
+  }, [walletType, referralBalance, refundBalance, platformFeeEur, totalAmountEur, walletUsedEur]);
 
   const amounts = useMemo(() => {
     // Usa le fee dal database, con fallback a valori default
@@ -262,8 +276,8 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
     // Deposito
     const depositCents = Math.round(depositEur * 100);
 
-    // Wallet
-    const walletCents = Math.round(walletUsedEur * 100);
+    // Wallet (usa il valore calcolato in base alla scelta)
+    const walletCents = Math.round(actualWalletUsable * 100);
     const cardCents = Math.max(totalCents - walletCents, 0);
 
     // ✅ CALCOLO CORRETTO COMMISSIONE HUBBER (include pulizia!)
@@ -311,12 +325,12 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       setErrorMsg(null);
 
       // ✅ Validazione saldo wallet
-      if (walletUsedEur > 0) {
+      if (actualWalletUsable > 0) {
         const maxUsable = walletType === 'referral' 
           ? Math.min(referralBalance, platformFeeEur * 0.30)
           : refundBalance;
         
-        if (walletUsedEur > maxUsable) {
+        if (actualWalletUsable > maxUsable) {
           setErrorMsg(`Saldo insufficiente. Disponibile: €${maxUsable.toFixed(2)}`);
           setLoading(false);
           return;
@@ -348,9 +362,9 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
           deposit: depositEur,
           cleaningFee: cleaningFeeEur, // ✅ AGGIUNTO: Costo pulizia
           totalAmount: totalAmountEur,
-          useWallet: walletUsedEur > 0,
-          refundBalanceToUse: walletType === 'refund' ? walletUsedEur : 0,
-          referralBalanceToUse: walletType === 'referral' ? walletUsedEur : 0,
+          useWallet: actualWalletUsable > 0,
+          refundBalanceToUse: walletType === 'refund' ? actualWalletUsable : 0,
+          referralBalanceToUse: walletType === 'referral' ? actualWalletUsable : 0,
         }),
       });
 
@@ -564,10 +578,10 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
             </div>
           )}
 
-          {walletUsedEur > 0 && (
+         {actualWalletUsable > 0 && (
             <div className="flex justify-between text-emerald-700 text-xs">
               <span>Pagato con wallet</span>
-              <span>-{walletUsedEur.toFixed(2)} €</span>
+              <span>-{actualWalletUsable.toFixed(2)} €</span>
             </div>
           )}
 
