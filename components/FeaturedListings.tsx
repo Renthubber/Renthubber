@@ -17,8 +17,15 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
   userId,
 }) => {
   
+  // Refs per ogni sezione carousel
+  const popularRef = useRef<HTMLDivElement>(null);
+  const topRatedRef = useRef<HTMLDivElement>(null);
+  const nearbyRef = useRef<HTMLDivElement>(null);
+  const recentRef = useRef<HTMLDivElement>(null);
+  const forYouRef = useRef<HTMLDivElement>(null);
+  
   // CSS per nascondere scrollbar
-  React.useEffect(() => {
+  useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
       .hide-scrollbar::-webkit-scrollbar {
@@ -140,13 +147,11 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
     title: string,
     listings: Listing[],
     icon: React.ReactNode,
-    gradient: string
+    gradient: string,
+    scrollRef: React.RefObject<HTMLDivElement>
   ) => {
     // Non mostrare se 0 annunci
     if (listings.length === 0) return null;
-
-    // Ref per scroll programmatico
-    const scrollRef = useRef<HTMLDivElement>(null);
 
     const scroll = (direction: 'left' | 'right') => {
       if (scrollRef.current) {
@@ -221,7 +226,8 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
         'Più Popolari',
         popularListings,
         <TrendingUp className="w-4 h-4" />,
-        'bg-gradient-to-r from-orange-500 to-red-500'
+        'bg-gradient-to-r from-orange-500 to-red-500',
+        popularRef
       )}
 
       {/* ⭐ TOP RECENSIONI */}
@@ -229,7 +235,8 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
         'Top Recensioni',
         topRatedListings,
         <Star className="w-4 h-4" />,
-        'bg-gradient-to-r from-yellow-400 to-orange-400'
+        'bg-gradient-to-r from-yellow-400 to-orange-400',
+        topRatedRef
       )}
 
       {/* 📍 VICINO A TE */}
@@ -237,7 +244,8 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
         'Vicino a Te',
         nearbyListings,
         <MapPin className="w-4 h-4" />,
-        'bg-gradient-to-r from-blue-500 to-cyan-500'
+        'bg-gradient-to-r from-blue-500 to-cyan-500',
+        nearbyRef
       )}
 
       {/* 🆕 NUOVI ARRIVI */}
@@ -245,7 +253,8 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
         'Nuovi Arrivi',
         recentListings,
         <Clock className="w-4 h-4" />,
-        'bg-gradient-to-r from-green-500 to-emerald-500'
+        'bg-gradient-to-r from-green-500 to-emerald-500',
+        recentRef
       )}
 
       {/* ✨ PER TE */}
@@ -253,7 +262,8 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
         'Per Te',
         forYouListings,
         <Sparkles className="w-4 h-4" />,
-        'bg-gradient-to-r from-purple-500 to-pink-500'
+        'bg-gradient-to-r from-purple-500 to-pink-500',
+        forYouRef
       )}
 
       {/* Messaggio se nessun annuncio */}
