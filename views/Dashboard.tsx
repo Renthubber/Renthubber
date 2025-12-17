@@ -399,6 +399,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     priceUnit: string;
     days: number;
     basePrice: number;
+    cleaningFee: number,
     commission: number;
     fixedFee: number;
     total: number;
@@ -1580,11 +1581,12 @@ const handleRequestAction = (id: string, action: 'accepted' | 'rejected') => {
 
       // Calcola breakdown
       const basePrice = days * listingPrice;
-      const commission = (basePrice * 10) / 100;
+      const cleaningFee = (booking as any).cleaningFee || 0;
+      const commission = ((basePrice + cleaningFee) * 10) / 100;
       const fixedFee = 2;
       
       // Usa il totale reale pagato dal renter (da Supabase)
-      const renterTotalPaid = (booking as any).renterTotalPaid || (basePrice + commission + fixedFee);
+      const renterTotalPaid = (booking as any).renterTotalPaid || (basePrice + cleaningFee + commission + fixedFee);
       
       // Recupera wallet usato dal booking
       const walletUsedCents = (booking as any).walletUsedCents || 0;
@@ -1625,6 +1627,7 @@ const handleRequestAction = (id: string, action: 'accepted' | 'rejected') => {
         priceUnit,
         days,
         basePrice,
+        cleaningFee,
         commission,
         fixedFee,
         total: renterTotalPaid,
@@ -4221,6 +4224,16 @@ const handleIdFileChange =
                         €{bookingDetailData.basePrice.toFixed(2)}
                       </span>
                     </div>
+                    {bookingDetailData.cleaningFee > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">
+                          Costo pulizia
+                        </span>
+                        <span className="font-medium text-gray-900">
+                          €{bookingDetailData.cleaningFee.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-gray-600">
                         Commissione servizio (10%)
