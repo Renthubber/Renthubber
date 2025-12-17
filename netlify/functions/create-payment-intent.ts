@@ -20,6 +20,7 @@ interface CreatePaymentIntentRequest {
   renterFee: number;          // Commissione renter (es. €12)
   hubberFee: number;          // Commissione hubber (es. €12)
   deposit: number;            // Cauzione (es. €50)
+  cleaningFee: number;        // Costo pulizia (es. €5)
   totalAmount: number;        // Totale (es. €162)
   
   // Wallet da usare
@@ -68,6 +69,7 @@ export const handler: Handler = async (event, context) => {
       renterFee,
       hubberFee,
       deposit,
+      cleaningFee = 0,
       totalAmount,
       useWallet,
       refundBalanceToUse = 0,
@@ -174,8 +176,9 @@ export const handler: Handler = async (event, context) => {
             start_date: startDate,
             end_date: endDate,
             amount_total: totalAmount,
-            platform_fee: renterFee + hubberFee,
-            hubber_net_amount: basePrice - hubberFee,
+            platform_fee: hubberFee,
+            hubber_net_amount: basePrice + cleaningFee - hubberFee,
+            cleaning_fee: cleaningFee,
             wallet_used_cents: Math.round(walletUsedTotal * 100),
             status: 'confirmed',
             payment_status: 'paid',
@@ -188,7 +191,11 @@ export const handler: Handler = async (event, context) => {
       const bookings = await bookingResponse.json();
       const booking = bookings[0];
 
-      // Deduce wallet
+      // Deduce wallet da ENTRAMBE le tabelle
+      const newRefundBalanceCents = Math.round((refundBalance - refundBalanceToUse) * 100);
+      const newReferralBalanceCents = Math.round((referralBalance - referralBalanceToUse) * 100);
+
+      // Update users
       await fetch(
         `${SUPABASE_URL}/rest/v1/users?id=eq.${renterId}`,
         {
@@ -199,11 +206,62 @@ export const handler: Handler = async (event, context) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            refund_balance_cents: Math.round((refundBalance - refundBalanceToUse) * 100),
-            referral_balance_cents: Math.round((referralBalance - referralBalanceToUse) * 100),
+            refund_balance_cents: newRefundBalanceCents,
+            referral_balance_cents: newReferralBalanceCents,
           }),
         }
       );
+
+      // Update wallets (mantiene sincronizzazione)
+      try {
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${renterId}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              refund_balance_cents: newRefundBalanceCents,
+              referral_balance_cents: newReferralBalanceCents,
+            }),
+          }
+        );
+        console.log('✅ Wallets table updated');
+      } catch (walletError) {
+        console.error('⚠️ Wallet update failed, but users updated:', walletError);
+        // Continua comunque - almeno users è aggiornato
+      }
+
+      // Crea transazione wallet per tracciamento
+      try {
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/wallet_transactions`,
+          {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation',
+            },
+            body: JSON.stringify({
+              user_id: renterId,
+              amount_cents: -Math.round(walletUsedTotal * 100),
+              type: 'debit',
+              source: 'booking_payment',
+              wallet_type: 'renter',
+              description: `Pagamento prenotazione - Wallet usato: €${walletUsedTotal.toFixed(2)}`,
+              related_booking_id: booking.id,
+            }),
+          }
+        );
+        console.log('✅ Wallet transaction created');
+      } catch (txError) {
+        console.error('⚠️ Transaction record failed:', txError);
+      }
 
       console.log('✅ Booking created without Stripe (paid with wallet)');
 
@@ -235,6 +293,7 @@ export const handler: Handler = async (event, context) => {
         renthubber_renter_fee: renterFee.toString(),
         renthubber_hubber_fee: hubberFee.toString(),
         renthubber_deposit: deposit.toString(),
+        renthubber_cleaning_fee: cleaningFee.toString(),
         renthubber_total_amount: totalAmount.toString(),
         renthubber_wallet_used: walletUsedTotal.toString(),
         renthubber_refund_used: refundBalanceToUse.toString(),
