@@ -152,17 +152,17 @@ export const MyListings: React.FC<MyListingsProps> = ({
                 e.stopPropagation();
                 onEditListing && onEditListing(listing);
               }}
-              className="flex-1 p-1.5 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors flex items-center justify-center text-[11px]"
+              className="flex-1 p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors flex items-center justify-center"
               title="Modifica"
             >
-              <Edit className="w-3.5 h-3.5 mr-1" />
-              Modifica
+              <Edit className="w-4 h-4" />
+              <span className="hidden md:inline ml-1 text-[11px]">Modifica</span>
             </button>
             
             <button
               onClick={(e) => handleToggleSuspend(listing, e)}
               disabled={isSuspending}
-              className={`flex-1 p-1.5 rounded-lg transition-colors flex items-center justify-center text-[11px] ${
+              className={`flex-1 p-2 rounded-lg transition-colors flex items-center justify-center ${
                 listing.status === 'suspended'
                   ? 'hover:bg-green-50 text-green-600'
                   : 'hover:bg-orange-50 text-orange-600'
@@ -171,13 +171,13 @@ export const MyListings: React.FC<MyListingsProps> = ({
             >
               {listing.status === 'suspended' ? (
                 <>
-                  <Play className="w-3.5 h-3.5 mr-1" />
-                  Riattiva
+                  <Play className="w-4 h-4" />
+                  <span className="hidden md:inline ml-1 text-[11px]">Riattiva</span>
                 </>
               ) : (
                 <>
-                  <PauseCircle className="w-3.5 h-3.5 mr-1" />
-                  Sospendi
+                  <PauseCircle className="w-4 h-4" />
+                  <span className="hidden md:inline ml-1 text-[11px]">Sospendi</span>
                 </>
               )}
             </button>
@@ -185,10 +185,11 @@ export const MyListings: React.FC<MyListingsProps> = ({
             <button
               onClick={(e) => handleDelete(listing, e)}
               disabled={isDeleting}
-              className="p-1.5 hover:bg-red-50 rounded-lg text-red-500 transition-colors"
+              className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors flex items-center justify-center"
               title="Elimina"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden md:inline ml-1 text-[11px]">Elimina</span>
             </button>
           </div>
         </div>
@@ -263,8 +264,8 @@ export const MyListings: React.FC<MyListingsProps> = ({
 
       {/* 🔍 MODAL PREVIEW ANNUNCIO */}
       {previewListing && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center sm:p-4">
+          <div className="bg-white sm:rounded-2xl max-w-4xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto">
             {/* Header Modal */}
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-10">
               <div>
