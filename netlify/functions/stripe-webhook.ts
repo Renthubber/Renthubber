@@ -210,7 +210,10 @@ async function handlePaymentIntentSucceeded(
 
       const newRefundBalance = Math.max(0, currentRefundBalance - refundUsed);
       const newReferralBalance = Math.max(0, currentReferralBalance - referralUsed);
+      const newRefundBalanceCents = Math.round(newRefundBalance * 100);
+      const newReferralBalanceCents = Math.round(newReferralBalance * 100);
 
+      // Update users
       await fetch(
         `${SUPABASE_URL}/rest/v1/users?id=eq.${renterId}`,
         {
@@ -221,11 +224,34 @@ async function handlePaymentIntentSucceeded(
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            refund_balance_cents: Math.round(newRefundBalance * 100),
-            referral_balance_cents: Math.round(newReferralBalance * 100),
+            refund_balance_cents: newRefundBalanceCents,
+            referral_balance_cents: newReferralBalanceCents,
           }),
         }
       );
+
+      // Update wallets (mantiene sincronizzazione)
+      try {
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${renterId}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+            },
+          body: JSON.stringify({
+              refund_balance_cents: newRefundBalanceCents,
+              referral_balance_cents: newReferralBalanceCents,
+            }),
+          }
+        );
+        console.log('✅ Wallets table updated');
+      } catch (walletError) {
+        console.error('⚠️ Wallet update failed, but users updated:', walletError);
+        // Continua comunque - almeno users è aggiornato
+      }
 
       console.log('✅ Wallet deducted:', { refundUsed, referralUsed });
     }

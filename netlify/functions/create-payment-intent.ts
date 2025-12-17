@@ -20,7 +20,6 @@ interface CreatePaymentIntentRequest {
   renterFee: number;          // Commissione renter (es. €12)
   hubberFee: number;          // Commissione hubber (es. €12)
   deposit: number;            // Cauzione (es. €50)
-  cleaningFee: number;        // Costo pulizia (es. €5)
   totalAmount: number;        // Totale (es. €162)
   
   // Wallet da usare
@@ -69,7 +68,6 @@ export const handler: Handler = async (event, context) => {
       renterFee,
       hubberFee,
       deposit,
-      cleaningFee = 0,
       totalAmount,
       useWallet,
       refundBalanceToUse = 0,
@@ -176,9 +174,8 @@ export const handler: Handler = async (event, context) => {
             start_date: startDate,
             end_date: endDate,
             amount_total: totalAmount,
-            platform_fee: hubberFee,
-            hubber_net_amount: basePrice + cleaningFee - hubberFee,
-            cleaning_fee: cleaningFee,
+            platform_fee: renterFee + hubberFee,
+            hubber_net_amount: basePrice - hubberFee,
             wallet_used_cents: Math.round(walletUsedTotal * 100),
             status: 'confirmed',
             payment_status: 'paid',
@@ -238,7 +235,6 @@ export const handler: Handler = async (event, context) => {
         renthubber_renter_fee: renterFee.toString(),
         renthubber_hubber_fee: hubberFee.toString(),
         renthubber_deposit: deposit.toString(),
-        renthubber_cleaning_fee: cleaningFee.toString(),
         renthubber_total_amount: totalAmount.toString(),
         renthubber_wallet_used: walletUsedTotal.toString(),
         renthubber_refund_used: refundBalanceToUse.toString(),
