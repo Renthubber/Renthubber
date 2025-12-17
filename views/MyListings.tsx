@@ -156,7 +156,7 @@ export const MyListings: React.FC<MyListingsProps> = ({
               title="Modifica"
             >
               <Edit className="w-4 h-4" />
-              <span className="hidden md:inline ml-1 text-[11px]">Modifica</span>
+              <span className="hidden sm:inline ml-1 text-[10px]">Modifica</span>
             </button>
             
             <button
@@ -172,12 +172,12 @@ export const MyListings: React.FC<MyListingsProps> = ({
               {listing.status === 'suspended' ? (
                 <>
                   <Play className="w-4 h-4" />
-                  <span className="hidden md:inline ml-1 text-[11px]">Riattiva</span>
+                  <span className="hidden sm:inline ml-1 text-[10px]">Riattiva</span>
                 </>
               ) : (
                 <>
                   <PauseCircle className="w-4 h-4" />
-                  <span className="hidden md:inline ml-1 text-[11px]">Sospendi</span>
+                  <span className="hidden sm:inline ml-1 text-[10px]">Sospendi</span>
                 </>
               )}
             </button>
@@ -185,11 +185,11 @@ export const MyListings: React.FC<MyListingsProps> = ({
             <button
               onClick={(e) => handleDelete(listing, e)}
               disabled={isDeleting}
-              className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors flex items-center justify-center"
+              className="flex-1 p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors flex items-center justify-center"
               title="Elimina"
             >
               <Trash2 className="w-4 h-4" />
-              <span className="hidden md:inline ml-1 text-[11px]">Elimina</span>
+              <span className="hidden sm:inline ml-1 text-[10px]">Elimina</span>
             </button>
           </div>
         </div>
@@ -283,36 +283,45 @@ export const MyListings: React.FC<MyListingsProps> = ({
             {/* Contenuto Preview */}
             <div className="p-6">
              {/* Galleria Immagini */}
-              <div className="mb-6 -mx-6">
-                {previewListing.images && previewListing.images.length > 0 && (
-                  <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[500px]">
-                    {/* Prima immagine - grande a sinistra */}
-                    <div className="col-span-2 row-span-2">
-                      <img
-                        src={previewListing.images[0]}
-                        alt={`${previewListing.title} - 1`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    
-                    {/* Altre 4 immagini - 2x2 a destra */}
-                    {previewListing.images.slice(1, 5).map((img, idx) => (
-                      <div key={idx} className="col-span-1 row-span-1">
-                        <img
-                          src={img}
-                          alt={`${previewListing.title} - ${idx + 2}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                    
-                    {/* Riempi spazi vuoti se mancano immagini */}
-                    {Array.from({ length: Math.max(0, 5 - (previewListing.images?.length || 0)) }).map((_, idx) => (
-                      <div key={`empty-${idx}`} className="col-span-1 row-span-1 bg-gray-100"></div>
-                    ))}
-                  </div>
-                )}
-              </div>
+<div className="mb-6 -mx-6 sm:mx-0">
+  {previewListing.images && previewListing.images.length > 0 && (
+    <>
+      {/* MOBILE: Solo prima immagine grande */}
+      <div className="sm:hidden">
+        <img
+          src={previewListing.images[0]}
+          alt={previewListing.title}
+          className="w-full h-[400px] object-cover"
+        />
+      </div>
+      
+      {/* DESKTOP: Grid che hai già (funziona) */}
+      <div className="hidden sm:grid grid-cols-4 grid-rows-2 gap-2 h-[500px]">
+        <div className="col-span-2 row-span-2">
+          <img
+            src={previewListing.images[0]}
+            alt={`${previewListing.title} - 1`}
+            className="w-full h-full object-cover"
+          />
+        </div>
+        
+        {previewListing.images.slice(1, 5).map((img, idx) => (
+          <div key={idx} className="col-span-1 row-span-1">
+            <img
+              src={img}
+              alt={`${previewListing.title} - ${idx + 2}`}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ))}
+        
+        {Array.from({ length: Math.max(0, 5 - (previewListing.images?.length || 0)) }).map((_, idx) => (
+          <div key={`empty-${idx}`} className="col-span-1 row-span-1 bg-gray-100"></div>
+        ))}
+      </div>
+    </>
+  )}
+</div>
 
               {/* Info Principale */}
               <div className="mb-6">
