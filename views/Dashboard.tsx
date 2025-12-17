@@ -6389,31 +6389,33 @@ const renderRenterPayments = () => {
             </div>
           </div>
 
-          {/* Become Hubber Promo o Referral Badge */}
-          {user?.user_type === 'renter' ? (
-            // Mostra "Diventa Hubber" solo per utenti che sono SOLO renter
-            <div className="bg-gray-900 rounded-2xl p-8 text-white flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
-              <div className="relative z-10">
-                <h3 className="text-2xl font-bold mb-2">
-                  Hai oggetti che non usi?
-                </h3>
-                <p className="text-gray-400 mb-6 max-w-md">
-                  Diventa Hubber e inizia a guadagnare noleggiando le tue
-                  attrezzature o i tuoi spazi inutilizzati. È facile e sicuro.
-                </p>
-                <button
-                  onClick={onBecomeHubber}
-                  className="bg-brand-accent text-brand-dark font-bold py-3 px-6 rounded-xl hover:bg-amber-400 transition-colors shadow-lg"
-                >
-                  Inizia a guadagnare
-                </button>
+         {/* Become Hubber Promo o Referral Badge */}
+          <div className="space-y-6">
+            {/* ✅ Diventa Hubber - SOLO se NON sei già hubber */}
+            {!user?.roles?.includes('hubber') && (
+              <div className="bg-gray-900 rounded-2xl p-8 text-white flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
+                <div className="relative z-10">
+                  <h3 className="text-2xl font-bold mb-2">
+                    Hai oggetti che non usi?
+                  </h3>
+                  <p className="text-gray-400 mb-6 max-w-md">
+                    Diventa Hubber e inizia a guadagnare noleggiando le tue
+                    attrezzature o i tuoi spazi inutilizzati. È facile e sicuro.
+                  </p>
+                  <button
+                    onClick={onBecomeHubber}
+                    className="bg-brand-accent text-brand-dark font-bold py-3 px-6 rounded-xl hover:bg-amber-400 transition-colors shadow-lg"
+                  >
+                    Inizia a guadagnare
+                  </button>
+                </div>
+                <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
+                  <Package className="w-64 h-64 transform translate-x-10 translate-y-10" />
+                </div>
               </div>
-              <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
-                <Package className="w-64 h-64 transform translate-x-10 translate-y-10" />
-              </div>
-            </div>
-          ) : (
-            // Mostra "Invita un amico" per hubber e both
+            )}
+
+            {/* ✅ Invita un amico - SEMPRE visibile nella dashboard renter */}
             <div 
               onClick={() => onNavigateToWallet && onNavigateToWallet()}
               className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-8 text-white flex flex-col md:flex-row items-center justify-between relative overflow-hidden cursor-pointer hover:shadow-xl transition-all"
@@ -6434,7 +6436,7 @@ const renderRenterPayments = () => {
                 <Gift className="w-64 h-64 transform translate-x-10 translate-y-10" />
               </div>
             </div>
-          )}
+          </div>
         </>
       )}
     </div>
