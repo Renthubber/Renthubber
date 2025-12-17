@@ -5,6 +5,7 @@ import { Search, SlidersHorizontal, Box, LayoutGrid, MapPin, Euro, Calendar, X, 
 import { CityAutocomplete } from '../components/CityAutocomplete';
 import { CitySuggestion, searchItalianCities } from '../services/geocodingService';
 import { AirbnbCalendar } from '../components/AirbnbCalendar';
+import { FeaturedListings } from '../components/FeaturedListings';
 
 // ========== KEYWORDS MAPPING PER RICERCA AI ==========
 const AI_KEYWORDS_MAP: Record<string, string[]> = {
@@ -654,56 +655,11 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, bookings =
       {/* Listing Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20">
 
-        {filteredListings.length > 0 ? (
-          <>
-            {/* MOBILE — 2 card visibili, scorrevole */}
-            <div className="block sm:hidden">
-              <div className="flex overflow-x-auto space-x-3 -mx-1 px-1 pb-2 no-scrollbar">
-                {filteredListings.map((listing) => (
-                  <div
-                    key={listing.id}
-                    className="flex-shrink-0 w-[48%]"
-                  >
-                    <ListingCard
-                      listing={listing}
-                      onClick={onListingClick}
-                      currentUser={currentUser}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* DESKTOP/TABLET — fino a 6 card per riga */}
-            <div className="hidden sm:grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1">
-              {filteredListings.map((listing) => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  onClick={onListingClick}
-                   currentUser={currentUser}
-                />
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-gray-300" />
-            </div>
-            <p className="text-gray-500 text-lg">
-              Nessun annuncio trovato per questa ricerca.
-            </p>
-            {hasActiveFilters && (
-              <button
-                onClick={resetFilters}
-                className="mt-4 text-brand hover:underline font-medium"
-              >
-                Rimuovi i filtri attivi
-              </button>
-            )}
-          </div>
-        )}
+        <FeaturedListings
+          listings={filteredListings}
+          userCity={currentUser?.city}
+          onListingClick={onListingClick}
+        />
       </div>
     </div>
   );
