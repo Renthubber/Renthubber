@@ -23,7 +23,7 @@ export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
     
     // ✅ Se non è loggato, mostra messaggio per login
     if (!userId) {
-      alert('Accedi o crea un account per aggiungere questo annuncio ai preferiti! 🔐');
+      alert('Accedi o crea un account per aggiungere questo annuncio ai preferiti! 🔒');
       return;
     }
     
@@ -32,11 +32,11 @@ export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   };
 
   if (variant === 'card') {
-    // Versione per le card - icona compatta in alto a SINISTRA
+    // Versione per le card - icona compatta in alto a DESTRA
     return (
       <button
         onClick={handleClick}
-        className={`absolute top-1.5 left-1.5 z-10 
+        className={`absolute top-1.5 right-1.5 z-10 
                    w-7 h-7 rounded-full
                    bg-white/90 hover:bg-white
                    shadow-md hover:shadow-lg

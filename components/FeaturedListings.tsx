@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { TrendingUp, Star, MapPin, Sparkles, Clock, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Listing } from '../types';
 import { FavoriteButton } from './FavoriteButton';
@@ -16,6 +16,24 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
   onListingClick,
   userId,
 }) => {
+  
+  // CSS per nascondere scrollbar
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
   
   // ========== SEZIONE 1: PIÙ POPOLARI (per visualizzazioni) ==========
   const popularListings = [...listings]
@@ -104,11 +122,11 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
               <span className="text-sm sm:text-base font-bold text-brand">€{listing.price}</span>
               <span className="text-[10px] sm:text-xs text-gray-500">/{listing.priceUnit}</span>
             </div>
-            {/* Rating stelle - SOLO se > 0 */}
-            {listing.rating && listing.rating > 0 && (
+            {/* Rating stelle - SOLO se esiste e > 0 */}
+            {listing.rating && Number(listing.rating) > 0 && (
               <div className="flex items-center gap-0.5">
                 <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                <span className="text-[10px] sm:text-xs font-semibold text-gray-700">{listing.rating.toFixed(1)}</span>
+                <span className="text-[10px] sm:text-xs font-semibold text-gray-700">{Number(listing.rating).toFixed(1)}</span>
               </div>
             )}
           </div>
@@ -165,16 +183,9 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
         <div className="relative">
           <div 
             ref={scrollRef}
-            className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory"
+            className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar"
             style={{
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
               WebkitOverflowScrolling: 'touch'
-            }}
-            css={{
-              '&::-webkit-scrollbar': {
-                display: 'none'
-              }
             }}
           >
             {listings.map(listing => renderCard(listing))}
