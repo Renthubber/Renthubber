@@ -478,11 +478,12 @@ setIsAuthChecking(false);
   {/* ✅ LANCIO - Landing espansione città */}
 <Route path="/lancio" element={<LaunchLandingPage />} />
 
-          <Route path="/signup" element={
-            <Signup 
-              onComplete={async (user) => {
-                setCurrentUser(user);
-                const userRoles = user.roles || [user.role];
+        <Route path="/signup" element={
+  <Signup
+    key="signup"
+    onComplete={async (user) => {
+      setCurrentUser(user);
+      const userRoles = user.roles || [user.role];
                 
                 if (user.role === "admin" || userRoles.includes("admin")) {
                   setActiveMode("hubber");
@@ -502,11 +503,12 @@ setIsAuthChecking(false);
           } />
           
           <Route path="/login" element={
-            <Signup 
-              initialStep="login"
-              onComplete={async (user) => {
-                setCurrentUser(user);
-                const userRoles = user.roles || [user.role];
+  <Signup
+    key="login"
+    initialStep="login"
+    onComplete={async (user) => {
+      setCurrentUser(user);
+      const userRoles = user.roles || [user.role];
                 
                 if (user.role === "admin" || userRoles.includes("admin")) {
                   setActiveMode("hubber");
