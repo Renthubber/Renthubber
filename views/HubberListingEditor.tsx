@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Listing, CancellationPolicyType, ListingCategory } from '../types';
 import { 
   Save, ArrowLeft, Camera, Upload, MapPin, DollarSign, 
-  FileText, Shield, Plus, X, Clock, Users, Home, Loader2, Search
+  FileText, Shield, Plus, X, Clock, Users, Home, Loader2, Search, GripVertical
 } from 'lucide-react';
 import { searchItalianCities, CitySuggestion } from '../services/geocodingService';
 import { processImageSingle } from '../utils/imageProcessing';
@@ -23,6 +23,10 @@ export const HubberListingEditor: React.FC<HubberListingEditorProps> = ({ listin
   
   // 🖼️ Stato per il processing delle immagini
   const [isProcessingImages, setIsProcessingImages] = useState(false);
+  
+  // 🔄 Stato per drag & drop riordino immagini
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // --- AUTOCOMPLETE CITTÀ ---
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
@@ -197,6 +201,51 @@ const handleSave = async () => {
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
     }));
+  };
+
+  // 🔄 Funzioni per drag & drop riordino immagini
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const newImages = [...formData.images];
+    const draggedImage = newImages[draggedIndex];
+    
+    // Rimuovi immagine dalla posizione originale
+    newImages.splice(draggedIndex, 1);
+    // Inserisci nella nuova posizione
+    newImages.splice(dropIndex, 0, draggedImage);
+
+    setFormData(prev => ({
+      ...prev,
+      images: newImages
+    }));
+
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   const addFeature = () => {
@@ -634,15 +683,46 @@ const handleSave = async () => {
 
              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {formData.images.map((img, idx) => (
-                   <div key={idx} className="relative aspect-[4/3] group rounded-xl overflow-hidden border border-gray-200">
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                   <div 
+                     key={idx} 
+                     draggable 
+                     onDragStart={() => handleDragStart(idx)}
+                     onDragOver={(e) => handleDragOver(e, idx)}
+                     onDragLeave={handleDragLeave}
+                     onDrop={(e) => handleDrop(e, idx)}
+                     onDragEnd={handleDragEnd}
+                     className={`relative aspect-[4/3] group rounded-xl overflow-hidden border-2 transition-all cursor-move ${
+                       draggedIndex === idx 
+                         ? 'border-brand opacity-50 scale-95' 
+                         : dragOverIndex === idx
+                         ? 'border-brand border-dashed scale-105'
+                         : 'border-gray-200'
+                     }`}
+                   >
+                      {/* Drag Handle */}
+                      <div className="absolute top-2 left-2 bg-white/90 p-1.5 rounded-full text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm cursor-move z-10">
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+                      
+                      <img src={img} alt="" className="w-full h-full object-cover pointer-events-none" />
+                      
                       <button 
                         onClick={() => removeImage(idx)}
-                        className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-white"
+                        className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-white z-10"
                       >
                         <X className="w-4 h-4" />
                       </button>
-                      {idx === 0 && <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs py-1 text-center">Copertina</div>}
+                      
+                      {idx === 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-brand text-white text-xs py-1 text-center font-semibold">
+                          📸 Foto Copertina
+                        </div>
+                      )}
+                      
+                      {/* Numero ordine */}
+                      <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
+                        {idx + 1}
+                      </div>
                    </div>
                 ))}
                 <label className={`aspect-[4/3] rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center transition-all ${
@@ -668,7 +748,7 @@ const handleSave = async () => {
                    />
                 </label>
              </div>
-             <p className="text-xs text-gray-500">Le foto vengono ottimizzate automaticamente per una visualizzazione perfetta.</p>
+             <p className="text-xs text-gray-500">💡 Trascina le foto per riordinarle. La prima foto sarà la copertina dell'annuncio. Le immagini vengono ottimizzate automaticamente.</p>
           </div>
         )}
 
