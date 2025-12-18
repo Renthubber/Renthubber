@@ -598,6 +598,14 @@ useEffect(() => {
 
       {/* Main Detail Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+       
+       {/* TITOLO SOPRA LE FOTO */}
+       <div className="mb-6 mt-2">
+         <h1 className="text-3xl font-bold text-gray-900">
+           {listing.title}
+         </h1>
+       </div>
+
        {/* 1. PHOTO GALLERY */}
 <div className="relative">
   <PhotoGallery images={listing.images} />
@@ -605,16 +613,12 @@ useEffect(() => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-8">
           {/* LEFT CONTENT */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="border-b border-gray-100 pb-6">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="pb-2">
               {/* 2. LISTING BADGES */}
               <ListingBadges listing={listing} />
-
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {listing.title}
-              </h1>
               
-              <div className="flex items-center text-gray-600 text-sm">
+              <div className="flex items-center text-gray-600 text-sm mt-4">
                 <span className="font-semibold flex items-center text-gray-900 mr-1">
                   <Star className="w-4 h-4 fill-current mr-1" />{" "}
                   {listing.rating || "New"}
