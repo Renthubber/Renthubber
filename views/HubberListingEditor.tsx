@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Listing, CancellationPolicyType, ListingCategory } from '../types';
 import { 
   Save, ArrowLeft, Camera, Upload, MapPin, DollarSign, 
-  FileText, Shield, Plus, X, Clock, Users, Home, Loader2, Search, GripVertical
+  FileText, Shield, Plus, X, Clock, Users, Home, Loader2, Search, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { searchItalianCities, CitySuggestion } from '../services/geocodingService';
 import { processImageSingle } from '../utils/imageProcessing';
@@ -23,10 +23,6 @@ export const HubberListingEditor: React.FC<HubberListingEditorProps> = ({ listin
   
   // 🖼️ Stato per il processing delle immagini
   const [isProcessingImages, setIsProcessingImages] = useState(false);
-  
-  // 🔄 Stato per drag & drop riordino immagini
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // --- AUTOCOMPLETE CITTÀ ---
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
@@ -203,49 +199,33 @@ const handleSave = async () => {
     }));
   };
 
-  // 🔄 Funzioni per drag & drop riordino immagini
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index);
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    setDragOverIndex(index);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverIndex(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
+  // 🔄 Funzioni per spostare foto con frecce
+  const moveImageLeft = (index: number) => {
+    if (index === 0) return; // Già alla prima posizione
     
-    if (draggedIndex === null || draggedIndex === dropIndex) {
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-      return;
-    }
-
     const newImages = [...formData.images];
-    const draggedImage = newImages[draggedIndex];
+    const temp = newImages[index];
+    newImages[index] = newImages[index - 1];
+    newImages[index - 1] = temp;
     
-    // Rimuovi immagine dalla posizione originale
-    newImages.splice(draggedIndex, 1);
-    // Inserisci nella nuova posizione
-    newImages.splice(dropIndex, 0, draggedImage);
-
     setFormData(prev => ({
       ...prev,
       images: newImages
     }));
-
-    setDraggedIndex(null);
-    setDragOverIndex(null);
   };
 
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
+  const moveImageRight = (index: number) => {
+    if (index === formData.images.length - 1) return; // Già all'ultima posizione
+    
+    const newImages = [...formData.images];
+    const temp = newImages[index];
+    newImages[index] = newImages[index + 1];
+    newImages[index + 1] = temp;
+    
+    setFormData(prev => ({
+      ...prev,
+      images: newImages
+    }));
   };
 
   const addFeature = () => {
@@ -683,38 +663,46 @@ const handleSave = async () => {
 
              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {formData.images.map((img, idx) => (
-                   <div 
-                     key={idx} 
-                     draggable 
-                     onDragStart={() => handleDragStart(idx)}
-                     onDragOver={(e) => handleDragOver(e, idx)}
-                     onDragLeave={handleDragLeave}
-                     onDrop={(e) => handleDrop(e, idx)}
-                     onDragEnd={handleDragEnd}
-                     className={`relative aspect-[4/3] group rounded-xl overflow-hidden border-2 transition-all cursor-move ${
-                       draggedIndex === idx 
-                         ? 'border-brand opacity-50 scale-95' 
-                         : dragOverIndex === idx
-                         ? 'border-brand border-dashed scale-105'
-                         : 'border-gray-200'
-                     }`}
-                   >
-                      {/* Drag Handle */}
-                      <div className="absolute top-2 left-2 bg-white/90 p-1.5 rounded-full text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm cursor-move z-10">
-                        <GripVertical className="w-4 h-4" />
+                   <div key={idx} className="relative aspect-[4/3] group rounded-xl overflow-hidden border-2 border-gray-200">
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      
+                      {/* Bottoni controlli */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all">
+                        {/* Freccia Sinistra */}
+                        {idx > 0 && (
+                          <button 
+                            onClick={() => moveImageLeft(idx)}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/95 p-2 rounded-full text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-white hover:scale-110"
+                            title="Sposta a sinistra"
+                          >
+                            <ChevronLeft className="w-5 h-5" />
+                          </button>
+                        )}
+                        
+                        {/* Freccia Destra */}
+                        {idx < formData.images.length - 1 && (
+                          <button 
+                            onClick={() => moveImageRight(idx)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/95 p-2 rounded-full text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-white hover:scale-110"
+                            title="Sposta a destra"
+                          >
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
+                        )}
+                        
+                        {/* Bottone Elimina */}
+                        <button 
+                          onClick={() => removeImage(idx)}
+                          className="absolute top-2 right-2 bg-white/95 p-1.5 rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-white hover:scale-110"
+                          title="Elimina foto"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
                       
-                      <img src={img} alt="" className="w-full h-full object-cover pointer-events-none" />
-                      
-                      <button 
-                        onClick={() => removeImage(idx)}
-                        className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-white z-10"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                      
+                      {/* Etichetta Copertina */}
                       {idx === 0 && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-brand text-white text-xs py-1 text-center font-semibold">
+                        <div className="absolute bottom-0 left-0 right-0 bg-brand text-white text-xs py-1.5 text-center font-semibold">
                           📸 Foto Copertina
                         </div>
                       )}
@@ -743,7 +731,7 @@ const handleSave = async () => {
                    />
                 </label>
              </div>
-             <p className="text-xs text-gray-500">💡 Trascina le foto per riordinarle. La prima foto sarà la copertina dell'annuncio. Le immagini vengono ottimizzate automaticamente.</p>
+             <p className="text-xs text-gray-500">💡 Passa il mouse sulle foto per riordinarle con le frecce ← →. La prima foto è la copertina. Le immagini vengono ottimizzate automaticamente.</p>
           </div>
         )}
 
