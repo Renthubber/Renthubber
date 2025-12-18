@@ -58,9 +58,8 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Initialize Gemini
+    // Initialize Gemini with correct syntax
     const ai = new GoogleGenAI({ apiKey });
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     let prompt: string;
     let result: string;
@@ -87,8 +86,12 @@ Requisiti:
 Rispondi SOLO con la descrizione, senza introduzioni o titoli.
       `;
 
-      const response = await model.generateContent(prompt);
-      result = response.response.text();
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        contents: prompt,
+      });
+      
+      result = response.text || 'Impossibile generare la descrizione.';
       
     } else if (type === 'price') {
       // Suggest price
@@ -112,8 +115,12 @@ Esempi:
 Rispondi solo con il numero:
       `;
 
-      const response = await model.generateContent(prompt);
-      const priceText = response.response.text().trim();
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        contents: prompt,
+      });
+      
+      const priceText = (response.text || '').trim();
       // Extract only numbers
       result = priceText.replace(/[^0-9]/g, '');
       
