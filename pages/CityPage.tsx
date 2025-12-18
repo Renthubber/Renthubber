@@ -1,15 +1,14 @@
 import React from "react";
-import { useParams } from "react-router-dom";
-import CityPrelaunchPage from "./CityPrelaunchPage";
+import { useParams, Navigate } from "react-router-dom";
 
 /**
  * CityPage
  * - Decide cosa mostrare in base allo stato della città
  * - Se la città è attiva → marketplace
- * - Se NON è attiva → pagina di prelancio
+ * - Se NON è attiva → redirect a /lancio
  */
 
-// 🔧 TEMPORANEO (poi arriverà da Supabase)
+// 🔧 TEMPORANEO (poi arriverà da Supabase se vorrai)
 const CITIES: Record<
   string,
   {
@@ -61,6 +60,6 @@ export default function CityPage() {
     return <CityMarketplacePlaceholder cityName={city.name} />;
   }
 
-  // 🔵 Città NON attiva → prelancio
-  return <CityPrelaunchPage />;
+  // 🔵 Città NON attiva → redirect a landing lancio
+  return <Navigate to="/lancio" replace />;
 }
