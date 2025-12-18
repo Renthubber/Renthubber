@@ -718,11 +718,6 @@ const handleSave = async () => {
                           📸 Foto Copertina
                         </div>
                       )}
-                      
-                      {/* Numero ordine */}
-                      <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
-                        {idx + 1}
-                      </div>
                    </div>
                 ))}
                 <label className={`aspect-[4/3] rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center transition-all ${
