@@ -1,110 +1,81 @@
-import { GoogleGenAI } from "@google/genai";
+// services/geminiService.ts
 
-const getAiClient = () => {
-    // ✅ FIX: Usa import.meta.env per Vite
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ''; 
-    
-    if (!apiKey) {
-      console.warn("⚠️ VITE_GEMINI_API_KEY non configurata");
-      return null;
-    }
-    
-    return new GoogleGenAI({ apiKey });
-};
-
+/**
+ * Genera descrizione annuncio usando Netlify Function (sicura)
+ */
 export const generateListingDescription = async (
-  title: string, 
-  features: string, 
+  title: string,
+  features: string,
   category: string
 ): Promise<string> => {
-  const ai = getAiClient();
-  
-  if (!ai) {
-    console.error("❌ Gemini non disponibile - API Key mancante");
-    return "Descrizione automatica non disponibile (API Key mancante). Inserisci una descrizione manualmente.";
-  }
-
-  const prompt = `
-Sei un esperto copywriter per RentHubber, un marketplace di noleggio peer-to-peer in Italia.
-
-Scrivi una descrizione professionale, persuasiva e dettagliata per questo annuncio:
-
-Categoria: ${category}
-Titolo: ${title}
-Dettagli tecnici e contesto: ${features}
-
-Requisiti:
-- Lunghezza: circa 100-150 parole
-- Tono: Affidabile, chiaro, invogliante (stile Airbnb)
-- Includi una frase sui vantaggi di noleggiare questo specifico item/spazio
-- Usa paragrafi brevi e chiari
-- Scrivi in italiano
-- NON usare markdown, solo testo semplice
-
-Rispondi SOLO con la descrizione, senza introduzioni o titoli.
-  `;
-
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
-      contents: prompt,
+    console.log('🤖 Chiamando AI per descrizione...');
+
+    const response = await fetch('/.netlify/functions/generate-listing-ai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title,
+        features,
+        category,
+        type: 'description',
+      }),
     });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('❌ Function error:', error);
+      throw new Error(error.error || 'Failed to generate description');
+    }
+
+    const data = await response.json();
+    console.log('✅ Descrizione generata:', data.result.substring(0, 100) + '...');
     
-    const text = response.text || "Impossibile generare la descrizione al momento.";
-    console.log("✅ Descrizione generata:", text.substring(0, 100) + "...");
-    return text;
-    
+    return data.result;
+
   } catch (error) {
-    console.error("❌ Gemini API Error:", error);
-    return "Errore nella generazione della descrizione. Verifica la configurazione API.";
+    console.error('❌ Errore generazione descrizione:', error);
+    return 'Descrizione automatica non disponibile al momento. Inserisci una descrizione manualmente.';
   }
 };
 
+/**
+ * Suggerisce un prezzo di noleggio giornaliero usando Netlify Function (sicura)
+ */
 export const suggestPrice = async (
-  title: string, 
+  title: string,
   category: string
 ): Promise<string> => {
-  const ai = getAiClient();
-  if (!ai) {
-    console.warn("⚠️ Gemini non disponibile per suggerimento prezzo");
-    return "";
-  }
-
-  const prompt = `
-Agisci come un analista di mercato per il noleggio in Italia.
-
-Stima un prezzo medio di noleggio GIORNALIERO realistico (in Euro) per:
-Categoria: ${category}
-Oggetto/Spazio: ${title}
-
-Considera il mercato italiano e prezzi competitivi per un marketplace peer-to-peer.
-
-IMPORTANTE: Rispondi SOLO con il numero intero (es. 25), senza simboli €, valuta o testo.
-
-Esempi:
-- Trapano → 15
-- Fotocamera professionale → 45
-- Sala eventi 100 persone → 800
-- Consolle DJ → 60
-
-Rispondi solo con il numero:
-  `;
-
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
-      contents: prompt,
+    console.log('💰 Chiamando AI per prezzo...');
+
+    const response = await fetch('/.netlify/functions/generate-listing-ai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title,
+        features: '', // Not used for price
+        category,
+        type: 'price',
+      }),
     });
+
+    if (!response.ok) {
+      console.warn('⚠️ Function error per prezzo');
+      return '';
+    }
+
+    const data = await response.json();
+    console.log('✅ Prezzo suggerito:', data.result);
     
-    const priceText = response.text?.trim() || "";
-    // Estrai solo numeri
-    const price = priceText.replace(/[^0-9]/g, '');
-    
-    console.log("✅ Prezzo suggerito:", price);
-    return price;
-    
+    return data.result;
+
   } catch (error) {
-    console.error("❌ Gemini Price Error:", error);
-    return "";
+    console.error('❌ Errore suggerimento prezzo:', error);
+    return '';
   }
 };
