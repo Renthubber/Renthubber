@@ -25,6 +25,8 @@ import CityPage from "./pages/CityPage";
 import LaunchLandingPage from './pages/LaunchLandingPage';
 import ListingsMapView from './pages/ListingsMapView';
 import OrdinamentoRisultati from './pages/OrdinamentoRisultati';
+import ScrollToTop from './components/ScrollToTop';
+
 
 
 // === PAGINE FOOTER ===
@@ -451,6 +453,7 @@ setIsAuthChecking(false);
   return (
     <BrandingProvider>
     <div className="min-h-screen flex flex-col bg-gray-50">
+      <ScrollToTop />
       <Header
         currentUser={currentUser}
         activeMode={activeMode}
