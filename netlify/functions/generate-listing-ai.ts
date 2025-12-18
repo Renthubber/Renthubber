@@ -1,7 +1,7 @@
 // netlify/functions/generate-listing-ai.ts
 
 import { Handler } from '@netlify/functions';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 interface RequestBody {
   title: string;
@@ -59,7 +59,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Initialize Gemini
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const ai = new GoogleGenAI({ apiKey });
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     let prompt: string;
