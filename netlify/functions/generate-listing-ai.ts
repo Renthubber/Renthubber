@@ -1,7 +1,6 @@
 // netlify/functions/generate-listing-ai.ts
 
 import { Handler } from '@netlify/functions';
-import { GoogleGenAI } from '@google/genai';
 
 interface RequestBody {
   title: string;
@@ -48,9 +47,9 @@ export const handler: Handler = async (event) => {
     }
 
     // Get API key from environment (server-side, secure!)
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.error('❌ GEMINI_API_KEY not configured');
+      console.error('❌ OPENAI_API_KEY not configured');
       return {
         statusCode: 500,
         headers,
@@ -58,16 +57,12 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Initialize Gemini with correct syntax
-    const ai = new GoogleGenAI({ apiKey });
-
     let prompt: string;
     let result: string;
 
     if (type === 'description') {
       // Generate description
-      prompt = `
-Sei un esperto copywriter per RentHubber, un marketplace di noleggio peer-to-peer in Italia.
+      prompt = `Sei un esperto copywriter per RentHubber, un marketplace di noleggio peer-to-peer in Italia.
 
 Scrivi una descrizione professionale, persuasiva e dettagliata per questo annuncio:
 
@@ -83,20 +78,11 @@ Requisiti:
 - Scrivi in italiano
 - NON usare markdown, solo testo semplice
 
-Rispondi SOLO con la descrizione, senza introduzioni o titoli.
-      `;
+Rispondi SOLO con la descrizione, senza introduzioni o titoli.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp',
-        contents: prompt,
-      });
-      
-      result = response.text || 'Impossibile generare la descrizione.';
-      
     } else if (type === 'price') {
       // Suggest price
-      prompt = `
-Agisci come un analista di mercato per il noleggio in Italia.
+      prompt = `Agisci come un analista di mercato per il noleggio in Italia.
 
 Stima un prezzo medio di noleggio GIORNALIERO realistico (in Euro) per:
 Categoria: ${category}
@@ -112,24 +98,48 @@ Esempi:
 - Sala eventi 100 persone → 800
 - Consolle DJ → 60
 
-Rispondi solo con il numero:
-      `;
+Rispondi solo con il numero:`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp',
-        contents: prompt,
-      });
-      
-      const priceText = (response.text || '').trim();
-      // Extract only numbers
-      result = priceText.replace(/[^0-9]/g, '');
-      
     } else {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ error: 'Invalid type' }),
       };
+    }
+
+    // Call OpenAI API
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: type === 'description' ? 300 : 50,
+      }),
+    });
+
+    if (!openaiResponse.ok) {
+      const error = await openaiResponse.json();
+      console.error('❌ OpenAI API Error:', error);
+      throw new Error(`OpenAI API error: ${error.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await openaiResponse.json();
+    result = data.choices[0]?.message?.content?.trim() || '';
+
+    // For price, extract only numbers
+    if (type === 'price') {
+      result = result.replace(/[^0-9]/g, '');
     }
 
     console.log(`✅ AI ${type} generated successfully`);
@@ -141,7 +151,7 @@ Rispondi solo con il numero:
     };
 
   } catch (error) {
-    console.error('❌ Gemini API Error:', error);
+    console.error('❌ OpenAI API Error:', error);
     return {
       statusCode: 500,
       headers,
