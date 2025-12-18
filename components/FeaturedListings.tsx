@@ -91,7 +91,7 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
           <img
             src={listing.images?.[0] || '/placeholder.jpg'}
             alt={listing.title}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+            className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
           />
           {listing.subCategory && (
             <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-bold text-gray-700 uppercase shadow-sm">
