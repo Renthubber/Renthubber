@@ -21,6 +21,9 @@ import { AdminDashboard } from "./views/AdminDashboard";
 import { BecomeHubberWizard } from "./views/BecomeHubberWizard";
 import { PublicHostProfile } from "./views/PublicHostProfile";
 import { PublicRenterProfile } from "./views/PublicRenterProfile";
+import CityPage from "./pages/CityPage";
+import LaunchLandingPage from './pages/LaunchLandingPage';
+
 
 // === PAGINE FOOTER ===
 import { ChiSiamoPage } from "./pages/ChiSiamoPage";
@@ -469,6 +472,12 @@ setIsAuthChecking(false);
             />
           } />
           
+ {/* ✅ CITY (attiva o prelancio) */}
+  <Route path="/it/:citySlug" element={<CityPage />} />
+
+  {/* ✅ LANCIO - Landing espansione città */}
+<Route path="/lancio" element={<LaunchLandingPage />} />
+
           <Route path="/signup" element={
             <Signup 
               onComplete={async (user) => {
