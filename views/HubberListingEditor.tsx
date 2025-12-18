@@ -63,46 +63,37 @@ const handleSave = async () => {
   setIsSaving(true);
   
   try {
-    // Converti i valori a number prima di salvare
     const dataToSave = {
       ...formData,
       price: typeof formData.price === 'string' ? parseFloat(formData.price) || 0 : formData.price,
       deposit: typeof formData.deposit === 'string' ? parseFloat(formData.deposit as any) || 0 : formData.deposit,
-      cleaningFee: typeof (formData as any).cleaningFee === 'string' ? parseFloat((formData as any).cleaningFee) || 0 : (formData as any).cleaningFee,
-      updated_at: new Date().toISOString()
+      cleaningFee: typeof (formData as any).cleaningFee === 'string' ? parseFloat((formData as any).cleaningFee) || 0 : (formData as any).cleaningFee
     };
 
     console.log('💾 Salvando listing su Supabase:', dataToSave.id);
 
-    // ✅ SALVA REALMENTE SU SUPABASE
     const { error } = await supabase
       .from('listings')
       .update({
         title: dataToSave.title,
         description: dataToSave.description,
         category: dataToSave.category,
-        subcategory: dataToSave.subcategory,
+        sub_category: dataToSave.subcategory,
         price: dataToSave.price,
         price_unit: dataToSave.priceUnit,
         deposit: dataToSave.deposit,
         location: dataToSave.location,
         images: dataToSave.images,
-        condition: dataToSave.condition,
-        brand: dataToSave.brand,
-        model: dataToSave.model,
         features: dataToSave.features,
-        cancellation_policy: dataToSave.cancellationPolicy,
         rules: dataToSave.rules,
+        cancellation_policy: dataToSave.cancellationPolicy,
         cleaning_fee: dataToSave.cleaningFee,
         pickup_address: dataToSave.pickupAddress,
         pickup_city: dataToSave.pickupCity,
         pickup_instructions: dataToSave.pickupInstructions,
         zone_description: dataToSave.zoneDescription,
         max_guests: dataToSave.maxGuests,
-        opening_hours: dataToSave.openingHours,
-        sqm: dataToSave.sqm,
-        capacity: dataToSave.capacity,
-        updated_at: dataToSave.updated_at
+        opening_hours: dataToSave.openingHours
       })
       .eq('id', dataToSave.id);
 
@@ -115,7 +106,6 @@ const handleSave = async () => {
 
     console.log('✅ Listing salvato con successo!');
     
-    // Chiama il callback per aggiornare anche lo state locale
     onSave(dataToSave);
     
     setIsSaving(false);
@@ -125,6 +115,7 @@ const handleSave = async () => {
     setIsSaving(false);
   }
 };
+
   // --- 🖼️ UPLOAD IMMAGINI SU SUPABASE STORAGE ---
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
