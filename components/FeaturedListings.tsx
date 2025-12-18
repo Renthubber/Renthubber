@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { TrendingUp, Star, MapPin, Sparkles, Clock, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Listing } from '../types';
 import { FavoriteButton } from './FavoriteButton';
@@ -7,7 +8,7 @@ interface FeaturedListingsProps {
   listings: Listing[];
   userCity?: string;
   onListingClick: (listing: Listing) => void;
-  currentUser?: any; // User | null - riceve user intero come ListingCard
+  currentUser?: any;
 }
 
 export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
@@ -16,6 +17,8 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
   onListingClick,
   currentUser,
 }) => {
+  
+  const navigate = useNavigate();
   
   // Refs per ogni sezione carousel
   const popularRef = useRef<HTMLDivElement>(null);
@@ -42,25 +45,25 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
     };
   }, []);
   
-  // ========== SEZIONE 1: PIÙ POPOLARI (per visualizzazioni) ==========
+  // PIÙ POPOLARI
   const popularListings = [...listings]
     .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
     .slice(0, 12);
 
-  // ========== SEZIONE 2: TOP RECENSIONI (per rating) ==========
+  // TOP RECENSIONI
   const topRatedListings = [...listings]
     .filter(l => (l.rating || 0) >= 4.5 && (l.reviewCount || 0) >= 3)
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 12);
 
-  // ========== SEZIONE 3: VICINO A TE (per città) ==========
+  // VICINO A TE
   const nearbyListings = userCity
     ? [...listings]
         .filter(l => l.location?.toLowerCase().includes(userCity.toLowerCase()))
         .slice(0, 12)
     : [];
 
-  // ========== SEZIONE 4: NUOVI ARRIVI (per data creazione) ==========
+  // NUOVI ARRIVI
   const recentListings = [...listings]
     .sort((a, b) => {
       const dateA = new Date(a.createdAt || 0).getTime();
@@ -69,14 +72,13 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
     })
     .slice(0, 12);
 
-  // ========== SEZIONE 5: PER TE (mix casuale/AI-powered) ==========
+  // PER TE
   const forYouListings = [...listings]
-    .sort(() => Math.random() - 0.5) // Shuffle casuale (può essere migliorato con AI)
+    .sort(() => Math.random() - 0.5)
     .slice(0, 12);
 
-  // ========== RENDER SINGOLA CARD ==========
+  // RENDER SINGOLA CARD
   const renderCard = (listing: Listing) => {
-    // Check se superhubber (adatta in base alla tua struttura dati)
     const isSuperHubber = (listing as any).owner?.isSuperHubber || (listing as any).isSuperHubber || false;
     
     return (
@@ -85,28 +87,24 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
         onClick={() => onListingClick(listing)}
         className="flex-shrink-0 w-[160px] sm:w-[200px] md:w-[220px] bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer group"
       >
-        {/* Immagine */}
         <div className="relative h-[140px] sm:h-[160px] overflow-hidden">
           <img
             src={listing.images?.[0] || '/placeholder.jpg'}
             alt={listing.title}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
           />
-          {/* Badge categoria specifica */}
           {listing.subCategory && (
             <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-bold text-gray-700 uppercase shadow-sm">
               {listing.subCategory}
             </div>
           )}
           
-          {/* Cuore preferiti - SEMPRE VISIBILE - LATO DESTRO */}
           <FavoriteButton 
             listingId={listing.id} 
             userId={currentUser?.id}
             variant="card"
           />
           
-          {/* Badge SuperHubber - Colori brand RentHubber */}
           {isSuperHubber && (
             <div className="absolute bottom-2 left-2 bg-brand text-white px-2 py-0.5 rounded-full text-[9px] font-bold flex items-center gap-1 shadow-md">
               <Star className="w-2.5 h-2.5 fill-current" />
@@ -115,7 +113,6 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
           )}
         </div>
 
-        {/* Info */}
         <div className="p-2.5 sm:p-3">
           <h3 className="font-bold text-gray-900 text-xs sm:text-sm mb-1 whitespace-nowrap overflow-hidden">
             {listing.title.length > 25 ? listing.title.substring(0, 25) : listing.title}
@@ -129,7 +126,6 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
               <span className="text-sm sm:text-base font-bold text-brand">€{listing.price}</span>
               <span className="text-[10px] sm:text-xs text-gray-500">/{listing.priceUnit}</span>
             </div>
-            {/* Rating - Sempre visibile come ListingCard */}
             <div className="flex items-center gap-0.5">
               <Star className="w-3 h-3 text-yellow-400 fill-current" />
               <span className="text-[10px] sm:text-xs font-semibold text-gray-700">
@@ -142,20 +138,20 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
     );
   };
 
-  // ========== RENDER SEZIONE CAROUSEL ==========
+  // RENDER SEZIONE CAROUSEL
   const renderSection = (
     title: string,
     listings: Listing[],
     icon: React.ReactNode,
     gradient: string,
-    scrollRef: React.RefObject<HTMLDivElement>
+    scrollRef: React.RefObject<HTMLDivElement>,
+    sectionKey: string
   ) => {
-    // Non mostrare se 0 annunci
     if (listings.length === 0) return null;
 
     const scroll = (direction: 'left' | 'right') => {
       if (scrollRef.current) {
-        const scrollAmount = 700; // Scroll di ~3 card
+        const scrollAmount = 700;
         scrollRef.current.scrollBy({
           left: direction === 'left' ? -scrollAmount : scrollAmount,
           behavior: 'smooth'
@@ -163,28 +159,28 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
       }
     };
 
+    const handleViewAll = () => {
+      navigate(`/listings/map?section=${sectionKey}&title=${encodeURIComponent(title)}`);
+    };
+
     return (
       <div className="mb-12">
-        {/* Header sezione */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            {/* Badge carino */}
             <span className={`inline-flex items-center gap-2 px-4 py-2 ${gradient} text-white rounded-full font-bold text-sm shadow-md`}>
               {icon}
               {title}
             </span>
-            <span className="text-gray-400 text-sm">
-              {listings.length} {listings.length === 1 ? 'annuncio' : 'annunci'}
-            </span>
           </div>
-          {/* Vedi tutti button */}
-          <button className="flex items-center gap-2 text-brand hover:text-brand-dark font-semibold text-sm transition-colors">
+          <button 
+            onClick={handleViewAll}
+            className="flex items-center gap-2 text-brand hover:text-brand-dark font-semibold text-sm transition-colors"
+          >
             Vedi tutti
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Carousel scorrevole */}
         <div className="relative">
           <div 
             ref={scrollRef}
@@ -196,7 +192,6 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
             {listings.map(listing => renderCard(listing))}
           </div>
 
-          {/* Frecce navigazione - SOLO DESKTOP - A DESTRA */}
           <div className="hidden sm:flex items-center justify-end gap-2 mt-4">
             <button
               onClick={() => scroll('left')}
@@ -221,52 +216,51 @@ export const FeaturedListings: React.FC<FeaturedListingsProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       
-      {/* 🔥 PIÙ POPOLARI */}
       {renderSection(
         'Più Popolari',
         popularListings,
         <TrendingUp className="w-4 h-4" />,
         'bg-gradient-to-r from-orange-500 to-red-500',
-        popularRef
+        popularRef,
+        'popular'
       )}
 
-      {/* ⭐ TOP RECENSIONI */}
       {renderSection(
         'Top Recensioni',
         topRatedListings,
         <Star className="w-4 h-4" />,
         'bg-gradient-to-r from-yellow-400 to-orange-400',
-        topRatedRef
+        topRatedRef,
+        'top-rated'
       )}
 
-      {/* 📍 VICINO A TE */}
       {renderSection(
         'Vicino a Te',
         nearbyListings,
         <MapPin className="w-4 h-4" />,
         'bg-gradient-to-r from-blue-500 to-cyan-500',
-        nearbyRef
+        nearbyRef,
+        'nearby'
       )}
 
-      {/* 🆕 NUOVI ARRIVI */}
       {renderSection(
         'Nuovi Arrivi',
         recentListings,
         <Clock className="w-4 h-4" />,
         'bg-gradient-to-r from-green-500 to-emerald-500',
-        recentRef
+        recentRef,
+        'recent'
       )}
 
-      {/* ✨ PER TE */}
       {renderSection(
         'Per Te',
         forYouListings,
         <Sparkles className="w-4 h-4" />,
         'bg-gradient-to-r from-purple-500 to-pink-500',
-        forYouRef
+        forYouRef,
+        'for-you'
       )}
 
-      {/* Messaggio se nessun annuncio */}
       {listings.length === 0 && (
         <div className="text-center py-12">
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
