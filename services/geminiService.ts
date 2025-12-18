@@ -1,7 +1,8 @@
 // services/geminiService.ts
+// NOTA: Il nome del file è rimasto "geminiService" ma ora usa OpenAI tramite Netlify Function
 
 /**
- * Genera descrizione annuncio usando Netlify Function (sicura)
+ * Genera descrizione annuncio usando Netlify Function (con OpenAI)
  */
 export const generateListingDescription = async (
   title: string,
@@ -42,7 +43,7 @@ export const generateListingDescription = async (
 };
 
 /**
- * Suggerisce un prezzo di noleggio giornaliero usando Netlify Function (sicura)
+ * Suggerisce un prezzo di noleggio giornaliero usando Netlify Function (con OpenAI)
  */
 export const suggestPrice = async (
   title: string,
@@ -58,7 +59,7 @@ export const suggestPrice = async (
       },
       body: JSON.stringify({
         title,
-        features: '', // Not used for price
+        features: '',
         category,
         type: 'price',
       }),
