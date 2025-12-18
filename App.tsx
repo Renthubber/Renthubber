@@ -23,6 +23,8 @@ import { PublicHostProfile } from "./views/PublicHostProfile";
 import { PublicRenterProfile } from "./views/PublicRenterProfile";
 import CityPage from "./pages/CityPage";
 import LaunchLandingPage from './pages/LaunchLandingPage';
+import ListingsMapView from './pages/ListingsMapView';
+import OrdinamentoRisultati from './pages/OrdinamentoRisultati';
 
 
 // === PAGINE FOOTER ===
@@ -687,6 +689,8 @@ setIsAuthChecking(false);
             )
           } />
 
+          <Route path="/ordinamento-risultati" element={<OrdinamentoRisultati />} />
+
           {/* PAGINE FOOTER - RENTHUBBER */}
           <Route path="/chi-siamo" element={<ChiSiamoPage />} />
           <Route path="/come-funziona" element={<ComeFunzionaPage />} />
@@ -711,6 +715,19 @@ setIsAuthChecking(false);
           <Route path="/privacy-policy" element={<PrivacyPage />} />
           <Route path="/termini-condizioni" element={<TerminiPage />} />
           <Route path="/mappa-sito" element={<MappaSitoPage />} />
+
+{/* MAPPA ANNUNCI */}
+<Route path="/listings/map" element={
+  <ListingsMapView 
+    listings={listings}
+    currentUser={currentUser}
+    onListingClick={(listing) => {
+      setSelectedListing(listing);
+      navigate(`/listing/${listing.id}`);
+    }}
+  />
+} />
+
         </Routes>
       </main>
 
