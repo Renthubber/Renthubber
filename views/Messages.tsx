@@ -1654,7 +1654,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
       >
         {/* ✅ AREA SUPPORTO CON SISTEMA TICKET */}
         {activeChatId === "support" ? (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full min-h-0">
             {/* Header Supporto */}
             <div className="bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm">
               {/* Bottone BACK mobile */}
@@ -1925,7 +1925,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
                   }
                   
                   return (
-                    <div className="p-4 bg-white border-t border-gray-200">
+                    <div className="sticky bottom-0 p-4 bg-white border-t border-gray-200 z-10">
                       <div className="flex gap-3">
                         <input
                           type="text"
@@ -1951,7 +1951,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
           </div>
         ) : (
           /* ✅ CHAT NORMALE (NON SUPPORTO) */
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full min-h-0">
         {/* Chat Header */}
         <div className="bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-10">
           {/* Bottone BACK mobile */}
@@ -2134,7 +2134,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
         </div>
 
         {/* Input Area */}
-        <div className="p-3 md:p-4 bg-white border-t border-gray-200">
+        <div className="sticky bottom-0 p-3 md:p-4 bg-white border-t border-gray-200 z-10">
           <div className="flex items-center bg-gray-100 rounded-full px-3 md:px-4 py-2">
             <label className="mr-2 cursor-pointer">
               <input
