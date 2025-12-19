@@ -172,6 +172,8 @@ const mapDbUserToAppUser = (row: any): User => {
     bankDetails: row.bank_details || undefined,
 
     idDocumentUrl: row.document_front_url || undefined,
+    document_front_url: row.document_front_url || undefined,
+    document_back_url: row.document_back_url || undefined,
     
     // ✅ DATI PROFILO
     userType: row.user_type || 'privato',
@@ -271,25 +273,25 @@ async function createBookingConversation(params: {
   const now = new Date().toISOString();
   const conversationId = `conv-booking-${bookingId}`;
   
-  // Formatta le date per il messaggio
-  const startFormatted = new Date(startDate).toLocaleDateString("it-IT", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-  const endFormatted = new Date(endDate).toLocaleDateString("it-IT", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+ // Formatta le date per il messaggio (formato breve)
+// Formatta le date manualmente (gg/mm/aaaa)
+const formatDate = (dateString: string) => {
+  const d = new Date(dateString);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
 
-  // Messaggio di sistema per la prenotazione
-  const systemMessage = `🎉 Prenotazione confermata!\n\n` +
-    `Oggetto: ${listingTitle}\n` +
-    `📅 Dal ${startFormatted} al ${endFormatted}\n\n` +
-    `Questa chat è dedicata alla vostra prenotazione. ` +
-    `Potete usarla per coordinarvi su ritiro, consegna e qualsiasi altra informazione.\n\n` +
-    `⚠️ Ricorda: i contatti personali (telefono, email, social) possono essere scambiati solo dopo la conferma della prenotazione.`;
+const startFormatted = formatDate(startDate);
+const endFormatted = formatDate(endDate);
+console.log('🔍 DEBUG DATE FORMATTATE:', startFormatted, endFormatted);
+
+// Numero prenotazione (primi 8 caratteri del booking ID)
+const bookingNumber = `#${bookingId.slice(0, 8).toUpperCase()}`;
+
+// Messaggio di sistema per la prenotazione
+const systemMessage = `Prenotazione confermata per "${listingTitle}" dal ${startFormatted} al ${endFormatted}\nPrenotazione ${bookingNumber}`;
 
   // Crea conversazione
   const conversation = {
@@ -1292,6 +1294,7 @@ getById: async (listingId: string): Promise<Listing | null> => {
         const { data, error } = await supabase
           .from("listings")
           .select("*, view_count")
+          .is('deleted_at', null)
           .order("created_at", { ascending: false });
 
         if (error) {
@@ -1490,33 +1493,100 @@ if (ownerIds.length > 0) {
       return mapped;
     },
 
-    /**
-     * 🗑️ Elimina un annuncio
-     */
-    delete: async (listingId: string): Promise<boolean> => {
-      try {
-        console.log("🗑️ listings.delete –", listingId);
+   /**
+ * 🗑️ Elimina un annuncio (INTELLIGENTE: soft/hard delete in base alle prenotazioni)
+ */
+delete: async (listingId: string): Promise<{ success: boolean; message: string }> => {
+  try {
+    console.log("🗑️ listings.delete – inizio per", listingId);
 
-        const { error } = await supabase
-          .from("listings")
-          .delete()
-          .eq("id", listingId);
+    // 1️⃣ Controlla se ci sono prenotazioni PROCESSATE (confirmed, completed)
+    const { data: processedBookings, error: bookingsError } = await supabase
+      .from("bookings")
+      .select("id, status")
+      .eq("listing_id", listingId)
+      .in("status", ["confirmed", "completed"]);
 
-        if (error) {
-          console.error("Errore delete listing:", error);
-          throw new Error(error.message || "Errore eliminazione annuncio.");
-        }
+    if (bookingsError) {
+      console.error("Errore controllo prenotazioni:", bookingsError);
+      throw new Error("Errore durante il controllo delle prenotazioni");
+    }
 
-        // Invalida cache
-        api.listings.invalidateCache();
-        
-        console.log("✅ Annuncio eliminato:", listingId);
-        return true;
-      } catch (e) {
-        console.error("Errore inatteso delete listing:", e);
-        throw e;
+    const hasProcessedBookings = processedBookings && processedBookings.length > 0;
+
+    if (hasProcessedBookings) {
+      // 2️⃣ CI SONO PRENOTAZIONI PROCESSATE → SOFT DELETE
+      console.log("⚠️ Annuncio ha prenotazioni processate, eseguo SOFT DELETE");
+      
+      const { error: softDeleteError } = await supabase
+        .from("listings")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", listingId);
+
+      if (softDeleteError) {
+        console.error("Errore soft delete:", softDeleteError);
+        throw new Error(softDeleteError.message || "Errore durante la rimozione dell'annuncio");
       }
-    },
+
+      // Invalida cache
+      api.listings.invalidateCache();
+      
+      console.log("✅ Annuncio nascosto (soft delete):", listingId);
+      return { 
+        success: true, 
+        message: "Annuncio nascosto con successo (ha prenotazioni completate)" 
+      };
+    } else {
+      // 3️⃣ NESSUNA PRENOTAZIONE PROCESSATA → HARD DELETE
+      console.log("✅ Nessuna prenotazione processata, eseguo HARD DELETE");
+
+      // Prima cancella eventuali prenotazioni pending/cancelled
+      const { data: pendingBookings } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("listing_id", listingId)
+        .in("status", ["pending", "cancelled"]);
+
+      if (pendingBookings && pendingBookings.length > 0) {
+        console.log(`🗑️ Cancello ${pendingBookings.length} prenotazioni pending/cancelled`);
+        
+        const { error: deleteBookingsError } = await supabase
+          .from("bookings")
+          .delete()
+          .eq("listing_id", listingId)
+          .in("status", ["pending", "cancelled"]);
+
+        if (deleteBookingsError) {
+          console.error("Errore cancellazione prenotazioni:", deleteBookingsError);
+          // Continua comunque con l'eliminazione dell'annuncio
+        }
+      }
+
+      // Poi cancella l'annuncio definitivamente
+      const { error: hardDeleteError } = await supabase
+        .from("listings")
+        .delete()
+        .eq("id", listingId);
+
+      if (hardDeleteError) {
+        console.error("Errore hard delete:", hardDeleteError);
+        throw new Error(hardDeleteError.message || "Errore durante l'eliminazione dell'annuncio");
+      }
+
+      // Invalida cache
+      api.listings.invalidateCache();
+      
+      console.log("✅ Annuncio eliminato definitivamente:", listingId);
+      return { 
+        success: true, 
+        message: "Annuncio eliminato definitivamente" 
+      };
+    }
+  } catch (e: any) {
+    console.error("Errore inatteso delete listing:", e);
+    throw e;
+  }
+},
 
     /**
      * 🔄 Aggiorna solo lo stato di un annuncio (suspend/publish/hide)
