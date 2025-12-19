@@ -45,13 +45,54 @@ export const FaqPage: React.FC = () => {
       textColor: "text-green-700",
       faqs: [
         {
+          q: "Che tipo di annuncio posso pubblicare?",
+          a: "Su Renthubber è possibile pubblicare annunci di noleggio di oggetti e di spazi, destinati a un utilizzo temporaneo, ma non annunci di alloggi o strutture per il pernottamento. Per quanto riguarda gli oggetti, è possibile mettere a noleggio beni di uso personale, hobbistico o professionale, come attrezzature, strumenti, dispositivi, accessori, materiali per eventi, sport, lavoro o tempo libero. Per quanto riguarda gli spazi, sono ammessi esclusivamente spazi non abitativi, utilizzabili per attività temporanee o specifiche, come garage, box, depositi, magazzini, uffici, sale riunioni, studi professionali, laboratori, spazi creativi, aree private o spazi per eventi.",
+        },
+        {
+          q: "È possibile pubblicare annunci di alloggi o strutture per il pernottamento su Renthubber?",
+          a: "No. Su Renthubber non è consentito pubblicare annunci relativi a case, appartamenti, stanze, camere, B&B, hotel, case vacanza o qualsiasi struttura destinata, anche parzialmente, al pernottamento. Renthubber non è una piattaforma di affitti turistici o residenziali, ma un servizio dedicato esclusivamente al noleggio di oggetti e di spazi non abitativi, per utilizzi temporanei e specifici.",
+        },
+        {
           q: "Come pubblico un nuovo annuncio?",
           a: "Accedi alla tua area Hubber, clicca su “Pubblica un annuncio” e compila tutti i campi richiesti: titolo, descrizione, categoria, foto, prezzo, deposito cauzionale (se previsto) e politica di cancellazione.",
         },
         {
-          q: "Cosa devo inserire nella descrizione dell’annuncio?",
-          a: "Descrivi in modo chiaro l’oggetto o lo spazio, specifica condizioni d’uso, eventuali limiti, requisiti per il ritiro/consegna e tutto ciò che può aiutare il Renter a capire cosa aspettarsi. Più la descrizione è precisa, meno saranno i fraintendimenti.",
-        },
+  q: "Cosa devo inserire nella descrizione dell’annuncio?",
+  a: (
+    <>
+      <p>
+        Descrivi in modo chiaro l’oggetto o lo spazio che stai mettendo a noleggio,
+        specificando le <strong>condizioni d’uso</strong>, eventuali{" "}
+        <strong>limiti</strong>, i{" "}
+        <strong>requisiti per il ritiro o la consegna</strong> e qualsiasi
+        informazione utile per aiutare il Renter a capire cosa aspettarsi.
+      </p>
+
+      <p className="mt-2">
+        Per rendere tutto più semplice e veloce,{" "}
+        <strong>Renthubber integra un sistema di intelligenza artificiale</strong>{" "}
+        che ti aiuta a{" "}
+        <strong>
+          generare automaticamente una descrizione completa e ben strutturata
+        </strong>{" "}
+        a partire dai dati inseriti.
+      </p>
+
+      <p className="mt-2">
+        La descrizione generata dall’AI può essere{" "}
+        <strong>modificata e personalizzata liberamente</strong> prima della
+        pubblicazione dell’annuncio.
+      </p>
+
+      <p className="mt-3 text-sm text-gray-500">
+        Più la descrizione è precisa e dettagliata, minori saranno i
+        fraintendimenti e migliore sarà l’esperienza di noleggio per entrambe le
+        parti.
+      </p>
+    </>
+  ),
+},
+
         {
           q: "Posso rifiutare una prenotazione?",
           a: "Sì, puoi rifiutare una richiesta di prenotazione se non sei disponibile, se le condizioni non ti sembrano adeguate o se l’uso proposto non è in linea con l’annuncio. Ti invitiamo comunque a motivare in modo educato il rifiuto, se possibile.",
@@ -75,9 +116,54 @@ export const FaqPage: React.FC = () => {
       color: "border-yellow-500 bg-yellow-50",
       textColor: "text-yellow-700",
       faqs: [
+      {
+  q: "Come collego il mio IBAN tramite Stripe?",
+  a: (
+    <>
+      <p>
+        Per ricevere i pagamenti su Renthubber è necessario collegare il proprio
+        conto corrente (IBAN) tramite Stripe, il nostro partner per la
+        gestione sicura dei pagamenti.
+      </p>
+
+      <p className="mt-2">
+        Puoi farlo accedendo alla sezione <strong>Wallet Hubber</strong>, dove
+        troverai il pulsante <strong>“Configura Pagamenti Stripe”</strong>.
+        Cliccando su questa voce verrai guidato passo dopo passo nella procedura
+        di collegamento del conto.
+      </p>
+
+      <p className="mt-2">
+        Il processo richiede generalmente circa <strong>5 minuti</strong> e
+        prevede:
+      </p>
+
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>l’inserimento dei dati personali o aziendali</li>
+        <li>l’indicazione dell’IBAN su cui ricevere i pagamenti</li>
+        <li>
+          eventuali verifiche richieste da Stripe per motivi di sicurezza e
+          conformità
+        </li>
+      </ul>
+
+      <p className="mt-3">
+        Una volta completata la configurazione e approvata da Stripe, potrai
+        ricevere i compensi sul tuo wallet e richiedere il bonifico quando il
+        saldo risulterà disponibile.
+      </p>
+
+      <p className="mt-3 text-sm text-gray-500">
+        📌 <strong>Nota:</strong> senza il collegamento dell’IBAN tramite Stripe
+        Connect non è possibile ricevere i pagamenti.
+      </p>
+    </>
+  ),
+},
+
         {
           q: "Quando ricevo il pagamento come Hubber?",
-          a: "In genere i pagamenti vengono elaborati entro 48 ore dalla fine del noleggio, salvo verifiche o segnalazioni in corso. I tempi esatti possono variare in base al metodo di pagamento e al fornitore utilizzato.",
+          a: "In genere, i pagamenti vengono elaborati entro 48 ore dal completamento della prenotazione. Il compenso viene quindi accreditato sul wallet interno della piattaforma, nella sezione Wallet Hubber, salvo la presenza di verifiche, controlli o segnalazioni in corso. Una volta che il saldo risulta disponibile, e solo dopo aver configurato correttamente il proprio IBAN tramite Stripe, sarà possibile richiedere il bonifico. Il pagamento verrà poi elaborato entro 5–10 giorni lavorativi. I tempi effettivi possono variare in base al metodo di pagamento utilizzato e ai tempi di elaborazione del fornitore di servizi di pagamento.",
         },
         {
           q: "Perché vedo una pre-autorizzazione sulla carta del Renter?",
