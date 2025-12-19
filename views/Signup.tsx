@@ -320,10 +320,10 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
           <div className="w-20 h-20 rounded-full bg-orange-50 flex items-center justify-center mb-6 group-hover:bg-brand-accent group-hover:text-white transition-colors">
             <Briefcase className="w-10 h-10 text-brand-accent group-hover:text-white" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Hubber</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Hubber/Renter</h3>
           <p className="text-gray-500 text-sm leading-relaxed">
             Voglio pubblicare annunci.<br/>
-            Metto a rendita i miei oggetti o i miei spazi in totale sicurezza.
+           Trasformo i miei oggetti e i miei spazi in un guadagno sicuro e risparmio grazie al noleggio.
           </p>
           <div className="mt-6 flex items-center text-brand-accent font-semibold text-sm opacity-0 group-hover:opacity-100 transition-opacity">
             Inizia a guadagnare <ArrowRight className="w-4 h-4 ml-1" />
