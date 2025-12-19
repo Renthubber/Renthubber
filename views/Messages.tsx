@@ -1356,7 +1356,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
   // ✅ LOADING STATE
   if (isLoadingConversations) {
     return (
-      <div className="h-[calc(100vh-64px)] bg-white flex items-center justify-center">
+      <div className="h-[calc(100vh-128px)] md:h-[calc(100vh-64px)] bg-white flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-brand mx-auto mb-3" />
           <p className="text-gray-500">Caricamento messaggi...</p>
@@ -1366,7 +1366,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] bg-white flex flex-col md:flex-row overflow-hidden">
+    <div className="h-[calc(100vh-128px)] md:h-[calc(100vh-64px)] bg-white flex flex-col md:flex-row overflow-hidden">
       {/* Sidebar Contacts */}
       <div className={`w-full md:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col ${ 
         showMobileList ? '' : 'hidden md:flex'
