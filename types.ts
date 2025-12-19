@@ -122,6 +122,10 @@ export interface User {
   idDocumentVerified?: boolean;
   verificationStatus?: VerificationStatus;
   idDocumentUrl?: string;
+
+  document_front_url?: string;
+  document_back_url?: string;
+  id_document_verified?: boolean;
   
   // ✅ Campi per nome/cognome separati e publicName
   firstName?: string;
