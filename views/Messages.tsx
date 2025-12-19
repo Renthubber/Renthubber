@@ -1883,7 +1883,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
                 })()}
 
                 {/* Messaggi */}
-                <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 pb-24 md:pb-4 space-y-4">
                   {chatMessages.map((message) => (
                     <div
                       key={message.id}
@@ -1925,7 +1925,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
                   }
                   
                   return (
-                    <div className="sticky bottom-0 p-4 bg-white border-t border-gray-200 z-10">
+  <div className="fixed md:sticky bottom-0 left-0 right-0 md:left-auto md:right-auto p-4 bg-white border-t border-gray-200 z-10">
                       <div className="flex gap-3">
                         <input
                           type="text"
@@ -2064,7 +2064,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
         </div>
 
         {/* Messages Feed */}
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6 space-y-4">
           {chatMessages.map((msg) =>
             // ✅ MESSAGGI DI SISTEMA (centrati, sfondo blu)
             msg.from === "system" || msg.isSystemMessage ? (
@@ -2134,7 +2134,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
         </div>
 
         {/* Input Area */}
-        <div className="sticky bottom-0 p-3 md:p-4 bg-white border-t border-gray-200 z-10">
+<div className="fixed md:sticky bottom-0 left-0 right-0 md:left-auto md:right-auto p-3 md:p-4 bg-white border-t border-gray-200 z-10">
           <div className="flex items-center bg-gray-100 rounded-full px-3 md:px-4 py-2">
             <label className="mr-2 cursor-pointer">
               <input
