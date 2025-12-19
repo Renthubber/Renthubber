@@ -1,10 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Send, MoreVertical, Phone, Image as ImageIcon, Loader2, Archive, Trash2, RotateCcw, ChevronDown } from "lucide-react";
 import { api } from "../services/api";
 import { User, Dispute } from "../types";
-import { useRealtimeMessages } from "../hooks/useRealtimeMessages";
-
-
 
 interface MessagesProps {
   currentUser: User | null;
@@ -440,17 +437,6 @@ export const Messages: React.FC<MessagesProps> = ({
   const [disputeId, setDisputeId] = useState<string | null>(null);
   const [disputeRole, setDisputeRole] = useState<"renter" | "hubber">("renter");
   const [disputeScope, setDisputeScope] = useState<"object" | "space">("object");
-
-  // 🔔 REALTIME: Subscribe a nuovi messaggi
-const handleNewMessage = useCallback((message: any) => {
-  console.log('🆕 Nuovo messaggio in tempo reale!', message);
-  // TODO: Ricarica conversazioni
-}, []);
-
-const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
-  userId: currentUser?.id || null,
-  onNewMessage: handleNewMessage
-});
 
   const getDisputeReasonsForContext = () => {
     const role = disputeRole;
@@ -1530,7 +1516,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
                 </div>
                 
                 {/* Ultimo messaggio (preview) */}
-                <p className="text-sm text-gray-600 line-clamp-2 mb-1 leading-tight">
+                <p className="text-sm text-gray-600 truncate mb-1 leading-tight">
                   {contact.lastMessage}
                 </p>
                 
@@ -2059,14 +2045,15 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
           {chatMessages.map((msg) =>
             // ✅ MESSAGGI DI SISTEMA (centrati, sfondo blu)
             msg.from === "system" || msg.isSystemMessage ? (
-  <div key={msg.id} className="flex justify-center">
-    <div className="px-4 py-1">
-      <p className="text-xs text-gray-600 text-center whitespace-pre-line leading-tight">
-        {msg.text}
-      </p>
-    </div>
-  </div>
-) : msg.from === "contact" ? (
+              <div key={msg.id} className="flex justify-center">
+                <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 max-w-lg text-center">
+                  <p className="text-sm text-blue-800 whitespace-pre-line">{msg.text}</p>
+                  <span className="text-[10px] text-blue-500 block mt-2">
+                    {msg.time}
+                  </span>
+                </div>
+              </div>
+            ) : msg.from === "contact" ? (
               <div key={msg.id} className="flex items-end">
                 {msg.isAdminMessage ? (
                   <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center mb-1 mr-2" title="Supporto RentHubber">
