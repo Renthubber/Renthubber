@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
+import { Routes, Route, useNavigate, useParams, Navigate, useLocation } from "react-router-dom";
 import { Header } from "./components/Header";
 import { BottomNavBar } from "./components/BottomNavBar";
 import { Footer } from "./components/Footer";
@@ -103,6 +103,7 @@ const buildFallbackUser = (authUser: any): User => ({
 -------------------------------------------------------*/
 const App: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [selectedHost, setSelectedHost] = useState<User | null>(null);
@@ -742,7 +743,16 @@ setIsAuthChecking(false);
         onPublish={() => setIsPublishModalOpen(true)}
       />
 
-      <Footer />
+      {/* Footer - Solo pagine pubbliche (NON dashboard) */}
+      {!location.pathname.startsWith('/dashboard') && 
+       !location.pathname.startsWith('/messages') && 
+       !location.pathname.startsWith('/wallet') && 
+       !location.pathname.startsWith('/admin') && 
+       !location.pathname.startsWith('/my-listings') && 
+       !location.pathname.startsWith('/become-hubber') && 
+       !location.pathname.startsWith('/edit-listing') && (
+        <Footer />
+      )}
     </div>
 
     <CookieConsent />
