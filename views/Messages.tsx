@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Send, MoreVertical, Phone, Image as ImageIcon, Loader2, Archive, Trash2, RotateCcw, ChevronDown } from "lucide-react";
 import { api } from "../services/api";
 import { User, Dispute } from "../types";
+import { useRealtimeMessages } from "../hooks/useRealtimeMessages";
+
+
 
 interface MessagesProps {
   currentUser: User | null;
@@ -286,6 +289,9 @@ export const Messages: React.FC<MessagesProps> = ({
   const [contacts, setContacts] = useState<any[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null); // Default al supporto
 
+  // 📜 REF PER AUTO-SCROLL
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   // ✅ CONTATTO SUPPORTO
   const [supportUnreadCount, setSupportUnreadCount] = useState(0);
   
@@ -437,6 +443,108 @@ export const Messages: React.FC<MessagesProps> = ({
   const [disputeId, setDisputeId] = useState<string | null>(null);
   const [disputeRole, setDisputeRole] = useState<"renter" | "hubber">("renter");
   const [disputeScope, setDisputeScope] = useState<"object" | "space">("object");
+
+  // 🔔 REALTIME: Subscribe a nuovi messaggi
+  // 🔄 Funzione per ricaricare conversazioni (estratta per poterla chiamare da realtime)
+  const loadRealConversations = useCallback(async () => {
+    setIsLoadingConversations(true);
+
+    try {
+      if (!currentUser) {
+        setIsLoadingConversations(false);
+        return;
+      }
+
+      // Carica conversazioni da Supabase
+      const supabaseConversations = await api.messages.getConversationsForUser(currentUser.id);
+
+      // Converti in formato "contact" per l'UI
+      const realContactsPromises = supabaseConversations
+        .filter((conv: any) => !conv.isSupport) // Escludi supporto dalla lista contatti
+        .map(async (conv: any) => {
+          const isRenter = conv.renterId === currentUser.id;
+          const contactId = isRenter ? conv.hubberId : conv.renterId;
+          const contactData = isRenter ? conv.hubber : conv.renter;
+
+          const contactName = contactData?.public_name || 
+            `${contactData?.first_name || ''} ${contactData?.last_name || ''}`.trim() || 
+            (isRenter ? "Hubber" : "Renter");
+          const contactAvatar = contactData?.avatar_url || 
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=0D414B&color=fff`;
+
+          const bookingData = conv.booking || {};
+          const listingTitle = conv.listing?.title || conv.listing?.name || "Annuncio";
+          const bookingDates = formatBookingDates(
+            bookingData.startDate || bookingData.start_date,
+            bookingData.endDate || bookingData.end_date
+          );
+          const bookingNumber = formatBookingNumber(conv.bookingId);
+          
+          // 🔔 Determina se ha messaggi non letti
+          const hasUnread = isRenter 
+            ? (conv.unreadForRenter === true) 
+            : (conv.unreadForHubber === true);
+          
+          return {
+            id: conv.id,
+            name: contactName,
+            avatar: contactAvatar,
+            lastMessage: conv.lastMessagePreview || "Nuova conversazione",
+            lastMessageTime: conv.lastMessageAt ? new Date(conv.lastMessageAt).toLocaleDateString("it-IT", {
+              day: "numeric",
+              month: "short",
+            }) : "",
+            unreadCount: conv.unreadCount || 0,
+            hasUnread, // 🔔 Nuovo campo
+            isOnline: false,
+            avgResponseMinutes: 60,
+            phoneNumber: contactData?.phone_number || contactData?.phoneNumber || "",
+            bookingId: conv.bookingId,
+            listingId: conv.listingId,
+            isRealConversation: true,
+            renterId: conv.renterId,
+            hubberId: conv.hubberId,
+            contactId,
+            listing: conv.listing,
+            listingTitle,
+            bookingDates,
+            bookingNumber,
+            booking: bookingData,
+          };
+        });
+
+      const realContacts = await Promise.all(realContactsPromises);
+
+      // Ordina per data (più recente prima)
+      realContacts.sort((a, b) => {
+        const convA = supabaseConversations.find((c: any) => c.id === a.id);
+        const convB = supabaseConversations.find((c: any) => c.id === b.id);
+        return new Date(convB?.lastMessageAt || 0).getTime() - new Date(convA?.lastMessageAt || 0).getTime();
+      });
+
+      setRealConversationsCount(realContacts.length);
+
+      // Usa solo conversazioni reali
+      setContacts(realContacts);
+
+      console.log("✅ Conversazioni reali caricate da Supabase:", realContacts.length);
+    } catch (err) {
+      console.error("Errore caricamento conversazioni:", err);
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  }, [currentUser]);
+
+  const handleNewMessage = useCallback((message: any) => {
+    console.log('🆕 Nuovo messaggio in tempo reale!', message);
+    // Ricarica conversazioni per aggiornare lista
+    loadRealConversations();
+  }, [loadRealConversations]);
+
+const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
+  userId: currentUser?.id || null,
+  onNewMessage: handleNewMessage
+});
 
   const getDisputeReasonsForContext = () => {
     const role = disputeRole;
@@ -711,100 +819,8 @@ export const Messages: React.FC<MessagesProps> = ({
 
   // ✅ CARICA CONVERSAZIONI REALI DA SUPABASE
   useEffect(() => {
-    const loadRealConversations = async () => {
-      setIsLoadingConversations(true);
-
-      try {
-        if (!currentUser) {
-          setIsLoadingConversations(false);
-          return;
-        }
-
-        // Carica conversazioni da Supabase
-        const supabaseConversations = await api.messages.getConversationsForUser(currentUser.id);
-
-        // Converti in formato "contact" per l'UI
-        const realContactsPromises = supabaseConversations
-          .filter((conv: any) => !conv.isSupport) // Escludi supporto dalla lista contatti
-          .map(async (conv: any) => {
-            const isRenter = conv.renterId === currentUser.id;
-            const contactId = isRenter ? conv.hubberId : conv.renterId;
-            const contactData = isRenter ? conv.hubber : conv.renter;
-
-            const contactName = contactData?.public_name || 
-              `${contactData?.first_name || ''} ${contactData?.last_name || ''}`.trim() || 
-              (isRenter ? "Hubber" : "Renter");
-            const contactAvatar = contactData?.avatar_url || 
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=0D414B&color=fff`;
-
-            const bookingData = conv.booking || {};
-            const listingTitle = conv.listing?.title || conv.listing?.name || "Annuncio";
-            const bookingDates = formatBookingDates(
-              bookingData.startDate || bookingData.start_date,
-              bookingData.endDate || bookingData.end_date
-            );
-            const bookingNumber = formatBookingNumber(conv.bookingId);
-            
-            // 🔔 Determina se ha messaggi non letti
-            const hasUnread = isRenter 
-              ? (conv.unreadForRenter === true) 
-              : (conv.unreadForHubber === true);
-            
-            return {
-              id: conv.id,
-              name: contactName,
-              avatar: contactAvatar,
-              lastMessage: conv.lastMessagePreview || "Nuova conversazione",
-              lastMessageTime: conv.lastMessageAt ? new Date(conv.lastMessageAt).toLocaleDateString("it-IT", {
-                day: "numeric",
-                month: "short",
-              }) : "",
-              unreadCount: conv.unreadCount || 0,
-              hasUnread, // 🔔 Nuovo campo
-              isOnline: false,
-              avgResponseMinutes: 60,
-              phoneNumber: contactData?.phone_number || contactData?.phoneNumber || "",
-              bookingId: conv.bookingId,
-              listingId: conv.listingId,
-              isRealConversation: true,
-              renterId: conv.renterId,
-              hubberId: conv.hubberId,
-              contactId,
-              listing: conv.listing,
-              listingTitle,
-              bookingDates,
-              bookingNumber,
-              booking: bookingData,
-            };
-          });
-
-        const realContacts = await Promise.all(realContactsPromises);
-
-        // Ordina per data (più recente prima)
-        realContacts.sort((a, b) => {
-          const convA = supabaseConversations.find((c: any) => c.id === a.id);
-          const convB = supabaseConversations.find((c: any) => c.id === b.id);
-          return new Date(convB?.lastMessageAt || 0).getTime() - new Date(convA?.lastMessageAt || 0).getTime();
-        });
-
-        setRealConversationsCount(realContacts.length);
-
-        // Usa solo conversazioni reali
-        setContacts(realContacts);
-
-        // NON aprire automaticamente nessuna chat
-        // L'utente vedrà la lista e sceglierà quale chat aprire
-
-        console.log("✅ Conversazioni reali caricate da Supabase:", realContacts.length);
-      } catch (err) {
-        console.error("Errore caricamento conversazioni:", err);
-      } finally {
-        setIsLoadingConversations(false);
-      }
-    };
-
     loadRealConversations();
-  }, [currentUser]);
+  }, [loadRealConversations]);
 
   // ✅ CARICA MESSAGGI - REALI O MOCK
   useEffect(() => {
@@ -920,6 +936,11 @@ export const Messages: React.FC<MessagesProps> = ({
       setChatMessages([]);
     }
   }, [activeChatId, currentUser, supportMessages]);
+
+  // 📜 AUTO-SCROLL ai nuovi messaggi
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
 
   const handleSend = async () => {
         if (!messageInput.trim()) {
@@ -1516,7 +1537,7 @@ export const Messages: React.FC<MessagesProps> = ({
                 </div>
                 
                 {/* Ultimo messaggio (preview) */}
-                <p className="text-sm text-gray-600 truncate mb-1 leading-tight">
+                <p className="text-sm text-gray-600 line-clamp-2 mb-1 leading-tight">
                   {contact.lastMessage}
                 </p>
                 
@@ -1928,7 +1949,7 @@ export const Messages: React.FC<MessagesProps> = ({
           </div>
         ) : (
           /* ✅ CHAT NORMALE (NON SUPPORTO) */
-          <>
+          <div className="flex flex-col h-full">
         {/* Chat Header */}
         <div className="bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-10">
           {/* Bottone BACK mobile */}
@@ -2045,15 +2066,14 @@ export const Messages: React.FC<MessagesProps> = ({
           {chatMessages.map((msg) =>
             // ✅ MESSAGGI DI SISTEMA (centrati, sfondo blu)
             msg.from === "system" || msg.isSystemMessage ? (
-              <div key={msg.id} className="flex justify-center">
-                <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 max-w-lg text-center">
-                  <p className="text-sm text-blue-800 whitespace-pre-line">{msg.text}</p>
-                  <span className="text-[10px] text-blue-500 block mt-2">
-                    {msg.time}
-                  </span>
-                </div>
-              </div>
-            ) : msg.from === "contact" ? (
+  <div key={msg.id} className="flex justify-center">
+    <div className="px-4 py-1">
+      <p className="text-xs text-gray-600 text-center whitespace-pre-line leading-tight">
+        {msg.text}
+      </p>
+    </div>
+  </div>
+) : msg.from === "contact" ? (
               <div key={msg.id} className="flex items-end">
                 {msg.isAdminMessage ? (
                   <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center mb-1 mr-2" title="Supporto RentHubber">
@@ -2109,6 +2129,8 @@ export const Messages: React.FC<MessagesProps> = ({
               </div>
             )
           )}
+          {/* 📜 ELEMENTO PER AUTO-SCROLL */}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Input Area */}
@@ -2515,7 +2537,7 @@ export const Messages: React.FC<MessagesProps> = ({
             </div>
           </div>
         )}
-          </>
+          </div>
         )}
       </div>
     </div>
