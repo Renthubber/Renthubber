@@ -289,8 +289,8 @@ export const Messages: React.FC<MessagesProps> = ({
   const [contacts, setContacts] = useState<any[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null); // Default al supporto
 
-  // 📜 REF PER AUTO-SCROLL
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // 📜 REF PER AUTO-SCROLL (riferimento al CONTENITORE messaggi)
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // ✅ CONTATTO SUPPORTO
   const [supportUnreadCount, setSupportUnreadCount] = useState(0);
@@ -937,9 +937,11 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
     }
   }, [activeChatId, currentUser, supportMessages]);
 
-  // 📜 AUTO-SCROLL ai nuovi messaggi
+  // 📜 AUTO-SCROLL ai nuovi messaggi (scrolla il CONTENITORE, non la pagina)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [chatMessages]);
 
   const handleSend = async () => {
@@ -1881,7 +1883,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
                 })()}
 
                 {/* Messaggi */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
                   {chatMessages.map((message) => (
                     <div
                       key={message.id}
@@ -2062,7 +2064,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
         </div>
 
         {/* Messages Feed */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
           {chatMessages.map((msg) =>
             // ✅ MESSAGGI DI SISTEMA (centrati, sfondo blu)
             msg.from === "system" || msg.isSystemMessage ? (
@@ -2129,8 +2131,6 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
               </div>
             )
           )}
-          {/* 📜 ELEMENTO PER AUTO-SCROLL */}
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Input Area */}
