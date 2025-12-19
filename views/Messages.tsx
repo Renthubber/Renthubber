@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Send, MoreVertical, Phone, Image as ImageIcon, Loader2, Archive, Trash2, RotateCcw, ChevronDown } from "lucide-react";
 import { api } from "../services/api";
 import { User, Dispute } from "../types";
+import { useRealtimeMessages } from "../hooks/useRealtimeMessages";
+
+
 
 interface MessagesProps {
   currentUser: User | null;
@@ -437,6 +440,17 @@ export const Messages: React.FC<MessagesProps> = ({
   const [disputeId, setDisputeId] = useState<string | null>(null);
   const [disputeRole, setDisputeRole] = useState<"renter" | "hubber">("renter");
   const [disputeScope, setDisputeScope] = useState<"object" | "space">("object");
+
+  // 🔔 REALTIME: Subscribe a nuovi messaggi
+const handleNewMessage = useCallback((message: any) => {
+  console.log('🆕 Nuovo messaggio in tempo reale!', message);
+  // TODO: Ricarica conversazioni
+}, []);
+
+const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
+  userId: currentUser?.id || null,
+  onNewMessage: handleNewMessage
+});
 
   const getDisputeReasonsForContext = () => {
     const role = disputeRole;
