@@ -1516,7 +1516,7 @@ export const Messages: React.FC<MessagesProps> = ({
                 </div>
                 
                 {/* Ultimo messaggio (preview) */}
-                <p className="text-sm text-gray-600 truncate mb-1 leading-tight">
+                <p className="text-sm text-gray-600 line-clamp-2 mb-1 leading-tight">
                   {contact.lastMessage}
                 </p>
                 
@@ -2045,15 +2045,14 @@ export const Messages: React.FC<MessagesProps> = ({
           {chatMessages.map((msg) =>
             // ✅ MESSAGGI DI SISTEMA (centrati, sfondo blu)
             msg.from === "system" || msg.isSystemMessage ? (
-              <div key={msg.id} className="flex justify-center">
-                <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 max-w-lg text-center">
-                  <p className="text-sm text-blue-800 whitespace-pre-line">{msg.text}</p>
-                  <span className="text-[10px] text-blue-500 block mt-2">
-                    {msg.time}
-                  </span>
-                </div>
-              </div>
-            ) : msg.from === "contact" ? (
+  <div key={msg.id} className="flex justify-center">
+    <div className="px-4 py-1">
+      <p className="text-xs text-gray-600 text-center whitespace-pre-line leading-tight">
+        {msg.text}
+      </p>
+    </div>
+  </div>
+) : msg.from === "contact" ? (
               <div key={msg.id} className="flex items-end">
                 {msg.isAdminMessage ? (
                   <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center mb-1 mr-2" title="Supporto RentHubber">

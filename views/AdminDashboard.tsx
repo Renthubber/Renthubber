@@ -491,10 +491,11 @@ useEffect(() => {
     year: new Date().getFullYear().toString(),
   });
   // User Management States
-  const [selectedUserForEdit, setSelectedUserForEdit] = useState<User | null>(null);
-  const [userSearch, setUserSearch] = useState('');
-  const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'renter' | 'hubber' | 'admin'>('all');
-  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'suspended'>('all');
+ const [selectedUserForEdit, setSelectedUserForEdit] = useState<User | null>(null);
+const [userSearch, setUserSearch] = useState('');
+const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'renter' | 'hubber' | 'admin'>('all');
+const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'suspended'>('all');
+const [userDocumentFilter, setUserDocumentFilter] = useState<'all' | 'to_verify' | 'verified' | 'none'>('all');
   
   // NEW: Stati per gestione avanzata utenti
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -1687,14 +1688,22 @@ useEffect(() => {
         u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
         u.email?.toLowerCase().includes(userSearch.toLowerCase());
       const matchesRole =
-        userRoleFilter === 'all' ||
+       userRoleFilter === 'all' ||
         u.role === userRoleFilter ||
         (u.roles && u.roles.includes(userRoleFilter));
       const matchesStatus =
         userStatusFilter === 'all' ||
         (userStatusFilter === 'suspended' && u.isSuspended) ||
         (userStatusFilter === 'active' && !u.isSuspended);
-      return matchesSearch && matchesRole && matchesStatus;
+      
+      const matchesDocument =
+        userDocumentFilter === 'all' ||
+        (userDocumentFilter === 'to_verify' && 
+          ((u.document_front_url || u.document_back_url) && !u.idDocumentVerified)) ||
+        (userDocumentFilter === 'verified' && u.idDocumentVerified) ||
+        (userDocumentFilter === 'none' && !u.document_front_url && !u.document_back_url);
+      
+      return matchesSearch && matchesRole && matchesStatus && matchesDocument;
     });
 
     return (
@@ -1739,6 +1748,7 @@ useEffect(() => {
               <option value="hubber">Hubber</option>
               <option value="admin">Admin</option>
             </select>
+            
             <select
               className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white"
               value={userStatusFilter}
@@ -1747,6 +1757,17 @@ useEffect(() => {
               <option value="all">Tutti gli Stati</option>
               <option value="active">Attivi</option>
               <option value="suspended">Sospesi</option>
+            </select>
+            
+            <select
+              className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white"
+              value={userDocumentFilter}
+              onChange={(e) => setUserDocumentFilter(e.target.value as any)}
+            >
+              <option value="all">Tutti i Documenti</option>
+              <option value="to_verify">📄 Da Verificare</option>
+              <option value="verified">✅ Verificati</option>
+              <option value="none">⚪ Nessun Documento</option>
             </select>
           </div>
         </div>
@@ -8724,47 +8745,114 @@ const renderReviews = () => {
               </div>
 
               {/* VERIFICHE KYC */}
-              <div className="bg-white border border-gray-200 rounded-xl p-5">
-                <h4 className="font-bold text-gray-900 mb-4 flex items-center">
-                  <Shield className="w-5 h-5 mr-2 text-brand" /> Verifiche & KYC
-                </h4>
-                <div className="space-y-3">
-                  <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                    <span className="text-sm text-gray-700 font-medium">Email Verificata</span>
-                    <input
-                      type="checkbox"
-                      checked={selectedUserForEdit.emailVerified}
-                      onChange={() => handleVerificationToggle('emailVerified')}
-                      className="w-5 h-5 rounded border-gray-300 text-brand focus:ring-brand cursor-pointer"
-                    />
-                  </label>
-                  <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                    <span className="text-sm text-gray-700 font-medium">Telefono Verificato</span>
-                    <input
-                      type="checkbox"
-                      checked={selectedUserForEdit.phoneVerified}
-                      onChange={() => handleVerificationToggle('phoneVerified')}
-                      className="w-5 h-5 rounded border-gray-300 text-brand focus:ring-brand cursor-pointer"
-                    />
-                  </label>
-                  <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                    <span className="text-sm text-gray-700 font-medium">Documento Identità Verificato</span>
-                    <input
-                      type="checkbox"
-                      checked={selectedUserForEdit.idDocumentVerified}
-                      onChange={() => handleVerificationToggle('idDocumentVerified')}
-                      className="w-5 h-5 rounded border-gray-300 text-brand focus:ring-brand cursor-pointer"
-                    />
-                  </label>
-                  {selectedUserForEdit.idDocumentUrl && (
-                    <a
-                      href={selectedUserForEdit.idDocumentUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center text-sm text-blue-600 hover:underline mt-2"
-                    >
-                      <FileCheck className="w-4 h-4 mr-1" /> Visualizza Documento Caricato
-                    </a>
+<div className="bg-white border border-gray-200 rounded-xl p-5">
+  <h4 className="font-bold text-gray-900 mb-4 flex items-center">
+    <Shield className="w-5 h-5 mr-2 text-brand" /> Verifiche & KYC
+  </h4>
+  <div className="space-y-3">
+    <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+      <span className="text-sm text-gray-700 font-medium">Email Verificata</span>
+      <input
+        type="checkbox"
+        checked={selectedUserForEdit.emailVerified}
+        onChange={() => handleVerificationToggle('emailVerified')}
+        className="w-5 h-5 rounded border-gray-300 text-brand focus:ring-brand cursor-pointer"
+      />
+    </label>
+    <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+      <span className="text-sm text-gray-700 font-medium">Telefono Verificato</span>
+      <input
+        type="checkbox"
+        checked={selectedUserForEdit.phoneVerified}
+        onChange={() => handleVerificationToggle('phoneVerified')}
+        className="w-5 h-5 rounded border-gray-300 text-brand focus:ring-brand cursor-pointer"
+      />
+    </label>
+    <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+      <span className="text-sm text-gray-700 font-medium">Documento Identità Verificato</span>
+      <input
+        type="checkbox"
+        checked={selectedUserForEdit.idDocumentVerified}
+        onChange={() => handleVerificationToggle('idDocumentVerified')}
+        className="w-5 h-5 rounded border-gray-300 text-brand focus:ring-brand cursor-pointer"
+      />
+    </label>
+
+    {/* VISUALIZZAZIONE DOCUMENTI */}
+                  {(selectedUserForEdit.document_front_url || selectedUserForEdit.document_back_url) && (
+                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h5 className="text-sm font-bold text-gray-900 mb-3 flex items-center">
+                        <FileCheck className="w-4 h-4 mr-2 text-blue-600" /> Documenti Caricati
+                      </h5>
+                      
+                      <div className="space-y-2">
+                        {selectedUserForEdit.document_front_url && (
+                          <div className="flex items-center justify-between p-2 bg-white rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <ImageIcon className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm text-gray-700 font-medium">Fronte Documento</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <a
+                                href={selectedUserForEdit.document_front_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3 py-1.5 bg-brand text-white text-xs font-semibold rounded-lg hover:bg-brand-dark transition-colors flex items-center gap-1"
+                              >
+                                <Eye className="w-3 h-3" /> Visualizza
+                              </a>
+                              <a
+                                href={selectedUserForEdit.document_front_url}
+                                download
+                                className="px-3 py-1.5 bg-gray-600 text-white text-xs font-semibold rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1"
+                              >
+                                <Download className="w-3 h-3" /> Scarica
+                              </a>
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedUserForEdit.document_back_url && (
+                          <div className="flex items-center justify-between p-2 bg-white rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <ImageIcon className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm text-gray-700 font-medium">Retro Documento</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <a
+                                href={selectedUserForEdit.document_back_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3 py-1.5 bg-brand text-white text-xs font-semibold rounded-lg hover:bg-brand-dark transition-colors flex items-center gap-1"
+                              >
+                                <Eye className="w-3 h-3" /> Visualizza
+                              </a>
+                              <a
+                                href={selectedUserForEdit.document_back_url}
+                                download
+                                className="px-3 py-1.5 bg-gray-600 text-white text-xs font-semibold rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1"
+                              >
+                                <Download className="w-3 h-3" /> Scarica
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Clicca su "Visualizza" per aprire il documento in una nuova tab
+                      </p>
+                    </div>
+                  )}
+
+                  {!selectedUserForEdit.document_front_url && !selectedUserForEdit.document_back_url && (
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-xs text-yellow-700 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" />
+                        Nessun documento caricato dall'utente
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>

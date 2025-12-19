@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Listing, User } from '../types';
 import { Plus, Edit, Trash2, Eye, Star, Package, ExternalLink, PauseCircle, Play, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { api } from '../services/api';
 
 interface MyListingsProps {
   currentUser: User;
@@ -58,29 +59,26 @@ export const MyListings: React.FC<MyListingsProps> = ({
     }
   };
 
-  // 🔹 ELIMINA ANNUNCIO
+  // 🔹 ELIMINA ANNUNCIO (con logica intelligente soft/hard delete)
   const handleDelete = async (listing: Listing, e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (!confirm(`Sei sicuro di voler eliminare "${listing.title}"? Questa azione è irreversibile.`)) {
+    if (!confirm(`Sei sicuro di voler eliminare "${listing.title}"?`)) {
       return;
     }
     
     setIsDeleting(true);
     
     try {
-      const { error } = await supabase
-        .from('listings')
-        .delete()
-        .eq('id', listing.id);
+      const result = await api.listings.delete(listing.id);
       
-      if (error) throw error;
-      
-      alert('Annuncio eliminato con successo!');
-      onListingUpdated?.();
-    } catch (error) {
+      if (result.success) {
+        alert(`✅ ${result.message}`);
+        onListingUpdated?.();
+      }
+    } catch (error: any) {
       console.error('Errore eliminazione:', error);
-      alert('Errore durante l\'eliminazione');
+      alert(`❌ Errore: ${error.message || 'Errore durante l\'eliminazione'}`);
     } finally {
       setIsDeleting(false);
     }
@@ -116,78 +114,77 @@ export const MyListings: React.FC<MyListingsProps> = ({
         </div>
         
         {/* Badge Preview */}
-<div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-  <ExternalLink className="w-4 h-4 text-white" />
-</div>
-</div>
+        <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+          <ExternalLink className="w-4 h-4 text-white" />
+        </div>
+      </div>
 
-<div className="p-4 flex-1 flex flex-col">
-  <div className="flex justify-between items-start mb-1.5">
-    <h3 className="font-bold text-gray-900 line-clamp-1 text-sm">
-      {listing.title}
-    </h3>
-    <span className="font-bold text-brand text-sm whitespace-nowrap">
-      €{listing.price}
-      <span className="text-gray-400 text-[11px] font-normal">
-        /{listing.priceUnit}
-      </span>
-    </span>
-  </div>
+      <div className="p-4 flex-1 flex flex-col">
+        <div className="flex justify-between items-start mb-1.5">
+          <h3 className="font-bold text-gray-900 line-clamp-1 text-sm">
+            {listing.title}
+          </h3>
+          <span className="font-bold text-brand text-sm whitespace-nowrap">
+            €{listing.price}
+            <span className="text-gray-400 text-[11px] font-normal">
+              /{listing.priceUnit}
+            </span>
+          </span>
+        </div>
 
-  <p className="text-xs text-gray-500 mb-3 line-clamp-2">
-    {listing.description}
-  </p>
+        <p className="text-xs text-gray-500 mb-3 line-clamp-2">
+          {listing.description}
+        </p>
 
-  <div className="mt-auto pt-3 border-t border-gray-100">
-    <div className="flex items-center text-[11px] text-gray-500 mb-2">
-      <Eye className="w-4 h-4 mr-1" /> {listing.view_count || 0}
-      <span className="mx-2">•</span>
-      <Star className="w-4 h-4 mr-1 text-yellow-400 fill-current" />{" "}
-      {listing.rating || 0}
+        <div className="mt-auto pt-3 border-t border-gray-100">
+          <div className="flex items-center text-[11px] text-gray-500 mb-2">
+            <Eye className="w-4 h-4 mr-1" /> {listing.view_count || 0}
+            <span className="mx-2">•</span>
+            <Star className="w-4 h-4 mr-1 text-yellow-400 fill-current" /> {listing.rating || 0}
+          </div>
+
+          <div className="flex space-x-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditListing && onEditListing(listing);
+              }}
+              className="flex-1 p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors flex items-center justify-center"
+              title="Modifica"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={(e) => handleToggleSuspend(listing, e)}
+              disabled={isSuspending}
+              className={`flex-1 p-2 rounded-lg transition-colors flex items-center justify-center ${
+                listing.status === "suspended"
+                  ? "hover:bg-green-50 text-green-600"
+                  : "hover:bg-orange-50 text-orange-600"
+              }`}
+              title={listing.status === "suspended" ? "Riattiva" : "Sospendi"}
+            >
+              {listing.status === "suspended" ? (
+                <Play className="w-4 h-4" />
+              ) : (
+                <PauseCircle className="w-4 h-4" />
+              )}
+            </button>
+
+            <button
+              onClick={(e) => handleDelete(listing, e)}
+              disabled={isDeleting}
+              className="flex-1 p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors flex items-center justify-center"
+              title="Elimina"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <div className="flex space-x-1">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onEditListing && onEditListing(listing);
-        }}
-        className="flex-1 p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors flex items-center justify-center"
-        title="Modifica"
-      >
-        <Edit className="w-4 h-4" />
-      </button>
-
-      <button
-        onClick={(e) => handleToggleSuspend(listing, e)}
-        disabled={isSuspending}
-        className={`flex-1 p-2 rounded-lg transition-colors flex items-center justify-center ${
-          listing.status === "suspended"
-            ? "hover:bg-green-50 text-green-600"
-            : "hover:bg-orange-50 text-orange-600"
-        }`}
-        title={listing.status === "suspended" ? "Riattiva" : "Sospendi"}
-      >
-        {listing.status === "suspended" ? (
-          <Play className="w-4 h-4" />
-        ) : (
-          <PauseCircle className="w-4 h-4" />
-        )}
-      </button>
-
-      <button
-        onClick={(e) => handleDelete(listing, e)}
-        disabled={isDeleting}
-        className="flex-1 p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors flex items-center justify-center"
-        title="Elimina"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
-    </div>
-  </div>
-</div>
-</div>
-);
+  );
 
   return (
     <>
