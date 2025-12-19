@@ -756,7 +756,16 @@ setIsAuthChecking(false);
     </div>
 
     <CookieConsent />
-    <CookieSettingsButton />
+    {/* Cookie Settings Button - Solo pagine pubbliche */}
+    {!location.pathname.startsWith('/dashboard') && 
+     !location.pathname.startsWith('/messages') && 
+     !location.pathname.startsWith('/wallet') && 
+     !location.pathname.startsWith('/admin') && 
+     !location.pathname.startsWith('/my-listings') && 
+     !location.pathname.startsWith('/become-hubber') && 
+     !location.pathname.startsWith('/edit-listing') && (
+      <CookieSettingsButton />
+    )}
 
     {/* 🎨 MODALE PUBLISH */}
     {currentUser && (
