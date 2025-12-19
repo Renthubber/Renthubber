@@ -1356,7 +1356,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
   // ✅ LOADING STATE
   if (isLoadingConversations) {
     return (
-      <div className="h-[calc(100vh-128px)] md:h-[calc(100vh-64px)] bg-white flex items-center justify-center">
+      <div className="h-screen md:h-[calc(100vh-64px)] bg-white flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-brand mx-auto mb-3" />
           <p className="text-gray-500">Caricamento messaggi...</p>
@@ -1366,7 +1366,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
   }
 
   return (
-    <div className="h-[calc(100vh-128px)] md:h-[calc(100vh-64px)] bg-white flex flex-col md:flex-row overflow-hidden">
+    <div className="h-screen md:h-[calc(100vh-64px)] bg-white flex flex-col md:flex-row overflow-hidden">
       {/* Sidebar Contacts */}
       <div className={`w-full md:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col ${ 
         showMobileList ? '' : 'hidden md:flex'
@@ -1883,7 +1883,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
                 })()}
 
                 {/* Messaggi */}
-                <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 pb-24 md:pb-4 space-y-4">
+                <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 pb-40 md:pb-4 space-y-4">
                   {chatMessages.map((message) => (
                     <div
                       key={message.id}
@@ -2064,7 +2064,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
         </div>
 
         {/* Messages Feed */}
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6 space-y-4">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 pb-40 md:pb-6 space-y-4">
           {chatMessages.map((msg) =>
             // ✅ MESSAGGI DI SISTEMA (centrati, sfondo blu)
             msg.from === "system" || msg.isSystemMessage ? (
