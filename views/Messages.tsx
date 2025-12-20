@@ -1933,7 +1933,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
                           onChange={(e) => setMessageInput(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                           placeholder="Scrivi un messaggio..."
-                          className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand focus:border-brand"
+                          className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand focus:border-brand text-base"
                         />
                         <button
                           onClick={handleSend}
@@ -2149,7 +2149,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
             <input
               type="text"
               placeholder="Scrivi un messaggio..."
-              className="flex-1 bg-transparent border-none text-sm py-2 focus:outline-none focus:ring-0 focus:border-none"
+              className="flex-1 bg-transparent border-none text-base py-2 focus:outline-none focus:ring-0 focus:border-none"
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
               onKeyDown={(e) => {
