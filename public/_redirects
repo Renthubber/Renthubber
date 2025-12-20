@@ -1,49 +1,67 @@
 # Redirect vecchie pagine WordPress → nuova webapp React
 
-# Città (location-based)
-/Città/milano/*                                    /                     301
-/citta/milano/*                                    /                     301
-/città/*                                           /                     301
+# ============================================
+# STATUS 410 (GONE) - Pagine WordPress rimosse permanentemente
+# ============================================
 
-# Categorie vecchie → Home (o filtri categoria se implementati)
-/categoria-noleggio/attrezzature-edili/*           /                     301
-/categoria-noleggio/elettronica/*                  /                     301
-/categoria-noleggio/feste-a-tema/*                 /                     301
-/categoria-noleggio/feste-a-tema                   /                     301
-/categoria-noleggio/mare-e-spiaggia/*              /                     301
-/categoria-noleggio/attrezzature-sanitarie/*       /                     301
-/categoria-noleggio/attrezzature-sanitarie         /                     301
-/categoria-noleggio/abbigliamento-e-accessori/*    /                     301
-/categoria-noleggio/abbigliamento-e-accessori      /                     301
-/categoria-noleggio/*                              /                     301
+# Città vecchie WordPress - NON ESISTONO PIÙ
+/Città/milano/*                                    /                     410
+/citta/milano/*                                    /                     410
+/città/*                                           /                     410
 
-/categoria-annuncio/attrezzature-sanitarie/*       /                     301
-/categoria-annuncio/*                              /                     301
+# Categorie vecchie WordPress - NON ESISTONO PIÙ
+/categoria-noleggio/attrezzature-edili/*           /                     410
+/categoria-noleggio/elettronica/*                  /                     410
+/categoria-noleggio/feste-a-tema/*                 /                     410
+/categoria-noleggio/feste-a-tema                   /                     410
+/categoria-noleggio/mare-e-spiaggia/*              /                     410
+/categoria-noleggio/attrezzature-sanitarie/*       /                     410
+/categoria-noleggio/attrezzature-sanitarie         /                     410
+/categoria-noleggio/abbigliamento-e-accessori/*    /                     410
+/categoria-noleggio/abbigliamento-e-accessori      /                     410
+/categoria-noleggio/*                              /                     410
 
-# Pagine comuni WordPress
+/categoria-annuncio/attrezzature-sanitarie/*       /                     410
+/categoria-annuncio/*                              /                     410
+
+# Single post/page/product WordPress - NON ESISTONO PIÙ
+/post/*                                            /                     410
+/page/*                                            /                     410
+/product/*                                         /                     410
+
+# Feed WordPress - NON ESISTONO PIÙ
+/feed/*                                            /                     410
+/wp-json/*                                         /                     410
+
+# Admin WordPress - NON ESISTE PIÙ
+/wp-admin/*                                        /                     410
+/wp-login.php                                      /                     410
+
+# ============================================
+# STATUS 301 (REDIRECT) - Mappatura pagine esistenti
+# ============================================
+
+# Pagine che esistono nella nuova webapp
 /faq                                               /faq                  301
-/sostenibilita                                     /                     301
-/sostenibilità                                     /                     301
-/contratto-di-noleggio                             /terms                301
 /privacy-policy                                    /privacy-policy       301
 /cookie-policy                                     /cookie-policy        301
-/termini-e-condizioni                              /terms                301
+/contratto-di-noleggio                             /termini-condizioni   301
+/termini-e-condizioni                              /termini-condizioni   301
 
-# Single post/page WordPress (wildcard)
-/post/*                                            /                     301
-/page/*                                            /                     301
-/product/*                                         /                     301
+# Pagine generiche → Home
+/sostenibilita                                     /                     301
+/sostenibilità                                     /                     301
 
-# Feed WordPress
-/feed/*                                            /                     301
-/wp-json/*                                         /                     301
-
-# Admin WordPress (blocca accesso)
-/wp-admin/*                                        /                     301
-/wp-login.php                                      /                     301
+# ============================================
+# FUNZIONI NETLIFY
+# ============================================
 
 # ✅ SITEMAP DINAMICO - DEVE STARE PRIMA DEL CATCH-ALL SPA!
 /sitemap.xml    /.netlify/functions/sitemap    200!
+
+# ============================================
+# SPA FALLBACK
+# ============================================
 
 # SPA fallback - tutte le altre route vanno all'app React
 /*    /index.html   200
