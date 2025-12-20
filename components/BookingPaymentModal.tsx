@@ -246,7 +246,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
   // ✅ Calcola quanto wallet può essere usato in base alla scelta
   const actualWalletUsable = useMemo(() => {
     // Se non c'è nessun saldo disponibile, ritorna 0
-    if (referralBalance === 0 && refundBalance === 0) return 0;
+    if (walletUsedEur === 0 || (referralBalance === 0 && refundBalance === 0)) return 0;
     
     if (walletType === 'referral') {
       // Referral: max 30% delle commissioni
