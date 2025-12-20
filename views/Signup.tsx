@@ -562,14 +562,9 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <div className="w-full max-w-4xl">
         {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center mb-4">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand to-brand-light flex items-center justify-center mr-3">
-              <span className="text-white font-bold text-2xl">R</span>
-            </div>
-            <span className="font-bold text-3xl tracking-tight text-brand">Renthubber</span>
-          </div>
-        </div>
+       <div className="mb-8">
+  {/* Logo rimosso */}
+</div>
 
         {/* Progress Bar */}
         {step !== 'role' && step !== 'success' && step !== 'login' && (
