@@ -1925,7 +1925,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
                   }
                   
                   return (
-                   <div className="fixed lg:sticky bottom-16 md:bottom-16 lg:bottom-0 left-0 right-0 lg:left-auto lg:right-auto p-4 bg-white border-t border-gray-200 z-10">
+                   <div className="fixed lg:sticky bottom-16 md:bottom-20 lg:bottom-0 left-0 right-0 lg:left-auto lg:right-auto p-4 bg-white border-t border-gray-200 z-10">
                       <div className="flex gap-3">
                         <input
                           type="text"
@@ -2134,7 +2134,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
         </div>
 
         {/* Input Area */}
-        <div className="fixed lg:sticky bottom-16 md:bottom-16 lg:bottom-0 left-0 right-0 lg:left-auto lg:right-auto p-3 md:p-4 bg-white border-t border-gray-200 z-10">
+        <div className="fixed lg:sticky bottom-16 md:bottom-20 lg:bottom-0 left-0 right-0 lg:left-auto lg:right-auto p-3 md:p-4 bg-white border-t border-gray-200 z-10">
           <div className="flex items-center bg-gray-100 rounded-full px-3 md:px-4 py-2">
             <label className="mr-2 cursor-pointer">
               <input
