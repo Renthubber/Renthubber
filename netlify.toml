@@ -19,8 +19,22 @@
   node_bundler = "esbuild"
   external_node_modules = ["nodemailer"]
 
+# ✅ REDIRECT SITEMAP.XML - DEVE STARE PRIMA DEL REDIRECT SPA!
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/.netlify/functions/sitemap"
+  status = 200
+  force = true
+
 # Redirect per SPA (React Router)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# ✅ Headers per il sitemap
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Content-Type = "application/xml"
+    Cache-Control = "public, max-age=3600"
