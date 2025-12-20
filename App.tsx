@@ -479,16 +479,17 @@ setIsAuthChecking(false);
     />
   } />
 
-  {/* ✅ AGGIUNGI QUI - PAGINA ANNUNCI PUBBLICA */}
   <Route path="/annunci" element={
-    <Annunci
-      onListingClick={(listing) => {
-        setSelectedListing(listing);
-        navigate(`/listing/${listing.id}`);
-      }}
-      listings={listings}
-    />
-  } />
+  <Annunci
+    onListingClick={(listing) => {
+      setSelectedListing(listing);
+      navigate(`/listing/${listing.id}`);
+    }}
+    listings={listings}
+    bookings={bookings}        // ← MANCAVA!
+    currentUser={currentUser}  // ← MANCAVA!
+  />
+} />
           
  {/* ✅ CITY (attiva o prelancio) */}
   <Route path="/it/:citySlug" element={<CityPage />} />
