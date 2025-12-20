@@ -1225,7 +1225,7 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <h1 className="font-bold text-gray-900 flex items-center">
             <Box className="w-5 h-5 mr-2 text-brand" /> Nuova Inserzione
           </h1>
@@ -1246,7 +1246,7 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
         </div>
       </div>
 
-      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="flex-1 max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto w-full px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="hidden lg:block lg:col-span-3 space-y-2">
           {STEPS.map(step => (
             <div
