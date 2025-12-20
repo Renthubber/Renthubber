@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, PlusCircle, MessageSquare, Wallet, LogOut, LayoutDashboard } from "lucide-react";
 import { User, ActiveMode } from "../types";
+import { useRealtimeMessages } from "../hooks/useRealtimeMessages";
 
 interface HeaderProps {
   currentUser: User | null;
@@ -43,53 +44,19 @@ export const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // 🔔 Carica conteggio messaggi non letti
-  useEffect(() => {
-    if (!currentUser) return;
+  // 🔔 REALTIME: Messaggi non letti
+const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
+  userId: currentUser?.id || null,
+});
 
-    const loadUnreadCount = async () => {
-      try {
-        const { supabase } = await import('../lib/supabase');
-        
-        // Query diversa in base al ruolo attivo
-        const field = activeMode === 'renter' ? 'unread_for_renter' : 'unread_for_hubber';
-        const userField = activeMode === 'renter' ? 'renter_id' : 'hubber_id';
-        
-        const { data, error } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq(userField, currentUser.id)
-          .eq(field, true);
-
-        if (!error && data) {
-          // Se sei nella sezione messaggi, azzera il badge
-          if (currentView === '/messages') {
-            setUnreadCount(0);
-          } else {
-            setUnreadCount(data.length);
-            console.log('🔔 Messaggi non letti:', data.length, 'per', activeMode);
-          }
-        } else if (error) {
-          console.error('❌ Errore query non letti:', error);
-        }
-      } catch (err) {
-        console.error('Errore caricamento messaggi non letti:', err);
-      }
-    };
-
-    loadUnreadCount();
-
-    // 🔔 Ascolta evento per aggiornamento immediato
-    window.addEventListener('unread-changed', loadUnreadCount);
-
-    // Ricarica ogni 30 secondi
-    const interval = setInterval(loadUnreadCount, 30000);
-    
-    return () => {
-      window.removeEventListener('unread-changed', loadUnreadCount);
-      clearInterval(interval);
-    };
-  }, [currentUser, activeMode, currentView]);
+// Azzera badge se sei nella sezione messaggi
+useEffect(() => {
+  if (currentView === '/messages') {
+    setUnreadCount(0);
+  } else {
+    setUnreadCount(realtimeUnreadCount);
+  }
+}, [realtimeUnreadCount, currentView]);
 
   return (
     <header className="sticky top-0 z-[9999] bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
