@@ -245,7 +245,8 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
 
   // ✅ Calcola quanto wallet può essere usato in base alla scelta
   const actualWalletUsable = useMemo(() => {
-    if (walletUsedEur === 0) return 0;
+    // Se non c'è nessun saldo disponibile, ritorna 0
+    if (referralBalance === 0 && refundBalance === 0) return 0;
     
     if (walletType === 'referral') {
       // Referral: max 30% delle commissioni
@@ -255,7 +256,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       // Refund: max 100% del totale
       return Math.min(refundBalance, totalAmountEur);
     }
-  }, [walletType, referralBalance, refundBalance, platformFeeEur, totalAmountEur, walletUsedEur]);
+  }, [walletType, referralBalance, refundBalance, platformFeeEur, totalAmountEur]);
 
   const amounts = useMemo(() => {
     // Usa le fee dal database, con fallback a valori default
@@ -550,7 +551,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
                       className="mr-3"
                     />
                     <div className="flex-1">
-                      <div className="font-medium text-gray-900">Bonus Referral</div>
+                      <div className="font-medium text-gray-900">Bonus</div>
                       <div className="text-xs text-gray-500">
                         Disponibile: €{referralBalance.toFixed(2)} - Max 30% commissioni
                       </div>
