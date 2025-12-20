@@ -44,5 +44,8 @@
 /wp-admin/*                                        /                     301
 /wp-login.php                                      /                     301
 
+# ✅ SITEMAP DINAMICO - DEVE STARE PRIMA DEL CATCH-ALL SPA!
+/sitemap.xml    /.netlify/functions/sitemap    200!
+
 # SPA fallback - tutte le altre route vanno all'app React
 /*    /index.html   200
