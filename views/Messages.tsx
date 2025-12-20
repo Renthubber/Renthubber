@@ -1951,9 +1951,9 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
           </div>
         ) : (
           /* ✅ CHAT NORMALE (NON SUPPORTO) */
-          <div className="flex flex-col h-full min-h-0">
-        {/* Chat Header */}
-        <div className="sticky top-0 md:static bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-20">
+         <div className="flex flex-col h-full min-h-0 max-h-screen">
+         {/* Chat Header */}
+       <div className="flex-shrink-0 bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-20">
           {/* Bottone BACK mobile */}
           <button
             onClick={() => setShowMobileList(true)}
