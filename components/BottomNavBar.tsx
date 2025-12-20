@@ -9,6 +9,7 @@ import {
   LayoutDashboard
 } from "lucide-react";
 import { User as UserType, ActiveMode } from "../types";
+import { useRealtimeMessages } from "../hooks/useRealtimeMessages";
 
 interface BottomNavBarProps {
   currentUser: UserType | null;
@@ -30,49 +31,19 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   const isHubber = currentUser?.roles?.includes("hubber") || currentUser?.role === "hubber";
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // 🔔 Carica conteggio messaggi non letti
-  useEffect(() => {
-    if (!currentUser) return;
+  // 🔔 REALTIME: Messaggi non letti
+const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
+  userId: currentUser?.id || null,
+});
 
-    const loadUnreadCount = async () => {
-      try {
-        const { supabase } = await import('../lib/supabase');
-        
-        const field = activeMode === 'renter' ? 'unread_for_renter' : 'unread_for_hubber';
-        const userField = activeMode === 'renter' ? 'renter_id' : 'hubber_id';
-        
-        const { data, error } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq(userField, currentUser.id)
-          .eq(field, true);
-
-        if (!error && data) {
-          // Se sei nella sezione messaggi, azzera il badge
-          if (currentView === '/messages') {
-            setUnreadCount(0);
-          } else {
-            setUnreadCount(data.length);
-            console.log('🔔 Mobile - Messaggi non letti:', data.length);
-          }
-        }
-      } catch (err) {
-        console.error('Errore caricamento messaggi non letti mobile:', err);
-      }
-    };
-
-    loadUnreadCount();
-
-    // 🔔 Ascolta evento per aggiornamento immediato
-    window.addEventListener('unread-changed', loadUnreadCount);
-
-    const interval = setInterval(loadUnreadCount, 30000);
-    
-    return () => {
-      window.removeEventListener('unread-changed', loadUnreadCount);
-      clearInterval(interval);
-    };
-  }, [currentUser, activeMode, currentView]);
+// Azzera badge se sei nella sezione messaggi
+useEffect(() => {
+  if (currentView === '/messages') {
+    setUnreadCount(0);
+  } else {
+    setUnreadCount(realtimeUnreadCount);
+  }
+}, [realtimeUnreadCount, currentView]);
 
   // ✅ Determina il path corretto per la dashboard in base al ruolo
   const isAdmin = currentUser?.role === 'admin' || currentUser?.roles?.includes('admin');
