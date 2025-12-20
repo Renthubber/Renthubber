@@ -26,6 +26,7 @@ import LaunchLandingPage from './pages/LaunchLandingPage';
 import ListingsMapView from './pages/ListingsMapView';
 import OrdinamentoRisultati from './pages/OrdinamentoRisultati';
 import ScrollToTop from './components/ScrollToTop';
+import { Annunci } from "./views/Annunci";
 
 
 
@@ -464,19 +465,30 @@ setIsAuthChecking(false);
       />
 
       <main className="flex-1">
-        <Routes>
-          {/* HOME & AUTH */}
-          <Route path="/" element={
-            <Home
-              listings={listings}
-              bookings={bookings}
-              currentUser={currentUser}
-              onListingClick={(listing) => {
-                setSelectedListing(listing);
-                navigate(`/listing/${listing.id}`);
-              }}
-            />
-          } />
+       <Routes>
+  {/* HOME & AUTH */}
+  <Route path="/" element={
+    <Home
+      listings={listings}
+      bookings={bookings}
+      currentUser={currentUser}
+      onListingClick={(listing) => {
+        setSelectedListing(listing);
+        navigate(`/listing/${listing.id}`);
+      }}
+    />
+  } />
+
+  {/* ✅ AGGIUNGI QUI - PAGINA ANNUNCI PUBBLICA */}
+  <Route path="/annunci" element={
+    <Annunci
+      onListingClick={(listing) => {
+        setSelectedListing(listing);
+        navigate(`/listing/${listing.id}`);
+      }}
+      listings={listings}
+    />
+  } />
           
  {/* ✅ CITY (attiva o prelancio) */}
   <Route path="/it/:citySlug" element={<CityPage />} />
