@@ -9,11 +9,11 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export const handler: Handler = async (event, context) => {
   try {
-    // ✅ 1. Recupera tutti i listing ATTIVI dal database
+    // ✅ 1. Recupera tutti i listing PUBBLICATI dal database
     const { data: listings, error } = await supabase
       .from('listings')
       .select('id, created_at, status')
-      .eq('status', 'active')  // Solo annunci attivi
+      .eq('status', 'published')  // Solo annunci pubblicati
       .is('deleted_at', null)  // Esclude quelli eliminati
       .order('created_at', { ascending: false });
 
