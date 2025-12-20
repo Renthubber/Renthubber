@@ -1953,7 +1953,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
           /* ✅ CHAT NORMALE (NON SUPPORTO) */
           <div className="flex flex-col h-full min-h-0">
         {/* Chat Header */}
-        <div className="bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-10">
+        <div className="sticky top-0 md:static bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-20">
           {/* Bottone BACK mobile */}
           <button
             onClick={() => setShowMobileList(true)}
@@ -2064,7 +2064,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
         </div>
 
         {/* Messages Feed */}
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 pb-40 md:pb-6 space-y-4">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 pt-0 pb-40 md:pb-6 space-y-4">
           {chatMessages.map((msg) =>
             // ✅ MESSAGGI DI SISTEMA (centrati, sfondo blu)
             msg.from === "system" || msg.isSystemMessage ? (
