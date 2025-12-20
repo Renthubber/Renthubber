@@ -21,8 +21,6 @@
 /categoria-annuncio/*                              /                     301
 
 # Pagine comuni WordPress
-/annunci/*                                         /                     301
-/annunci                                           /                     301
 /faq                                               /faq                  301
 /sostenibilita                                     /                     301
 /sostenibilità                                     /                     301
