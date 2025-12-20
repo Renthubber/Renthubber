@@ -562,8 +562,14 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <div className="w-full max-w-4xl">
         {/* Header */}
-       <div className="mb-8">
-  {/* Logo rimosso */}
+       <div className="text-center mb-3">
+  <div className="inline-flex items-center justify-center">
+    <img 
+      src="/R-logo.png" 
+      alt="Renthubber Logo" 
+      className="w-16 h-16"
+    />
+  </div>
 </div>
 
         {/* Progress Bar */}
