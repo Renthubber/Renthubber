@@ -304,7 +304,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       hubberNetCents,
       hubberTotalFeeCents,
     };
-  }, [totalAmountEur, rentalAmountEur, platformFeeEur, depositEur, walletUsedEur, platformFees, cleaningFeeEur]);
+  }, [totalAmountEur, rentalAmountEur, platformFeeEur, depositEur, actualWalletUsable, platformFees, cleaningFeeEur]);
 
   if (!isOpen) return null;
 
@@ -338,11 +338,18 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
         }
       }
 
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) {
-        setErrorMsg("Elemento carta non trovato.");
-        setLoading(false);
-        return;
+      // ✅ Calcola quanto serve pagare con carta
+      const cardToPayEur = amounts.cardCents / 100;
+
+      // ✅ Valida CardElement SOLO se serve pagare con carta
+      let cardElement = null;
+      if (cardToPayEur > 0) {
+        cardElement = elements.getElement(CardElement);
+        if (!cardElement) {
+          setErrorMsg("Elemento carta non trovato.");
+          setLoading(false);
+          return;
+        }
       }
 
       console.log("💳 Creazione Payment Intent...");
