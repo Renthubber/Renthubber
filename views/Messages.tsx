@@ -1925,7 +1925,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
                   }
                   
                   return (
-                   <div className="fixed md:sticky bottom-16 md:bottom-0 left-0 right-0 md:left-auto md:right-auto p-4 bg-white border-t border-gray-200 z-10">
+                   <div className="fixed lg:sticky bottom-16 md:bottom-0 lg:bottom-0 left-0 right-0 lg:left-auto lg:right-auto p-4 bg-white border-t border-gray-200 z-10">
                       <div className="flex gap-3">
                         <input
                           type="text"
@@ -1953,7 +1953,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
           /* ✅ CHAT NORMALE (NON SUPPORTO) */
          <div className="flex flex-col h-full min-h-0 max-h-screen">
          {/* Chat Header */}
-       <div className="flex-shrink-0 bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-20">
+<div className="sticky top-0 md:relative bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-30">
           {/* Bottone BACK mobile */}
           <button
             onClick={() => setShowMobileList(true)}
@@ -2134,7 +2134,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
         </div>
 
         {/* Input Area */}
-        <div className="fixed md:sticky bottom-16 md:bottom-0 left-0 right-0 md:left-auto md:right-auto p-3 md:p-4 bg-white border-t border-gray-200 z-10">
+        <div className="fixed lg:sticky bottom-16 md:bottom-0 lg:bottom-0 left-0 right-0 lg:left-auto lg:right-auto p-3 md:p-4 bg-white border-t border-gray-200 z-10">
           <div className="flex items-center bg-gray-100 rounded-full px-3 md:px-4 py-2">
             <label className="mr-2 cursor-pointer">
               <input
