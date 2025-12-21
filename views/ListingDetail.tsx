@@ -55,6 +55,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
   const [maxCreditUsagePercent, setMaxCreditUsagePercent] = useState(30);
 
   // ✅ SALDI WALLET SEPARATI
+  const [generalBalance, setGeneralBalance] = useState(0);   // Wallet generale (100% utilizzo)
   const [referralBalance, setReferralBalance] = useState(0); // Credito Invita Amico (max 30% commissioni)
   const [refundBalance, setRefundBalance] = useState(0);     // Credito Rimborsi (100% flessibile)
 
@@ -126,7 +127,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
       try {
         const { data: wallet, error } = await supabase
           .from("wallets")
-          .select("referral_balance_cents, refund_balance_cents")
+          .select("balance_cents, referral_balance_cents, refund_balance_cents")
           .eq("user_id", currentUser.id)
           .single();
         
@@ -136,9 +137,11 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
         }
         
         if (wallet) {
+          setGeneralBalance((wallet.balance_cents || 0) / 100);
           setReferralBalance((wallet.referral_balance_cents || 0) / 100);
           setRefundBalance((wallet.refund_balance_cents || 0) / 100);
           console.log("✅ Saldi wallet caricati:", {
+            general: (wallet.balance_cents || 0) / 100,
             referral: (wallet.referral_balance_cents || 0) / 100,
             refund: (wallet.refund_balance_cents || 0) / 100
           });
@@ -1021,6 +1024,7 @@ useEffect(() => {
           depositEur={Number(listing.deposit) || 0}
           cleaningFeeEur={Number(listing.cleaningFee) || 0}
           walletUsedEur={walletUsedEur}
+          generalBalance={generalBalance}
           onSuccess={async () => {
             await handlePaymentSuccess();
             setShowPaymentModal(false);

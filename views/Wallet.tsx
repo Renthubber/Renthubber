@@ -76,6 +76,7 @@ export const Wallet: React.FC<WalletProps> = ({
   const effectiveIban = bankForm.iban || currentUser.bankDetails?.iban || '';
 
   // ✅ SALDI SEPARATI PER RENTER
+  const [generalBalance, setGeneralBalance] = useState(0);    // Wallet generale (100% utilizzo)
   const [referralBalance, setReferralBalance] = useState(0);  // Credito Invita Amico (max 30% comm.)
   const [refundBalance, setRefundBalance] = useState(0);      // Credito Rimborsi (100% flessibile)
   const [renterWalletLoading, setRenterWalletLoading] = useState(false);
@@ -109,8 +110,8 @@ export const Wallet: React.FC<WalletProps> = ({
   const [bookingDetails, setBookingDetails] = useState<any>(null);
   const [loadingBookingDetails, setLoadingBookingDetails] = useState(false);
 
-  // Totale credito renter = wallet + referral + rimborsi
-  const totalRenterCredit = (walletBalance ?? 0) + referralBalance + refundBalance;
+  // Totale credito renter = wallet generale + referral + rimborsi
+  const totalRenterCredit = generalBalance + referralBalance + refundBalance;
 
   // ===========================
   //   REFERRAL CODE: CREAZIONE AUTOMATICA
@@ -245,14 +246,16 @@ export const Wallet: React.FC<WalletProps> = ({
       try {
         const { data: wallet, error } = await supabase
           .from('wallets')
-          .select('referral_balance_cents, refund_balance_cents')
+          .select('balance_cents, referral_balance_cents, refund_balance_cents')
           .eq('user_id', currentUser.id)
           .single();
         
         if (!error && wallet) {
+          setGeneralBalance((wallet.balance_cents || 0) / 100);
           setReferralBalance((wallet.referral_balance_cents || 0) / 100);
           setRefundBalance((wallet.refund_balance_cents || 0) / 100);
           console.log('✅ Saldi renter caricati:', {
+            general: (wallet.balance_cents || 0) / 100,
             referral: (wallet.referral_balance_cents || 0) / 100,
             refund: (wallet.refund_balance_cents || 0) / 100
           });
@@ -710,7 +713,7 @@ export const Wallet: React.FC<WalletProps> = ({
                       <WalletIcon className="w-4 h-4 text-blue-300" />
                       <span className="text-xs text-blue-200">Wallet</span>
                     </div>
-                    <p className="text-xl font-bold">€ {(walletBalance ?? 0).toFixed(2)}</p>
+                    <p className="text-xl font-bold">€ {generalBalance.toFixed(2)}</p>
                     <p className="text-[10px] text-blue-300 mt-1">Utilizzo al 100%</p>
                   </div>
                 
