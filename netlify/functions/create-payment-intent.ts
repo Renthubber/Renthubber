@@ -182,7 +182,6 @@ export const handler: Handler = async (event, context) => {
         hubber_net_amount: basePrice + cleaningFee - hubberFee,
         wallet_used_cents: Math.round(walletUsedTotal * 100),
         status: 'confirmed',
-        payment_status: 'paid',
         stripe_payment_intent_id: null,
         created_at: new Date().toISOString(),
       };
