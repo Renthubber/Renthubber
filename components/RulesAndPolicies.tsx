@@ -7,12 +7,27 @@ interface RulesAndPoliciesProps {
   cancellationPolicy?: CancellationPolicyType;
   deposit?: number;
   openingHours?: string;
+  closingHours?: string;
+  category?: string;
 }
 
-export const RulesAndPolicies: React.FC<RulesAndPoliciesProps> = ({ rules, cancellationPolicy, deposit, openingHours }) => {
+export const RulesAndPolicies: React.FC<RulesAndPoliciesProps> = ({ 
+  rules, 
+  cancellationPolicy, 
+  deposit, 
+  openingHours, 
+  closingHours,
+  category 
+}) => {
+  // Testo dinamico in base alla categoria
+  const isSpace = category === 'Spazi';
+  const openLabel = isSpace ? 'Check-in' : 'Ritiro';
+  const closeLabel = isSpace ? 'Check-out' : 'Riconsegna';
+  const policyEventText = isSpace ? 'check-in' : 'ritiro';
+  
   const policyText = {
-     'flexible': { title: 'Cancellazione Flessibile', desc: 'Rimborso totale fino a 24 ore prima del check-in.' },
-     'moderate': { title: 'Cancellazione Moderata', desc: 'Rimborso totale fino a 5 giorni prima del check-in.' },
+     'flexible': { title: 'Cancellazione Flessibile', desc: `Rimborso totale fino a 24 ore prima del ${policyEventText}.` },
+     'moderate': { title: 'Cancellazione Moderata', desc: `Rimborso totale fino a 5 giorni prima del ${policyEventText}.` },
      'strict': { title: 'Cancellazione Rigida', desc: 'Rimborso parziale se cancelli a meno di 7 giorni.' },
   };
   
@@ -30,7 +45,13 @@ export const RulesAndPolicies: React.FC<RulesAndPoliciesProps> = ({ rules, cance
                {openingHours && (
                   <li className="flex items-start text-sm text-gray-600">
                      <Clock className="w-5 h-5 mr-3 text-gray-400 flex-shrink-0" />
-                     Check-in: {openingHours}
+                     {openLabel}: {openingHours}
+                  </li>
+               )}
+               {closingHours && (
+                  <li className="flex items-start text-sm text-gray-600">
+                     <Clock className="w-5 h-5 mr-3 text-gray-400 flex-shrink-0" />
+                     {closeLabel}: {closingHours}
                   </li>
                )}
                {(rules ?? []).map((rule, i) => (
