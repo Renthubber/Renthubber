@@ -369,6 +369,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           listingId: listing.id,
+          listingTitle: listing.title,
           renterId: renter.id,
           hubberId: listing.hostId,
           startDate,
