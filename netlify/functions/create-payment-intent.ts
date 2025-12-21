@@ -10,6 +10,7 @@ const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || '';
 
 interface CreatePaymentIntentRequest {
   listingId: string;
+  listingTitle: string;
   renterId: string;
   hubberId: string;
   startDate: string;
@@ -54,6 +55,7 @@ export const handler: Handler = async (event, context) => {
     
     const {
       listingId,
+      listingTitle = '',
       renterId,
       hubberId,
       startDate,
@@ -263,6 +265,9 @@ export const handler: Handler = async (event, context) => {
       // Crea transazioni wallet per tracciabilità
       const transactions = [];
       
+      // Formato uniforme per tutte le transazioni: "Pagamento prenotazione #ID (Titolo)"
+      const txDescription = `Pagamento prenotazione #${booking.id.slice(0, 8).toUpperCase()} (${listingTitle})`;
+      
       if (generalBalanceToUse > 0) {
         transactions.push({
           user_id: renterId,
@@ -270,7 +275,7 @@ export const handler: Handler = async (event, context) => {
           type: 'debit',
           source: 'booking_payment',
           wallet_type: 'renter',
-          description: `Pagamento prenotazione ${booking.id.slice(0, 8)}`,
+          description: txDescription,
           related_booking_id: booking.id,
           created_at: new Date().toISOString(),
         });
@@ -283,7 +288,7 @@ export const handler: Handler = async (event, context) => {
           type: 'debit',
           source: 'booking_payment',
           wallet_type: 'renter',
-          description: `Pagamento prenotazione ${booking.id.slice(0, 8)} (credito rimborso)`,
+          description: txDescription,
           related_booking_id: booking.id,
           created_at: new Date().toISOString(),
         });
@@ -296,7 +301,7 @@ export const handler: Handler = async (event, context) => {
           type: 'debit',
           source: 'booking_payment',
           wallet_type: 'renter',
-          description: `Pagamento prenotazione ${booking.id.slice(0, 8)} (bonus referral)`,
+          description: txDescription,
           related_booking_id: booking.id,
           created_at: new Date().toISOString(),
         });
