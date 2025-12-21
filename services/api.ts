@@ -581,9 +581,12 @@ const mapDbListingToAppListing = (row: any): Listing => {
     zoneDescription: row.zone_description || "",
     
     // 👇 CAMPI SPAZIO
-    maxGuests: row.max_guests ?? undefined,
-    openingHours: row.opening_hours || "",
-    manualBadges: row.manual_badges || [],
+maxGuests: row.max_guests ?? undefined,  // Solo per spazi
+
+// 👇 ORARI E BADGE (per tutti)
+openingHours: row.opening_hours || "",
+closingHours: row.closing_hours || "",
+manualBadges: row.manual_badges || [],
 
     // 👇 CONTEGGIO VISUALIZZAZIONI
 view_count: row.view_count ?? 0,
