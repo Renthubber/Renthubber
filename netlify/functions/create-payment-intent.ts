@@ -267,7 +267,7 @@ export const handler: Handler = async (event, context) => {
         transactions.push({
           user_id: renterId,
           amount_cents: -Math.round(generalBalanceToUse * 100),
-          source: 'wallet',
+          source: 'booking_payment',
           type: 'payment',
           description: `Pagamento prenotazione ${booking.id.slice(0, 8)}`,
           related_booking_id: booking.id,
@@ -279,9 +279,9 @@ export const handler: Handler = async (event, context) => {
         transactions.push({
           user_id: renterId,
           amount_cents: -Math.round(refundBalanceToUse * 100),
-          source: 'refund',
+          source: 'booking_payment',
           type: 'payment',
-          description: `Pagamento prenotazione ${booking.id.slice(0, 8)} (rimborso)`,
+          description: `Pagamento prenotazione ${booking.id.slice(0, 8)} (credito rimborso)`,
           related_booking_id: booking.id,
           created_at: new Date().toISOString(),
         });
@@ -291,7 +291,7 @@ export const handler: Handler = async (event, context) => {
         transactions.push({
           user_id: renterId,
           amount_cents: -Math.round(referralBalanceToUse * 100),
-          source: 'referral',
+          source: 'booking_payment',
           type: 'payment',
           description: `Pagamento prenotazione ${booking.id.slice(0, 8)} (bonus referral)`,
           related_booking_id: booking.id,
