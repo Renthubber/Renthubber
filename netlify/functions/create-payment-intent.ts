@@ -96,7 +96,7 @@ export const handler: Handler = async (event, context) => {
       referralBalanceToUse,
     });
 
-    // 1. Carica saldi wallet da WALLETS TABLE (non da users!)
+    // 1. Carica saldi wallet da WALLETS TABLE
     const walletResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${renterId}`,
       {
@@ -171,7 +171,25 @@ export const handler: Handler = async (event, context) => {
     if (amountToPayCents === 0) {
       console.log('✅ Payment 100% with wallet, creating booking...');
       
-      // Salva prenotazione direttamente (senza Payment Intent)
+      const bookingData = {
+        listing_id: listingId,
+        renter_id: renterId,
+        hubber_id: hubberId,
+        start_date: startDate,
+        end_date: endDate,
+        amount_total: totalAmount,
+        platform_fee: renterFee + hubberFee,
+        hubber_net_amount: basePrice + cleaningFee - hubberFee,
+        wallet_used_cents: Math.round(walletUsedTotal * 100),
+        status: 'confirmed',
+        payment_status: 'paid',
+        stripe_payment_intent_id: null,
+        created_at: new Date().toISOString(),
+      };
+
+      console.log('📝 Creating booking with data:', bookingData);
+
+      // Salva prenotazione direttamente
       const bookingResponse = await fetch(
         `${SUPABASE_URL}/rest/v1/bookings`,
         {
@@ -182,37 +200,43 @@ export const handler: Handler = async (event, context) => {
             'Content-Type': 'application/json',
             'Prefer': 'return=representation',
           },
-          body: JSON.stringify({
-            listing_id: listingId,
-            renter_id: renterId,
-            hubber_id: hubberId,
-            start_date: startDate,
-            end_date: endDate,
-            amount_total: totalAmount,
-            platform_fee: renterFee + hubberFee,
-            hubber_net_amount: basePrice + cleaningFee - hubberFee,
-            wallet_used_cents: Math.round(walletUsedTotal * 100),
-            status: 'confirmed',
-            payment_status: 'paid',
-            stripe_payment_intent_id: null,
-            created_at: new Date().toISOString(),
-          }),
+          body: JSON.stringify(bookingData),
         }
       );
 
-      const bookings = await bookingResponse.json();
-      const booking = bookings[0];
+      console.log('📝 Booking response status:', bookingResponse.status);
 
-      if (!booking) {
-        throw new Error('Failed to create booking');
+      if (!bookingResponse.ok) {
+        const errorText = await bookingResponse.text();
+        console.error('❌ Booking creation failed:', errorText);
+        throw new Error(`Failed to create booking: ${errorText}`);
       }
+
+      const bookingResult = await bookingResponse.json();
+      console.log('📝 Booking result:', JSON.stringify(bookingResult));
+
+      // Gestisci sia array che oggetto singolo
+      const booking = Array.isArray(bookingResult) ? bookingResult[0] : bookingResult;
+
+      if (!booking || !booking.id) {
+        console.error('❌ No booking ID in response');
+        throw new Error('Failed to create booking: No ID returned');
+      }
+
+      console.log('✅ Booking created:', booking.id);
 
       // Scala i crediti dal wallet
       const newGeneralBalanceCents = Math.round((generalBalance - generalBalanceToUse) * 100);
       const newRefundBalanceCents = Math.round((refundBalance - refundBalanceToUse) * 100);
       const newReferralBalanceCents = Math.round((referralBalance - referralBalanceToUse) * 100);
 
-      await fetch(
+      console.log('💰 Updating wallet balances:', {
+        general: newGeneralBalanceCents,
+        refund: newRefundBalanceCents,
+        referral: newReferralBalanceCents,
+      });
+
+      const walletUpdateResponse = await fetch(
         `${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${renterId}`,
         {
           method: 'PATCH',
@@ -230,7 +254,14 @@ export const handler: Handler = async (event, context) => {
         }
       );
 
-      // Crea transazioni wallet
+      if (!walletUpdateResponse.ok) {
+        const errorText = await walletUpdateResponse.text();
+        console.error('⚠️ Wallet update failed:', errorText);
+      } else {
+        console.log('✅ Wallet updated successfully');
+      }
+
+      // Crea transazioni wallet per tracciabilità
       const transactions = [];
       
       if (generalBalanceToUse > 0) {
@@ -266,8 +297,10 @@ export const handler: Handler = async (event, context) => {
         });
       }
 
+      console.log(`💳 Creating ${transactions.length} wallet transactions...`);
+
       if (transactions.length > 0) {
-        await fetch(
+        const txResponse = await fetch(
           `${SUPABASE_URL}/rest/v1/wallet_transactions`,
           {
             method: 'POST',
@@ -279,6 +312,13 @@ export const handler: Handler = async (event, context) => {
             body: JSON.stringify(transactions),
           }
         );
+
+        if (!txResponse.ok) {
+          const errorText = await txResponse.text();
+          console.error('⚠️ Wallet transactions creation failed:', errorText);
+        } else {
+          console.log('✅ Wallet transactions created successfully');
+        }
       }
 
       console.log('✅ Booking created without Stripe (paid with wallet)');
