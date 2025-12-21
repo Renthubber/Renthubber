@@ -42,6 +42,8 @@ import { ReferralSettings } from "../components/admin/ReferralSettings";
 import { downloadInvoicePDF } from '../services/invoicePdfGenerator';
 import { AdminEmailSection } from './AdminEmailSection';
 import { AdminCMSBranding } from "../components/admin//AdminCMSBranding";
+import { AdminNotificationBell } from '../components/admin/AdminNotificationBell';
+import { markAsViewed } from '../hooks/useAdminNotifications';
 
 interface AdminDashboardProps {
   systemConfig: SystemConfig;
@@ -107,9 +109,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   bookings = [],
   currentUser,
 }) => {
-  const [activeTab, setActiveTab] = useState <
-    'overview' | 'users' | 'listings' | 'finance' | 'invoices' | 'cms' | 'disputes' | 'reviews' | 'email' | 'config' | 'referral'
-  >('overview');
+  const [activeTab, setActiveTab] = useState<
+  'overview' | 'users' | 'listings' | 'bookings' | 'messages' | 'support' | 'finance' | 'invoices' | 'cms' | 'disputes' | 'reviews' | 'email' | 'config' | 'referral'
+>('overview');
   // Sotto-tab per Finanza & Wallet
 const [financeSubTab, setFinanceSubTab] = useState <
   'overview' | 'transactions' | 'wallets' | 'payouts' | 'fees' | 'refunds' | 'reports' | 'settings'
@@ -798,17 +800,30 @@ const [userDocumentFilter, setUserDocumentFilter] = useState<'all' | 'to_verify'
     }
   };
 
-  const handleUpdateTicketStatus = async (ticketId: string, newStatus: string) => {
-    try {
-      await api.support.updateTicketStatus(ticketId, newStatus, currentUser?.id || '');
-      await loadAllTickets();
-      if (selectedTicket?.id === ticketId) {
-        setSelectedTicket({ ...selectedTicket, status: newStatus });
+ const handleUpdateTicketStatus = async (ticketId: string, newStatus: string) => {
+  try {
+    await api.support.updateTicketStatus(ticketId, newStatus, currentUser?.id || '');
+    await loadAllTickets();
+    
+    // ✨ RICARICA DISPUTE quando il ticket cambia stato
+    if (newStatus === 'resolved' || newStatus === 'closed') {
+      const { data: disputes } = await (await import('../lib/supabase')).supabase
+        .from('disputes')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (disputes) {
+        setLocalDisputes(disputes);
       }
-    } catch (e) {
-      console.error('Errore aggiornamento stato ticket:', e);
     }
-  };
+    
+    if (selectedTicket?.id === ticketId) {
+      setSelectedTicket({ ...selectedTicket, status: newStatus });
+    }
+  } catch (e) {
+    console.error('Errore aggiornamento stato ticket:', e);
+  }
+};
 
   const handleUpdateTicketPriority = async (ticketId: string, newPriority: string) => {
     try {
@@ -7539,6 +7554,9 @@ const renderFinanceRefunds = () => {
                 <button
                   onClick={async () => {
                     try {
+                      // ✨ MARCA COME VISTA
+                     await markAsViewed('dispute', d.id);
+      
                       // Verifica se esiste già un ticket per questa disputa
                       const { data: existingTicket } = await (await import('../lib/supabase')).supabase
                         .from('support_tickets')
@@ -8297,23 +8315,36 @@ const renderReviews = () => {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
-      <main className="flex-1 ml-64 p-8 overflow-y-auto">
-        {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'users' && renderUsers()}
-        {activeTab === 'listings' && renderListings()}
-        {activeTab === 'bookings' && renderBookings()}
-        {activeTab === 'messages' && renderMessages()}
-        {activeTab === 'support' && renderSupport()}
-        {activeTab === 'finance' && renderFinance()}
-        {activeTab === 'invoices' && renderInvoices()}
-        {activeTab === 'cms' && renderCMS()}
-        {activeTab === 'disputes' && renderDisputes()}
-        {activeTab === 'reviews' && renderReviews()}
-        {activeTab === 'email' && <AdminEmailSection allUsers={allUsers} currentUser={currentUser} />}
-        {activeTab === 'config' && renderConfig()}
-        {activeTab === 'referral' && <ReferralSettings />}
-      </main>
+      <main className="flex-1 ml-64 overflow-y-auto">
+  {/* ⬇️ QUESTO È NUOVO - HEADER con campanella */}
+  <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm px-8 py-4">
+    <div className="flex items-center justify-between">
+      <h2 className="text-2xl font-bold text-gray-900">
+        {activeTab === 'overview' && '📊 Panoramica'}
+        {/* ... titoli dinamici */}
+      </h2>
+      <AdminNotificationBell onNavigate={(tab) => setActiveTab(tab as any)} />
+    </div>
+  </div>
+
+  {/* ⬇️ QUESTO È IL TUO CONTENUTO ESISTENTE - IDENTICO */}
+  <div className="p-8">
+    {activeTab === 'overview' && renderOverview()}
+    {activeTab === 'users' && renderUsers()}
+    {activeTab === 'listings' && renderListings()}
+    {activeTab === 'bookings' && renderBookings()}
+    {activeTab === 'messages' && renderMessages()}
+    {activeTab === 'support' && renderSupport()}
+    {activeTab === 'finance' && renderFinance()}
+    {activeTab === 'invoices' && renderInvoices()}
+    {activeTab === 'cms' && renderCMS()}
+    {activeTab === 'disputes' && renderDisputes()}
+    {activeTab === 'reviews' && renderReviews()}
+    {activeTab === 'email' && <AdminEmailSection allUsers={allUsers} currentUser={currentUser} />}
+    {activeTab === 'config' && renderConfig()}
+    {activeTab === 'referral' && <ReferralSettings />}
+  </div>
+</main>
 
       {/* INVOICE GENERATION MODAL */}
       {showInvoiceModal && (

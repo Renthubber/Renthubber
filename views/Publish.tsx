@@ -83,6 +83,7 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
     zoneDescription: '',      // Descrizione zona/quartiere
     maxGuests: '',            // Ospiti massimi (per spazi)
     openingHours: '',         // Orari apertura (per spazi)
+    closingHours: '',         // Orari chiusura/riconsegna
     manualBadges: [] as string[], // Badge manuali
     cleaningFee: '',
     rules: '',
@@ -310,6 +311,7 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
         zoneDescription: draft.zoneDescription,
         maxGuests: draft.maxGuests ? parseInt(draft.maxGuests) : undefined,
         openingHours: draft.openingHours,
+        closingHours: draft.closingHours,
         manualBadges: draft.manualBadges,
         // 👇 TECH/SPACE SPECS
         techSpecs: draft.category === 'oggetto'
@@ -979,22 +981,139 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Orari Apertura</label>
-              <div className="relative">
-                <Clock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  className="w-full pl-10 px-4 py-3 rounded-xl border border-gray-300"
-                  placeholder="Es. 09:00 - 23:00"
-                  value={draft.openingHours}
-                  onChange={(e) => setDraft({ ...draft, openingHours: e.target.value })}
-                />
-              </div>
-            </div>
           </div>
         </div>
       )}
+
+      {/* Orari - per TUTTI (oggetti e spazi) */}
+<div className="border-t border-gray-200 pt-6">
+  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+    <Clock className="w-5 h-5 mr-2 text-brand" />
+    Orari
+  </h3>
+  
+  {/* Check-in/Ritiro */}
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-gray-700 mb-2">Check-in / Ritiro</label>
+    <div className="grid grid-cols-2 gap-4">
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Da</label>
+        <div className="relative">
+          <Clock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+          <select
+            className="w-full pl-10 px-4 py-3 rounded-xl border border-gray-300 bg-white appearance-none cursor-pointer"
+            value={draft.openingHours?.split('-')[0]?.trim() || ''}
+            onChange={(e) => {
+              const endTime = draft.openingHours?.split('-')[1]?.trim() || '';
+              setDraft({ ...draft, openingHours: endTime ? `${e.target.value} - ${endTime}` : e.target.value });
+            }}
+          >
+            <option value="">Seleziona</option>
+            {Array.from({ length: 48 }, (_, i) => {
+              const hour = Math.floor(i / 2);
+              const minute = i % 2 === 0 ? '00' : '30';
+              const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+              return <option key={time} value={time}>{time}</option>;
+            })}
+          </select>
+          <div className="absolute right-3 top-3 pointer-events-none">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">A</label>
+        <div className="relative">
+          <Clock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+          <select
+            className="w-full pl-10 px-4 py-3 rounded-xl border border-gray-300 bg-white appearance-none cursor-pointer"
+            value={draft.openingHours?.split('-')[1]?.trim() || ''}
+            onChange={(e) => {
+              const startTime = draft.openingHours?.split('-')[0]?.trim() || '';
+              setDraft({ ...draft, openingHours: startTime ? `${startTime} - ${e.target.value}` : e.target.value });
+            }}
+          >
+            <option value="">Seleziona</option>
+            {Array.from({ length: 48 }, (_, i) => {
+              const hour = Math.floor(i / 2);
+              const minute = i % 2 === 0 ? '00' : '30';
+              const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+              return <option key={time} value={time}>{time}</option>;
+            })}
+          </select>
+          <div className="absolute right-3 top-3 pointer-events-none">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* Check-out/Riconsegna */}
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-2">Check-out / Riconsegna</label>
+    <div className="grid grid-cols-2 gap-4">
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Da</label>
+        <div className="relative">
+          <Clock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+          <select
+            className="w-full pl-10 px-4 py-3 rounded-xl border border-gray-300 bg-white appearance-none cursor-pointer"
+            value={draft.closingHours?.split('-')[0]?.trim() || ''}
+            onChange={(e) => {
+              const endTime = draft.closingHours?.split('-')[1]?.trim() || '';
+              setDraft({ ...draft, closingHours: endTime ? `${e.target.value} - ${endTime}` : e.target.value });
+            }}
+          >
+            <option value="">Seleziona</option>
+            {Array.from({ length: 48 }, (_, i) => {
+              const hour = Math.floor(i / 2);
+              const minute = i % 2 === 0 ? '00' : '30';
+              const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+              return <option key={time} value={time}>{time}</option>;
+            })}
+          </select>
+          <div className="absolute right-3 top-3 pointer-events-none">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">A</label>
+        <div className="relative">
+          <Clock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+          <select
+            className="w-full pl-10 px-4 py-3 rounded-xl border border-gray-300 bg-white appearance-none cursor-pointer"
+            value={draft.closingHours?.split('-')[1]?.trim() || ''}
+            onChange={(e) => {
+              const startTime = draft.closingHours?.split('-')[0]?.trim() || '';
+              setDraft({ ...draft, closingHours: startTime ? `${startTime} - ${e.target.value}` : e.target.value });
+            }}
+          >
+            <option value="">Seleziona</option>
+            {Array.from({ length: 48 }, (_, i) => {
+              const hour = Math.floor(i / 2);
+              const minute = i % 2 === 0 ? '00' : '30';
+              const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+              return <option key={time} value={time}>{time}</option>;
+            })}
+          </select>
+          <div className="absolute right-3 top-3 pointer-events-none">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
       {/* Politica di Cancellazione */}
       <div>
@@ -1246,7 +1365,7 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
         </div>
       </div>
 
-      <div className="flex-1 max-w-4xl sm:max-w-full lg:max-w-6xl mx-auto w-full px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="flex-1 max-w-4xl sm:max-w-full lg:max-w-6xl mx-auto w-full px-4 sm:px-2 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="hidden lg:block lg:col-span-3 space-y-2">
           {STEPS.map(step => (
             <div

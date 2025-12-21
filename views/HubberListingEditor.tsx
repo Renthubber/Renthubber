@@ -93,7 +93,8 @@ const handleSave = async () => {
         pickup_instructions: dataToSave.pickupInstructions,
         zone_description: dataToSave.zoneDescription,
         max_guests: dataToSave.maxGuests,
-        opening_hours: dataToSave.openingHours
+        opening_hours: dataToSave.openingHours,
+        closing_hours: dataToSave.closingHours
       })
       .eq('id', dataToSave.id);
 
@@ -947,39 +948,153 @@ const handleSave = async () => {
               </div>
 
               {/* Extra Details based on Category */}
-              {formData.category === 'spazio' && (
-                 <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-                    <h3 className="text-lg font-bold text-gray-900">Dettagli Spazio</h3>
-                    <div className="grid grid-cols-2 gap-6">
-                       <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Ospiti Massimi</label>
-                          <div className="relative">
-                             <Users className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                             <input 
-                               type="number" 
-                               value={(formData as any).maxGuests || ''}
-                               onChange={(e) => setFormData({...formData, maxGuests: parseInt(e.target.value)} as any)}
-                               className="w-full pl-9 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                               placeholder="Es. 50"
-                             />
-                          </div>
-                       </div>
-                       <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Orari Apertura</label>
-                          <div className="relative">
-                             <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                             <input 
-                               type="text" 
-                               value={(formData as any).openingHours || ''}
-                               onChange={(e) => setFormData({...formData, openingHours: e.target.value} as any)}
-                               className="w-full pl-9 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                               placeholder="Es. 09:00 - 23:00"
-                             />
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-              )}
+{formData.category === 'spazio' && (
+   <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+      <h3 className="text-lg font-bold text-gray-900">Dettagli Spazio</h3>
+      <div className="grid grid-cols-2 gap-6">
+         <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Ospiti Massimi</label>
+            <div className="relative">
+               <Users className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+               <input 
+                 type="number" 
+                 value={(formData as any).maxGuests || ''}
+                 onChange={(e) => setFormData({...formData, maxGuests: parseInt(e.target.value)} as any)}
+                 className="w-full pl-9 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+                 placeholder="Es. 50"
+               />
+            </div>
+         </div>
+      </div>
+   </div>
+)}
+
+{/* Orari - per TUTTI */}
+<div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+   <h3 className="text-lg font-bold text-gray-900">Orari</h3>
+   
+   {/* Check-in/Ritiro */}
+   <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Check-in / Ritiro</label>
+      <div className="grid grid-cols-2 gap-4">
+         <div>
+            <label className="block text-xs text-gray-500 mb-1">Da</label>
+            <div className="relative">
+               <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+               <select
+                 className="w-full pl-9 px-4 py-2 border border-gray-300 rounded-lg bg-white appearance-none cursor-pointer focus:ring-2 focus:ring-brand outline-none"
+                 value={(formData as any).openingHours?.split('-')[0]?.trim() || ''}
+                 onChange={(e) => {
+                   const endTime = (formData as any).openingHours?.split('-')[1]?.trim() || '';
+                   setFormData({...formData, openingHours: endTime ? `${e.target.value} - ${endTime}` : e.target.value} as any);
+                 }}
+               >
+                 <option value="">Seleziona</option>
+                 {Array.from({ length: 48 }, (_, i) => {
+                   const hour = Math.floor(i / 2);
+                   const minute = i % 2 === 0 ? '00' : '30';
+                   const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                   return <option key={time} value={time}>{time}</option>;
+                 })}
+               </select>
+               <div className="absolute right-3 top-2.5 pointer-events-none">
+                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                 </svg>
+               </div>
+            </div>
+         </div>
+         <div>
+            <label className="block text-xs text-gray-500 mb-1">A</label>
+            <div className="relative">
+               <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+               <select
+                 className="w-full pl-9 px-4 py-2 border border-gray-300 rounded-lg bg-white appearance-none cursor-pointer focus:ring-2 focus:ring-brand outline-none"
+                 value={(formData as any).openingHours?.split('-')[1]?.trim() || ''}
+                 onChange={(e) => {
+                   const startTime = (formData as any).openingHours?.split('-')[0]?.trim() || '';
+                   setFormData({...formData, openingHours: startTime ? `${startTime} - ${e.target.value}` : e.target.value} as any);
+                 }}
+               >
+                 <option value="">Seleziona</option>
+                 {Array.from({ length: 48 }, (_, i) => {
+                   const hour = Math.floor(i / 2);
+                   const minute = i % 2 === 0 ? '00' : '30';
+                   const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                   return <option key={time} value={time}>{time}</option>;
+                 })}
+               </select>
+               <div className="absolute right-3 top-2.5 pointer-events-none">
+                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                 </svg>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+
+   {/* Check-out/Riconsegna */}
+   <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Check-out / Riconsegna</label>
+      <div className="grid grid-cols-2 gap-4">
+         <div>
+            <label className="block text-xs text-gray-500 mb-1">Da</label>
+            <div className="relative">
+               <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+               <select
+                 className="w-full pl-9 px-4 py-2 border border-gray-300 rounded-lg bg-white appearance-none cursor-pointer focus:ring-2 focus:ring-brand outline-none"
+                 value={(formData as any).closingHours?.split('-')[0]?.trim() || ''}
+                 onChange={(e) => {
+                   const endTime = (formData as any).closingHours?.split('-')[1]?.trim() || '';
+                   setFormData({...formData, closingHours: endTime ? `${e.target.value} - ${endTime}` : e.target.value} as any);
+                 }}
+               >
+                 <option value="">Seleziona</option>
+                 {Array.from({ length: 48 }, (_, i) => {
+                   const hour = Math.floor(i / 2);
+                   const minute = i % 2 === 0 ? '00' : '30';
+                   const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                   return <option key={time} value={time}>{time}</option>;
+                 })}
+               </select>
+               <div className="absolute right-3 top-2.5 pointer-events-none">
+                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                 </svg>
+               </div>
+            </div>
+         </div>
+         <div>
+            <label className="block text-xs text-gray-500 mb-1">A</label>
+            <div className="relative">
+               <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+               <select
+                 className="w-full pl-9 px-4 py-2 border border-gray-300 rounded-lg bg-white appearance-none cursor-pointer focus:ring-2 focus:ring-brand outline-none"
+                 value={(formData as any).closingHours?.split('-')[1]?.trim() || ''}
+                 onChange={(e) => {
+                   const startTime = (formData as any).closingHours?.split('-')[0]?.trim() || '';
+                   setFormData({...formData, closingHours: startTime ? `${startTime} - ${e.target.value}` : e.target.value} as any);
+                 }}
+               >
+                 <option value="">Seleziona</option>
+                 {Array.from({ length: 48 }, (_, i) => {
+                   const hour = Math.floor(i / 2);
+                   const minute = i % 2 === 0 ? '00' : '30';
+                   const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                   return <option key={time} value={time}>{time}</option>;
+                 })}
+               </select>
+               <div className="absolute right-3 top-2.5 pointer-events-none">
+                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                 </svg>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+</div>
 
               {/* Badge Manuali */}
               <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
