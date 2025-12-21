@@ -157,6 +157,7 @@ interface Props {
   depositEur?: number;
   cleaningFeeEur?: number;
   walletUsedEur?: number;
+  generalBalance?: number;  // ✅ AGGIUNTO: Wallet generale
   onSuccess?: (booking: any) => void;
 }
 
@@ -184,8 +185,9 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // ✅ Saldi wallet
-  const [refundBalance, setRefundBalance] = useState(0);
-  const [referralBalance, setReferralBalance] = useState(0);
+  const [generalBalance, setGeneralBalance] = useState(0);  // Wallet generale
+  const [refundBalance, setRefundBalance] = useState(0);    // Credito rimborsi
+  const [referralBalance, setReferralBalance] = useState(0); // Bonus referral
   const [walletType, setWalletType] = useState<'referral' | 'refund'>('referral');
   const [loadingBalances, setLoadingBalances] = useState(false);
 
@@ -225,13 +227,19 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       try {
         const { data: wallet, error } = await supabase
           .from('wallets')
-          .select('referral_balance_cents, refund_balance_cents')
+          .select('balance_cents, referral_balance_cents, refund_balance_cents')
           .eq('user_id', renter.id)
           .single();
         
         if (!error && wallet) {
+          setGeneralBalance((wallet.balance_cents || 0) / 100);
           setReferralBalance((wallet.referral_balance_cents || 0) / 100);
           setRefundBalance((wallet.refund_balance_cents || 0) / 100);
+          console.log('✅ Saldi wallet modal:', {
+            general: (wallet.balance_cents || 0) / 100,
+            referral: (wallet.referral_balance_cents || 0) / 100,
+            refund: (wallet.refund_balance_cents || 0) / 100
+          });
         }
       } catch (err) {
         console.error('Errore caricamento saldi wallet:', err);
@@ -246,17 +254,18 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
   // ✅ Calcola quanto wallet può essere usato in base alla scelta
   const actualWalletUsable = useMemo(() => {
     // Se non c'è nessun saldo disponibile, ritorna 0
-    if (walletUsedEur === 0 || (referralBalance === 0 && refundBalance === 0)) return 0;
+    if (walletUsedEur === 0 || (generalBalance === 0 && referralBalance === 0 && refundBalance === 0)) return 0;
     
     if (walletType === 'referral') {
       // Referral: max 30% delle commissioni
       const maxReferralUsable = platformFeeEur * 0.30;
       return Math.min(referralBalance, maxReferralUsable);
     } else {
-      // Refund: max 100% del totale
-      return Math.min(refundBalance, totalAmountEur);
+      // Refund: max 100% del totale (somma general + refund!)
+      const totalRefundableCredit = generalBalance + refundBalance;
+      return Math.min(totalRefundableCredit, totalAmountEur);
     }
-  }, [walletType, referralBalance, refundBalance, platformFeeEur, totalAmountEur]);
+  }, [walletType, generalBalance, referralBalance, refundBalance, platformFeeEur, totalAmountEur]);
 
   const amounts = useMemo(() => {
     // Usa le fee dal database, con fallback a valori default
@@ -304,7 +313,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       hubberNetCents,
       hubberTotalFeeCents,
     };
-  }, [totalAmountEur, rentalAmountEur, platformFeeEur, depositEur, actualWalletUsable, platformFees, cleaningFeeEur]);
+  }, [totalAmountEur, rentalAmountEur, platformFeeEur, depositEur, walletUsedEur, platformFees, cleaningFeeEur]);
 
   if (!isOpen) return null;
 
@@ -329,7 +338,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       if (actualWalletUsable > 0) {
         const maxUsable = walletType === 'referral' 
           ? Math.min(referralBalance, platformFeeEur * 0.30)
-          : refundBalance;
+          : (generalBalance + refundBalance);  // ✅ Somma general + refund
         
         if (actualWalletUsable > maxUsable) {
           setErrorMsg(`Saldo insufficiente. Disponibile: €${maxUsable.toFixed(2)}`);
@@ -368,10 +377,12 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
           renterFee: platformFeeEur,
           hubberFee: amounts.hubberTotalFeeCents / 100,
           deposit: depositEur,
-          cleaningFee: cleaningFeeEur, // ✅ AGGIUNTO: Costo pulizia
+          cleaningFee: cleaningFeeEur,
           totalAmount: totalAmountEur,
           useWallet: actualWalletUsable > 0,
-          refundBalanceToUse: walletType === 'refund' ? actualWalletUsable : 0,
+          // ✅ Quando usa "Credito Rimborsi", scala da general + refund
+          generalBalanceToUse: walletType === 'refund' ? Math.min(generalBalance, actualWalletUsable) : 0,
+          refundBalanceToUse: walletType === 'refund' ? Math.min(refundBalance, Math.max(0, actualWalletUsable - generalBalance)) : 0,
           referralBalanceToUse: walletType === 'referral' ? actualWalletUsable : 0,
         }),
       });
@@ -577,7 +588,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
                     <div className="flex-1">
                       <div className="font-medium text-gray-900">Credito Rimborsi</div>
                       <div className="text-xs text-gray-500">
-                        Disponibile: €{refundBalance.toFixed(2)} - Utilizzo illimitato
+                        Disponibile: €{(generalBalance + refundBalance).toFixed(2)} - Utilizzo illimitato
                       </div>
                     </div>
                   </label>
