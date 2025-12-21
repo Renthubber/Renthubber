@@ -313,7 +313,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       hubberNetCents,
       hubberTotalFeeCents,
     };
-  }, [totalAmountEur, rentalAmountEur, platformFeeEur, depositEur, walletUsedEur, platformFees, cleaningFeeEur]);
+  }, [totalAmountEur, rentalAmountEur, platformFeeEur, depositEur, actualWalletUsable, platformFees, cleaningFeeEur]);
 
   if (!isOpen) return null;
 
