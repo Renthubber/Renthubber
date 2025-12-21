@@ -390,6 +390,25 @@ async function sendBookingSystemMessage(params: {
   const now = new Date().toISOString();
   const messageId = `msg-system-${Date.now()}`;
 
+  // ✅ Recupera renterId e hubberId dalla prenotazione
+  let renterId: string | null = null;
+  let hubberId: string | null = null;
+  
+  try {
+    const { data: booking } = await supabase
+      .from("bookings")
+      .select("renter_id, hubber_id")
+      .eq("id", bookingId)
+      .single();
+    
+    if (booking) {
+      renterId = booking.renter_id;
+      hubberId = booking.hubber_id;
+    }
+  } catch (e) {
+    console.warn("⚠️ Impossibile recuperare renter/hubber per messaggio sistema:", e);
+  }
+
   // Aggiorna localStorage
   const msgRaw = localStorage.getItem("messages");
   let messages = msgRaw ? JSON.parse(msgRaw) : [];
@@ -425,15 +444,17 @@ async function sendBookingSystemMessage(params: {
   });
   localStorage.setItem("conversations", JSON.stringify(conversations));
 
-  // Sync su Supabase
+  // ✅ Sync su Supabase con from_user_id e to_user_id
   try {
     await supabase.from("messages").insert({
       id: messageId,
       conversation_id: conversationId,
-      from_user_id: null, // system
+      from_user_id: hubberId,  // ✅ Usiamo hubberId come mittente tecnico (come nel messaggio iniziale)
+      to_user_id: renterId,    // ✅ Destinatario è il renter
       text: messageText,
       created_at: now,
       is_system_message: true,
+      read: false,
     });
 
     await supabase
@@ -2132,11 +2153,10 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
           cardRefunded,
         });
 
-        // ✅ Invia messaggio di sistema nella chat
-        const listingTitle = booking.listing?.title || "l'annuncio";
         let cancelMessage = `La prenotazione per "${listingTitle}" è stata cancellata dal Renter.`;
         if (refundAmount > 0) {
-          cancelMessage += ` Rimborso: €${refundAmount.toFixed(2)}.`;
+        cancelMessage += ` Rimborso: €${refundAmount.toFixed(2)}.`;
+
         }
         
         await sendBookingSystemMessage({
@@ -2168,7 +2188,7 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
      * 🔹 CANCELLA PRENOTAZIONE (per Hubber)
      * - L'hubber può cancellare per qualsiasi motivo
      * - Il renter riceve SEMPRE rimborso completo (100%)
-     * - Il rimborso va sul wallet del renter
+     * - Il rimborso torna sul metodo di pagamento originale (proporzionale)
      */
     cancelByHubber: async (
       bookingId: string,
@@ -2178,6 +2198,9 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
       success: boolean;
       error?: string;
       refundedToRenter?: number;
+      walletRefunded?: number;
+      cardRefundPending?: boolean;
+      cardRefundAmount?: number;
     }> => {
       try {
         // 1. Recupera la prenotazione verificando che appartenga all'hubber
@@ -2226,53 +2249,98 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
           return { success: false, error: "Errore durante la cancellazione." };
         }
 
-        // 5. Accredita rimborso sul wallet del renter (refund_balance_cents)
+        // 5. Gestisci rimborso proporzionale al metodo di pagamento originale
+        let walletRefunded = 0;
+        let cardRefunded = 0;
+
         if (refundAmount > 0) {
-          // Leggi saldo attuale da wallets
-          const { data: walletData } = await supabase
-            .from("wallets")
-            .select("refund_balance_cents, referral_balance_cents")
-            .eq("user_id", booking.renter_id)
-            .single();
+          const walletUsedCents = booking.wallet_used_cents || 0;
+          const cardPaidCents = booking.card_paid_cents || 0;
+          const walletUsedEur = walletUsedCents / 100;
+          const cardPaidOriginal = cardPaidCents / 100;
 
-          if (walletData) {
-            const currentRefundCents = walletData.refund_balance_cents || 0;
-            const newRefundCents = currentRefundCents + Math.round(refundAmount * 100);
+          // Rimborso proporzionale - parte wallet
+          if (walletUsedEur > 0) {
+            const walletRefundProportion = (walletUsedEur / totalPaid) * refundAmount;
+            walletRefunded = Math.min(walletRefundProportion, walletUsedEur);
             
-            // Aggiorna wallets.refund_balance_cents
-            await supabase
+            // Leggi saldo attuale da wallets
+            const { data: walletData } = await supabase
               .from("wallets")
-              .update({ refund_balance_cents: newRefundCents })
-              .eq("user_id", booking.renter_id);
-
-            // Leggi users.renter_balance per calcolare balance_after totale
-            const { data: userData } = await supabase
-              .from("users")
-              .select("renter_balance")
-              .eq("id", booking.renter_id)
+              .select("refund_balance_cents, referral_balance_cents")
+              .eq("user_id", booking.renter_id)
               .single();
-            
-            const renterBalance = userData?.renter_balance || 0;
-            const referralBalance = (walletData.referral_balance_cents || 0) / 100;
-            const newRefundBalance = newRefundCents / 100;
-            const totalBalance = renterBalance + referralBalance + newRefundBalance;
 
-            // ✅ Crea transazione wallet
-            const listingTitle = booking.listing?.title || "Noleggio";
-            const bookingNumber = bookingId.substring(0, 8).toUpperCase();
+            if (walletData) {
+              const currentRefundCents = walletData.refund_balance_cents || 0;
+              const newRefundCents = currentRefundCents + Math.round(walletRefunded * 100);
+              
+              // Aggiorna wallets.refund_balance_cents
+              await supabase
+                .from("wallets")
+                .update({ refund_balance_cents: newRefundCents })
+                .eq("user_id", booking.renter_id);
 
-            await supabase.from("wallet_transactions").insert({
-              user_id: booking.renter_id,
-              amount_cents: Math.round(refundAmount * 100),
-              balance_after_cents: Math.round(totalBalance * 100),
-              type: 'credit',
-              source: 'refund',
-              wallet_type: 'renter',
-              description: `Rimborso completo cancellazione da Hubber - Prenotazione #${bookingNumber} (${listingTitle})`,
-              related_booking_id: bookingId,
-            });
+              // Leggi users.renter_balance per calcolare balance_after totale
+              const { data: userData } = await supabase
+                .from("users")
+                .select("renter_balance")
+                .eq("id", booking.renter_id)
+                .single();
+              
+              const renterBalance = userData?.renter_balance || 0;
+              const referralBalance = (walletData.referral_balance_cents || 0) / 100;
+              const newRefundBalance = newRefundCents / 100;
+              const totalBalance = renterBalance + referralBalance + newRefundBalance;
+
+              // ✅ Crea transazione wallet
+              const listingTitle = booking.listing?.title || "Noleggio";
+              const bookingNumber = bookingId.substring(0, 8).toUpperCase();
+
+              await supabase.from("wallet_transactions").insert({
+                user_id: booking.renter_id,
+                amount_cents: Math.round(walletRefunded * 100),
+                balance_after_cents: Math.round(totalBalance * 100),
+                type: 'credit',
+                source: 'refund',
+                wallet_type: 'renter',
+                description: `Rimborso completo cancellazione da Hubber - Prenotazione #${bookingNumber} (${listingTitle})`,
+                related_booking_id: bookingId,
+              });
+            }
           }
-        }
+          
+          // Rimborso proporzionale - parte carta
+          if (cardPaidOriginal > 0) {
+            const cardRefundProportion = (cardPaidOriginal / totalPaid) * refundAmount;
+            cardRefunded = Math.min(cardRefundProportion, cardPaidOriginal);
+            
+            // ✅ Crea rimborso Stripe
+            if (booking.stripe_payment_intent_id) {
+              try {
+                const refundResponse = await fetch('/api/stripe/refund', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    paymentIntentId: booking.stripe_payment_intent_id,
+                    amount: Math.round(cardRefunded * 100), // in centesimi
+                    reason: 'requested_by_customer',
+                    metadata: {
+                      booking_id: bookingId,
+                      refund_type: 'hubber_cancellation',
+                    }
+                  }),
+                });
+
+                if (!refundResponse.ok) {
+                  console.error('❌ Errore rimborso Stripe:', await refundResponse.text());
+                }
+              } catch (e) {
+                console.error('❌ Errore chiamata API rimborso Stripe:', e);
+              }
+            }
+          }
+          }
 
         console.log("✅ Prenotazione cancellata dall'Hubber:", {
           bookingId,
@@ -2284,11 +2352,8 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
         // ✅ Invia messaggio di sistema nella chat
         const listingTitle = booking.listing?.title || "l'annuncio";
         let cancelMessage = `La prenotazione per "${listingTitle}" è stata cancellata dall'Hubber.`;
-        if (reason) {
-          cancelMessage += ` Motivo: ${reason}`;
-        }
         if (refundAmount > 0) {
-          cancelMessage += ` Rimborso completo di €${refundAmount.toFixed(2)} accreditato sul tuo Wallet.`;
+          cancelMessage += ` È stato emesso un rimborso completo di €${refundAmount.toFixed(2)} secondo la politica di cancellazione.`;
         }
         
         await sendBookingSystemMessage({
@@ -2302,6 +2367,9 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
         return {
           success: true,
           refundedToRenter: refundAmount,
+          walletRefunded: walletRefunded > 0 ? walletRefunded : undefined,
+          cardRefundPending: cardRefunded > 0,
+          cardRefundAmount: cardRefunded > 0 ? cardRefunded : undefined,
         };
 
       } catch (e) {
