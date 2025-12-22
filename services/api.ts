@@ -2129,19 +2129,52 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
               }
             }
             
-            // La parte pagata con carta viene segnata come "pending"
-            if (cardPaidOriginal > 0) {
-              const cardRefundProportion = (cardPaidOriginal / totalPaid) * refundAmount;
-              cardRefunded = Math.min(cardRefundProportion, cardPaidOriginal);
-              
-              // TODO: Quando Stripe sarà integrato, chiamare:
-              // await stripe.refunds.create({
-              //   payment_intent: booking.payment_id,
-              //   amount: Math.round(cardRefunded * 100), // in centesimi
-              // });
-            }
+            /// La parte pagata con carta - rimborso Stripe
+if (cardPaidOriginal > 0) {
+  const cardRefundProportion = (cardPaidOriginal / totalPaid) * refundAmount;
+  cardRefunded = Math.min(cardRefundProportion, cardPaidOriginal);
+  
+  // ✅ Crea rimborso Stripe
+  if (booking.stripe_payment_intent_id) {
+    try {
+      const refundResponse = await fetch('/.netlify/functions/stripe-refund', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentIntentId: booking.stripe_payment_intent_id,
+          amount: Math.round(cardRefunded * 100), // in centesimi
+          reason: 'requested_by_customer',
+          metadata: {
+            booking_id: bookingId,
+            refund_type: 'renter_cancellation',
+            refund_percentage: refundPercentage.toString(),
           }
-        }
+        }),
+      });
+
+      if (refundResponse.ok) {
+        const refundData = await refundResponse.json();
+        
+        // ✅ Salva rimborso carta e ID Stripe nel booking
+        await supabase
+          .from("bookings")
+          .update({ 
+            refunded_card_cents: Math.round(cardRefunded * 100),
+            stripe_refund_id: refundData.refund?.id || null
+          })
+          .eq("id", bookingId);
+          
+        console.log('✅ Rimborso Stripe completato:', refundData.refund?.id);
+      } else {
+        console.error('❌ Errore rimborso Stripe:', await refundResponse.text());
+      }
+    } catch (e) {
+      console.error('❌ Errore chiamata API rimborso Stripe:', e);
+    }
+  }
+}
+}
+}
 
         console.log("✅ Prenotazione cancellata:", {
           policy,
@@ -2153,10 +2186,11 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
           cardRefunded,
         });
 
+        const listingTitle = booking.listing?.title || "l'annuncio";
+
         let cancelMessage = `La prenotazione per "${listingTitle}" è stata cancellata dal Renter.`;
         if (refundAmount > 0) {
-        cancelMessage += ` Rimborso: €${refundAmount.toFixed(2)}.`;
-
+        cancelMessage += ` È stato emesso un rimborso di €${refundAmount.toFixed(2)} secondo la politica di cancellazione.`;
         }
         
         await sendBookingSystemMessage({
