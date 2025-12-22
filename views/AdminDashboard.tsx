@@ -6,7 +6,7 @@ import {
   LogOut, Download, KeyRound, Trash2, FileCheck, Landmark, CheckCircle2,
   CalendarCheck, ShoppingBag, Plus, Eye, EyeOff, MapPin, Clock, Tag,
   MessageSquare, Send, AlertCircle, Headphones, UserCheck, Lock, CreditCard, Percent, Wallet,
-  ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Gift, Star, Mail,
+  ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Gift, Star, Mail,Megaphone,
 } from 'lucide-react';
 
 import { 
@@ -45,6 +45,7 @@ import { AdminCMSBranding } from "../components/admin//AdminCMSBranding";
 import { AdminNotificationBell } from '../components/admin/AdminNotificationBell';
 import { markAsViewed } from '../hooks/useAdminNotifications';
 import { AdminRefundsOverview } from "../components/admin/AdminRefundsOverview";
+import { AdminAnnouncements } from "../components/admin/AdminAnnouncements";
 
 interface AdminDashboardProps {
   systemConfig: SystemConfig;
@@ -8268,15 +8269,15 @@ const renderReviews = () => {
                      <Mail className="w-5 h-5 mr-3" /> Email
           </button>
           <button
-            onClick={() => setActiveTab('config')}
-            className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
-              activeTab === 'config'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-            }`}
-            >
-            <Settings className="w-5 h-5 mr-3" /> Configurazioni
-          </button>
+  onClick={() => setActiveTab('announcements')}
+  className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
+    activeTab === 'announcements'
+      ? 'bg-blue-600 text-white'
+      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+  }`}
+>
+  <Megaphone className="w-5 h-5 mr-3" /> Annunci
+</button>
           <button
             onClick={() => setActiveTab('referral')}
             className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
@@ -8286,6 +8287,16 @@ const renderReviews = () => {
             }`}
           >
             <Gift className="w-5 h-5 mr-3" /> Invita Amico
+          </button>
+          <button
+            onClick={() => setActiveTab('config')}
+            className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
+              activeTab === 'config'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+            }`}
+            >
+            <Settings className="w-5 h-5 mr-3" /> Configurazioni
           </button>
         </nav>
 
@@ -8344,8 +8355,9 @@ const renderReviews = () => {
     {activeTab === 'disputes' && renderDisputes()}
     {activeTab === 'reviews' && renderReviews()}
     {activeTab === 'email' && <AdminEmailSection allUsers={allUsers} currentUser={currentUser} />}
-    {activeTab === 'config' && renderConfig()}
+    {activeTab === 'announcements' && (<AdminAnnouncements currentUser={currentUser} />)}
     {activeTab === 'referral' && <ReferralSettings />}
+    {activeTab === 'config' && renderConfig()}
   </div>
 </main>
 
