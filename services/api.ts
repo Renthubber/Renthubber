@@ -1827,7 +1827,7 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
             const firstName = hubberData.first_name || "";
             const lastName = hubberData.last_name || "";
             const fullName = [firstName, lastName].filter(Boolean).join(" ");
-            mapped.hubberName = hubberData.public_name || fullName || "Hubber";
+            mapped.hubberName = hubberData.name || fullName || "Hubber";
             mapped.hubberAvatar = hubberData.avatar_url || 
               `https://ui-avatars.com/api/?name=${encodeURIComponent(mapped.hubberName)}&background=random`;
           }
