@@ -27,6 +27,7 @@ import ListingsMapView from './pages/ListingsMapView';
 import OrdinamentoRisultati from './pages/OrdinamentoRisultati';
 import ScrollToTop from './components/ScrollToTop';
 import { Annunci } from "./views/Annunci";
+import { AnnouncementPopup } from './components/AnnouncementPopup';
 
 
 
@@ -570,7 +571,6 @@ setIsAuthChecking(false);
                   setSelectedListing(listing);
                   navigate(`/listing/${listing.id}`);
                 }}
-                invoices={invoices}
                 onUpdateProfile={async (updated) => {
                   // Qui dovresti implementare l'aggiornamento del profilo
                   console.log('Update profile:', updated);
@@ -594,7 +594,7 @@ setIsAuthChecking(false);
                   setPayoutRequests((prev) =>
                     prev.map((p) => 
                       p.id === requestId 
-                        ? { ...p, status: approved ? "paid" : "rejected" } 
+                        ? { ...p, status: approved ? "approved" : "rejected" } 
                         : p
                     )
                   );
@@ -611,7 +611,7 @@ setIsAuthChecking(false);
                         ? {
                             ...d,
                             status:
-                              action === "resolve" ? "resolved" : "dismissed",
+                              action === "resolve" ? "resolved" : "rejected",
                             adminNote: note ?? d.adminNote,
                           }
                         : d
@@ -792,6 +792,19 @@ setIsAuthChecking(false);
         currentUser={currentUser}
       />
     )}
+
+cosi?
+
+```typescriptreact
+{/* 📢 POPUP ANNUNCI */}
+    {currentUser && (
+  <AnnouncementPopup 
+    userId={currentUser.id} 
+    userRole={currentUser.role === 'hubber' ? 'hubber' : 'renter'}
+    userCreatedAt={currentUser.created_at}
+  />
+)}
+```
 
     </BrandingProvider> 
   );
