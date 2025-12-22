@@ -1176,7 +1176,7 @@ const handleRequestAction = (id: string, action: 'accepted' | 'rejected') => {
         } else if (refundMethod === 'wallet') {
           // Tutto su wallet
           if (result.totalRefunded && result.totalRefunded > 0) {
-            successMsg += ` €${result.totalRefunded.toFixed(2)} accreditati immediatamente sul tuo Wallet RentHubber.`;
+            successMsg += ` €${result.totalRefunded.toFixed(2)} accreditati immediatamente sul tuo Wallet Renthubber.`;
           }
         } else {
           // Rimborso su carta
@@ -5479,7 +5479,7 @@ const renderRenterPayments = () => {
                 <DollarSign className="w-5 h-5 mr-2 text-brand" /> Storico Pagamenti
               </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Tutti i pagamenti effettuati per i tuoi noleggi su RentHubber.
+                Tutti i pagamenti effettuati per i tuoi noleggi su Renthubber.
               </p>
             </div>
             
@@ -6668,94 +6668,121 @@ const renderRenterPayments = () => {
           </div>
 
           {/* Scelta metodo di rimborso - solo se c'è un rimborso */}
-          {refundPreview.amount > 0 && !cancelSuccess && (
-            <div className="mb-6">
-              <p className="text-sm font-bold text-gray-700 mb-3">
-                Come vuoi ricevere il rimborso?
-              </p>
-              <div className="space-y-2">
-                {/* Opzione Wallet */}
-                <button
-                  type="button"
-                  onClick={() => setRefundMethod('wallet')}
-                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                    refundMethod === 'wallet'
-                      ? 'border-brand bg-brand/5'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        refundMethod === 'wallet' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-500'
-                      }`}>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
+          {refundPreview.amount > 0 && !cancelSuccess && (() => {
+            // Calcola metodi di pagamento usati
+            const walletUsedCents = (bookingToCancel as any).walletUsedCents || 0;
+            const walletUsed = walletUsedCents / 100;
+            const renterTotalPaid = (bookingToCancel as any).renterTotalPaid || bookingToCancel.totalPrice || 0;
+            const cardPaid = Math.max(renterTotalPaid - walletUsed, 0);
+            
+            // Se pagato SOLO con wallet → nessuna scelta, rimborso automatico su wallet
+            if (cardPaid === 0) {
+              return (
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Rimborso:</strong> €{refundPreview.amount.toFixed(2)} sarà accreditato sul tuo Wallet Renthubber immediatamente.
+                  </p>
+                </div>
+              );
+            }
+            
+            // Se pagato con carta (solo o mix) → mostra scelta
+            const hasMixPayment = walletUsed > 0 && cardPaid > 0;
+            
+            return (
+              <div className="mb-6">
+                <p className="text-sm font-bold text-gray-700 mb-3">
+                  Come vuoi ricevere il rimborso?
+                </p>
+                <div className="space-y-2">
+                  {/* Opzione Wallet */}
+                  <button
+                    type="button"
+                    onClick={() => setRefundMethod('wallet')}
+                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                      refundMethod === 'wallet'
+                        ? 'border-brand bg-brand/5'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          refundMethod === 'wallet' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className={`font-bold ${refundMethod === 'wallet' ? 'text-brand' : 'text-gray-900'}`}>
+                            {hasMixPayment ? 'Tutto su Wallet' : 'Wallet RentHubber'}
+                          </p>
+                          <p className="text-xs text-gray-500">Accredito immediato</p>
+                        </div>
                       </div>
-                      <div>
+                      <div className="text-right">
                         <p className={`font-bold ${refundMethod === 'wallet' ? 'text-brand' : 'text-gray-900'}`}>
-                          Wallet RentHubber
+                          €{refundPreview.amount.toFixed(2)}
                         </p>
-                        <p className="text-xs text-gray-500">Accredito immediato</p>
+                        <p className="text-xs text-green-600 font-medium">Istantaneo</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`font-bold ${refundMethod === 'wallet' ? 'text-brand' : 'text-gray-900'}`}>
-                        €{refundPreview.amount.toFixed(2)}
+                    {refundMethod === 'wallet' && (
+                      <p className="text-xs text-gray-500 mt-2 pl-13">
+                        Usalo subito per nuove prenotazioni su Renthubber
                       </p>
-                      <p className="text-xs text-green-600 font-medium">Istantaneo</p>
-                    </div>
-                  </div>
-                  {refundMethod === 'wallet' && (
-                    <p className="text-xs text-gray-500 mt-2 pl-13">
-                      Usalo subito per nuove prenotazioni su RentHubber
-                    </p>
-                  )}
-                </button>
+                    )}
+                  </button>
 
-                {/* Opzione Carta */}
-                <button
-                  type="button"
-                  onClick={() => setRefundMethod('card')}
-                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                    refundMethod === 'card'
-                      ? 'border-brand bg-brand/5'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        refundMethod === 'card' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-500'
-                      }`}>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
+                  {/* Opzione Carta/Originale */}
+                  <button
+                    type="button"
+                    onClick={() => setRefundMethod('card')}
+                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                      refundMethod === 'card'
+                        ? 'border-brand bg-brand/5'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          refundMethod === 'card' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className={`font-bold ${refundMethod === 'card' ? 'text-brand' : 'text-gray-900'}`}>
+                            {hasMixPayment ? 'Sul metodo originale' : 'Carta originale'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {hasMixPayment ? 'Proporzionale wallet + carta' : 'Rimborso sulla carta usata'}
+                          </p>
+                        </div>
                       </div>
-                      <div>
+                      <div className="text-right">
                         <p className={`font-bold ${refundMethod === 'card' ? 'text-brand' : 'text-gray-900'}`}>
-                          Carta originale
+                          €{refundPreview.amount.toFixed(2)}
                         </p>
-                        <p className="text-xs text-gray-500">Rimborso sulla carta usata</p>
+                        <p className="text-xs text-yellow-600 font-medium">5-10 giorni</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`font-bold ${refundMethod === 'card' ? 'text-brand' : 'text-gray-900'}`}>
-                        €{refundPreview.amount.toFixed(2)}
+                    {refundMethod === 'card' && (
+                      <p className="text-xs text-gray-500 mt-2 pl-13">
+                        {hasMixPayment 
+                          ? `€${walletUsed.toFixed(2)} su wallet + €${cardPaid.toFixed(2)} su carta (via Stripe)`
+                          : 'Il rimborso verrà processato tramite Stripe'
+                        }
                       </p>
-                      <p className="text-xs text-yellow-600 font-medium">5-10 giorni</p>
-                    </div>
-                  </div>
-                  {refundMethod === 'card' && (
-                    <p className="text-xs text-gray-500 mt-2 pl-13">
-                      Il rimborso verrà processato tramite Stripe
-                    </p>
-                  )}
-                </button>
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Messaggi errore/successo */}
           {cancelError && (
@@ -7529,7 +7556,7 @@ const renderRenterPayments = () => {
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand resize-none"
                 rows={3}
                 maxLength={500}
-                placeholder="Ciao! Sono un membro della community RentHubber..."
+                placeholder="Ciao! Sono un membro della community Renthubber..."
                 value={editProfileForm.bio}
                 onChange={(e) =>
                   setEditProfileForm((prev) => ({
