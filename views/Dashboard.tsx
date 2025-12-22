@@ -6848,10 +6848,10 @@ const renderRenterPayments = () => {
           {/* Info rimborso */}
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
             <p className="text-sm text-blue-800">
-              <strong>Rimborso al Renter:</strong> €{hubberBookingToCancel.totalPrice?.toFixed(2) || '0.00'}
+              <strong>Rimborso al Renter:</strong> €{hubberBookingToCancel.renterTotalPaid?.toFixed(2) || hubberBookingToCancel.totalPrice?.toFixed(2) || '0.00'}
             </p>
             <p className="text-xs text-blue-600 mt-1">
-              L'importo sarà accreditato sul Wallet del Renter immediatamente.
+            L'importo sarà rimborsato sul metodo di pagamento originale (wallet e/o carta).
             </p>
           </div>
 
