@@ -44,6 +44,7 @@ import { AdminEmailSection } from './AdminEmailSection';
 import { AdminCMSBranding } from "../components/admin//AdminCMSBranding";
 import { AdminNotificationBell } from '../components/admin/AdminNotificationBell';
 import { markAsViewed } from '../hooks/useAdminNotifications';
+import { AdminRefundsOverview } from "../components/admin/AdminRefundsOverview";
 
 interface AdminDashboardProps {
   systemConfig: SystemConfig;
@@ -6306,7 +6307,9 @@ const renderFinanceRefunds = () => {
       {financeSubTab === 'wallets' && renderFinanceWallets()}
       {financeSubTab === 'payouts' && renderFinancePayouts()}
       {financeSubTab === 'fees' && renderFinanceFees()}
-      {financeSubTab === 'refunds' && renderFinanceRefunds()}
+      {financeSubTab === 'refunds' && (
+  <AdminRefundsOverview currentUser={currentUser} />
+)}
      {financeSubTab === 'reports' && renderFinanceReports()}
       {financeSubTab === 'settings' && renderFinanceSettings()}
     </div>

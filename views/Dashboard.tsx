@@ -163,6 +163,11 @@ const mapDbBookingToUiBooking = (raw: any): BookingRequest => {
     renterAvatar:
       (raw as any).renterAvatar ||
       'https://ui-avatars.com/api/?name=Renter&background=random',
+      // ✅ NUOVO: Info Hubber
+    hubberName: (raw as any).hubberName || 'Proprietario',
+    hubberAvatar:
+      (raw as any).hubberAvatar ||
+      'https://ui-avatars.com/api/?name=Hubber&background=random',
     timeLeft: (raw as any).timeLeft || '',
 
     // ✅ Per l'hubber: mostriamo il prezzo base (€5), non il totale pagato dal renter (€7.50)
@@ -194,6 +199,8 @@ const mapDbBookingToUiBooking = (raw: any): BookingRequest => {
     priceUnit?: string;
     cancellationPolicy?: string;
     cleaningFee?: number;           // ✅ NUOVO
+    hubberName?: string;        // ✅ AGGIUNGI QUESTA
+    hubberAvatar?: string;
   };
 };
 
@@ -4248,8 +4255,36 @@ const handleIdFileChange =
                 <div className="mt-2">
                   {renderBookingStatusBadge(selectedRenterBooking.status)}
                 </div>
-              </div>
-            </div>
+             </div>
+          </div>
+
+{/* Proprietario/Hubber */}
+<div className="mb-4 pb-4 border-b border-gray-100">
+  <p className="text-xs text-gray-400 uppercase font-semibold mb-2">
+    Hubber
+  </p>
+  <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
+    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+      {selectedRenterBooking.hubberAvatar ? (
+        <img
+          src={selectedRenterBooking.hubberAvatar}
+          alt={selectedRenterBooking.hubberName || 'Proprietario'}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-bold">
+          {(selectedRenterBooking.hubberName || 'H')[0].toUpperCase()}
+        </div>
+      )}
+    </div>
+    <div className="flex-1">
+      <p className="font-semibold text-gray-900 text-sm">
+        {selectedRenterBooking.hubberName || 'Proprietario'}
+      </p>
+      <p className="text-xs text-gray-500"></p>
+    </div>
+  </div>
+</div>
 
             {/* Codice prenotazione */}
             <div className="bg-gray-50 rounded-xl p-3 mb-4 flex items-center justify-between">
@@ -5879,13 +5914,16 @@ const renderRenterPayments = () => {
                     </td>
                     <td className="p-4 text-right">
                       <button
-                        onClick={() => {
-                          // TODO: Implementare generazione PDF ricevuta
-                          console.log('Download ricevuta:', receiptNumber);
-                          alert(`Funzionalità in arrivo! Ricevuta: ${receiptNumber}`);
-                        }}
-                        className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
-                        title="Scarica PDF"
+  onClick={() => {
+    const invoice = userInvoices.find(inv => inv.booking_id === booking.id);
+    if (invoice?.pdf_url) {
+      window.open(invoice.pdf_url, '_blank');
+    } else {
+      alert('Ricevuta non disponibile. Contatta il supporto.');
+    }
+  }}
+  className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
+  title="Scarica PDF"
                       >
                         <Download className="w-4 h-4" />
                       </button>
@@ -5976,15 +6014,19 @@ const renderRenterPayments = () => {
                                   </td>
                                   <td className="p-4 text-right">
                                     <button
-                                      onClick={() => {
-                                        console.log('Download ricevuta:', receiptNumber);
-                                        alert(`Funzionalità in arrivo! Ricevuta: ${receiptNumber}`);
-                                      }}
-                                      className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
-                                      title="Scarica PDF"
-                                    >
-                                      <Download className="w-4 h-4" />
-                                    </button>
+  onClick={() => {
+    const invoice = userInvoices.find(inv => inv.booking_id === booking.id);
+    if (invoice?.pdf_url) {
+      window.open(invoice.pdf_url, '_blank');
+    } else {
+      alert('Ricevuta non disponibile. Contatta il supporto.');
+    }
+  }}
+  className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
+  title="Scarica PDF"
+>
+  <Download className="w-4 h-4" />
+</button>
                                   </td>
                                 </tr>
                               );
@@ -6061,15 +6103,19 @@ const renderRenterPayments = () => {
                               </td>
                               <td className="p-4 text-right">
                                 <button
-                                  onClick={() => {
-                                    console.log('Download ricevuta:', receiptNumber);
-                                    alert(`Funzionalità in arrivo! Ricevuta: ${receiptNumber}`);
-                                  }}
-                                  className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
-                                  title="Scarica PDF"
-                                >
-                                  <Download className="w-4 h-4" />
-                                </button>
+  onClick={() => {
+    const invoice = userInvoices.find(inv => inv.booking_id === booking.id);
+    if (invoice?.pdf_url) {
+      window.open(invoice.pdf_url, '_blank');
+    } else {
+      alert('Ricevuta non disponibile. Contatta il supporto.');
+    }
+  }}
+  className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
+  title="Scarica PDF"
+>
+  <Download className="w-4 h-4" />
+</button>
                               </td>
                             </tr>
                           );
@@ -6716,7 +6762,7 @@ const renderRenterPayments = () => {
                         </div>
                         <div>
                           <p className={`font-bold ${refundMethod === 'wallet' ? 'text-brand' : 'text-gray-900'}`}>
-                            {hasMixPayment ? 'Tutto su Wallet' : 'Wallet RentHubber'}
+                            {hasMixPayment ? 'Tutto su Wallet' : 'Wallet Renthubber'}
                           </p>
                           <p className="text-xs text-gray-500">Accredito immediato</p>
                         </div>
