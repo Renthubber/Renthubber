@@ -2323,10 +2323,10 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
             const cardRefundProportion = (cardPaidOriginal / totalPaid) * refundAmount;
             cardRefunded = Math.min(cardRefundProportion, cardPaidOriginal);
             
-            // ✅ Crea rimborso Stripe
+           // ✅ Crea rimborso Stripe
             if (booking.stripe_payment_intent_id) {
               try {
-                const refundResponse = await fetch('/api/stripe/refund', {
+                const refundResponse = await fetch('/.netlify/functions/stripe-refund', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
