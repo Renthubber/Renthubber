@@ -2241,6 +2241,8 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
             cancelled_by: "hubber",
             cancellation_reason: reason || "Cancellata dall'Hubber",
             refund_amount: refundAmount,
+            refunded_wallet_cents: 0, // ✅ AGGIUNTO
+            refunded_card_cents: 0,   // ✅ AGGIUNTO
           })
           .eq("id", bookingId);
 
@@ -2307,6 +2309,12 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
                 description: `Rimborso completo cancellazione da Hubber - Prenotazione #${bookingNumber} (${listingTitle})`,
                 related_booking_id: bookingId,
               });
+
+              // ✅ Salva rimborso wallet nel booking
+              await supabase
+                .from("bookings")
+                .update({ refunded_wallet_cents: Math.round(walletRefunded * 100) })
+                .eq("id", bookingId);
             }
           }
           
@@ -2332,7 +2340,20 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
                   }),
                 });
 
-                if (!refundResponse.ok) {
+                if (refundResponse.ok) {
+                  const refundData = await refundResponse.json();
+                  
+                  // ✅ Salva rimborso carta e ID Stripe nel booking
+                  await supabase
+                    .from("bookings")
+                    .update({ 
+                      refunded_card_cents: Math.round(cardRefunded * 100),
+                      stripe_refund_id: refundData.refund?.id || null
+                    })
+                    .eq("id", bookingId);
+                    
+                  console.log('✅ Rimborso Stripe completato:', refundData.refund?.id);
+                } else {
                   console.error('❌ Errore rimborso Stripe:', await refundResponse.text());
                 }
               } catch (e) {
@@ -2340,7 +2361,7 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
               }
             }
           }
-          }
+        }  // ✅ AGGIUNTA - Chiude if (refundAmount > 0)
 
         console.log("✅ Prenotazione cancellata dall'Hubber:", {
           bookingId,
@@ -2377,6 +2398,7 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
         return { success: false, error: "Errore imprevisto. Riprova più tardi." };
       }
     },
+    
 
     /**
      * 🔹 MODIFICA PRENOTAZIONE (per Renter)
