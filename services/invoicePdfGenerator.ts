@@ -62,7 +62,7 @@ interface CompanySettings {
   logo_url?: string;
 }
 
-// Colori brand RentHubber
+// Colori brand Renthubber
 const COLORS = {
   primary: '#0D414B',      // Brand scuro
   secondary: '#E9C46A',    // Accent giallo
@@ -108,7 +108,7 @@ export async function generateInvoicePDF(
     doc.setFontSize(24);
     doc.setTextColor(COLORS.primary);
     doc.setFont('helvetica', 'bold');
-    doc.text('RentHubber', margin, yPos + 10);
+    doc.text('Renthubber', margin, yPos + 10);
     yPos += 20;
   }
 
@@ -118,7 +118,7 @@ export async function generateInvoicePDF(
   doc.setFont('helvetica', 'normal');
   
   const companyLines = [
-    companySettings.company_name || 'RentHubber SRL',
+    companySettings.company_name || 'Renthubber SRL',
     companySettings.address || '',
     `${companySettings.zip || ''} ${companySettings.city || ''} ${companySettings.country || ''}`.trim(),
     companySettings.vat_number ? `P.IVA: ${companySettings.vat_number}` : '',
@@ -291,7 +291,7 @@ export async function generateInvoicePDF(
   const items = invoice.line_items && invoice.line_items.length > 0 
     ? invoice.line_items 
     : [{
-        description: invoice.description || `Commissione servizio RentHubber`,
+        description: invoice.description || `Commissione servizio Renthubber`,
         quantity: 1,
         unitPrice: invoice.subtotal,
         total: invoice.subtotal,
@@ -465,13 +465,13 @@ export async function loadCompanySettings(): Promise<CompanySettings> {
     if (error || !data) {
       console.warn('Impostazioni aziendali non trovate, uso default');
       return {
-        company_name: 'RentHubber SRL',
+        company_name: 'Renthubber SRL',
         email: 'info@renthubber.com',
       };
     }
 
     return {
-      company_name: data.company_name || 'RentHubber SRL',
+      company_name: data.company_name || 'Renthubber SRL',
       vat_number: data.vat_number,
       fiscal_code: data.fiscal_code,
       address: data.address,
@@ -488,7 +488,7 @@ export async function loadCompanySettings(): Promise<CompanySettings> {
   } catch (error) {
     console.error('Errore caricamento impostazioni:', error);
     return {
-      company_name: 'RentHubber SRL',
+      company_name: 'Renthubber SRL',
       email: 'info@renthubber.com',
     };
   }
