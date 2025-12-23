@@ -46,6 +46,8 @@ import { AdminNotificationBell } from '../components/admin/AdminNotificationBell
 import { markAsViewed } from '../hooks/useAdminNotifications';
 import { AdminRefundsOverview } from "../components/admin/AdminRefundsOverview";
 import { AdminAnnouncements } from "../components/admin/AdminAnnouncements";
+import { EditUserComplete } from "../components/admin/EditUserComplete";
+import { useNavigate } from 'react-router-dom';
 
 interface AdminDashboardProps {
   systemConfig: SystemConfig;
@@ -111,6 +113,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   bookings = [],
   currentUser,
 }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<
   'overview' | 'users' | 'listings' | 'bookings' | 'messages' | 'support' | 'finance' | 'invoices' | 'cms' | 'disputes' | 'reviews' | 'email' | 'config' | 'referral'
 >('overview');
@@ -1367,6 +1370,82 @@ const [userDocumentFilter, setUserDocumentFilter] = useState<'all' | 'to_verify'
     }
   };
 
+// Salva modifiche utente COMPLETO (nuovo form a tab)
+  const handleSaveUserComplete = async (updatedData: any) => {
+    if (!selectedUserForEdit) return;
+    
+    setIsUserSaving(true);
+    setUserSaveError(null);
+    
+    try {
+      const dataToSave: any = {
+        first_name: updatedData.first_name,
+        last_name: updatedData.last_name,
+        name: updatedData.name || `${updatedData.first_name} ${updatedData.last_name}`,
+        public_name: updatedData.public_name,
+        date_of_birth: updatedData.date_of_birth || null,
+        bio: updatedData.bio,
+        user_type: updatedData.user_type,
+        avatar_url: updatedData.avatar_url,
+        email: updatedData.email,
+        phone_number: updatedData.phone_number,
+        address: updatedData.address,
+        public_location: updatedData.public_location,
+        email_verified: updatedData.email_verified,
+        phone_verified: updatedData.phone_verified,
+        id_document_verified: updatedData.id_document_verified,
+        verification_status: updatedData.verification_status,
+        renter_balance: updatedData.renter_balance,
+        hubber_balance: updatedData.hubber_balance,
+        refund_balance_cents: updatedData.refund_balance_cents,
+        referral_balance_cents: updatedData.referral_balance_cents,
+        custom_fee_percentage: updatedData.custom_fee_percentage ? parseFloat(updatedData.custom_fee_percentage) : null,
+        stripe_account_id: updatedData.stripe_account_id,
+        stripe_onboarding_completed: updatedData.stripe_onboarding_completed,
+        stripe_charges_enabled: updatedData.stripe_charges_enabled,
+        stripe_payouts_enabled: updatedData.stripe_payouts_enabled,
+        company_name: updatedData.company_name,
+        fiscal_code: updatedData.fiscal_code,
+        vat_number: updatedData.vat_number,
+        pec: updatedData.pec,
+        sdi_code: updatedData.sdi_code,
+        billing_address: updatedData.billing_address,
+        billing_city: updatedData.billing_city,
+        billing_zip: updatedData.billing_zip,
+        billing_province: updatedData.billing_province,
+        billing_country: updatedData.billing_country,
+        role: updatedData.role,
+        roles: updatedData.role === 'admin' ? ['admin', 'hubber', 'renter'] : updatedData.role === 'hubber' ? ['hubber', 'renter'] : ['renter'],
+        is_super_hubber: updatedData.is_super_hubber,
+        is_super_admin: updatedData.is_super_admin,
+        referral_code: updatedData.referral_code,
+        hubber_since: updatedData.hubber_since || null,
+        status: updatedData.status,
+      };
+      
+      if (dataToSave.email_verified && dataToSave.phone_verified && dataToSave.id_document_verified) {
+        dataToSave.verification_status = 'verified';
+      } else if (dataToSave.email_verified || dataToSave.phone_verified || dataToSave.id_document_verified) {
+        dataToSave.verification_status = 'partially_verified';
+      } else {
+        dataToSave.verification_status = 'unverified';
+      }
+      
+      await api.admin.updateUser(selectedUserForEdit.id, dataToSave);
+      
+      const updatedUser = { ...selectedUserForEdit, ...dataToSave };
+      setLocalUsers(prev => prev.map(u => u.id === selectedUserForEdit.id ? updatedUser : u));
+      setSelectedUserForEdit(null);
+      
+      alert('✅ Utente aggiornato con successo!');
+    } catch (error) {
+      console.error('Errore salvataggio utente:', error);
+      throw new Error('Errore durante il salvataggio. Riprova.');
+    } finally {
+      setIsUserSaving(false);
+    }
+  };
+
   // Sospendi/Attiva utente
   const handleToggleSuspend = async () => {
     if (!selectedUserForEdit) return;
@@ -2075,42 +2154,40 @@ const [userDocumentFilter, setUserDocumentFilter] = useState<'all' | 'to_verify'
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      <div className="flex justify-end gap-1">
-                        <a
-                          href={`/listing/${listing.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Vedi pagina pubblica"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </a>
-                        <button
-                          onClick={() => setSelectedListingForEdit(listing)}
-                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="Modifica"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        {listing.status === 'published' ? (
-                          <button
-                            onClick={() => handleListingStatusChange(listing.id, 'suspended')}
-                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-                            title="Sospendi"
-                          >
-                            <Ban className="w-4 h-4" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleListingStatusChange(listing.id, 'published')}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Pubblica"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+  <div className="flex justify-end gap-1">
+    <button
+      onClick={() => navigate(`/listing/${listing.id}`)}
+      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+      title="Vedi annuncio"
+    >
+      <Eye className="w-4 h-4" />
+    </button>
+    <button
+      onClick={() => setSelectedListingForEdit(listing)}
+      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+      title="Modifica"
+    >
+      <Edit className="w-4 h-4" />
+    </button>
+    {listing.status === 'published' ? (
+      <button
+        onClick={() => handleListingStatusChange(listing.id, 'suspended')}
+        className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+        title="Sospendi"
+      >
+        <Ban className="w-4 h-4" />
+      </button>
+    ) : (
+      <button
+        onClick={() => handleListingStatusChange(listing.id, 'published')}
+        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+        title="Pubblica"
+      >
+        <CheckCircle className="w-4 h-4" />
+      </button>
+    )}
+  </div>
+</td>
                   </tr>
                 ))}
                 {filteredListings.length === 0 && (
@@ -8489,720 +8566,329 @@ const renderReviews = () => {
       )}
 
       {/* PAGE EDITOR MODAL (CMS) */}
-      {editingPage && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-            <div className="p-5 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="font-bold text-gray-900">
-                Modifica Pagina: {editingPage.title}
-              </h3>
-              <button
-                onClick={() => setEditingPage(null)}
-                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 flex-1 overflow-y-auto space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Titolo Pagina
-                  </label>
-                  <input
-                    type="text"
-                    value={editingPage.title}
-                    onChange={(e) =>
-                      setEditingPage({
-                        ...editingPage,
-                        title: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Posizione
-                  </label>
-                  <select
-                    value={editingPage.position || 'footer_col1'}
-                    onChange={(e) =>
-                      setEditingPage({
-                        ...editingPage,
-                        position: e.target.value as any,
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none bg-white"
-                  >
-                    <option value="header">Header Menu</option>
-                    <option value="footer_col1">Footer (Renthubber)</option>
-                    <option value="footer_col2">Footer (Supporto)</option>
-                    <option value="legal">Footer (Legale)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2 py-2">
-                <input
-                  type="checkbox"
-                  id="isHtml"
-                  checked={editingPage.isHtml}
-                  onChange={(e) =>
-                    setEditingPage({
-                      ...editingPage,
-                      isHtml: e.target.checked,
-                    })
-                  }
-                  className="rounded border-gray-300 text-brand focus:ring-brand"
-                />
-                <label
-                  htmlFor="isHtml"
-                  className="text-sm text-gray-700 font-medium"
-                >
-                  Abilita HTML Editor
-                </label>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Contenuto
-                </label>
-                <textarea
-                  value={editingPage.content}
-                  onChange={(e) =>
-                    setEditingPage({
-                      ...editingPage,
-                      content: e.target.value,
-                    })
-                  }
-                  className="w-full h-64 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none font-mono text-sm leading-relaxed"
-                  placeholder={
-                    editingPage.isHtml
-                      ? '<div>Inserisci codice HTML qui...</div>'
-                      : 'Scrivi il testo semplice...'
-                  }
-                />
-              </div>
-            </div>
-            <div className="p-5 border-t border-gray-100 flex justify-end gap-3">
-              <button
-                onClick={() => setEditingPage(null)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-              >
-                Annulla
-              </button>
-              <button
-                onClick={handleSavePage}
-                className="px-6 py-2 bg-brand text-white rounded-lg font-bold shadow-md hover:bg-brand-dark"
-              >
-                Salva Modifiche
-              </button>
-            </div>
+{editingPage && (
+  <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in">
+    <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+      <div className="p-5 border-b border-gray-100 flex justify-between items-center">
+        <h3 className="font-bold text-gray-900">
+          Modifica Pagina: {editingPage.title}
+        </h3>
+        <button
+          onClick={() => setEditingPage(null)}
+          className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="p-6 flex-1 overflow-y-auto space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Titolo Pagina
+            </label>
+            <input
+              type="text"
+              value={editingPage.title}
+              onChange={(e) =>
+                setEditingPage({
+                  ...editingPage,
+                  title: e.target.value,
+                })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Posizione
+            </label>
+            <select
+              value={editingPage.position || 'footer_col1'}
+              onChange={(e) =>
+                setEditingPage({
+                  ...editingPage,
+                  position: e.target.value as any,
+                })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none bg-white"
+            >
+              <option value="header">Header Menu</option>
+              <option value="footer_col1">Footer (Renthubber)</option>
+              <option value="footer_col2">Footer (Supporto)</option>
+              <option value="legal">Footer (Legale)</option>
+            </select>
           </div>
         </div>
-      )}
 
-      {/* ADVANCED USER DETAIL MODAL */}
-      {selectedUserForEdit && editUserForm && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            {/* Header */}
-            <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-gradient-to-r from-gray-50 to-gray-100">
-              <div className="flex items-center">
-                <img
-                  src={selectedUserForEdit.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUserForEdit.name)}&background=random`}
-                  alt={selectedUserForEdit.name}
-                  className="w-14 h-14 rounded-full border-4 border-white shadow-lg mr-4"
-                />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-xl text-gray-900">
-                      {selectedUserForEdit.name}
-                    </h3>
-                    {selectedUserForEdit.isSuperHubber && (
-                      <span className="px-2 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold rounded-full">
-                        ⭐ SUPER HUBBER
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-500">{selectedUserForEdit.email}</p>
-                  <p className="text-xs text-gray-400 mt-1">ID: {selectedUserForEdit.id}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedUserForEdit(null)}
-                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+        <div className="flex items-center space-x-2 py-2">
+          <input
+            type="checkbox"
+            id="isHtml"
+            checked={editingPage.isHtml}
+            onChange={(e) =>
+              setEditingPage({
+                ...editingPage,
+                isHtml: e.target.checked,
+              })
+            }
+            className="rounded border-gray-300 text-brand focus:ring-brand"
+          />
+          <label
+            htmlFor="isHtml"
+            className="text-sm text-gray-700 font-medium"
+          >
+            Abilita HTML Editor
+          </label>
+        </div>
 
-            {/* Error message */}
-            {userSaveError && (
-              <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center">
-                <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0" />
-                {userSaveError}
-              </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Contenuto
+          </label>
+          <textarea
+            value={editingPage.content}
+            onChange={(e) =>
+              setEditingPage({
+                ...editingPage,
+                content: e.target.value,
+              })
+            }
+            className="w-full h-64 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none font-mono text-sm leading-relaxed"
+            placeholder={
+              editingPage.isHtml
+                ? '<div>Inserisci codice HTML qui...</div>'
+                : 'Scrivi il testo semplice...'
+            }
+          />
+        </div>
+      </div>
+      <div className="p-5 border-t border-gray-100 flex justify-end gap-3">
+        <button
+          onClick={() => setEditingPage(null)}
+          className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+        >
+          Annulla
+        </button>
+        <button
+          onClick={handleSavePage}
+          className="px-6 py-2 bg-brand text-white rounded-lg font-bold shadow-md hover:bg-brand-dark"
+        >
+          Salva Modifiche
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* EDIT USER MODAL - COMPLETE */}
+{selectedUserForEdit && (
+  <EditUserComplete
+    user={selectedUserForEdit}
+    onClose={() => setSelectedUserForEdit(null)}
+    onSave={handleSaveUserComplete}
+    onToggleSuspend={handleToggleSuspend}
+    onResetPassword={handleResetPassword}
+    onDelete={() => setShowDeleteConfirm(true)}
+    onDeleteBankDetails={handleDeleteBankDetails}
+    isSaving={isUserSaving}
+  />
+)}
+
+{/* DELETE CONFIRMATION MODAL */}
+{showDeleteConfirm && selectedUserForEdit && (
+  <div className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4 animate-in fade-in">
+    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+      <div className="text-center">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Trash2 className="w-8 h-8 text-red-600" />
+        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Eliminare questo utente?</h3>
+        <p className="text-gray-500 mb-6">
+          Stai per eliminare <span className="font-bold">{selectedUserForEdit.name}</span>. 
+          Questa azione è irreversibile e cancellerà tutti i dati associati.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowDeleteConfirm(false)}
+            className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
+          >
+            Annulla
+          </button>
+          <button
+            onClick={handleDeleteUser}
+            disabled={isUserSaving}
+            className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 disabled:opacity-50"
+          >
+            {isUserSaving ? 'Eliminazione...' : 'Sì, Elimina'}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* ADD USER MODAL */}
+{showAddUserModal && (
+  <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in">
+    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+      <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-green-600 text-white">
+        <h3 className="font-bold flex items-center">
+          <Users className="w-5 h-5 mr-2" /> Aggiungi Nuovo Utente
+        </h3>
+        <button
+          onClick={() => {
+            setShowAddUserModal(false);
+            setUserSaveError(null);
+          }}
+          className="text-white/80 hover:text-white p-1 hover:bg-white/20 rounded-full"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <form onSubmit={handleCreateUser} className="p-6 space-y-5">
+        {userSaveError && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center">
+            <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0" />
+            {userSaveError}
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nome *
+            </label>
+            <input
+              type="text"
+              required
+              value={newUserForm.firstName}
+              onChange={(e) => setNewUserForm({ ...newUserForm, firstName: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+              placeholder="Mario"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Cognome
+            </label>
+            <input
+              type="text"
+              value={newUserForm.lastName}
+              onChange={(e) => setNewUserForm({ ...newUserForm, lastName: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+              placeholder="Rossi"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Email *
+          </label>
+          <input
+            type="email"
+            required
+            value={newUserForm.email}
+            onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+            placeholder="mario.rossi@email.com"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Password *
+          </label>
+          <input
+            type="password"
+            required
+            minLength={6}
+            value={newUserForm.password}
+            onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+            placeholder="Minimo 6 caratteri"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Ruolo
+            </label>
+            <select
+              value={newUserForm.role}
+              onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value as any })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-brand outline-none"
+            >
+              <option value="renter">Renter</option>
+              <option value="hubber">Hubber</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fee Personalizzata (%)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={newUserForm.customFeePercentage}
+              onChange={(e) => setNewUserForm({ ...newUserForm, customFeePercentage: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+              placeholder="Vuoto = standard"
+            />
+          </div>
+        </div>
+
+        <label className="flex items-center p-3 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer">
+          <input
+            type="checkbox"
+            checked={newUserForm.isSuperHubber}
+            onChange={(e) => setNewUserForm({ ...newUserForm, isSuperHubber: e.target.checked })}
+            className="w-5 h-5 rounded border-amber-300 text-amber-500 focus:ring-amber-500 mr-3"
+          />
+          <div>
+            <span className="font-bold text-amber-700">⭐ SuperHubber</span>
+            <p className="text-xs text-amber-600">Attiva lo status SuperHubber per questo utente</p>
+          </div>
+        </label>
+
+        <div className="pt-2 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setShowAddUserModal(false);
+              setUserSaveError(null);
+            }}
+            className="px-4 py-2.5 text-gray-600 hover:bg-gray-50 rounded-lg font-medium"
+          >
+            Annulla
+          </button>
+          <button
+            type="submit"
+            disabled={isUserSaving}
+            className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-bold shadow-md hover:bg-green-700 disabled:opacity-50 flex items-center"
+          >
+            {isUserSaving ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Creazione...
+              </>
+            ) : (
+              'Crea Utente'
             )}
-
-            <div className="p-6 flex-1 overflow-y-auto space-y-6">
-              {/* DATI PRINCIPALI EDITABILI */}
-              <div className="bg-white border border-gray-200 rounded-xl p-5">
-                <h4 className="font-bold text-gray-900 mb-4 flex items-center">
-                  <Edit className="w-5 h-5 mr-2 text-brand" /> Dati Principali
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                      Nome Completo
-                    </label>
-                    <input
-                      type="text"
-                      value={editUserForm.name}
-                      onChange={(e) => setEditUserForm({ ...editUserForm, name: e.target.value })}
-                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={editUserForm.email}
-                      onChange={(e) => setEditUserForm({ ...editUserForm, email: e.target.value })}
-                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                      Telefono
-                    </label>
-                    <input
-                      type="tel"
-                      value={editUserForm.phoneNumber}
-                      onChange={(e) => setEditUserForm({ ...editUserForm, phoneNumber: e.target.value })}
-                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                      placeholder="+39 333 1234567"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                      Ruolo
-                    </label>
-                    <select
-                      value={editUserForm.role}
-                      onChange={(e) => setEditUserForm({ ...editUserForm, role: e.target.value })}
-                      className="w-full p-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-brand outline-none"
-                    >
-                      <option value="renter">Renter</option>
-                      <option value="hubber">Hubber</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* SUPERHUBBER & COMMISSIONI PERSONALIZZATE */}
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5">
-                <h4 className="font-bold text-gray-900 mb-4 flex items-center">
-                  <TrendingUp className="w-5 h-5 mr-2 text-amber-600" /> SuperHubber & Commissioni
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                      Status SuperHubber
-                    </label>
-                    <button
-                      onClick={handleToggleSuperHubber}
-                      className={`w-full p-3 rounded-lg border-2 flex items-center justify-center font-bold transition-all ${
-                        editUserForm.isSuperHubber
-                          ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white border-amber-500'
-                          : 'bg-white text-gray-600 border-gray-300 hover:border-amber-400'
-                      }`}
-                    >
-                      {editUserForm.isSuperHubber ? (
-                        <>⭐ SUPER HUBBER ATTIVO</>
-                      ) : (
-                        <>Attiva SuperHubber</>
-                      )}
-                    </button>
-                    <p className="text-xs text-gray-500 mt-1">
-                      I SuperHubber hanno commissioni ridotte e badge speciale.
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                      Commissione Personalizzata (%)
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="100"
-                        value={editUserForm.customFeePercentage}
-                        onChange={(e) => setEditUserForm({ ...editUserForm, customFeePercentage: e.target.value })}
-                        placeholder="Es: 5 (lascia vuoto per fee standard)"
-                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none pr-8"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Lascia vuoto per usare la commissione globale ({hubberFee}%).
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* STATO ACCOUNT */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                    Stato Account
-                  </label>
-                  <div
-                    className={`flex items-center p-3 rounded-lg border ${
-                      selectedUserForEdit.isSuspended
-                        ? 'bg-red-50 border-red-200 text-red-700'
-                        : 'bg-green-50 border-green-200 text-green-700'
-                    }`}
-                  >
-                    {selectedUserForEdit.isSuspended ? (
-                      <Ban className="w-5 h-5 mr-2" />
-                    ) : (
-                      <CheckCircle className="w-5 h-5 mr-2" />
-                    )}
-                    <span className="font-bold">
-                      {selectedUserForEdit.isSuspended ? 'SOSPESO' : 'ATTIVO'}
-                    </span>
-                  </div>
-                </div>
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                    Statistiche
-                  </label>
-                  <div className="space-y-1 text-sm">
-                    <p><span className="font-medium text-gray-600">Rating:</span> <span className="font-bold">{selectedUserForEdit.rating ?? 'N/A'}</span></p>
-                    <p><span className="font-medium text-gray-600">Iscritto dal:</span> <span className="font-bold">{selectedUserForEdit.hubberSince ? new Date(selectedUserForEdit.hubberSince).toLocaleDateString('it-IT') : 'N/A'}</span></p>
-                  </div>
-                </div>
-              </div>
-
-              {/* VERIFICHE KYC */}
-<div className="bg-white border border-gray-200 rounded-xl p-5">
-  <h4 className="font-bold text-gray-900 mb-4 flex items-center">
-    <Shield className="w-5 h-5 mr-2 text-brand" /> Verifiche & KYC
-  </h4>
-  <div className="space-y-3">
-    <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-      <span className="text-sm text-gray-700 font-medium">Email Verificata</span>
-      <input
-        type="checkbox"
-        checked={selectedUserForEdit.emailVerified}
-        onChange={() => handleVerificationToggle('emailVerified')}
-        className="w-5 h-5 rounded border-gray-300 text-brand focus:ring-brand cursor-pointer"
-      />
-    </label>
-    <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-      <span className="text-sm text-gray-700 font-medium">Telefono Verificato</span>
-      <input
-        type="checkbox"
-        checked={selectedUserForEdit.phoneVerified}
-        onChange={() => handleVerificationToggle('phoneVerified')}
-        className="w-5 h-5 rounded border-gray-300 text-brand focus:ring-brand cursor-pointer"
-      />
-    </label>
-    <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-      <span className="text-sm text-gray-700 font-medium">Documento Identità Verificato</span>
-      <input
-        type="checkbox"
-        checked={selectedUserForEdit.idDocumentVerified}
-        onChange={() => handleVerificationToggle('idDocumentVerified')}
-        className="w-5 h-5 rounded border-gray-300 text-brand focus:ring-brand cursor-pointer"
-      />
-    </label>
-
-    {/* VISUALIZZAZIONE DOCUMENTI */}
-                  {(selectedUserForEdit.document_front_url || selectedUserForEdit.document_back_url) && (
-                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h5 className="text-sm font-bold text-gray-900 mb-3 flex items-center">
-                        <FileCheck className="w-4 h-4 mr-2 text-blue-600" /> Documenti Caricati
-                      </h5>
-                      
-                      <div className="space-y-2">
-                        {selectedUserForEdit.document_front_url && (
-                          <div className="flex items-center justify-between p-2 bg-white rounded-lg">
-                            <div className="flex items-center gap-2">
-                              <ImageIcon className="w-4 h-4 text-gray-500" />
-                              <span className="text-sm text-gray-700 font-medium">Fronte Documento</span>
-                            </div>
-                            <div className="flex gap-2">
-                              <a
-                                href={selectedUserForEdit.document_front_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="px-3 py-1.5 bg-brand text-white text-xs font-semibold rounded-lg hover:bg-brand-dark transition-colors flex items-center gap-1"
-                              >
-                                <Eye className="w-3 h-3" /> Visualizza
-                              </a>
-                              <a
-                                href={selectedUserForEdit.document_front_url}
-                                download
-                                className="px-3 py-1.5 bg-gray-600 text-white text-xs font-semibold rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1"
-                              >
-                                <Download className="w-3 h-3" /> Scarica
-                              </a>
-                            </div>
-                          </div>
-                        )}
-
-                        {selectedUserForEdit.document_back_url && (
-                          <div className="flex items-center justify-between p-2 bg-white rounded-lg">
-                            <div className="flex items-center gap-2">
-                              <ImageIcon className="w-4 h-4 text-gray-500" />
-                              <span className="text-sm text-gray-700 font-medium">Retro Documento</span>
-                            </div>
-                            <div className="flex gap-2">
-                              <a
-                                href={selectedUserForEdit.document_back_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="px-3 py-1.5 bg-brand text-white text-xs font-semibold rounded-lg hover:bg-brand-dark transition-colors flex items-center gap-1"
-                              >
-                                <Eye className="w-3 h-3" /> Visualizza
-                              </a>
-                              <a
-                                href={selectedUserForEdit.document_back_url}
-                                download
-                                className="px-3 py-1.5 bg-gray-600 text-white text-xs font-semibold rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1"
-                              >
-                                <Download className="w-3 h-3" /> Scarica
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        Clicca su "Visualizza" per aprire il documento in una nuova tab
-                      </p>
-                    </div>
-                  )}
-
-                  {!selectedUserForEdit.document_front_url && !selectedUserForEdit.document_back_url && (
-                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-xs text-yellow-700 flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4" />
-                        Nessun documento caricato dall'utente
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* DATI BANCARI */}
-              {selectedUserForEdit.bankDetails && (
-                <div className="bg-white border border-gray-200 rounded-xl p-5">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-bold text-gray-900 flex items-center">
-                      <Landmark className="w-5 h-5 mr-2 text-brand" /> Dati Bancari
-                    </h4>
-                    <button
-                      onClick={handleDeleteBankDetails}
-                      disabled={isUserSaving}
-                      className="text-red-500 hover:bg-red-50 p-2 rounded-lg text-xs font-bold flex items-center disabled:opacity-50"
-                    >
-                      <Trash2 className="w-3 h-3 mr-1" /> Rimuovi
-                    </button>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-2">
-                    <p><span className="font-medium text-gray-600">Intestatario:</span> <span className="font-bold">{selectedUserForEdit.bankDetails.accountHolderName} {selectedUserForEdit.bankDetails.accountHolderSurname}</span></p>
-                    <p><span className="font-medium text-gray-600">IBAN:</span> <span className="font-mono font-bold">{selectedUserForEdit.bankDetails.iban}</span></p>
-                    <p><span className="font-medium text-gray-600">Banca:</span> <span className="font-bold">{selectedUserForEdit.bankDetails.bankName}</span></p>
-                  </div>
-                </div>
-              )}
-
-              {/* ZONA PERICOLO */}
-              <div className="bg-red-50 border border-red-200 rounded-xl p-5">
-                <h4 className="font-bold text-red-700 mb-4 text-sm uppercase tracking-wide flex items-center">
-                  <AlertTriangle className="w-4 h-4 mr-2" /> Zona Pericolo
-                </h4>
-                <div className="grid grid-cols-3 gap-3">
-                  <button
-                    onClick={handleResetPassword}
-                    disabled={isUserSaving}
-                    className="flex flex-col items-center justify-center p-3 border border-gray-200 bg-white rounded-lg hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    <KeyRound className="w-5 h-5 text-gray-500 mb-1" />
-                    <span className="text-xs font-medium text-gray-700">Reset Password</span>
-                  </button>
-
-                  <button
-                    onClick={handleToggleSuspend}
-                    disabled={isUserSaving}
-                    className={`flex flex-col items-center justify-center p-3 border rounded-lg disabled:opacity-50 ${
-                      selectedUserForEdit.isSuspended
-                        ? 'border-green-200 bg-green-50 hover:bg-green-100'
-                        : 'border-orange-200 bg-orange-50 hover:bg-orange-100'
-                    }`}
-                  >
-                    {selectedUserForEdit.isSuspended ? (
-                      <>
-                        <CheckCircle className="w-5 h-5 text-green-600 mb-1" />
-                        <span className="text-xs font-bold text-green-700">Riattiva</span>
-                      </>
-                    ) : (
-                      <>
-                        <Ban className="w-5 h-5 text-orange-600 mb-1" />
-                        <span className="text-xs font-bold text-orange-700">Sospendi</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    disabled={isUserSaving}
-                    className="flex flex-col items-center justify-center p-3 border border-red-200 bg-red-50 rounded-lg hover:bg-red-100 disabled:opacity-50"
-                  >
-                    <Trash2 className="w-5 h-5 text-red-600 mb-1" />
-                    <span className="text-xs font-bold text-red-700">Elimina</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer con pulsanti */}
-            <div className="p-5 border-t border-gray-100 bg-gray-50 flex justify-between">
-              <button
-                onClick={() => setSelectedUserForEdit(null)}
-                className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
-              >
-                Annulla
-              </button>
-              <button
-                onClick={handleSaveUser}
-                disabled={isUserSaving}
-                className="px-6 py-2.5 bg-brand text-white rounded-lg font-bold shadow-md hover:bg-brand-dark disabled:opacity-50 flex items-center"
-              >
-                {isUserSaving ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Salvataggio...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" /> Salva Modifiche
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+          </button>
         </div>
-      )}
-
-      {/* DELETE CONFIRMATION MODAL */}
-      {showDeleteConfirm && selectedUserForEdit && (
-        <div className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="w-8 h-8 text-red-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Eliminare questo utente?</h3>
-              <p className="text-gray-500 mb-6">
-                Stai per eliminare <span className="font-bold">{selectedUserForEdit.name}</span>. 
-                Questa azione è irreversibile e cancellerà tutti i dati associati.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
-                >
-                  Annulla
-                </button>
-                <button
-                  onClick={handleDeleteUser}
-                  disabled={isUserSaving}
-                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 disabled:opacity-50"
-                >
-                  {isUserSaving ? 'Eliminazione...' : 'Sì, Elimina'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ADD USER MODAL */}
-      {showAddUserModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-            <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-green-600 text-white">
-              <h3 className="font-bold flex items-center">
-                <Users className="w-5 h-5 mr-2" /> Aggiungi Nuovo Utente
-              </h3>
-              <button
-                onClick={() => {
-                  setShowAddUserModal(false);
-                  setUserSaveError(null);
-                }}
-                className="text-white/80 hover:text-white p-1 hover:bg-white/20 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateUser} className="p-6 space-y-5">
-              {userSaveError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center">
-                  <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0" />
-                  {userSaveError}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nome *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newUserForm.firstName}
-                    onChange={(e) => setNewUserForm({ ...newUserForm, firstName: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                    placeholder="Mario"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Cognome
-                  </label>
-                  <input
-                    type="text"
-                    value={newUserForm.lastName}
-                    onChange={(e) => setNewUserForm({ ...newUserForm, lastName: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                    placeholder="Rossi"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={newUserForm.email}
-                  onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                  placeholder="mario.rossi@email.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password *
-                </label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={newUserForm.password}
-                  onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                  placeholder="Minimo 6 caratteri"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ruolo
-                  </label>
-                  <select
-                    value={newUserForm.role}
-                    onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value as any })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-brand outline-none"
-                  >
-                    <option value="renter">Renter</option>
-                    <option value="hubber">Hubber</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Fee Personalizzata (%)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    value={newUserForm.customFeePercentage}
-                    onChange={(e) => setNewUserForm({ ...newUserForm, customFeePercentage: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                    placeholder="Vuoto = standard"
-                  />
-                </div>
-              </div>
-
-              <label className="flex items-center p-3 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={newUserForm.isSuperHubber}
-                  onChange={(e) => setNewUserForm({ ...newUserForm, isSuperHubber: e.target.checked })}
-                  className="w-5 h-5 rounded border-amber-300 text-amber-500 focus:ring-amber-500 mr-3"
-                />
-                <div>
-                  <span className="font-bold text-amber-700">⭐ SuperHubber</span>
-                  <p className="text-xs text-amber-600">Attiva lo status SuperHubber per questo utente</p>
-                </div>
-              </label>
-
-              <div className="pt-2 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddUserModal(false);
-                    setUserSaveError(null);
-                  }}
-                  className="px-4 py-2.5 text-gray-600 hover:bg-gray-50 rounded-lg font-medium"
-                >
-                  Annulla
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUserSaving}
-                  className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-bold shadow-md hover:bg-green-700 disabled:opacity-50 flex items-center"
-                >
-                  {isUserSaving ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Creazione...
-                    </>
-                  ) : (
-                    'Crea Utente'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
+      </form>
+    </div>
+  </div>
+)}
       {/* ========== LISTING EDIT MODAL ========== */}
       {selectedListingForEdit && editListingForm && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in">
