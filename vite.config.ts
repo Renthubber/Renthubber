@@ -18,6 +18,14 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      optimizeDeps: {
+        include: ['jszip']
+      },
+      build: {
+        commonjsOptions: {
+          include: [/jszip/, /node_modules/]
+        }
       }
     };
 });
