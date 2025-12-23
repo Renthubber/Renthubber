@@ -7,7 +7,6 @@
  */
 
 import { supabase } from '../lib/supabase';
-import JSZip from 'jszip';
 
 // =====================================================
 // TIPI E INTERFACCE
@@ -410,43 +409,6 @@ export async function downloadSingleInvoiceXml(invoice: InvoiceData): Promise<vo
     console.log('✅ XML FatturaPA scaricato:', fileName);
   } catch (error) {
     console.error('Errore generazione XML:', error);
-    throw error;
-  }
-}
-
-/**
- * Genera ZIP con XML multipli
- * Richiede la libreria JSZip (npm install jszip)
- */
-export async function downloadMultipleInvoicesXml(invoices: InvoiceData[]): Promise<void> {
-  try {
-    // Genera ZIP con XML fatture
-    const companySettings = await loadCompanySettings();
-    const zip = new JSZip();
-    
-    // Genera XML per ogni fattura
-    for (const invoice of invoices) {
-      const xml = await generateFatturaPAXml(invoice, companySettings);
-      const safeFileName = invoice.invoice_number.replace(/[^a-zA-Z0-9-_]/g, '_');
-      zip.file(`${safeFileName}.xml`, xml);
-    }
-    
-    // Genera ZIP
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
-    
-    // Download ZIP
-    const url = URL.createObjectURL(zipBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `fatture_${new Date().toISOString().split('T')[0]}.zip`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    
-    console.log(`✅ ZIP con ${invoices.length} fatture XML scaricato`);
-  } catch (error) {
-    console.error('Errore generazione ZIP:', error);
     throw error;
   }
 }
