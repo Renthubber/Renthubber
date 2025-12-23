@@ -10,7 +10,6 @@ import React, { useState } from 'react';
 import { Download, FileText, Package, CheckCircle } from 'lucide-react';
 import { 
   downloadSingleInvoiceXml, 
-  downloadMultipleInvoicesXml,
   exportInvoicesToCsv 
 } from '../services/invoiceXmlGenerator';
 
@@ -230,15 +229,6 @@ export const InvoiceXmlExport: React.FC<InvoiceXmlExportProps> = ({ invoices }) 
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button
-            onClick={handleExportZip}
-            disabled={isExporting || selectedInvoices.size === 0}
-            className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Package className="w-4 h-4" />
-            Esporta ZIP ({selectedInvoices.size})
-          </button>
-
           <button
             onClick={handleExportCsv}
             disabled={isExporting || selectedInvoices.size === 0}
