@@ -7,6 +7,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import JSZip from 'jszip';
 
 // =====================================================
 // TIPI E INTERFACCE
@@ -419,9 +420,7 @@ export async function downloadSingleInvoiceXml(invoice: InvoiceData): Promise<vo
  */
 export async function downloadMultipleInvoicesXml(invoices: InvoiceData[]): Promise<void> {
   try {
-    // Importa JSZip dinamicamente
-    const JSZip = (await import('jszip')).default;
-    
+    // Genera ZIP con XML fatture
     const companySettings = await loadCompanySettings();
     const zip = new JSZip();
     
