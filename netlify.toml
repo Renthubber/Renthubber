@@ -19,6 +19,11 @@
   node_bundler = "esbuild"
   external_node_modules = ["nodemailer"]
 
+# ✅ Configurazione Edge Functions per Open Graph
+[[edge_functions]]
+  path = "/listing/*"
+  function = "og-preview"
+
 # ✅ Headers per il sitemap
 [[headers]]
   for = "/sitemap.xml"
