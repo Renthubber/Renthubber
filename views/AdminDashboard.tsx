@@ -48,6 +48,7 @@ import { AdminRefundsOverview } from "../components/admin/AdminRefundsOverview";
 import { AdminAnnouncements } from "../components/admin/AdminAnnouncements";
 import { EditUserComplete } from "../components/admin/EditUserComplete";
 import { useNavigate } from 'react-router-dom';
+import { InvoiceXmlExport } from '../components/InvoiceXmlExport';
 
 interface AdminDashboardProps {
   systemConfig: SystemConfig;
@@ -228,6 +229,8 @@ const [localInvoiceSettings, setLocallocalInvoiceSettings] = useState<any>({
   iban: '',
   bank_name: '',
   bic_swift: '',
+  regime_fiscale: 'RF01',
+  pec_email: '',
 });
 // === FILTRI E PAGINAZIONE FATTURE ===
 const [invoiceFilters, setInvoiceFilters] = useState({
@@ -7228,6 +7231,28 @@ const renderFinanceRefunds = () => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Regime Fiscale</label>
+                  <select
+                    value={localInvoiceSettings.regime_fiscale || 'RF01'}
+                    onChange={(e) => setLocallocalInvoiceSettings({ ...localInvoiceSettings, regime_fiscale: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+                  >
+                    <option value="RF01">RF01 - Regime ordinario</option>
+                    <option value="RF02">RF02 - Contribuenti minimi</option>
+                    <option value="RF19">RF19 - Regime forfettario</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">PEC (per SDI)</label>
+                  <input
+                    type="email"
+                    value={localInvoiceSettings.pec_email || ''}
+                    onChange={(e) => setLocallocalInvoiceSettings({ ...localInvoiceSettings, pec_email: e.target.value })}
+                    placeholder="esempio@pec.it"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+                  />
+                </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Indirizzo</label>
                   <input
@@ -7396,6 +7421,8 @@ const renderFinanceRefunds = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Export XML FatturaPA */}
+<InvoiceXmlExport invoices={localInvoices} />
           {/* Export Fatture */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h4 className="font-bold text-gray-900 mb-4 flex items-center">

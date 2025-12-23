@@ -642,7 +642,7 @@ useEffect(() => {
 
             {/* Description & Features */}
             <div className="py-4 space-y-6 border-b border-gray-100 pb-8">
-              <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+              <p className="text-gray-700 leading-relaxed whitespace-pre-line break-words">
                 {listing.description}
               </p>
 
@@ -660,10 +660,12 @@ useEffect(() => {
 
             {/* 4. RULES & POLICIES */}
             <RulesAndPolicies
-              rules={listing.rules}
-              cancellationPolicy={listing.cancellationPolicy}
-              deposit={listing.deposit}
-              openingHours={(listing as any).openingHours}
+             rules={listing.rules}
+             cancellationPolicy={listing.cancellationPolicy}
+             deposit={listing.deposit}
+             openingHours={(listing as any).openingHours}
+             closingHours={(listing as any).closingHours}
+             category={listing.category}
             />
 
             {/* 5. MAP SECTION */}
