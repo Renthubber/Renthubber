@@ -180,11 +180,6 @@ const App: React.FC = () => {
 const { data } = await supabase.auth.getSession();
 const session = data.session;
 
-// ✅ Nascondi spinner SUBITO dopo auth check
-setIsAuthChecking(false);
-
-
-
       // DOPO: Carico dati base (l'app è già visibile)
       const loadedListings = await api.admin.getAllListings();
       console.log("🧩 App.init – listings da Supabase:", loadedListings);
@@ -246,7 +241,6 @@ setIsAuthChecking(false);
                 }
                 hasProcessedAuth.current = true;
                 await loadAdminUsers();
-                return;
               } else if (userRoles.includes("hubber")) {
                 setActiveMode("hubber");
               } else {
@@ -268,10 +262,13 @@ setIsAuthChecking(false);
       } else {
         console.log("❌ Nessuna sessione attiva");
       }
+       // ✅ Nascondi spinner SUBITO dopo auth check
+setIsAuthChecking(false);
     };
 
     init();
   }, [navigate]);
+
 
   /* ------------------------------------------------------
       FUNZIONI HELPER
@@ -792,10 +789,6 @@ setIsAuthChecking(false);
         currentUser={currentUser}
       />
     )}
-
-cosi?
-
-```typescriptreact
 {/* 📢 POPUP ANNUNCI */}
     {currentUser && (
   <AnnouncementPopup 
@@ -804,7 +797,7 @@ cosi?
     userCreatedAt={currentUser.created_at}
   />
 )}
-```
+
 
     </BrandingProvider> 
   );
