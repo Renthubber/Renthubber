@@ -57,7 +57,9 @@ function generateOGHtml(listing: any, url: string): string {
     ? listing.images[0] 
     : 'https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png';
   
-  const fullTitle = price ? `${title} - ${price}` : title;
+  // ✅ Aggiungi prefisso in base alla categoria
+  const prefix = listing.category === 'space' ? 'Affitta' : 'Noleggia';
+  const fullTitle = price ? `${prefix} ${title} - ${price}` : `${prefix} ${title}`;
   const ogType = listing.category === 'space' ? 'place' : 'product';
 
   return `<!DOCTYPE html>
