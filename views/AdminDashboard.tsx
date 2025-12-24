@@ -50,6 +50,16 @@ import { EditUserComplete } from "../components/admin/EditUserComplete";
 import { useNavigate } from 'react-router-dom';
 import { InvoiceXmlExport } from '../components/InvoiceXmlExport';
 
+// Funzione per formattare data in italiano
+const formatDateIT = (isoDate: string | null | undefined): string => {
+  if (!isoDate) return '-';
+  const date = new Date(isoDate);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 interface AdminDashboardProps {
   systemConfig: SystemConfig;
   onUpdateConfig: (newConfig: SystemConfig) => void;
