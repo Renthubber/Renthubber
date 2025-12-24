@@ -17,6 +17,7 @@ export const handler: Handler = async (event, context) => {
   const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
   const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || '';
   const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+  const STRIPE_WEBHOOK_SECRET_CONNECT = process.env.STRIPE_WEBHOOK_SECRET_CONNECT || '';
 
   // ✅ Verifica che le chiavi siano presenti
   if (!STRIPE_SECRET_KEY) {
@@ -63,20 +64,33 @@ export const handler: Handler = async (event, context) => {
   let stripeEvent: Stripe.Event;
 
   try {
-    // Verifica firma webhook
+  // Prova prima con il secret principale (pagamenti)
+  stripeEvent = stripe.webhooks.constructEvent(
+    event.body!,
+    sig,
+    STRIPE_WEBHOOK_SECRET
+  );
+  console.log('✅ Validated with STRIPE_WEBHOOK_SECRET');
+} catch (err1: any) {
+  // Se fallisce, prova con il secret Connect (account hubber)
+  try {
     stripeEvent = stripe.webhooks.constructEvent(
       event.body!,
       sig,
-      STRIPE_WEBHOOK_SECRET
+      STRIPE_WEBHOOK_SECRET_CONNECT
     );
-  } catch (err: any) {
-    console.error('❌ Webhook signature verification failed:', err.message);
+    console.log('✅ Validated with STRIPE_WEBHOOK_SECRET_CONNECT');
+  } catch (err2: any) {
+    console.error('❌ Webhook signature verification failed with both secrets');
     return {
       statusCode: 400,
       headers,
-      body: JSON.stringify({ error: `Webhook Error: ${err.message}` }),
+      body: JSON.stringify({ error: 'Webhook signature verification failed' }),
     };
   }
+}
+
+console.log('🎣 Webhook received:', stripeEvent.type);
 
   console.log('🎣 Webhook received:', stripeEvent.type);
 
