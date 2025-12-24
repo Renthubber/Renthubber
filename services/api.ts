@@ -139,20 +139,23 @@ const mapDbUserToAppUser = (row: any): User => {
     id: row.id,
     email: row.email,
     name: displayName,
-    firstName: rawFirstName,   // ✅ AGGIUNTO
-    lastName: rawLastName,     // ✅ AGGIUNTO
-    publicName,                // ✅ AGGIUNTO
+    firstName: rawFirstName,
+    lastName: rawLastName,
+    publicName,
     avatar:
       row.avatar_url ||
       `https://ui-avatars.com/api/?name=${encodeURIComponent(
         avatarBaseName
       )}&background=random`,
+    avatar_url: row.avatar_url || undefined, // ✅ AGGIUNTO diretto
 
     role: row.role || "renter",
     roles: row.roles || [row.role || "renter"],
 
     rating: row.rating || 0,
     isSuperHubber: row.is_super_hubber || false,
+    is_super_hubber: row.is_super_hubber || false, // ✅ AGGIUNTO snake_case
+    is_super_admin: row.is_super_admin || false,   // ✅ AGGIUNTO
     status: row.status || "active",
     isSuspended: row.is_suspended || false,
     renterBalance: row.renter_balance || 0,
@@ -160,16 +163,25 @@ const mapDbUserToAppUser = (row: any): User => {
     referralCode: row.referral_code || "",
 
     hubberSince: row.hubber_since || undefined,
+    hubber_since: row.hubber_since || undefined, // ✅ AGGIUNTO snake_case
 
     emailVerified: !!row.email_verified,
     phoneVerified: !!row.phone_verified,
     idDocumentVerified: !!row.id_document_verified,
     verificationStatus: row.verification_status || "unverified",
+    
+    // ✅ snake_case versions
+    email_verified: !!row.email_verified,
+    phone_verified: !!row.phone_verified,
+    id_document_verified: !!row.id_document_verified,
+    verification_status: row.verification_status || "unverified",
 
     address: row.address || undefined,
     phoneNumber: row.phone_number || undefined,
+    phone_number: row.phone_number || undefined, // ✅ AGGIUNTO snake_case
     bio: row.bio || undefined,
     bankDetails: row.bank_details || undefined,
+    bank_details: row.bank_details || undefined, // ✅ AGGIUNTO snake_case
 
     idDocumentUrl: row.document_front_url || undefined,
     document_front_url: row.document_front_url || undefined,
@@ -177,7 +189,55 @@ const mapDbUserToAppUser = (row: any): User => {
     
     // ✅ DATI PROFILO
     userType: row.user_type || 'privato',
+    user_type: row.user_type || 'privato', // ✅ AGGIUNTO snake_case
     dateOfBirth: row.date_of_birth || undefined,
+    date_of_birth: row.date_of_birth || undefined, // ✅ AGGIUNTO snake_case
+    public_location: row.public_location || undefined, // ✅ AGGIUNTO
+    publicLocation: row.public_location || undefined,
+    
+    // ✅ FINANZA - AGGIUNTO TUTTO
+    renter_balance: row.renter_balance || 0,
+    hubber_balance: row.hubber_balance || 0,
+    refund_balance_cents: row.refund_balance_cents || 0,
+    refundBalanceCents: row.refund_balance_cents || 0,
+    referral_balance_cents: row.referral_balance_cents || 0,
+    referralBalanceCents: row.referral_balance_cents || 0,
+    custom_fee_percentage: row.custom_fee_percentage || undefined,
+    customFeePercentage: row.custom_fee_percentage || undefined,
+    
+    // ✅ STRIPE - AGGIUNTO TUTTO
+    stripe_account_id: row.stripe_account_id || undefined,
+    stripeAccountId: row.stripe_account_id || undefined,
+    stripe_onboarding_completed: row.stripe_onboarding_completed || false,
+    stripeOnboardingCompleted: row.stripe_onboarding_completed || false,
+    stripe_charges_enabled: row.stripe_charges_enabled || false,
+    stripeChargesEnabled: row.stripe_charges_enabled || false,
+    stripe_payouts_enabled: row.stripe_payouts_enabled || false,
+    stripePayoutsEnabled: row.stripe_payouts_enabled || false,
+    
+    // ✅ AZIENDA - AGGIUNTO TUTTO
+    company_name: row.company_name || undefined,
+    companyName: row.company_name || undefined,
+    fiscal_code: row.fiscal_code || undefined,
+    fiscalCode: row.fiscal_code || undefined,
+    vat_number: row.vat_number || undefined,
+    vatNumber: row.vat_number || undefined,
+    pec: row.pec || undefined,
+    sdi_code: row.sdi_code || undefined,
+    sdiCode: row.sdi_code || undefined,
+    billing_address: row.billing_address || undefined,
+    billingAddress: row.billing_address || undefined,
+    billing_city: row.billing_city || undefined,
+    billingCity: row.billing_city || undefined,
+    billing_zip: row.billing_zip || undefined,
+    billingZip: row.billing_zip || undefined,
+    billing_province: row.billing_province || undefined,
+    billingProvince: row.billing_province || undefined,
+    billing_country: row.billing_country || undefined,
+    billingCountry: row.billing_country || undefined,
+    
+    // ✅ REFERRAL - AGGIUNTO snake_case
+    referral_code: row.referral_code || undefined,
   };
 };
 
@@ -4016,25 +4076,67 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
     updateUser: async (userId: string, updates: Partial<User>): Promise<void> => {
       try {
         console.log("👑 admin.updateUser – userId:", userId, "updates:", updates);
+  
         
         // Mappa i campi dall'app al DB
         const dbUpdates: any = {};
         
         if (updates.name !== undefined) dbUpdates.name = updates.name;
-        if (updates.email !== undefined) dbUpdates.email = updates.email;
-        if (updates.role !== undefined) dbUpdates.role = updates.role;
-        if (updates.roles !== undefined) dbUpdates.roles = updates.roles;
-        if (updates.isSuspended !== undefined) dbUpdates.is_suspended = updates.isSuspended;
-        if (updates.status !== undefined) dbUpdates.status = updates.status;
-        if (updates.isSuperHubber !== undefined) dbUpdates.is_super_hubber = updates.isSuperHubber;
-        if (updates.customFeePercentage !== undefined) dbUpdates.custom_fee_percentage = updates.customFeePercentage;
-        if (updates.phoneNumber !== undefined) dbUpdates.phone_number = updates.phoneNumber;
-        if (updates.emailVerified !== undefined) dbUpdates.email_verified = updates.emailVerified;
-        if (updates.phoneVerified !== undefined) dbUpdates.phone_verified = updates.phoneVerified;
-        if (updates.idDocumentVerified !== undefined) dbUpdates.id_document_verified = updates.idDocumentVerified;
-        if (updates.verificationStatus !== undefined) dbUpdates.verification_status = updates.verificationStatus;
-        if (updates.bankDetails === null) dbUpdates.bank_details = null;
-        
+if (updates.email !== undefined) dbUpdates.email = updates.email;
+if (updates.role !== undefined) dbUpdates.role = updates.role;
+if (updates.roles !== undefined) dbUpdates.roles = updates.roles;
+if (updates.isSuspended !== undefined) dbUpdates.is_suspended = updates.isSuspended;
+if (updates.status !== undefined) dbUpdates.status = updates.status;
+if (updates.isSuperHubber !== undefined) dbUpdates.is_super_hubber = updates.isSuperHubber;
+if (updates.customFeePercentage !== undefined) dbUpdates.custom_fee_percentage = updates.customFeePercentage;
+if (updates.phoneNumber !== undefined) dbUpdates.phone_number = updates.phoneNumber;
+if (updates.emailVerified !== undefined) dbUpdates.email_verified = updates.emailVerified;
+if (updates.phoneVerified !== undefined) dbUpdates.phone_verified = updates.phoneVerified;
+if (updates.idDocumentVerified !== undefined) dbUpdates.id_document_verified = updates.idDocumentVerified;
+if (updates.verificationStatus !== undefined) dbUpdates.verification_status = updates.verificationStatus;
+
+// ✅ Supporto snake_case completo
+if ((updates as any).email_verified !== undefined) dbUpdates.email_verified = (updates as any).email_verified;
+if ((updates as any).phone_verified !== undefined) dbUpdates.phone_verified = (updates as any).phone_verified;
+if ((updates as any).id_document_verified !== undefined) dbUpdates.id_document_verified = (updates as any).id_document_verified;
+if ((updates as any).verification_status !== undefined) dbUpdates.verification_status = (updates as any).verification_status;
+if ((updates as any).first_name !== undefined) dbUpdates.first_name = (updates as any).first_name;
+if ((updates as any).last_name !== undefined) dbUpdates.last_name = (updates as any).last_name;
+if ((updates as any).public_name !== undefined) dbUpdates.public_name = (updates as any).public_name;
+if ((updates as any).date_of_birth !== undefined) dbUpdates.date_of_birth = (updates as any).date_of_birth;
+if ((updates as any).user_type !== undefined) dbUpdates.user_type = (updates as any).user_type;
+if ((updates as any).avatar_url !== undefined) dbUpdates.avatar_url = (updates as any).avatar_url;
+if ((updates as any).bio !== undefined) dbUpdates.bio = (updates as any).bio;
+if ((updates as any).address !== undefined) dbUpdates.address = (updates as any).address;
+if ((updates as any).public_location !== undefined) dbUpdates.public_location = (updates as any).public_location;
+if ((updates as any).renter_balance !== undefined) dbUpdates.renter_balance = (updates as any).renter_balance;
+if ((updates as any).hubber_balance !== undefined) dbUpdates.hubber_balance = (updates as any).hubber_balance;
+if ((updates as any).refund_balance_cents !== undefined) dbUpdates.refund_balance_cents = (updates as any).refund_balance_cents;
+if ((updates as any).referral_balance_cents !== undefined) dbUpdates.referral_balance_cents = (updates as any).referral_balance_cents;
+if ((updates as any).custom_fee_percentage !== undefined) dbUpdates.custom_fee_percentage = (updates as any).custom_fee_percentage;  // ✅ AGGIUNGI QUI
+if ((updates as any).stripe_account_id !== undefined) dbUpdates.stripe_account_id = (updates as any).stripe_account_id;
+if ((updates as any).stripe_onboarding_completed !== undefined) dbUpdates.stripe_onboarding_completed = (updates as any).stripe_onboarding_completed;
+if ((updates as any).stripe_charges_enabled !== undefined) dbUpdates.stripe_charges_enabled = (updates as any).stripe_charges_enabled;
+if ((updates as any).stripe_payouts_enabled !== undefined) dbUpdates.stripe_payouts_enabled = (updates as any).stripe_payouts_enabled;
+if ((updates as any).company_name !== undefined) dbUpdates.company_name = (updates as any).company_name;
+if ((updates as any).fiscal_code !== undefined) dbUpdates.fiscal_code = (updates as any).fiscal_code;
+if ((updates as any).vat_number !== undefined) dbUpdates.vat_number = (updates as any).vat_number;
+if ((updates as any).pec !== undefined) dbUpdates.pec = (updates as any).pec;
+if ((updates as any).sdi_code !== undefined) dbUpdates.sdi_code = (updates as any).sdi_code;
+if ((updates as any).billing_address !== undefined) dbUpdates.billing_address = (updates as any).billing_address;
+if ((updates as any).billing_city !== undefined) dbUpdates.billing_city = (updates as any).billing_city;
+if ((updates as any).billing_zip !== undefined) dbUpdates.billing_zip = (updates as any).billing_zip;
+if ((updates as any).billing_province !== undefined) dbUpdates.billing_province = (updates as any).billing_province;
+if ((updates as any).billing_country !== undefined) dbUpdates.billing_country = (updates as any).billing_country;
+if ((updates as any).referral_code !== undefined) dbUpdates.referral_code = (updates as any).referral_code;
+if ((updates as any).hubber_since !== undefined) dbUpdates.hubber_since = (updates as any).hubber_since;
+if ((updates as any).is_super_admin !== undefined) dbUpdates.is_super_admin = (updates as any).is_super_admin;
+if ((updates as any).is_super_hubber !== undefined) dbUpdates.is_super_hubber = (updates as any).is_super_hubber;  // ✅ AGGIUNTA
+
+if (updates.bankDetails === null) dbUpdates.bank_details = null;
+
+console.log("👑 admin.updateUser – dbUpdates preparati:", dbUpdates);
+
         dbUpdates.updated_at = new Date().toISOString();
         
         const { error } = await supabase
