@@ -432,41 +432,45 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
           const hubberTemplate = isSpace ? 'tpl-booking-confirmed-space-hubber' : 'tpl-booking-confirmed-object-hubber';
           
           // Email al RENTER
-          await supabase.from('email_queue').insert({
-            template_id: renterTemplate,
-            recipient_email: renter.email,
-            recipient_name: renterName,
-            recipient_user_id: renter.id,
-            subject: `Prenotazione confermata per ${listing.title}! 🎊`,
-            variables: JSON.stringify({
-              name: renterName,
-              listing: listing.title,
-              start_date: startDateFormatted,
-              end_date: endDateFormatted,
-              amount: totalAmount
-            }),
-            status: 'pending',
-            scheduled_at: new Date().toISOString()
-          });
-          
-          // Email all'HUBBER
-          await supabase.from('email_queue').insert({
-            template_id: hubberTemplate,
-            recipient_email: hubberEmail,
-            recipient_name: hubberName,
-            recipient_user_id: listing.hostId,
-            subject: `Hai una nuova prenotazione per ${listing.title}! 💰`,
-            variables: JSON.stringify({
-              name: hubberName,
-              listing: listing.title,
-              renter: renterName,
-              start_date: startDateFormatted,
-              end_date: endDateFormatted,
-              hubber_amount: hubberAmount
-            }),
-            status: 'pending',
-            scheduled_at: new Date().toISOString()
-          });
+await supabase.from('email_queue').insert({
+  template_id: renterTemplate,
+  recipient_email: renter.email,
+  recipient_name: renterName,
+  recipient_user_id: renter.id,
+  subject: `Prenotazione confermata per ${listing.title}! 🎊`,
+  body_html: `<p>Prenotazione confermata per ${listing.title}</p>`,
+  body_text: `Prenotazione confermata per ${listing.title}`,
+  variables: {
+    name: renterName,
+    listing: listing.title,
+    start_date: startDateFormatted,
+    end_date: endDateFormatted,
+    amount: totalAmount
+  },
+  status: 'pending',
+  scheduled_at: new Date().toISOString()
+});
+
+// Email all'HUBBER
+await supabase.from('email_queue').insert({
+  template_id: hubberTemplate,
+  recipient_email: hubberEmail,
+  recipient_name: hubberName,
+  recipient_user_id: listing.hostId,
+  subject: `Hai una nuova prenotazione per ${listing.title}! 💰`,
+  body_html: `<p>Nuova prenotazione per ${listing.title}</p>`,
+  body_text: `Nuova prenotazione per ${listing.title}`,
+  variables: {
+    name: hubberName,
+    listing: listing.title,
+    renter: renterName,
+    start_date: startDateFormatted,
+    end_date: endDateFormatted,
+    hubber_amount: hubberAmount
+  },
+  status: 'pending',
+  scheduled_at: new Date().toISOString()
+});
           
           console.log("✅ Email inserite nella queue");
         } catch (emailError) {
