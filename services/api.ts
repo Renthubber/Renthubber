@@ -21,6 +21,8 @@ import {
 import { supabase } from "../lib/supabase";
 import { referralApi } from './referralApi';
 import { generateAndSaveInvoicePDF } from '../services/invoicePdfGenerator';
+import { queueEmail } from '../services/emailQueue';
+
 /* ------------------------------------------------------
    HELPER: conversione centesimi <-> euro (NUOVO)
 -------------------------------------------------------*/
@@ -5531,6 +5533,12 @@ issued_at: new Date().toISOString()
         throw error;
       }
 
+// 📧 Email notifica disputa
+      await queueEmail('dispute_opened', { 
+        userId: payload.againstUserId,
+        disputeId: data.dispute_id 
+      });
+
       return data;
     },
   },
@@ -6442,6 +6450,12 @@ issued_at: new Date().toISOString()
         console.error("Errore creazione messaggio iniziale:", msgError);
       }
 
+// 📧 Email conferma ticket
+await queueEmail('support_ticket_created', {
+  userId: userId,
+  ticketId: ticketId
+});
+
       return ticketId;
     },
 
@@ -6788,6 +6802,11 @@ ${new Date(dispute.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', mi
       }
 
       console.log("✅ Recensione creata:", data);
+
+      // 📧 Email notifica recensione
+await queueEmail('review_received', { 
+  revieweeId: revieweeId 
+});
 
 // Aggiorna rating medio del reviewee (utente)
 await api.reviews.updateUserRating(revieweeId);
