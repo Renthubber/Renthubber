@@ -423,8 +423,8 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
           const hubberEmail = listing.owner?.email || '';
           const startDateFormatted = new Date(startDate).toLocaleDateString('it-IT');
           const endDateFormatted = new Date(endDate).toLocaleDateString('it-IT');
-          const totalAmount = (totalPrice / 100).toFixed(2);
-          const hubberAmount = (hubberNetAmount / 100).toFixed(2);
+          const totalAmount = (amounts.totalCents / 100).toFixed(2);
+          const hubberAmount = (amounts.hubberNetCents / 100).toFixed(2);
           
           // Template basato su categoria
           const isSpace = listing.category?.toLowerCase() === 'spazi';
