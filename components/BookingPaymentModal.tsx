@@ -415,67 +415,91 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
         }
 
         // 📧 INVIA EMAIL CONFERMA PRENOTAZIONE
-        try {
-          console.log("📧 Inserimento email in queue...");
-          
-          const renterName = `${renter.firstName || ''} ${renter.lastName || ''}`.trim() || 'Utente';
-          const hubberName = listing.owner?.name || 'Hubber';
-          const hubberEmail = listing.owner?.email || '';
-          const startDateFormatted = new Date(startDate).toLocaleDateString('it-IT');
-          const endDateFormatted = new Date(endDate).toLocaleDateString('it-IT');
-          const totalAmount = (amounts.totalCents / 100).toFixed(2);
-          const hubberAmount = (amounts.hubberNetCents / 100).toFixed(2);
-          
-          // Template basato su categoria
-          const isSpace = listing.category?.toLowerCase() === 'spazi';
-          const renterTemplate = isSpace ? 'tpl-booking-confirmed-space-renter' : 'tpl-booking-confirmed-object-renter';
-          const hubberTemplate = isSpace ? 'tpl-booking-confirmed-space-hubber' : 'tpl-booking-confirmed-object-hubber';
-          
-          // Email al RENTER
-await supabase.from('email_queue').insert({
-  template_id: renterTemplate,
-  recipient_email: renter.email,
-  recipient_name: renterName,
-  recipient_user_id: renter.id,
-  subject: `Prenotazione confermata per ${listing.title}! 🎊`,
-  body_html: `<p>Prenotazione confermata per ${listing.title}</p>`,
-  body_text: `Prenotazione confermata per ${listing.title}`,
-  variables: {
-    name: renterName,
-    listing: listing.title,
-    start_date: startDateFormatted,
-    end_date: endDateFormatted,
-    amount: totalAmount
-  },
-  status: 'pending',
-  scheduled_at: new Date().toISOString()
-});
-
-// Email all'HUBBER
-await supabase.from('email_queue').insert({
-  template_id: hubberTemplate,
-  recipient_email: hubberEmail,
-  recipient_name: hubberName,
-  recipient_user_id: listing.hostId,
-  subject: `Hai una nuova prenotazione per ${listing.title}! 💰`,
-  body_html: `<p>Nuova prenotazione per ${listing.title}</p>`,
-  body_text: `Nuova prenotazione per ${listing.title}`,
-  variables: {
-    name: hubberName,
-    listing: listing.title,
-    renter: renterName,
-    start_date: startDateFormatted,
-    end_date: endDateFormatted,
-    hubber_amount: hubberAmount
-  },
-  status: 'pending',
-  scheduled_at: new Date().toISOString()
-});
-          
-          console.log("✅ Email inserite nella queue");
-        } catch (emailError) {
-          console.warn("⚠️ Errore inserimento email:", emailError);
-        }
+try {
+  console.log("📧 Inserimento email in queue...");
+  
+  const renterName = `${renter.firstName || ''} ${renter.lastName || ''}`.trim() || 'Utente';
+  const hubberName = listing.owner?.name || 'Hubber';
+  const hubberEmail = listing.owner?.email || '';
+  const startDateFormatted = new Date(startDate).toLocaleDateString('it-IT');
+  const endDateFormatted = new Date(endDate).toLocaleDateString('it-IT');
+  const totalAmount = (amounts.totalCents / 100).toFixed(2);
+  const hubberAmount = (amounts.hubberNetCents / 100).toFixed(2);
+  
+  // Template basato su categoria
+  const isSpace = listing.category?.toLowerCase() === 'spazi';
+  const renterTemplate = isSpace ? 'tpl-booking-confirmed-space-renter' : 'tpl-booking-confirmed-object-renter';
+  const hubberTemplate = isSpace ? 'tpl-booking-confirmed-space-hubber' : 'tpl-booking-confirmed-object-hubber';
+  
+  console.log("📧 Dati email renter:", {
+    template: renterTemplate,
+    email: renter.email,
+    name: renterName
+  });
+  
+  // Email al RENTER
+  const { data: renterEmailData, error: renterEmailError } = await supabase.from('email_queue').insert({
+    template_id: renterTemplate,
+    recipient_email: renter.email,
+    recipient_name: renterName,
+    recipient_user_id: renter.id,
+    subject: `Prenotazione confermata per ${listing.title}! 🎊`,
+    body_html: `<p>Prenotazione confermata per ${listing.title}</p>`,
+    body_text: `Prenotazione confermata per ${listing.title}`,
+    variables: {
+      name: renterName,
+      listing: listing.title,
+      start_date: startDateFormatted,
+      end_date: endDateFormatted,
+      amount: totalAmount
+    },
+    status: 'pending',
+    scheduled_at: new Date().toISOString()
+  });
+  
+  if (renterEmailError) {
+    console.error("❌ Errore insert email renter:", renterEmailError);
+  } else {
+    console.log("✅ Email renter inserita:", renterEmailData);
+  }
+  
+  console.log("📧 Dati email hubber:", {
+    template: hubberTemplate,
+    email: hubberEmail,
+    name: hubberName
+  });
+  
+  // Email all'HUBBER
+  const { data: hubberEmailData, error: hubberEmailError } = await supabase.from('email_queue').insert({
+    template_id: hubberTemplate,
+    recipient_email: hubberEmail,
+    recipient_name: hubberName,
+    recipient_user_id: listing.hostId,
+    subject: `Hai una nuova prenotazione per ${listing.title}! 💰`,
+    body_html: `<p>Nuova prenotazione per ${listing.title}</p>`,
+    body_text: `Nuova prenotazione per ${listing.title}`,
+    variables: {
+      name: hubberName,
+      listing: listing.title,
+      renter: renterName,
+      start_date: startDateFormatted,
+      end_date: endDateFormatted,
+      hubber_amount: hubberAmount
+    },
+    status: 'pending',
+    scheduled_at: new Date().toISOString()
+  });
+  
+  if (hubberEmailError) {
+    console.error("❌ Errore insert email hubber:", hubberEmailError);
+  } else {
+    console.log("✅ Email hubber inserita:", hubberEmailData);
+  }
+  
+  console.log("✅ Email inserite nella queue");
+} catch (emailError: any) {
+  console.error("⚠️ ERRORE EMAIL COMPLETO:", emailError);
+}
 
         if (onSuccess) onSuccess({ id: bookingId });
         setLoading(false);
