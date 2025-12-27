@@ -455,7 +455,7 @@ try {
     },
     status: 'pending',
     scheduled_at: new Date().toISOString()
-  });
+    }).select();
   
   if (renterEmailError) {
     console.error("❌ Errore insert email renter:", renterEmailError);
@@ -488,7 +488,7 @@ try {
     },
     status: 'pending',
     scheduled_at: new Date().toISOString()
-  });
+  }).select();
   
   if (hubberEmailError) {
     console.error("❌ Errore insert email hubber:", hubberEmailError);
