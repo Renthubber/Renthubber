@@ -313,6 +313,90 @@ async function createBookingAfterPayment(params: {
     console.warn("⚠️ Errore creazione conversazione (non bloccante):", convError);
   }
 
+// 📧 INVIA EMAIL CONFERMA PRENOTAZIONE
+  try {
+    console.log("📧 Preparazione email conferma prenotazione...");
+    
+    // 1. Carica dati renter
+    const { data: renterData } = await supabase
+      .from('users')
+      .select('email, first_name, last_name')
+      .eq('id', params.renterId)
+      .single();
+    
+    // 2. Carica dati hubber
+    const { data: hubberData } = await supabase
+      .from('users')
+      .select('email, first_name, last_name')
+      .eq('id', params.hubberId)
+      .single();
+    
+    // 3. Carica dati listing (per categoria)
+    const { data: listingData } = await supabase
+      .from('listings')
+      .select('category, price')
+      .eq('id', params.listingId)
+      .single();
+    
+    if (renterData && hubberData && listingData) {
+      const renterName = `${renterData.first_name || ''} ${renterData.last_name || ''}`.trim() || 'Utente';
+      const hubberName = `${hubberData.first_name || ''} ${hubberData.last_name || ''}`.trim() || 'Utente';
+      const listingTitle = params.listingTitle || 'annuncio';
+      const startDateFormatted = new Date(params.startDate).toLocaleDateString('it-IT');
+      const endDateFormatted = new Date(params.endDate).toLocaleDateString('it-IT');
+      const totalAmount = (params.totalAmountCents / 100).toFixed(2);
+      
+      // Calcola guadagno hubber (assumendo fee 30%)
+      const hubberAmount = ((params.totalAmountCents * 0.7) / 100).toFixed(2);
+      
+      // Template basato su categoria
+      const isSpace = listingData.category?.toLowerCase() === 'spazi';
+      const renterTemplate = isSpace ? 'tpl-booking-confirmed-space-renter' : 'tpl-booking-confirmed-object-renter';
+      const hubberTemplate = isSpace ? 'tpl-booking-confirmed-space-hubber' : 'tpl-booking-confirmed-object-hubber';
+      
+      // 4. Email al RENTER
+      await supabase.from('email_queue').insert({
+        template_id: renterTemplate,
+        recipient_email: renterData.email,
+        recipient_name: renterName,
+        recipient_user_id: params.renterId,
+        subject: `Prenotazione confermata per ${listingTitle}! 🎊`,
+        variables: JSON.stringify({
+          name: renterName,
+          listing: listingTitle,
+          start_date: startDateFormatted,
+          end_date: endDateFormatted,
+          amount: totalAmount
+        }),
+        status: 'pending',
+        scheduled_at: new Date().toISOString()
+      });
+      
+      // 5. Email all'HUBBER
+      await supabase.from('email_queue').insert({
+        template_id: hubberTemplate,
+        recipient_email: hubberData.email,
+        recipient_name: hubberName,
+        recipient_user_id: params.hubberId,
+        subject: `Hai una nuova prenotazione per ${listingTitle}! 💰`,
+        variables: JSON.stringify({
+          name: hubberName,
+          listing: listingTitle,
+          renter: renterName,
+          start_date: startDateFormatted,
+          end_date: endDateFormatted,
+          hubber_amount: hubberAmount
+        }),
+        status: 'pending',
+        scheduled_at: new Date().toISOString()
+      });
+      
+      console.log("✅ Email inserite nella queue");
+    }
+  } catch (emailError) {
+    console.warn("⚠️ Errore inserimento email (non bloccante):", emailError);
+  }
+
   return booking;
 }
 
