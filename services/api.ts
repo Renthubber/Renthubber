@@ -7205,10 +7205,6 @@ recentlyViewed: {
   },
 };
 
-// ---------------------------------------------
-// BOOKINGS + PAYMENTS + WALLET (Stripe + Wallet)
-// ---------------------------------------------
-
 /**
  * Crea una prenotazione dopo pagamento Stripe + eventuale uso del wallet.
  * Usa la funzione RPC: public.create_booking_with_payment
@@ -7216,14 +7212,14 @@ recentlyViewed: {
 export async function createBookingWithPaymentApi(params: {
   renterId: string;
   listingId: string;
-  startDate: string; // "YYYY-MM-DD"
-  endDate: string; // "YYYY-MM-DD"
+  startDate: string;
+  endDate: string;
   amountTotalCents: number;
   platformFeeCents: number;
   hubberNetAmountCents: number;
   walletUsedCents: number;
-  provider: string; // es: "stripe"
-  providerPaymentId: string; // es: paymentIntent.id
+  provider: string;
+  providerPaymentId: string;
 }): Promise<Booking> {
   const {
     renterId,
@@ -7256,26 +7252,89 @@ export async function createBookingWithPaymentApi(params: {
     throw error;
   }
 
-  return data as Booking;
-}
+  const booking = data as Booking;
 
-/**
- * Cancella una prenotazione e rimborsa eventuale quota wallet.
- * Usa la funzione RPC: public.cancel_booking_and_refund
- */
-export async function cancelBookingAndRefundApi(
-  bookingId: string,
-  requesterId: string
-): Promise<Booking> {
-  const { data, error } = await supabase.rpc("cancel_booking_and_refund", {
-    p_booking_id: bookingId,
-    p_requester_id: requesterId,
-  });
-
-  if (error) {
-    console.error("Errore cancel_booking_and_refund:", error);
-    throw error;
+  // 📧 INVIA EMAIL CONFERMA PRENOTAZIONE
+  try {
+    console.log("📧 Preparazione email conferma prenotazione...");
+    
+    // 1. Carica dati listing (per categoria, hubber, title)
+    const { data: listingData } = await supabase
+      .from('listings')
+      .select('title, category, host_id')
+      .eq('id', listingId)
+      .single();
+    
+    // 2. Carica dati renter
+    const { data: renterData } = await supabase
+      .from('users')
+      .select('email, first_name, last_name')
+      .eq('id', renterId)
+      .single();
+    
+    // 3. Carica dati hubber
+    const { data: hubberData } = await supabase
+      .from('users')
+      .select('email, first_name, last_name')
+      .eq('id', listingData?.host_id)
+      .single();
+    
+    if (renterData && hubberData && listingData) {
+      const renterName = `${renterData.first_name || ''} ${renterData.last_name || ''}`.trim() || 'Utente';
+      const hubberName = `${hubberData.first_name || ''} ${hubberData.last_name || ''}`.trim() || 'Utente';
+      const listingTitle = listingData.title || 'annuncio';
+      const startDateFormatted = new Date(startDate).toLocaleDateString('it-IT');
+      const endDateFormatted = new Date(endDate).toLocaleDateString('it-IT');
+      const totalAmount = (amountTotalCents / 100).toFixed(2);
+      const hubberAmount = (hubberNetAmountCents / 100).toFixed(2);
+      
+      // Template basato su categoria
+      const isSpace = listingData.category?.toLowerCase() === 'spazi';
+      const renterTemplate = isSpace ? 'tpl-booking-confirmed-space-renter' : 'tpl-booking-confirmed-object-renter';
+      const hubberTemplate = isSpace ? 'tpl-booking-confirmed-space-hubber' : 'tpl-booking-confirmed-object-hubber';
+      
+      // 4. Email al RENTER
+      await supabase.from('email_queue').insert({
+        template_id: renterTemplate,
+        recipient_email: renterData.email,
+        recipient_name: renterName,
+        recipient_user_id: renterId,
+        subject: `Prenotazione confermata per ${listingTitle}! 🎊`,
+        variables: JSON.stringify({
+          name: renterName,
+          listing: listingTitle,
+          start_date: startDateFormatted,
+          end_date: endDateFormatted,
+          amount: totalAmount
+        }),
+        status: 'pending',
+        scheduled_at: new Date().toISOString()
+      });
+      
+      // 5. Email all'HUBBER
+      await supabase.from('email_queue').insert({
+        template_id: hubberTemplate,
+        recipient_email: hubberData.email,
+        recipient_name: hubberName,
+        recipient_user_id: listingData.host_id,
+        subject: `Hai una nuova prenotazione per ${listingTitle}! 💰`,
+        variables: JSON.stringify({
+          name: hubberName,
+          listing: listingTitle,
+          renter: renterName,
+          start_date: startDateFormatted,
+          end_date: endDateFormatted,
+          hubber_amount: hubberAmount
+        }),
+        status: 'pending',
+        scheduled_at: new Date().toISOString()
+      });
+      
+      console.log("✅ Email inserite nella queue");
+    }
+  } catch (emailError) {
+    console.warn("⚠️ Errore inserimento email (non bloccante):", emailError);
   }
 
-  return data as Booking;
+  return booking;
 }
