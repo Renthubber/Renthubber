@@ -414,6 +414,65 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
           console.warn("⚠️ Errore creazione conversazione:", convError);
         }
 
+        // 📧 INVIA EMAIL CONFERMA PRENOTAZIONE
+        try {
+          console.log("📧 Inserimento email in queue...");
+          
+          const renterName = `${renter.firstName || ''} ${renter.lastName || ''}`.trim() || 'Utente';
+          const hubberName = listing.owner?.name || 'Hubber';
+          const hubberEmail = listing.owner?.email || '';
+          const startDateFormatted = new Date(startDate).toLocaleDateString('it-IT');
+          const endDateFormatted = new Date(endDate).toLocaleDateString('it-IT');
+          const totalAmount = (totalPrice / 100).toFixed(2);
+          const hubberAmount = (hubberNetAmount / 100).toFixed(2);
+          
+          // Template basato su categoria
+          const isSpace = listing.category?.toLowerCase() === 'spazi';
+          const renterTemplate = isSpace ? 'tpl-booking-confirmed-space-renter' : 'tpl-booking-confirmed-object-renter';
+          const hubberTemplate = isSpace ? 'tpl-booking-confirmed-space-hubber' : 'tpl-booking-confirmed-object-hubber';
+          
+          // Email al RENTER
+          await supabase.from('email_queue').insert({
+            template_id: renterTemplate,
+            recipient_email: renter.email,
+            recipient_name: renterName,
+            recipient_user_id: renter.id,
+            subject: `Prenotazione confermata per ${listing.title}! 🎊`,
+            variables: JSON.stringify({
+              name: renterName,
+              listing: listing.title,
+              start_date: startDateFormatted,
+              end_date: endDateFormatted,
+              amount: totalAmount
+            }),
+            status: 'pending',
+            scheduled_at: new Date().toISOString()
+          });
+          
+          // Email all'HUBBER
+          await supabase.from('email_queue').insert({
+            template_id: hubberTemplate,
+            recipient_email: hubberEmail,
+            recipient_name: hubberName,
+            recipient_user_id: listing.hostId,
+            subject: `Hai una nuova prenotazione per ${listing.title}! 💰`,
+            variables: JSON.stringify({
+              name: hubberName,
+              listing: listing.title,
+              renter: renterName,
+              start_date: startDateFormatted,
+              end_date: endDateFormatted,
+              hubber_amount: hubberAmount
+            }),
+            status: 'pending',
+            scheduled_at: new Date().toISOString()
+          });
+          
+          console.log("✅ Email inserite nella queue");
+        } catch (emailError) {
+          console.warn("⚠️ Errore inserimento email:", emailError);
+        }
+
         if (onSuccess) onSuccess({ id: bookingId });
         setLoading(false);
         onClose();
