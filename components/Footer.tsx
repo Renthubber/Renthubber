@@ -13,13 +13,13 @@ export const Footer: React.FC = () => {
           <div className="max-w-sm">
             <div className="flex items-center mb-4">
               <img 
-                src="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png.png" 
+                src="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png" 
                 alt="Renthubber" 
                 className="h-16 w-auto"
               />
             </div>
             <p className="text-gray-500 text-sm">
-              La piattaforma di sharing economy per noleggiare oggetti e spazi in sicurezza. Risparmia, guadagna e riduci gli sprechi.
+              Noleggia ciò che ti serve. Guadagna da ciò che non usi. La piattaforma per oggetti e spazi vicino a te.
             </p>
           </div>
 
