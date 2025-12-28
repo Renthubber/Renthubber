@@ -524,21 +524,35 @@ setIsAuthChecking(false);
     key="login"
     initialStep="login"
     onComplete={async (user) => {
-      setCurrentUser(user);
-      const userRoles = user.roles || [user.role];
-                
-                if (user.role === "admin" || userRoles.includes("admin")) {
-                  setActiveMode("hubber");
-                  navigate('/admin');
-                  await loadAdminUsers();
-                } else if (userRoles.includes("hubber")) {
-                  setActiveMode("hubber");
-                  navigate('/dashboard');
-                } else {
-                  setActiveMode("renter");
-                  navigate('/dashboard');
-                }
-              }}
+  setCurrentUser(user);
+  const userRoles = user.roles || [user.role];
+  
+  // Imposta activeMode e carica dati admin se necessario
+  if (user.role === "admin" || userRoles.includes("admin")) {
+    setActiveMode("hubber");
+    await loadAdminUsers();
+  } else if (userRoles.includes("hubber")) {
+    setActiveMode("hubber");
+  } else {
+    setActiveMode("renter");
+  }
+  
+  // Controlla se c'è un redirect nell'URL
+  const params = new URLSearchParams(window.location.search);
+  const redirectTo = params.get('redirect');
+  
+  if (redirectTo) {
+    // Vai al redirect specificato
+    navigate(redirectTo);
+  } else {
+    // Default: vai su dashboard o admin
+    if (user.role === "admin" || userRoles.includes("admin")) {
+      navigate('/admin');
+    } else {
+      navigate('/dashboard');
+    }
+  }
+}}
               onLoginRedirect={() => navigate('/signup')}
               onForgotPassword={() => navigate('/forgot-password')}
             />
