@@ -139,6 +139,12 @@ const mapDbBookingToUiBooking = (raw: any): BookingRequest => {
       ? raw.cleaning_fee
       : 0;
 
+      // ✅ deposit = cauzione (es. €100.00)
+const deposit =
+  typeof raw.deposit === 'number'
+    ? raw.deposit
+    : 0;
+
   // ✅ Prezzo base dell'oggetto = netto hubber + commissione hubber
   // Esempio: €2.50 (netto) + €2.50 (comm) = €5.00 (prezzo base)
   const baseRentalPrice = netEarnings + hubberCommission;
@@ -190,6 +196,7 @@ const mapDbBookingToUiBooking = (raw: any): BookingRequest => {
     netEarnings,                      // Netto che riceve l'hubber
     status: raw.status || 'pending',
     cleaningFee,                      // ✅ NUOVO: Costo pulizia
+    deposit,                          // ✅ NUOVO: Cauzione
   } as BookingRequest & { 
     start_date?: string; 
     end_date?: string; 
@@ -199,6 +206,7 @@ const mapDbBookingToUiBooking = (raw: any): BookingRequest => {
     priceUnit?: string;
     cancellationPolicy?: string;
     cleaningFee?: number;           // ✅ NUOVO
+    deposit?: number;  
     hubberName?: string;        // ✅ AGGIUNGI QUESTA
     hubberAvatar?: string;
   };
@@ -4720,9 +4728,22 @@ const handleIdFileChange =
                         <td className="p-3">
                           {renderBookingStatusBadge(booking.status)}
                         </td>
-                        <td className="p-3 font-bold text-right">
-                          €{booking.totalPrice.toFixed(2)}
-                        </td>
+                        <td className="p-3 text-right">
+  {booking.status === 'cancelled' ? (
+    <div className="space-y-0.5">
+      <div className="text-gray-400 line-through text-xs">
+        €{booking.totalPrice.toFixed(2)}
+      </div>
+      <div className="font-bold text-red-600 text-sm">
+        €0.00
+      </div>
+    </div>
+  ) : (
+    <span className="font-bold">
+      €{booking.totalPrice.toFixed(2)}
+    </span>
+  )}
+</td>
                         <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
                           {booking.status === 'completed' ? (
                             (booking as any).hasReviewedByHubber ? (
@@ -5057,123 +5078,192 @@ const handleIdFileChange =
                   </div>
 
                   {/* ✅ SEZIONE 1: IL RENTER HA PAGATO */}
-                  <div className="border-t border-gray-100 pt-4 mt-2 space-y-2">
-                    <p className="text-xs text-gray-400 uppercase font-semibold">
-                      Il renter ha pagato
-                    </p>
-                    {/* ✅ Prezzo base senza pulizia */}
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">
-                        Noleggio
-                      </span>
-                      <span className="font-medium text-gray-900">
-                        €{(selectedBooking.totalPrice - ((selectedBooking as any).cleaningFee || 0)).toFixed(2)}
-                      </span>
-                    </div>
-                    {/* ✅ Costo pulizia (se presente) */}
-                    {((selectedBooking as any).cleaningFee || 0) > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">
-                          Costo pulizia
-                        </span>
-                        <span className="font-medium text-gray-900">
-                          €{((selectedBooking as any).cleaningFee || 0).toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-                    {/* ✅ Commissione servizio (calcolata sul totale base+pulizia) */}
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">
-                        Commissione servizio
-                      </span>
-                      <span className="font-medium text-gray-900">
-                        €{(((selectedBooking as any).renterTotalPaid || 0) - selectedBooking.totalPrice).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
-                      <span className="text-gray-800 font-semibold">
-                        Totale (EUR)
-                      </span>
-                      <span className="font-bold text-gray-900">
-                        €{((selectedBooking as any).renterTotalPaid || 0).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
+<div className="border-t border-gray-100 pt-4 mt-2 space-y-2">
+  <p className="text-xs text-gray-400 uppercase font-semibold">
+    Il renter ha pagato
+  </p>
+  {/* ✅ Prezzo base senza pulizia */}
+  <div className="flex justify-between text-sm">
+    <span className="text-gray-600">
+      Noleggio
+    </span>
+    <span className="font-medium text-gray-900">
+      €{(selectedBooking.totalPrice - ((selectedBooking as any).cleaningFee || 0)).toFixed(2)}
+    </span>
+  </div>
+  {/* ✅ Costo pulizia (se presente) */}
+  {((selectedBooking as any).cleaningFee || 0) > 0 && (
+    <div className="flex justify-between text-sm">
+      <span className="text-gray-600">
+        Costo pulizia
+      </span>
+      <span className="font-medium text-gray-900">
+        €{((selectedBooking as any).cleaningFee || 0).toFixed(2)}
+      </span>
+    </div>
+  )}
+  {/* ✅ Commissione servizio (SOLO commissioni, senza cauzione) */}
+  <div className="flex justify-between text-sm">
+    <span className="text-gray-600">
+      Commissioni Renthubber
+    </span>
+    <span className="font-medium text-gray-900">
+      €{(((selectedBooking as any).renterTotalPaid || 0) - selectedBooking.totalPrice - ((selectedBooking as any).deposit || 0)).toFixed(2)}
+    </span>
+  </div>
+  {/* ✅ Cauzione (se presente) */}
+  {((selectedBooking as any).deposit || 0) > 0 && (
+    <div className="flex justify-between text-sm">
+      <span className="text-gray-600">
+        Cauzione (rimborsabile)
+      </span>
+      <span className="font-medium text-amber-600">
+        €{((selectedBooking as any).deposit || 0).toFixed(2)}
+      </span>
+    </div>
+  )}
+  <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
+    <span className="text-gray-800 font-semibold">
+      Totale (EUR)
+    </span>
+    <span className="font-bold text-gray-900">
+      €{((selectedBooking as any).renterTotalPaid || 0).toFixed(2)}
+    </span>
+  </div>
+</div>
 
                   {/* ✅ SEZIONE 2: COMPENSO DELL'HUBBER */}
-                  <div className="border-t border-gray-100 pt-4 mt-4 space-y-2">
-                    <p className="text-xs text-gray-400 uppercase font-semibold">
-                      Compenso dell'hubber
-                    </p>
-                    {/* ✅ Importo base senza pulizia */}
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">
-                        Importo noleggio
-                      </span>
-                      <span className="font-medium text-gray-900">
-                        €{(selectedBooking.totalPrice - ((selectedBooking as any).cleaningFee || 0)).toFixed(2)}
-                      </span>
-                    </div>
-                    {/* ✅ Costo pulizia (se presente) */}
-                    {((selectedBooking as any).cleaningFee || 0) > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">
-                          Costo pulizia
-                        </span>
-                        <span className="font-medium text-gray-900">
-                          €{((selectedBooking as any).cleaningFee || 0).toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">
-                        Commissione piattaforma
-                      </span>
-                      <span className="font-medium text-red-500">
-                        -€{(selectedBooking.commission || 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
-                      <span className="text-gray-800 font-semibold">
-                        Totale (EUR)
-                      </span>
-                      <span className="font-bold text-green-600">
-                        €{(selectedBooking.netEarnings ?? (selectedBooking.totalPrice - (selectedBooking.commission || 0))).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
+<div className="border-t border-gray-100 pt-4 mt-4 space-y-2">
+  <p className="text-xs text-gray-400 uppercase font-semibold">
+    Compenso dell'hubber
+  </p>
+  
+  {selectedBooking.status === 'cancelled' ? (
+    <>
+      {/* ⚠️ PRENOTAZIONE CANCELLATA - Importi azzerati */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-2">
+        <p className="text-xs font-semibold text-gray-500 uppercase mb-1">
+          Prenotazione Cancellata
+        </p>
+        <p className="text-xs text-gray-400">
+          Nessun compenso
+        </p>
+      </div>
+      
+      {/* Importo noleggio */}
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-400">
+          Importo noleggio
+        </span>
+        <span className="font-medium text-gray-400">€0.00</span>
+      </div>
+      
+      {/* Costo pulizia (se presente) */}
+      {((selectedBooking as any).cleaningFee || 0) > 0 && (
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-400">
+            Costo pulizia
+          </span>
+          <span className="font-medium text-gray-400">€0.00</span>
+        </div>
+      )}
+      
+      {/* Commissione piattaforma */}
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-400">
+          Commissione piattaforma
+        </span>
+        <span className="font-medium text-gray-400">€0.00</span>
+      </div>
+      
+      {/* Totale */}
+      <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
+        <span className="text-gray-500 font-semibold">
+          Totale (EUR)
+        </span>
+        <span className="font-bold text-gray-400">€0.00</span>
+      </div>
+    </>
+  ) : (
+    <>
+      {/* ✅ PRENOTAZIONE NORMALE - Tutto come prima */}
+      
+      {/* ✅ Importo base senza pulizia */}
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-600">
+          Importo noleggio
+        </span>
+        <span className="font-medium text-gray-900">
+          €{(selectedBooking.totalPrice - ((selectedBooking as any).cleaningFee || 0)).toFixed(2)}
+        </span>
+      </div>
+      
+      {/* ✅ Costo pulizia (se presente) */}
+      {((selectedBooking as any).cleaningFee || 0) > 0 && (
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">
+            Costo pulizia
+          </span>
+          <span className="font-medium text-gray-900">
+            €{((selectedBooking as any).cleaningFee || 0).toFixed(2)}
+          </span>
+        </div>
+      )}
+      
+      {/* Commissione piattaforma */}
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-600">
+          Commissione piattaforma
+        </span>
+        <span className="font-medium text-red-500">
+          -€{(selectedBooking.commission || 0).toFixed(2)}
+        </span>
+      </div>
+      
+      {/* Totale */}
+      <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
+        <span className="text-gray-800 font-semibold">
+          Totale (EUR)
+        </span>
+        <span className="font-bold text-green-600">
+          €{(selectedBooking.netEarnings ?? (selectedBooking.totalPrice - (selectedBooking.commission || 0))).toFixed(2)}
+        </span>
+      </div>
+    </>
+  )}
+</div>
 
-                  {selectedBooking.status === 'pending' && (
-                    <div className="pt-4 border-t border-gray-100 mt-2 space-y-2">
-                      <p className="text-xs text-gray-400 uppercase font-semibold">
-                        Azioni
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() =>
-                            handleRequestAction(
-                              selectedBooking.id,
-                              'rejected'
-                            )
-                          }
-                          className="flex-1 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-bold hover:bg-gray-50"
-                        >
-                          Rifiuta
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleRequestAction(
-                              selectedBooking.id,
-                              'accepted'
-                            )
-                          }
-                          className="flex-1 py-2 rounded-lg bg-brand text-white text-sm font-bold hover:bg-brand-dark"
-                        >
-                          Accetta
-                        </button>
-                      </div>
-                    </div>
-                  )}
+{selectedBooking.status === 'pending' && (
+  <div className="pt-4 border-t border-gray-100 mt-2 space-y-2">
+    <p className="text-xs text-gray-400 uppercase font-semibold">
+      Azioni
+    </p>
+    <div className="flex gap-2">
+      <button
+        onClick={() =>
+          handleRequestAction(
+            selectedBooking.id,
+            'rejected'
+          )
+        }
+        className="flex-1 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-bold hover:bg-gray-50"
+      >
+        Rifiuta
+      </button>
+      <button
+        onClick={() =>
+          handleRequestAction(
+            selectedBooking.id,
+            'accepted'
+          )
+        }
+        className="flex-1 py-2 rounded-lg bg-brand text-white text-sm font-bold hover:bg-brand-dark"
+      >
+        Accetta
+      </button>
+    </div>
+  </div>
+)}
 
                   {/* ✅ PULSANTE CANCELLA PER PRENOTAZIONI CONFERMATE/ATTIVE */}
                   {['confirmed', 'accepted', 'active'].includes(selectedBooking.status) && (
