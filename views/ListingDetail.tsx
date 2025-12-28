@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   Minus,
   Plus,
+  MessageSquare,
 } from "lucide-react";
 import { AirbnbCalendar } from "../components/AirbnbCalendar";
 import { PhotoGallery } from "../components/PhotoGallery";
@@ -22,6 +23,7 @@ import { api } from "../services/api";
 import { BookingPaymentModal } from "../components/BookingPaymentModal";
 import { referralApi } from "../services/referralApi";
 import { supabase } from "../lib/supabase";
+import { useNavigate } from 'react-router-dom';
 
 interface ListingDetailProps {
   listing: Listing;
@@ -42,6 +44,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
   onHostClick,
   onRenterClick,
 }) => {
+   const navigate = useNavigate(); 
   // ✅ OWNER (HOST) CARICATO DAL DB
   const [owner, setOwner] = useState<User | null>(null);
 
@@ -528,6 +531,18 @@ useEffect(() => {
     setShowPaymentModal(true);
   };
 
+  const handleContactHubber = () => {
+  // Se non sei loggato, vai al login con redirect
+  if (!currentUser) {
+    const currentPath = window.location.pathname;
+    navigate(`/login?redirect=${encodeURIComponent(currentPath)}`);
+    return;
+  }
+  
+  // Se sei loggato, vai ai messaggi con parametri per aprire chat
+  navigate(`/messages?listing=${listing.id}&hubber=${listing.hostId}`);
+};
+
   // ✅ CALCOLO WALLET CON SALDI SEPARATI
   // 1. Prima usa refundBalance (100% flessibile su tutto)
   // 2. Poi usa referralBalance (max X% sulle commissioni rimanenti)
@@ -942,14 +957,22 @@ useEffect(() => {
                 <div className="w-full bg-gray-100 text-gray-600 font-bold py-3.5 rounded-xl text-lg text-center mb-4 border-2 border-gray-200">
                   ✋ Questo è il tuo annuncio
                 </div>
-              ) : (
-                <button
-                  onClick={handleBookingClick}
-                  className="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl text-lg shadow-md transition-all mb-4"
-                >
-                  {duration ? "Prenota" : "Verifica disponibilità"}
-                </button>
-              )}
+             ) : (
+  <>
+   <button
+  onClick={handleContactHubber}
+  className="w-full bg-white hover:bg-gray-50 text-gray-700 font-semibold py-3 rounded-xl text-base shadow-sm border-2 border-gray-200 transition-all mb-3"
+>
+  Contatta l'hubber
+</button>
+    <button
+      onClick={handleBookingClick}
+      className="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl text-lg shadow-md transition-all mb-4"
+    >
+      {duration ? "Prenota" : "Verifica disponibilità"}
+    </button>
+  </>
+)}
 
               {/* Riepilogo costi */}
               {duration > 0 && (

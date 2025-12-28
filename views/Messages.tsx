@@ -3,6 +3,8 @@ import { Send, MoreVertical, Phone, Image as ImageIcon, Loader2, Archive, Trash2
 import { api } from "../services/api";
 import { User, Dispute } from "../types";
 import { useRealtimeMessages } from "../hooks/useRealtimeMessages";
+import { useSearchParams } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 
 
@@ -279,6 +281,9 @@ export const Messages: React.FC<MessagesProps> = ({
   currentUser,
   onCreateDispute,
 }) => {
+
+  const [searchParams, setSearchParams] = useSearchParams();  // ← AGGIUNGI QUI
+
   // 🔒 Controlla se i contatti possono essere condivisi
   const [isBookingConfirmed, setIsBookingConfirmed] = useState(true);
 
@@ -942,12 +947,65 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
-  }, [chatMessages]);
+ }, [chatMessages]);
 
-  const handleSend = async () => {
-        if (!messageInput.trim()) {
-            return;
+// ✅ Apri automaticamente chat se arrivi da listing (es: "Contatta l'hubber")
+useEffect(() => {
+  const listingId = searchParams.get('listing');
+  const hubberId = searchParams.get('hubber');
+  
+  if (!listingId || !hubberId || !currentUser) return;
+  
+  const openListingChat = async () => {
+    try {
+      // Cerca conversazione esistente per questo listing (senza booking)
+      const { data: existingConv } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('listing_id', listingId)
+        .is('booking_id', null)
+        .or(`and(renter_id.eq.${currentUser.id},hubber_id.eq.${hubberId}),and(renter_id.eq.${hubberId},hubber_id.eq.${currentUser.id})`)
+        .maybeSingle();
+      
+      if (existingConv) {
+        setActiveChatId(existingConv.id);
+        setShowMobileList(false);
+      } else {
+        const newConvId = `conv-listing-${Date.now()}`;
+        const { error } = await supabase.from('conversations').insert({
+          id: newConvId,
+          renter_id: currentUser.id,
+          hubber_id: hubberId,
+          listing_id: listingId,
+          booking_id: null,
+          is_support: false,
+          status: 'open',
+          last_message_preview: 'Nuova conversazione',
+          last_message_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        if (!error) {
+          await loadRealConversations();
+          setActiveChatId(newConvId);
+          setShowMobileList(false);
+        }
+      }
+      
+      setSearchParams({});
+    } catch (err) {
+      console.error('Errore apertura chat listing:', err);
     }
+  };
+  
+  openListingChat();
+}, [searchParams, currentUser?.id]);
+
+const handleSend = async () => {
+  if (!messageInput.trim()) {
+    return;
+  }
 
         try {
       const { cleaned, blockedContacts } = api.messages.sanitizeContent(
@@ -1543,23 +1601,34 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
                   {contact.lastMessage}
                 </p>
                 
-                {/* ✅ Date + Nome annuncio (stile Airbnb) */}
-                <p className="text-xs text-gray-500 truncate">
-                  {(contact as any).bookingDates ? (
-                    <>
-                      {(contact as any).bookingDates}
-                      {' • '}
-                      {(contact as any).listingTitle || 'Annuncio'}
-                    </>
-                  ) : (
-                    <>
-                      {(contact as any).bookingNumber || 'Nuova prenotazione'}
-                      {(contact as any).listingTitle && ` • ${(contact as any).listingTitle}`}
-                    </>
-                  )}
-                </p>
-              </div>
-              </div>
+         {/* ✅ Date + Nome annuncio (stile Airbnb) */}
+<div className="text-xs text-gray-500">
+  {(contact as any).bookingDates ? (
+    <p className="truncate">
+      {(contact as any).bookingDates}
+      {' • '}
+      {(contact as any).listingTitle || 'Annuncio'}
+    </p>
+  ) : (
+    <>
+      <p className="truncate">
+        {(contact as any).bookingNumber 
+          ? (contact as any).bookingNumber
+          : (contact as any).listingTitle 
+            ? 'Richiesta informazioni'
+            : 'Conversazione'
+        }
+      </p>
+      {(contact as any).listingTitle && (
+        <p className="truncate text-gray-400">
+          {(contact as any).listingTitle}
+        </p>
+      )}
+    </>
+  )}
+</div>
+ </div>
+  </div>
               
               {/* ✅ MENU CONTESTUALE (solo per conversazioni reali) */}
               {contact.isRealConversation && (
