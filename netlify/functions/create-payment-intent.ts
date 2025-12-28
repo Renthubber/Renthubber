@@ -182,6 +182,7 @@ export const handler: Handler = async (event, context) => {
         amount_total: totalAmount,
         platform_fee: renterFee + hubberFee,
         hubber_net_amount: basePrice + cleaningFee - hubberFee,
+        deposit: deposit,
         wallet_used_cents: Math.round(walletUsedTotal * 100),
         status: 'confirmed',
         stripe_payment_intent_id: null,

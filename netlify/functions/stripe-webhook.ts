@@ -183,6 +183,7 @@ async function handlePaymentIntentSucceeded(
         platform_fee: hubberFee,
         hubber_net_amount: basePrice + cleaningFee - hubberFee,
         cleaning_fee: cleaningFee,
+        deposit: deposit,
         wallet_used_cents: Math.round(walletUsed * 100),
         status: 'confirmed',
         stripe_payment_intent_id: paymentIntent.id,
