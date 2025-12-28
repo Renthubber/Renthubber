@@ -274,7 +274,8 @@ try {
     }
   );
   const renterTemplates = await renterTplResponse.json();
-  const renterTpl = renterTemplates[0];
+console.log('📧 Renter template response:', JSON.stringify(renterTemplates));
+const renterTpl = renterTemplates[0];
   
   const hubberTplResponse = await fetch(
     `${SUPABASE_URL}/rest/v1/email_templates?id=eq.${hubberTemplate}&select=subject,body_html,body_text`,
@@ -286,7 +287,8 @@ try {
     }
   );
   const hubberTemplates = await hubberTplResponse.json();
-  const hubberTpl = hubberTemplates[0];
+console.log('📧 Hubber template response:', JSON.stringify(hubberTemplates));
+const hubberTpl = hubberTemplates[0];
   
   if (!renterTpl || !hubberTpl) {
     console.error('❌ Email templates not found');
