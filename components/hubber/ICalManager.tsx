@@ -14,6 +14,7 @@ import {
   X,
   Plus,
 } from 'lucide-react';
+ import { supabase } from '../../lib/supabase';
 
 // Tipo per calendario importato
 interface ImportedCalendar {
@@ -86,20 +87,35 @@ export const ICalManager: React.FC<ICalManagerProps> = ({
     }
   };
 
-  // Rigenera URL export
-  const regenerateUrl = () => {
-    setIsGeneratingUrl(true);
-    const token = btoa(`${userId}-${Date.now()}-regen`).replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
-    const newUrl = `${window.location.origin}/api/ical/${userId}/${token}.ics`;
+ // Rigenera URL export
+const regenerateUrl = async () => {
+  setIsGeneratingUrl(true);
+  const token = btoa(`${userId}-${Date.now()}-regen`).replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
+  const newUrl = `${window.location.origin}/api/ical/${userId}/${token}.ics`;
+  
+  try {
+    // ✅ Salva il nuovo token nel database
+    const { error } = await supabase
+      .from('users')
+      .update({ ical_token: token })
+      .eq('id', userId);
     
-    setTimeout(() => {
-      setExportUrl(newUrl);
-      if (onExportUrl) {
-        onExportUrl(newUrl);
-      }
+    if (error) {
+      console.error('Errore salvataggio nuovo token:', error);
       setIsGeneratingUrl(false);
-    }, 500);
-  };
+      return;
+    }
+    
+    setExportUrl(newUrl);
+    if (onExportUrl) {
+      onExportUrl(newUrl);
+    }
+  } catch (err) {
+    console.error('Errore rigenerazione URL:', err);
+  } finally {
+    setIsGeneratingUrl(false);
+  }
+};
 
   // Gestione import
   const handleImport = async () => {
@@ -225,41 +241,70 @@ export const ICalManager: React.FC<ICalManagerProps> = ({
             </div>
           </div>
 
-          {/* URL Box */}
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
-              Il tuo URL iCal personale
-            </label>
-            <div className="flex gap-2">
-              <div className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 flex items-center">
-                <Link2 className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
-                <span className="text-sm text-gray-700 truncate font-mono">
-                  {exportUrl || 'Generazione in corso...'}
-                </span>
-              </div>
-              <button
-                onClick={copyToClipboard}
-                disabled={!exportUrl}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
-                  copied
-                    ? 'bg-green-500 text-white'
-                    : 'bg-brand text-white hover:bg-brand-dark'
-                } disabled:opacity-50`}
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    Copiato!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    Copia
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+         {/* URL Box */}
+<div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+  <label className="block text-xs font-semibold text-gray-500 uppercase mb-3">
+    Il tuo URL iCal personale
+  </label>
+  
+  {/* Mobile layout: horizontal */}
+  <div className="flex md:hidden gap-2">
+    <div className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-3 overflow-x-auto">
+      <div className="flex items-center gap-2">
+        <Link2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+        <span className="text-sm text-gray-700 font-mono whitespace-nowrap">
+          {exportUrl || 'Generazione in corso...'}
+        </span>
+      </div>
+    </div>
+    <button
+      onClick={copyToClipboard}
+      disabled={!exportUrl}
+      className={`px-3 py-3 rounded-lg font-medium transition-all flex items-center justify-center flex-shrink-0 ${
+        copied
+          ? 'bg-green-500 text-white'
+          : 'bg-brand text-white hover:bg-brand-dark active:bg-brand-dark'
+      } disabled:opacity-50`}
+    >
+      {copied ? (
+        <Check className="w-5 h-5" />
+      ) : (
+        <Copy className="w-5 h-5" />
+      )}
+    </button>
+  </div>
+
+  {/* Desktop layout: side by side */}
+  <div className="hidden md:flex gap-2">
+    <div className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 flex items-center overflow-x-auto">
+      <Link2 className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+      <span className="text-sm text-gray-700 font-mono whitespace-nowrap">
+        {exportUrl || 'Generazione in corso...'}
+      </span>
+    </div>
+    <button
+      onClick={copyToClipboard}
+      disabled={!exportUrl}
+      className={`px-3 py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-1.5 flex-shrink-0 ${
+        copied
+          ? 'bg-green-500 text-white'
+          : 'bg-brand text-white hover:bg-brand-dark'
+      } disabled:opacity-50`}
+    >
+      {copied ? (
+        <>
+          <Check className="w-4 h-4" />
+          Copiato
+        </>
+      ) : (
+        <>
+          <Copy className="w-4 h-4" />
+          Copia
+        </>
+      )}
+    </button>
+  </div>
+</div>
 
           {/* Istruzioni per app specifiche */}
           <div className="space-y-3">
