@@ -1608,7 +1608,8 @@ const handleRequestAction = (id: string, action: 'accepted' | 'rejected') => {
       const cleaningFee = (booking as any).cleaningFee || 0;
       const commission = ((basePrice + cleaningFee) * 10) / 100;
       const fixedFee = 2;
-      
+      const deposit = (booking as any).deposit || 0;
+
       // Usa il totale reale pagato dal renter (da Supabase)
       const renterTotalPaid = (booking as any).renterTotalPaid || (basePrice + cleaningFee + commission + fixedFee);
       
@@ -1654,6 +1655,7 @@ const handleRequestAction = (id: string, action: 'accepted' | 'rejected') => {
         cleaningFee,
         commission,
         fixedFee,
+        deposit,
         total: renterTotalPaid,
         walletUsed,
         cardPaid,
@@ -4371,61 +4373,71 @@ const handleIdFileChange =
             )}
 
             {/* Breakdown costi */}
-            {loadingBookingDetail ? (
-              <div className="text-center py-8">
-                <div className="animate-spin w-6 h-6 border-2 border-brand border-t-transparent rounded-full mx-auto mb-2"></div>
-                <p className="text-sm text-gray-500">Caricamento dettagli...</p>
-              </div>
-            ) : bookingDetailData ? (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-gray-400 uppercase font-semibold mb-2">
-                    Riepilogo costi
-                  </p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">
-                        €{bookingDetailData.listingPrice.toFixed(2)} × {bookingDetailData.days} {bookingDetailData.days === 1 ? bookingDetailData.priceUnit : bookingDetailData.priceUnit === 'giorno' ? 'giorni' : bookingDetailData.priceUnit}
-                      </span>
-                      <span className="font-medium text-gray-900">
-                        €{bookingDetailData.basePrice.toFixed(2)}
-                      </span>
-                    </div>
-                    {bookingDetailData.cleaningFee > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">
-                          Costo pulizia
-                        </span>
-                        <span className="font-medium text-gray-900">
-                          €{bookingDetailData.cleaningFee.toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">
-                        Commissione servizio (10%)
-                      </span>
-                      <span className="font-medium text-gray-900">
-                        €{bookingDetailData.commission.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">
-                        Fee fissa piattaforma
-                      </span>
-                      <span className="font-medium text-gray-900">
-                        €{bookingDetailData.fixedFee.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+{loadingBookingDetail ? (
+  <div className="text-center py-8">
+    <div className="animate-spin w-6 h-6 border-2 border-brand border-t-transparent rounded-full mx-auto mb-2"></div>
+    <p className="text-sm text-gray-500">Caricamento dettagli...</p>
+  </div>
+) : bookingDetailData ? (
+  <div className="space-y-4">
+    <div>
+      <p className="text-xs text-gray-400 uppercase font-semibold mb-2">
+        Riepilogo costi
+      </p>
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-gray-600">
+            €{bookingDetailData.listingPrice.toFixed(2)} × {bookingDetailData.days} {bookingDetailData.days === 1 ? bookingDetailData.priceUnit : bookingDetailData.priceUnit === 'giorno' ? 'giorni' : bookingDetailData.priceUnit}
+          </span>
+          <span className="font-medium text-gray-900">
+            €{bookingDetailData.basePrice.toFixed(2)}
+          </span>
+        </div>
+        {bookingDetailData.cleaningFee > 0 && (
+          <div className="flex justify-between">
+            <span className="text-gray-600">
+              Costo pulizia
+            </span>
+            <span className="font-medium text-gray-900">
+              €{bookingDetailData.cleaningFee.toFixed(2)}
+            </span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span className="text-gray-600">
+            Commissione di servizio (10% IVA inclusa)
+          </span>
+          <span className="font-medium text-gray-900">
+            €{bookingDetailData.commission.toFixed(2)}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">
+            Fee fissa piattaforma
+          </span>
+          <span className="font-medium text-gray-900">
+            €{bookingDetailData.fixedFee.toFixed(2)}
+          </span>
+        </div>
+        {(bookingDetailData as any).deposit > 0 && (
+          <div className="flex justify-between">
+            <span className="text-gray-600">
+              Cauzione (rimborsabile)
+            </span>
+            <span className="font-medium text-amber-600">
+              €{((bookingDetailData as any).deposit || 0).toFixed(2)}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
 
-                <div className="border-t border-gray-100 pt-3">
-                  <div className="flex justify-between text-base font-bold">
-                    <span className="text-gray-900">Totale pagato</span>
-                    <span className="text-brand">€{bookingDetailData.total.toFixed(2)}</span>
-                  </div>
-                </div>
+    <div className="border-t border-gray-100 pt-3">
+      <div className="flex justify-between text-base font-bold">
+        <span className="text-gray-900">Totale pagato</span>
+        <span className="text-brand">€{bookingDetailData.total.toFixed(2)}</span>
+      </div>
+    </div>
 
                 {/* Metodo di pagamento */}
                 <div className="border-t border-gray-100 pt-3">
@@ -5082,6 +5094,7 @@ const handleIdFileChange =
   <p className="text-xs text-gray-400 uppercase font-semibold">
     Il renter ha pagato
   </p>
+
   {/* ✅ Prezzo base senza pulizia */}
   <div className="flex justify-between text-sm">
     <span className="text-gray-600">
@@ -5105,7 +5118,7 @@ const handleIdFileChange =
   {/* ✅ Commissione servizio (SOLO commissioni, senza cauzione) */}
   <div className="flex justify-between text-sm">
     <span className="text-gray-600">
-      Commissioni Renthubber
+      Commissione di servizio
     </span>
     <span className="font-medium text-gray-900">
       €{(((selectedBooking as any).renterTotalPaid || 0) - selectedBooking.totalPrice - ((selectedBooking as any).deposit || 0)).toFixed(2)}
@@ -5168,12 +5181,20 @@ const handleIdFileChange =
         </div>
       )}
       
-      {/* Commissione piattaforma */}
+      {/* Commissione variabile */}
       <div className="flex justify-between text-sm">
         <span className="text-gray-400">
-          Commissione piattaforma
+          Commissione di servizio (10% iva inclusa)
         </span>
-        <span className="font-medium text-gray-400">€0.00</span>
+        <span className="font-medium text-gray-400">-€0.00</span>
+      </div>
+      
+      {/* Fee fissa */}
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-400">
+          Fee fissa piattaforma
+        </span>
+        <span className="font-medium text-gray-400">-€0.00</span>
       </div>
       
       {/* Totale */}
@@ -5186,7 +5207,7 @@ const handleIdFileChange =
     </>
   ) : (
     <>
-      {/* ✅ PRENOTAZIONE NORMALE - Tutto come prima */}
+      {/* ✅ PRENOTAZIONE NORMALE */}
       
       {/* ✅ Importo base senza pulizia */}
       <div className="flex justify-between text-sm">
@@ -5210,15 +5231,35 @@ const handleIdFileChange =
         </div>
       )}
       
-      {/* Commissione piattaforma */}
-      <div className="flex justify-between text-sm">
-        <span className="text-gray-600">
-          Commissione piattaforma
-        </span>
-        <span className="font-medium text-red-500">
-          -€{(selectedBooking.commission || 0).toFixed(2)}
-        </span>
-      </div>
+      {/* ✅ Commissione variabile (10%) */}
+      {(() => {
+        const subtotal = selectedBooking.totalPrice;
+        const variableCommission = subtotal * 0.10;
+        const fixedFee = (selectedBooking.commission || 0) - variableCommission;
+        
+        return (
+          <>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">
+                Commissione di servizio (10% IVA inclusa)
+              </span>
+              <span className="font-medium text-red-500">
+                -€{variableCommission.toFixed(2)}
+              </span>
+            </div>
+            
+            {/* ✅ Fee fissa */}
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">
+                Fee fissa piattaforma
+              </span>
+              <span className="font-medium text-red-500">
+                -€{fixedFee.toFixed(2)}
+              </span>
+            </div>
+          </>
+        );
+      })()}
       
       {/* Totale */}
       <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
