@@ -167,7 +167,7 @@ const App: React.FC = () => {
     const hash = window.location.hash;
     if (hash.includes('type=recovery') && hash.includes('access_token')) {
       console.log("🔑 Reset password detected - redirect a reset-password view");
-      navigate('/reset-password');
+      navigate('/reset-password' + hash);
       return;
     }
 
