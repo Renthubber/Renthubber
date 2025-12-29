@@ -180,7 +180,7 @@ async function handlePaymentIntentSucceeded(
         start_date: startDate,
         end_date: endDate,
         amount_total: totalAmount,
-        platform_fee: hubberFee,
+        platform_fee: renterFee,
         hubber_net_amount: basePrice + cleaningFee - hubberFee,
         cleaning_fee: cleaningFee,
         deposit: deposit,

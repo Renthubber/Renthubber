@@ -180,7 +180,7 @@ export const handler: Handler = async (event, context) => {
         start_date: startDate,
         end_date: endDate,
         amount_total: totalAmount,
-        platform_fee: renterFee + hubberFee,
+        platform_fee: renterFee,
         hubber_net_amount: basePrice + cleaningFee - hubberFee,
         deposit: deposit,
         wallet_used_cents: Math.round(walletUsedTotal * 100),
