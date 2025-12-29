@@ -163,14 +163,6 @@ const App: React.FC = () => {
     // ✅ Salva URL corrente per preservarlo dopo auth
     const currentPath = window.location.pathname;
 
-    // ✅ CHECK: Se l'utente arriva dal link email di reset password
-    const hash = window.location.hash;
-    if (hash.includes('type=recovery') && hash.includes('access_token')) {
-      console.log("🔑 Reset password detected - redirect a reset-password view");
-      window.location.replace('/reset-password' + hash);
-      return;
-    }
-
     const init = async () => {
       console.log("🚀 Avvio Renthubber...");
 
