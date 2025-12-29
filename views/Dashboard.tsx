@@ -41,7 +41,7 @@ import { WriteReviewModal } from '../components/WriteReviewModal';
 import { HubberCalendar } from '../components/hubber/HubberCalendar';
 import { ICalManager } from '../components/hubber/ICalManager';
 import { BillingDataSection } from '../components/BillingDataSection';
-import { calculateHubberFixedFee } from '../utils/feeUtils';
+import { calculateHubberFixedFee, calculateRenterFixedFee } from '../utils/feeUtils';
 
 // Mock Data for Charts (rimane fittizio per ora)
 type UserTypeOption =
@@ -1608,7 +1608,7 @@ const handleRequestAction = (id: string, action: 'accepted' | 'rejected') => {
       const basePrice = days * listingPrice;
       const cleaningFee = (booking as any).cleaningFee || 0;
       const commission = ((basePrice + cleaningFee) * 10) / 100;
-      const fixedFee = calculateHubberFixedFee(basePrice + cleaningFee);
+      const fixedFee = calculateRenterFixedFee(basePrice + cleaningFee);
       const deposit = (booking as any).deposit || 0;
 
       // Usa il totale reale pagato dal renter (da Supabase)
@@ -5233,12 +5233,16 @@ const handleIdFileChange =
       )}
       
       {/* ✅ Commissione variabile (10%) */}
-      {(() => {
-        const subtotal = selectedBooking.totalPrice;
-        const variableCommission = subtotal * 0.10;
-        const fixedFee = (selectedBooking.commission || 0) - variableCommission;
-        
-        return (
+{(() => {
+  // Ricostruisci il subtotale: netto hubber + commissioni hubber
+  const netEarnings = selectedBooking.netEarnings ?? (selectedBooking.totalPrice - (selectedBooking.commission || 0));
+  const totalCommission = selectedBooking.commission || 0;
+  const subtotal = netEarnings + totalCommission;
+  
+  const variableCommission = subtotal * 0.10;
+  const fixedFee = calculateHubberFixedFee(subtotal);
+
+    return (
           <>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">
