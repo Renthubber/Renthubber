@@ -40,18 +40,30 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onSuccess, onReque
   const [success, setSuccess] = useState(false);
   const [validToken, setValidToken] = useState(false);
 
-  useEffect(() => {
-    // Verifica se c'è un token di reset nella URL
+ useEffect(() => {
+  const checkRecovery = async () => {
+    // Caso 1: Token nell'hash (ideale)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get('access_token');
     const type = hashParams.get('type');
+    const accessToken = hashParams.get('access_token');
 
     if (type === 'recovery' && accessToken) {
+      setValidToken(true);
+      return;
+    }
+
+    // Caso 2: Supabase ha già fatto auto-login (fallback)
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      // Permetti il reset se c'è una sessione attiva
       setValidToken(true);
     } else {
       setError('Link non valido o scaduto');
     }
-  }, []);
+  };
+
+  checkRecovery();
+}, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
