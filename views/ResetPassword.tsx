@@ -7,6 +7,29 @@ interface ResetPasswordProps {
   onRequestNewLink?: () => void;
 }
 
+// Funzione per validare password sicura
+const validatePasswordStrength = (password: string) => {
+  const minLength = password.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+  const strength = [minLength, hasUpperCase, hasLowerCase, hasNumber, hasSpecialChar].filter(Boolean).length;
+  
+  return {
+    isValid: minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar,
+    strength,
+    requirements: {
+      minLength,
+      hasUpperCase,
+      hasLowerCase,
+      hasNumber,
+      hasSpecialChar,
+    }
+  };
+};
+
 export const ResetPassword: React.FC<ResetPasswordProps> = ({ onSuccess, onRequestNewLink }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,11 +57,19 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onSuccess, onReque
     e.preventDefault();
     setError('');
 
-    // Validazione password
-    if (password.length < 6) {
-      setError('La password deve essere di almeno 6 caratteri');
-      return;
-    }
+    // Validazione password sicura
+const passwordValidation = validatePasswordStrength(password);
+if (!passwordValidation.isValid) {
+  const missing = [];
+  if (!passwordValidation.requirements.minLength) missing.push('almeno 8 caratteri');
+  if (!passwordValidation.requirements.hasUpperCase) missing.push('una maiuscola');
+  if (!passwordValidation.requirements.hasLowerCase) missing.push('una minuscola');
+  if (!passwordValidation.requirements.hasNumber) missing.push('un numero');
+  if (!passwordValidation.requirements.hasSpecialChar) missing.push('un carattere speciale (!@#$%^&*...)');
+  
+  setError(`La password deve contenere: ${missing.join(', ')}`);
+  return;
+}
 
     if (password !== confirmPassword) {
       setError('Le password non coincidono');
@@ -153,85 +184,109 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onSuccess, onReque
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                  {error}
-                </div>
-              )}
+  {error && (
+    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+      {error}
+    </div>
+  )}
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Nuova Password
-                </label>
-                <div className="relative">
-                  <input 
-                    type={showPassword ? 'text' : 'password'}
-                    id="password"
-                    name="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Almeno 6 caratteri"
-                    required
-                    autoComplete="new-password"
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
-                    aria-label={showPassword ? 'Nascondi password' : 'Mostra password'}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  La password deve contenere almeno 6 caratteri
-                </p>
-              </div>
+  <div>
+    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+      Nuova Password
+    </label>
+    <div className="relative">
+      <input 
+        type={showPassword ? 'text' : 'password'}
+        id="password"
+        name="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="Almeno 8 caratteri"
+        required
+        autoComplete="new-password"
+        className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
+      />
+      <button
+        type="button"
+        onClick={() => setShowPassword(!showPassword)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
+        aria-label={showPassword ? 'Nascondi password' : 'Mostra password'}
+      >
+        {showPassword ? (
+          <EyeOff className="w-5 h-5" />
+        ) : (
+          <Eye className="w-5 h-5" />
+        )}
+      </button>
+    </div>
+    
+    {/* Indicatori requisiti password */}
+    {password && (
+      <div className="mt-2 space-y-1">
+        {(() => {
+          const validation = validatePasswordStrength(password);
+          const req = validation.requirements;
+          
+          const RequirementItem = ({ met, text }: { met: boolean; text: string }) => (
+            <div className={`flex items-center gap-2 text-xs ${met ? 'text-green-600' : 'text-gray-500'}`}>
+              {met ? <CheckCircle className="w-3.5 h-3.5" /> : <span className="w-3.5 h-3.5 rounded-full border border-gray-300" />}
+              <span>{text}</span>
+            </div>
+          );
+          
+          return (
+            <>
+              <RequirementItem met={req.minLength} text="Almeno 8 caratteri" />
+              <RequirementItem met={req.hasUpperCase} text="Una lettera maiuscola" />
+              <RequirementItem met={req.hasLowerCase} text="Una lettera minuscola" />
+              <RequirementItem met={req.hasNumber} text="Un numero" />
+              <RequirementItem met={req.hasSpecialChar} text="Un carattere speciale (!@#$%^&*...)" />
+            </>
+          );
+        })()}
+      </div>
+    )}
+  </div>
 
-              <div>
-                <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Conferma Password
-                </label>
-                <div className="relative">
-                  <input 
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    id="confirm-password"
-                    name="confirm-password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Conferma la password"
-                    required
-                    autoComplete="new-password"
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
-                    aria-label={showConfirmPassword ? 'Nascondi password' : 'Mostra password'}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
+  <div>
+    <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-2">
+      Conferma Password
+    </label>
+    <div className="relative">
+      <input 
+        type={showConfirmPassword ? 'text' : 'password'}
+        id="confirm-password"
+        name="confirm-password"
+        value={confirmPassword}
+        onChange={(e) => setConfirmPassword(e.target.value)}
+        placeholder="Conferma la password"
+        required
+        autoComplete="new-password"
+        className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
+      />
+      <button
+        type="button"
+        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
+        aria-label={showConfirmPassword ? 'Nascondi password' : 'Mostra password'}
+      >
+        {showConfirmPassword ? (
+          <EyeOff className="w-5 h-5" />
+        ) : (
+          <Eye className="w-5 h-5" />
+        )}
+      </button>
+    </div>
+  </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full px-6 py-3 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Salvataggio...' : 'Reimposta Password'}
-              </button>
-            </form>
+  <button
+    type="submit"
+    disabled={loading}
+    className="w-full px-6 py-3 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed"
+  >
+    {loading ? 'Salvataggio...' : 'Reimposta Password'}
+  </button>
+</form>
           )}
         </div>
       </div>

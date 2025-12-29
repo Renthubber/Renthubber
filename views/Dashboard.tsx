@@ -16,6 +16,8 @@ import {
   Lock,
   X,
   Edit3,
+  Eye,        
+  EyeOff,
   AlertTriangle,
   Star,
   Heart,
@@ -468,6 +470,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // ✅ CAMBIO PASSWORD
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);  
+  const [showNewPassword, setShowNewPassword] = useState(false);          
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -2156,63 +2161,95 @@ const handleIdFileChange =
     }
   };
 
-  // ✅ GESTIONE CAMBIO PASSWORD
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Reset errori
-    setPasswordError(null);
-    setPasswordSuccess(false);
+  // Funzione per validare password sicura
+const validatePasswordStrength = (password: string) => {
+  const minLength = password.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-    // Validazione
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError('Compila tutti i campi');
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      setPasswordError('La nuova password deve contenere almeno 8 caratteri');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPasswordError('Le password non coincidono');
-      return;
-    }
-
-    if (currentPassword === newPassword) {
-      setPasswordError('La nuova password deve essere diversa da quella attuale');
-      return;
-    }
-
-    setIsChangingPassword(true);
-
-    try {
-      // Chiama API Supabase per cambiare password
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) throw error;
-
-      // Successo!
-      setPasswordSuccess(true);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      
-      // Chiudi il modale dopo 2 secondi
-      setTimeout(() => {
-        setChangePasswordModalOpen(false);
-        setPasswordSuccess(false);
-      }, 2000);
-    } catch (err: any) {
-      console.error('Errore cambio password:', err);
-      setPasswordError(err.message || 'Errore durante il cambio password. Riprova.');
-    } finally {
-      setIsChangingPassword(false);
+  const strength = [minLength, hasUpperCase, hasLowerCase, hasNumber, hasSpecialChar].filter(Boolean).length;
+  
+  return {
+    isValid: minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar,
+    strength, // 0-5
+    requirements: {
+      minLength,
+      hasUpperCase,
+      hasLowerCase,
+      hasNumber,
+      hasSpecialChar,
     }
   };
+};
+
+// ✅ GESTIONE CAMBIO PASSWORD
+const handleChangePassword = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  // Reset errori
+  setPasswordError(null);
+  setPasswordSuccess(false);
+
+  // Validazione
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    setPasswordError('Compila tutti i campi');
+    return;
+  }
+
+  // Validazione password sicura
+  const passwordValidation = validatePasswordStrength(newPassword);
+  if (!passwordValidation.isValid) {
+    const missing = [];
+    if (!passwordValidation.requirements.minLength) missing.push('almeno 8 caratteri');
+    if (!passwordValidation.requirements.hasUpperCase) missing.push('una maiuscola');
+    if (!passwordValidation.requirements.hasLowerCase) missing.push('una minuscola');
+    if (!passwordValidation.requirements.hasNumber) missing.push('un numero');
+    if (!passwordValidation.requirements.hasSpecialChar) missing.push('un carattere speciale (!@#$%^&*...)');
+    
+    setPasswordError(`La password deve contenere: ${missing.join(', ')}`);
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    setPasswordError('Le password non coincidono');
+    return;
+  }
+
+  if (currentPassword === newPassword) {
+    setPasswordError('La nuova password deve essere diversa da quella attuale');
+    return;
+  }
+
+  setIsChangingPassword(true);
+
+  try {
+    // Chiama API Supabase per cambiare password
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) throw error;
+
+    // Successo!
+    setPasswordSuccess(true);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    
+    // Chiudi il modale dopo 2 secondi
+    setTimeout(() => {
+      setChangePasswordModalOpen(false);
+      setPasswordSuccess(false);
+    }, 2000);
+  } catch (err: any) {
+    console.error('Errore cambio password:', err);
+    setPasswordError(err.message || 'Errore durante il cambio password. Riprova.');
+  } finally {
+    setIsChangingPassword(false);
+  }
+};
 
   // --- HELPER: BADGE STATO PRENOTAZIONE ---
   const renderBookingStatusBadge = (status: string) => {
@@ -7865,50 +7902,103 @@ const renderRenterPayments = () => {
 
           <form onSubmit={handleChangePassword} className="space-y-4">
             {/* Password attuale */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Password Attuale
-              </label>
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                disabled={isChangingPassword || passwordSuccess}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-brand disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
-            </div>
+<div>
+  <label className="block text-sm font-semibold text-gray-700 mb-2">
+    Password Attuale
+  </label>
+  <div className="relative">
+    <input
+      type={showCurrentPassword ? "text" : "password"}
+      value={currentPassword}
+      onChange={(e) => setCurrentPassword(e.target.value)}
+      disabled={isChangingPassword || passwordSuccess}
+      placeholder="••••••••"
+      className="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-brand disabled:bg-gray-100 disabled:cursor-not-allowed"
+    />
+    <button
+      type="button"
+      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+    >
+      {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+    </button>
+  </div>
+</div>
 
             {/* Nuova password */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Nuova Password
-              </label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                disabled={isChangingPassword || passwordSuccess}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-brand disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
-              <p className="text-xs text-gray-500 mt-1">Minimo 8 caratteri</p>
-            </div>
+<div>
+  <label className="block text-sm font-semibold text-gray-700 mb-2">
+    Nuova Password
+  </label>
+  <div className="relative">
+    <input
+      type={showNewPassword ? "text" : "password"}
+      value={newPassword}
+      onChange={(e) => setNewPassword(e.target.value)}
+      disabled={isChangingPassword || passwordSuccess}
+      placeholder="••••••••"
+      className="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-brand disabled:bg-gray-100 disabled:cursor-not-allowed"
+    />
+    <button
+      type="button"
+      onClick={() => setShowNewPassword(!showNewPassword)}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+    >
+      {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+    </button>
+  </div>
+  
+  {/* Indicatori requisiti password */}
+  {newPassword && (
+    <div className="mt-2 space-y-1">
+      {(() => {
+        const validation = validatePasswordStrength(newPassword);
+        const req = validation.requirements;
+        
+        const RequirementItem = ({ met, text }: { met: boolean; text: string }) => (
+          <div className={`flex items-center gap-2 text-xs ${met ? 'text-green-600' : 'text-gray-500'}`}>
+            {met ? <CheckCircle2 size={14} /> : <X size={14} />}
+            <span>{text}</span>
+          </div>
+        );
+        
+        return (
+          <>
+            <RequirementItem met={req.minLength} text="Almeno 8 caratteri" />
+            <RequirementItem met={req.hasUpperCase} text="Una lettera maiuscola" />
+            <RequirementItem met={req.hasLowerCase} text="Una lettera minuscola" />
+            <RequirementItem met={req.hasNumber} text="Un numero" />
+            <RequirementItem met={req.hasSpecialChar} text="Un carattere speciale (!@#$%^&*...)" />
+          </>
+        );
+      })()}
+    </div>
+  )}
+</div>
 
             {/* Conferma password */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Conferma Nuova Password
-              </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={isChangingPassword || passwordSuccess}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-brand disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
-            </div>
+<div>
+  <label className="block text-sm font-semibold text-gray-700 mb-2">
+    Conferma Nuova Password
+  </label>
+  <div className="relative">
+    <input
+      type={showConfirmPassword ? "text" : "password"}
+      value={confirmPassword}
+      onChange={(e) => setConfirmPassword(e.target.value)}
+      disabled={isChangingPassword || passwordSuccess}
+      placeholder="••••••••"
+      className="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-brand disabled:bg-gray-100 disabled:cursor-not-allowed"
+    />
+    <button
+      type="button"
+      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+    >
+      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+    </button>
+  </div>
+</div>
 
             {/* Errore */}
             {passwordError && (
