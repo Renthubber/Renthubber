@@ -852,17 +852,16 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Cauzione Richiesta (€)</label>
-        <input
-          type="number"
-          className="w-full px-4 py-3 rounded-xl border border-gray-300"
-          placeholder="Opzionale (es. 100)"
-          value={draft.deposit}
-          onChange={(e) => setDraft({ ...draft, deposit: e.target.value })}
-        />
-        <p className="text-xs text-gray-400 mt-1">Verrà bloccata sulla carta del Renter e sbloccata a fine noleggio.</p>
-      </div>
+      {/* DEPOSITO TEMPORANEAMENTE NASCOSTO
+<label className="block text-sm font-medium text-gray-700 mb-1">Cauzione Richiesta (€)</label>
+<input
+  type="number"
+  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+  placeholder="0"
+  value={draft.deposit}
+  onChange={(e) => setDraft({ ...draft, deposit: e.target.value })}
+/>
+*/}
 
       {/* Sezione Posizione e Indirizzo */}
       <div className="border-t border-gray-200 pt-6">

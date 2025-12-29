@@ -24,6 +24,7 @@ import { BookingPaymentModal } from "../components/BookingPaymentModal";
 import { referralApi } from "../services/referralApi";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from 'react-router-dom';
+import { calculateHubberFixedFee, calculateRenterFixedFee } from '../utils/feeUtils';
 
 interface ListingDetailProps {
   listing: Listing;
@@ -248,7 +249,6 @@ useEffect(() => {
   const renterFeePercentage = platformFees?.renterPercentage ?? systemConfig?.fees?.platformPercentage ?? 10;
   const hubberFeePercentage = platformFees?.hubberPercentage ?? 10;
   const superHubberFeePercentage = platformFees?.superHubberPercentage ?? 5;
-  const fixedFee = platformFees?.fixedFeeEur ?? systemConfig?.fees?.fixedFeeEur ?? 2;
 
   // ✅ Determina se l'hubber è SuperHubber (commissione ridotta)
   const isOwnerSuperHubber = owner?.isSuperHubber ?? false;
@@ -380,16 +380,18 @@ useEffect(() => {
     // ✅ SUBTOTALE COMPLETO: prezzo base + tutti i costi extra impostati dall'hubber
     const completeSubtotal = baseSubtotal + cleaningFee;
 
-    // ✅ CALCOLO COMMISSIONI RENTER (sul subtotale completo)
-    const renterVariableFee = (completeSubtotal * renterFeePercentage) / 100;
-    const renterTotalFee = renterVariableFee + fixedFee;
+   // ✅ CALCOLO COMMISSIONI RENTER (sul subtotale completo)
+const renterVariableFee = (completeSubtotal * renterFeePercentage) / 100;
+const renterFixedFee = calculateRenterFixedFee(completeSubtotal);
+const renterTotalFee = renterVariableFee + renterFixedFee;
 
-    // ✅ CALCOLO COMMISSIONI HUBBER (sul subtotale completo)
-    const hubberVariableFee = (completeSubtotal * actualHubberFeePercentage) / 100;
-    const hubberTotalFee = hubberVariableFee + fixedFee;
-    const hubberNetAmount = completeSubtotal - hubberTotalFee;
+// ✅ CALCOLO COMMISSIONI HUBBER (sul subtotale completo)
+const hubberVariableFee = (completeSubtotal * actualHubberFeePercentage) / 100;
+const hubberFixedFee = calculateHubberFixedFee(completeSubtotal);
+const hubberTotalFee = hubberVariableFee + hubberFixedFee;
+const hubberNetAmount = completeSubtotal - hubberTotalFee;
 
-    const totalCalc = completeSubtotal + renterTotalFee + deposit;
+const totalCalc = completeSubtotal + renterTotalFee + deposit;
 
     setDuration(units);
     setSubtotal(baseSubtotal);
@@ -410,7 +412,6 @@ useEffect(() => {
     listing.category,
     renterFeePercentage,
     actualHubberFeePercentage,
-    fixedFee,
   ]);
 
   // Chiudi dropdown quando clicchi fuori
@@ -994,10 +995,25 @@ useEffect(() => {
                         <span>€{Number(listing.cleaningFee).toFixed(2)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between underline decoration-gray-300">
-                      <span>Costi del servizio Renthubber</span>
-                      <span>€{serviceFee.toFixed(2)}</span>
-                    </div>
+                    {(() => {
+  // Calcola commissione variabile e fee fissa separate
+  const completeSubtotal = subtotal + (Number(listing.cleaningFee) || 0);
+  const variableFee = (completeSubtotal * renterFeePercentage) / 100;
+  const fixedFee = calculateRenterFixedFee(completeSubtotal);
+  
+  return (
+    <>
+      <div className="flex justify-between underline decoration-gray-300">
+        <span>Commissione servizio ({renterFeePercentage}%)</span>
+        <span>€{variableFee.toFixed(2)}</span>
+      </div>
+      <div className="flex justify-between underline decoration-gray-300">
+        <span>Fee fissa piattaforma</span>
+        <span>€{fixedFee.toFixed(2)}</span>
+      </div>
+    </>
+  );
+})()}
                     {Number(listing.deposit) > 0 && (
                       <div className="flex justify-between underline decoration-gray-300">
                         <span>Cauzione (rimborsabile)</span>
