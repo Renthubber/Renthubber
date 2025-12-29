@@ -41,6 +41,7 @@ import { WriteReviewModal } from '../components/WriteReviewModal';
 import { HubberCalendar } from '../components/hubber/HubberCalendar';
 import { ICalManager } from '../components/hubber/ICalManager';
 import { BillingDataSection } from '../components/BillingDataSection';
+import { calculateHubberFixedFee } from '../utils/feeUtils';
 
 // Mock Data for Charts (rimane fittizio per ora)
 type UserTypeOption =
@@ -1607,7 +1608,7 @@ const handleRequestAction = (id: string, action: 'accepted' | 'rejected') => {
       const basePrice = days * listingPrice;
       const cleaningFee = (booking as any).cleaningFee || 0;
       const commission = ((basePrice + cleaningFee) * 10) / 100;
-      const fixedFee = 2;
+      const fixedFee = calculateHubberFixedFee(basePrice + cleaningFee);
       const deposit = (booking as any).deposit || 0;
 
       // Usa il totale reale pagato dal renter (da Supabase)
