@@ -9,6 +9,7 @@ import { stripePromise } from "../lib/stripe";
 import { api } from "../services/api";
 import { Listing, User } from "../types";
 import { supabase } from "../lib/supabase";
+import { calculateHubberFixedFee } from '../utils/feeUtils';
 
 // ✅ Funzione per creare conversazione dopo prenotazione
 async function createBookingConversation(params: {
@@ -270,7 +271,6 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
   const amounts = useMemo(() => {
     // Usa le fee dal database, con fallback a valori default
     const hubberFeePercentage = platformFees?.hubberPercentage ?? 10;
-    const fixedFee = platformFees?.fixedFeeEur ?? 2;
 
     // ✅ TUTTI I CALCOLI IN EURO PRIMA, POI CONVERTI IN CENTESIMI
     
@@ -293,6 +293,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
     // ✅ CALCOLO CORRETTO COMMISSIONE HUBBER (include pulizia!)
     // Subtotale completo = prezzo base + pulizia
     const completeSubtotalEur = rentalAmountEur + cleaningFeeEur;
+    const fixedFee = calculateHubberFixedFee(completeSubtotalEur);
     
     // Commissione hubber = (subtotale completo × % hubber) + fee fissa
     const hubberVariableFeeEur = (completeSubtotalEur * hubberFeePercentage) / 100;
@@ -535,7 +536,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
             </div>
           )}
           <div className="flex justify-between">
-            <span>Commissioni Renthubber</span>
+            <span>Commissione di servizio</span>
             <span>{platformFeeEur.toFixed(2)} €</span>
           </div>
           {depositEur > 0 && (
