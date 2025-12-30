@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <!-- SEO Meta Tags Base -->
-    <title>RentHubber - Noleggia qualsiasi cosa | Piattaforma di noleggio peer-to-peer</title>
-    <meta name="description" content="La piattaforma di sharing economy per noleggiare oggetti e spazi in sicurezza. Risparmia, guadagna e riduci gli sprechi. Non comprarlo, Noleggialo!" />
+    <title>Renthubber - Non comprarlo, Noleggialo! | Piattaforma di noleggio oggetti e spazi</title>
+    <meta name="description" content="La piattaforma per noleggiare oggetti e spazi in sicurezza. Risparmia, guadagna e riduci gli sprechi. Non comprarlo, Noleggialo!" />
     <meta name="keywords" content="noleggio, affitto, peer-to-peer, sharing economy, noleggio attrezzature, noleggio elettronica, noleggio spazi, renthubber" />
     <meta name="author" content="RentHubber" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -15,17 +15,17 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://renthubber.com" />
-    <meta property="og:title" content="RentHubber - Noleggia qualsiasi cosa" />
-    <meta property="og:description" content="La piattaforma di sharing economy per noleggiare oggetti e spazi in sicurezza. Risparmia, guadagna e riduci gli sprechi. Non comprarlo, Noleggialo!" />
+    <meta property="og:title" content="Renthubber - Non comprarlo, Noleggialo!" />
+    <meta property="og:description" content="La piattaforma per oggetti e spazi vicino a te." />
     <meta property="og:image" content="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png" />
     <meta property="og:locale" content="it_IT" />
-    <meta property="og:site_name" content="RentHubber" />
+    <meta property="og:site_name" content="Renthubber" />
     
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://renthubber.com" />
-    <meta name="twitter:title" content="RentHubber - Noleggia qualsiasi cosa" />
-    <meta name="twitter:description" content="La piattaforma di sharing economy per noleggiare oggetti e spazi in sicurezza. Non comprarlo, Noleggialo!" />
+    <meta name="twitter:title" content="Renthubber - Non comprarlo, Noleggialo!" />
+    <meta name="twitter:description" content="La piattaforma per oggetti e spazi vicino a te." />
     <meta name="twitter:image" content="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png" />
     
     <!-- Favicon - CORRETTO -->
@@ -52,10 +52,10 @@
     {
       "@context": "https://schema.org",
       "@type": "Organization",
-      "name": "RentHubber",
+      "name": "Renthubber",
       "url": "https://renthubber.com",
       "logo": "https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png",
-      "description": "La piattaforma di sharing economy per noleggiare oggetti e spazi in sicurezza. Risparmia, guadagna e riduci gli sprechi.",
+      "description": "La piattaforma per noleggiare oggetti e spazi in sicurezza. Risparmia, guadagna e riduci gli sprechi.",
       "sameAs": [
         "https://www.facebook.com/renthubber",
         "https://www.instagram.com/renthubber",
@@ -74,7 +74,7 @@
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      "name": "RentHubber",
+      "name": "Renthubber",
       "url": "https://renthubber.com",
       "potentialAction": {
         "@type": "SearchAction",
@@ -165,6 +165,29 @@
 </head>
   <body class="bg-gray-50 text-gray-900 antialiased">
     <div id="root"></div>
+
+<!-- Intercetta recovery hash PRIMA che Supabase lo processi -->
+<script>
+  (function() {
+    const hash = window.location.hash;
+    
+    if (hash.includes('type=recovery') && hash.includes('access_token')) {
+      console.log('🔒 Recovery hash intercettato!');
+      
+      // Salva hash in sessionStorage
+      sessionStorage.setItem('recovery_hash', hash);
+      
+      // Rimuovi hash dall'URL per evitare che Supabase lo processi
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+      
+      // Forza redirect a /reset-password
+      if (window.location.pathname !== '/reset-password') {
+        window.location.href = '/reset-password';
+      }
+    }
+  })();
+</script>
+
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
