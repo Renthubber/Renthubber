@@ -90,12 +90,28 @@ if (!passwordValidation.isValid) {
 
     setLoading(true);
 
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: password
-      });
+try {
+  // Leggi token dall'hash per gestione manuale recovery
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  const accessToken = hashParams.get('access_token');
+  const refreshToken = hashParams.get('refresh_token');
 
-      if (error) throw error;
+  // Se c'è il token nell'hash, impostiamo la sessione manualmente
+  if (accessToken && refreshToken) {
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (sessionError) throw sessionError;
+  }
+
+  // Ora aggiorniamo la password
+  const { error } = await supabase.auth.updateUser({
+    password: password
+  });
+
+  if (error) throw error;
 
       setSuccess(true);
 
