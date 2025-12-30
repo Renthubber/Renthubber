@@ -85,9 +85,13 @@ export interface User {
   name: string;
   email?: string;
   avatar: string;
-  rating: number;
+  avatar_url?: string;
+  rating?: number;
   reviewCount?: number;
   isSuperHubber: boolean;
+  is_super_hubber?: boolean;
+  is_super_admin?: boolean;
+  hubber_since?: string;
   role?: "renter" | "hubber" | "admin";
   roles: string[];
   hubberSince?: string;
@@ -101,10 +105,12 @@ export interface User {
   
   address?: string;
   phoneNumber?: string;
-  renterBalance: number;
-  hubberBalance: number;
-  referralCode: string;
+  phone_number?: string;
+  renterBalance?: number;
+  hubberBalance?: number;
+  referralCode?: string; 
   bankDetails?: BankDetails;
+  bank_details?: BankDetails;
 
   bio?: string;
   languages?: string[];
@@ -118,9 +124,12 @@ export interface User {
   };
 
   emailVerified?: boolean;
+  email_verified?: boolean;
   phoneVerified?: boolean;
+  phone_verified?: boolean; // ← AGGIUNGI TIPO
   idDocumentVerified?: boolean;
   verificationStatus?: VerificationStatus;
+  verification_status?: VerificationStatus; // ← AGGIUNGI TIPO
   idDocumentUrl?: string;
 
   document_front_url?: string;
@@ -134,13 +143,58 @@ export interface User {
 
   // ✅ Dati profilo fiscale
   userType?: 'privato' | 'ditta_individuale' | 'societa' | 'associazione';
+  user_type?: 'privato' | 'ditta_individuale' | 'societa' | 'associazione';
   dateOfBirth?: string;
+  date_of_birth?: string;
   
   // ✅ NUOVO: Campi per rating e statistiche Renter
   renterRating?: number;              // Rating come renter (da hubber)
   renterReviewCount?: number;         // Numero recensioni ricevute come renter
   completedBookingsCount?: number;    // Prenotazioni completate
   location?: string;                  // "Vive a..." per profilo pubblico
+  public_location?: string;
+  publicLocation?: string;
+  
+  // ✅ CAMPI SNAKE_CASE (mapping database)
+  renter_balance?: number;
+  hubber_balance?: number;
+  refund_balance_cents?: number;
+  refundBalanceCents?: number;
+  referral_balance_cents?: number;
+  referralBalanceCents?: number;
+  custom_fee_percentage?: number;
+  
+  // Stripe
+  stripe_account_id?: string;
+  stripeAccountId?: string;
+  stripe_onboarding_completed?: boolean;
+  stripeOnboardingCompleted?: boolean;
+  stripe_charges_enabled?: boolean;
+  stripeChargesEnabled?: boolean;
+  stripe_payouts_enabled?: boolean;
+  stripePayoutsEnabled?: boolean;
+  
+  // Dati azienda/fiscali
+  company_name?: string;
+  companyName?: string;
+  fiscal_code?: string;
+  fiscalCode?: string;
+  vat_number?: string;
+  vatNumber?: string;
+  pec?: string;
+  sdi_code?: string;
+  sdiCode?: string;
+  billing_address?: string;
+  billingAddress?: string;
+  billing_city?: string;
+  billingCity?: string;
+  billing_zip?: string;
+  billingZip?: string;
+  billing_province?: string;
+  billingProvince?: string;
+  billing_country?: string;
+  billingCountry?: string;
+  referral_code?: string;
 }
 
 // =====================================================
