@@ -62,7 +62,15 @@ async function sendToBookingUsers(
 ) {
   const { data: booking } = await supabase
     .from('bookings')
-    .select('renter_id, hubber_id')
+    .select(`
+      renter_id, 
+      hubber_id, 
+      start_date, 
+      end_date,
+      amount_total,
+      hubber_net_amount,
+      listing:listing_id(title)
+    `)
     .eq('id', bookingId)
     .single();
   
@@ -71,10 +79,30 @@ async function sendToBookingUsers(
     return;
   }
   
-  const enrichedVariables = { ...variables, bookingId };
+  // Formatta date GG-MM-AAAA
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
   
-  await sendToUser(booking.renter_id, renterTemplateSlug, enrichedVariables);
-  await sendToUser(booking.hubber_id, hubberTemplateSlug, enrichedVariables);
+  // Cast booking per accedere ai campi
+  const bookingData = booking as any;
+  
+  const enrichedVariables = { 
+    ...variables, 
+    bookingId,
+    listing: bookingData.listing?.title || 'Annuncio',
+    start_date: formatDate(bookingData.start_date),
+    end_date: formatDate(bookingData.end_date),
+    amount: (bookingData.amount_total || 0).toFixed(2),
+    hubber_amount: (bookingData.hubber_net_amount || 0).toFixed(2),
+  };
+  
+  await sendToUser(bookingData.renter_id, renterTemplateSlug, enrichedVariables);
+  await sendToUser(bookingData.hubber_id, hubberTemplateSlug, enrichedVariables);
 }
 
 // ============================================================================
