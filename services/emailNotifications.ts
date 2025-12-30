@@ -246,13 +246,22 @@ export const notifyWalletCredit = async (transactionId: string) => {
   try {
     const { data: transaction } = await supabase
       .from('wallet_transactions')
-      .select('user_id')
+      .select('user_id, amount_cents, balance_after_cents, description')
       .eq('id', transactionId)
       .single();
     
     if (!transaction) return;
     
-    await sendToUser(transaction.user_id, 'wallet-credit', { transactionId });
+    const amount = ((transaction.amount_cents || 0) / 100).toFixed(2);
+    const newBalance = ((transaction.balance_after_cents || 0) / 100).toFixed(2);
+    const reason = transaction.description || 'Credito wallet';
+    
+    await sendToUser(transaction.user_id, 'wallet-credit', {
+      transactionId,
+      amount,
+      new_balance: newBalance,
+      reason
+    });
   } catch (error) {
     console.error('❌ Errore notifyWalletCredit:', error);
   }
@@ -265,13 +274,22 @@ export const notifyWalletDebit = async (transactionId: string) => {
   try {
     const { data: transaction } = await supabase
       .from('wallet_transactions')
-      .select('user_id')
+      .select('user_id, amount_cents, balance_after_cents, description')
       .eq('id', transactionId)
       .single();
     
     if (!transaction) return;
     
-    await sendToUser(transaction.user_id, 'wallet-debit', { transactionId });
+    const amount = Math.abs((transaction.amount_cents || 0) / 100).toFixed(2);
+    const newBalance = ((transaction.balance_after_cents || 0) / 100).toFixed(2);
+    const reason = transaction.description || 'Addebito wallet';
+    
+    await sendToUser(transaction.user_id, 'wallet-debit', {
+      transactionId,
+      amount,
+      new_balance: newBalance,
+      reason
+    });
   } catch (error) {
     console.error('❌ Errore notifyWalletDebit:', error);
   }

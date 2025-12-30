@@ -206,8 +206,16 @@ export async function queueEmail(event: EmailEvent, data: EmailEventData): Promi
       const renterTemplate = await loadTemplate(renterTemplateId);
       const hubberTemplate = await loadTemplate(hubberTemplateId);
       
-      const startDate = new Date(booking.start_date).toLocaleDateString('it-IT');
-      const endDate = new Date(booking.end_date).toLocaleDateString('it-IT');
+      const formatDateIT = (dateString: string): string => {
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
+const startDate = formatDateIT(booking.start_date);
+const endDate = formatDateIT(booking.end_date);
       
       // Email al renter
       await supabase.from('email_queue').insert({
