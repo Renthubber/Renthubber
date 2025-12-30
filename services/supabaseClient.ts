@@ -8,4 +8,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error("❌ Supabase configuration missing in .env");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    detectSessionInUrl: false, // Disabilita auto-login da URL hash
+    autoRefreshToken: true,
+    persistSession: true,
+  }
+});
