@@ -42,7 +42,21 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onSuccess, onReque
 
  useEffect(() => {
   const checkRecovery = async () => {
-    // Caso 1: Token nell'hash (ideale)
+    // Caso 1: Token salvato in sessionStorage (intercettato da index.html)
+    const savedHash = sessionStorage.getItem('recovery_hash');
+    
+    if (savedHash) {
+      const hashParams = new URLSearchParams(savedHash.substring(1));
+      const type = hashParams.get('type');
+      const accessToken = hashParams.get('access_token');
+      
+      if (type === 'recovery' && accessToken) {
+        setValidToken(true);
+        return;
+      }
+    }
+    
+    // Caso 2: Token nell'hash (fallback se non intercettato)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const type = hashParams.get('type');
     const accessToken = hashParams.get('access_token');
@@ -52,14 +66,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onSuccess, onReque
       return;
     }
 
-    // Caso 2: Supabase ha già fatto auto-login (fallback)
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      // Permetti il reset se c'è una sessione attiva
-      setValidToken(true);
-    } else {
-      setError('Link non valido o scaduto');
-    }
+    setError('Link non valido o scaduto');
   };
 
   checkRecovery();
@@ -91,12 +98,14 @@ if (!passwordValidation.isValid) {
     setLoading(true);
 
 try {
-  // Leggi token dall'hash per gestione manuale recovery
-  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  // Leggi da sessionStorage (se intercettato) o dall'hash (fallback)
+  const savedHash = sessionStorage.getItem('recovery_hash');
+  const hashToUse = savedHash || window.location.hash;
+  const hashParams = new URLSearchParams(hashToUse.substring(1));
   const accessToken = hashParams.get('access_token');
   const refreshToken = hashParams.get('refresh_token');
 
-  // Se c'è il token nell'hash, impostiamo la sessione manualmente
+  // Se c'è il token, impostiamo la sessione manualmente
   if (accessToken && refreshToken) {
     const { error: sessionError } = await supabase.auth.setSession({
       access_token: accessToken,
