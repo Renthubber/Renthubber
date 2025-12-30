@@ -189,80 +189,8 @@ export async function queueEmail(event: EmailEvent, data: EmailEventData): Promi
   try {
     console.log(`📧 Queueing email: ${event}`, data);
     
-    // ========== BOOKING CONFIRMED ==========
-    if (event === 'booking_confirmed') {
-      if (!data.bookingId || !data.renterId || !data.hubberId) {
-        throw new Error('Missing required fields: bookingId, renterId, hubberId');
-      }
-      
-      const booking = await loadBooking(data.bookingId);
-      const renter = await loadUser(data.renterId);
-      const hubber = await loadUser(data.hubberId);
-      
-      const isSpace = booking.listing?.category?.toLowerCase() === 'spazi';
-      const renterTemplateId = isSpace ? 'tpl-booking-confirmed-space-renter' : 'tpl-booking-confirmed-object-renter';
-      const hubberTemplateId = isSpace ? 'tpl-booking-confirmed-space-hubber' : 'tpl-booking-confirmed-object-hubber';
-      
-      const renterTemplate = await loadTemplate(renterTemplateId);
-      const hubberTemplate = await loadTemplate(hubberTemplateId);
-      
-      const formatDateIT = (dateString: string): string => {
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}-${month}-${year}`;
-};
-
-const startDate = formatDateIT(booking.start_date);
-const endDate = formatDateIT(booking.end_date);
-      
-      // Email al renter
-      await supabase.from('email_queue').insert({
-        template_id: renterTemplateId,
-        recipient_email: renter.email,
-        recipient_name: renter.name,
-        recipient_user_id: renter.id,
-        subject: renterTemplate.subject,
-        body_html: renterTemplate.body_html,
-        body_text: renterTemplate.body_text,
-        variables: {
-          name: renter.name,
-          listing: booking.listing?.title || 'annuncio',
-          start_date: startDate,
-          end_date: endDate,
-          amount: (booking.amount_total || 0).toFixed(2)
-        },
-        status: 'pending',
-        scheduled_at: new Date().toISOString()
-      });
-      
-      // Email all'hubber
-      await supabase.from('email_queue').insert({
-        template_id: hubberTemplateId,
-        recipient_email: hubber.email,
-        recipient_name: hubber.name,
-        recipient_user_id: hubber.id,
-        subject: hubberTemplate.subject,
-        body_html: hubberTemplate.body_html,
-        body_text: hubberTemplate.body_text,
-        variables: {
-          name: hubber.name,
-          listing: booking.listing?.title || 'annuncio',
-          renter: renter.name,
-          start_date: startDate,
-          end_date: endDate,
-          hubber_amount: (booking.hubber_net_amount || 0).toFixed(2)
-        },
-        status: 'pending',
-        scheduled_at: new Date().toISOString()
-      });
-      
-      console.log(`✅ Booking confirmation emails queued for booking ${data.bookingId}`);
-    }
-    
     // ========== REVIEW RECEIVED ==========
-    else if (event === 'review_received') {
+    if (event === 'review_received') {
       if (!data.revieweeId) {
         throw new Error('Missing required field: revieweeId');
       }
