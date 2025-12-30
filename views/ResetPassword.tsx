@@ -129,7 +129,7 @@ try {
         if (onSuccess) {
           onSuccess();
         } else {
-          window.location.href = '/';
+          window.location.href = '/login';
         }
       }, 3000);
     } catch (error: any) {
