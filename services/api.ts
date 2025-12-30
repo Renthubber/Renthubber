@@ -22,6 +22,23 @@ import { supabase } from "../lib/supabase";
 import { referralApi } from './referralApi';
 import { generateAndSaveInvoicePDF } from '../services/invoicePdfGenerator';
 import { queueEmail } from '../services/emailQueue';
+import {
+  notifyBookingRequested,
+  notifyBookingConfirmed,
+  notifyBookingRejected,
+  notifyBookingCancelled,
+  notifyBookingCompleted,
+  notifyInvoiceGenerated,
+  notifyReviewRequest,
+  notifyKycApproved,
+  notifyKycRejected,
+  notifyKycReceived,
+  notifyListingApproved,
+  notifyListingRejected,
+  notifyPayoutRequested,
+  notifyPayoutSent,
+  notifyPayoutFailed,
+} from '../services/emailNotifications';
 
 /* ------------------------------------------------------
    HELPER: conversione centesimi <-> euro (NUOVO)
@@ -298,6 +315,9 @@ async function createBookingAfterPayment(params: {
   }
 
   const booking = mapBookingRowToRequest(data);
+  
+  // 📧 Invia email di conferma prenotazione
+await notifyBookingConfirmed(booking.id);
 
   // ✅ CREA CONVERSAZIONE AUTOMATICA TRA RENTER E HUBBER
   try {
@@ -2274,6 +2294,9 @@ if (cardPaidOriginal > 0) {
           messageText: cancelMessage,
         });
 
+        // 📧 Invia email di cancellazione
+        await notifyBookingCancelled(bookingId);
+
         // 🔒 Rioscura contatti dopo cancellazione
         await hideContactsAfterCancellation(bookingId);
 
@@ -2491,6 +2514,9 @@ if (cardPaidOriginal > 0) {
           bookingId,
           messageText: cancelMessage,
         });
+
+        // 📧 Invia email di cancellazione
+        await notifyBookingCancelled(bookingId);
 
         // 🔒 Rioscura contatti dopo cancellazione
         await hideContactsAfterCancellation(bookingId);
@@ -4166,6 +4192,14 @@ console.log("👑 admin.updateUser – dbUpdates preparati:", dbUpdates);
         }
         
         console.log("✅ admin.updateUser – utente aggiornato con successo");
+
+        // 📧 Invia email se documento verificato o rifiutato
+if (updates.idDocumentVerified === true || (updates as any).id_document_verified === true) {
+  await notifyKycApproved(userId);
+} else if (updates.idDocumentVerified === false || (updates as any).id_document_verified === false) {
+  await notifyKycRejected(userId);
+}
+
       } catch (err) {
         console.error("❌ admin.updateUser – errore inatteso:", err);
         throw err;
@@ -5427,6 +5461,10 @@ issued_at: new Date().toISOString()
                 renter: result.renterInvoiceId,
                 hubber: result.hubberInvoiceId
               });
+
+              // 📧 Invia fatture via email
+             await notifyInvoiceGenerated(bookingId);
+
             }
           } catch (invoiceErr) {
             // Non bloccare il cambio stato se la fatturazione fallisce
@@ -5495,7 +5533,7 @@ issued_at: new Date().toISOString()
               .eq("id", bookingId)
               .single();
 
-            if (booking) {
+         if (booking) {
               await referralApi.completeReferral(booking.renter_id, bookingId);
               console.log("✅ Referral completato (se esistente)");
             }
@@ -5504,13 +5542,24 @@ issued_at: new Date().toISOString()
           }
         }
 
+        // 📧 Invia email di completamento prenotazione
+        await notifyBookingCompleted(bookingId);
+
+        // 📧 Invia fatture via email
+        await notifyInvoiceGenerated(bookingId);
+
+        // 📧 Invia richiesta recensione a renter e hubber
+        await notifyReviewRequest(bookingId, 'renter');
+        await notifyReviewRequest(bookingId, 'hubber');
+
         return true;
       } catch (err) {
         console.error("❌ admin.updateBookingStatus – errore inatteso:", err);
         return false;
       }
     },
-},
+  },
+        
   /* =======================================================
      DISPUTES (CONTESTAZIONI)
      ======================================================= */
