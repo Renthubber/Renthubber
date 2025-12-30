@@ -1038,8 +1038,19 @@ export const api = {
     },
 
     logout: async () => {
-      await supabase.auth.signOut();
-    },
+  // Rimuovi sessione Supabase
+  await supabase.auth.signOut();
+  
+  // Rimuovi chiavi Supabase da localStorage
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('sb-') || key.includes('supabase')) {
+      localStorage.removeItem(key);
+    }
+  });
+  
+  // Pulisci sessionStorage (incluso recovery_hash)
+  sessionStorage.clear();
+},
 
     getCurrentSession: async () => {
       const { data } = await supabase.auth.getSession();
