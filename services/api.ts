@@ -21,6 +21,7 @@ import {
 import { supabase } from "../lib/supabase";
 import { referralApi } from './referralApi';
 import { generateAndSaveInvoicePDF } from '../services/invoicePdfGenerator';
+import { calculateRenterFixedFee, calculateHubberFixedFee } from '../utils/feeUtils';
 import { queueEmail } from '../services/emailQueue';
 import {
   notifyBookingRequested,
@@ -3772,9 +3773,9 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
     const renterCommissionPct = platformFees?.renter_percentage || 10;
     const hubberCommissionPct = platformFees?.hubber_percentage || 10;
     const superHubberCommissionPct = platformFees?.super_hubber_percentage || 5;
-    const fixedFee = platformFees?.fixed_fee_eur || 2;
+    //const fixedFee = platformFees?.fixed_fee_eur || 2;
 
-    console.log("🧾 Commissioni:", { renterCommissionPct, hubberCommissionPct, superHubberCommissionPct, fixedFee });
+    console.log("🧾 Commissioni:", { renterCommissionPct, hubberCommissionPct, superHubberCommissionPct });
 
     // 3. Recupera i dati della prenotazione con renter, hubber, listing + DATI FISCALI
     const { data: booking, error: bookingError } = await supabase
@@ -3829,17 +3830,18 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
       try {
         console.log("🧾 Generazione fattura RENTER...");
         
-        const renterName = booking.renter.public_name || 
-          `${booking.renter.first_name || ''} ${booking.renter.last_name || ''}`.trim() ||
-          booking.renter.email?.split('@')[0] || 'Renter';
+        const renterName = `${booking.renter.first_name || ''} ${booking.renter.last_name || ''}`.trim() ||
+  booking.renter.public_name ||
+  booking.renter.email?.split('@')[0] || 'Renter';
 
         const listingTitle = booking.listing?.title || 'Noleggio';
         const startDate = new Date(booking.start_date).toLocaleDateString('it-IT');
         const endDate = new Date(booking.end_date).toLocaleDateString('it-IT');
 
-        // ✅ Commissione renter = % variabile + fee fissa (TOTALE IVA INCLUSA)
+        // ✅ Commissione renter = % variabile + fee fissa dinamica (TOTALE IVA INCLUSA)
+        const fixedFeeRenter = calculateRenterFixedFee(prezzoBase);
         const renterCommissionVar = prezzoBase * renterCommissionPct / 100;
-        const renterCommissionTotal = renterCommissionVar + fixedFee;
+        const renterCommissionTotal = renterCommissionVar + fixedFeeRenter;
         
         // ✅ CORRETTO: L'IVA è già inclusa nella commissione, la scorporiamo
         const total = renterCommissionTotal;
@@ -3864,7 +3866,7 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
           description: `Commissione servizio RentHubber - Noleggio "${listingTitle}" - ${startDate} / ${endDate}`,
           lineItems: [
             { description: `Commissione variabile (${renterCommissionPct}%)`, quantity: 1, unitPrice: Math.round(renterCommissionVar * 100) / 100, total: Math.round(renterCommissionVar * 100) / 100 },
-            { description: 'Fee fissa servizio', quantity: 1, unitPrice: fixedFee, total: fixedFee }
+            { description: 'Fee fissa servizio', quantity: 1, unitPrice: fixedFeeRenter, total: fixedFeeRenter }
           ],
           notes: `Prenotazione #${bookingId.slice(0, 8)}`,
           listing_title: booking.listing?.title,
@@ -3896,17 +3898,18 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
       try {
         console.log("🧾 Generazione fattura HUBBER...");
         
-        const hubberName = booking.hubber.public_name || 
-          `${booking.hubber.first_name || ''} ${booking.hubber.last_name || ''}`.trim() ||
+        const hubberName = `${booking.hubber.first_name || ''} ${booking.hubber.last_name || ''}`.trim() ||
+          booking.hubber.public_name ||
           booking.hubber.email?.split('@')[0] || 'Hubber';
 
         const listingTitle = booking.listing?.title || 'Noleggio';
         const startDate = new Date(booking.start_date).toLocaleDateString('it-IT');
         const endDate = new Date(booking.end_date).toLocaleDateString('it-IT');
 
-        // ✅ Commissione hubber = % variabile + fee fissa (TOTALE IVA INCLUSA)
+        // ✅ Commissione hubber = % variabile + fee fissa dinamica (TOTALE IVA INCLUSA)
+        const fixedFeeHubber = calculateHubberFixedFee(prezzoBase);
         const hubberCommissionVar = prezzoBase * actualHubberCommissionPct / 100;
-        const hubberCommissionTotal = hubberCommissionVar + fixedFee;
+        const hubberCommissionTotal = hubberCommissionVar + fixedFeeHubber;
         
         // ✅ CORRETTO: L'IVA è già inclusa nella commissione, la scorporiamo
         const total = hubberCommissionTotal;
@@ -3932,7 +3935,7 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
           description: `Commissione RentHubber trattenuta - Noleggio "${listingTitle}" - ${startDate} / ${endDate}`,
           lineItems: [
             { description: `Commissione variabile (${actualHubberCommissionPct}%)`, quantity: 1, unitPrice: Math.round(hubberCommissionVar * 100) / 100, total: Math.round(hubberCommissionVar * 100) / 100 },
-            { description: 'Fee fissa servizio', quantity: 1, unitPrice: fixedFee, total: fixedFee }
+            { description: 'Fee fissa servizio', quantity: 1, unitPrice: fixedFeeHubber, total: fixedFeeHubber }
           ],
           notes: `Prenotazione #${bookingId.slice(0, 8)} - Netto accreditato: €${hubberNet.toFixed(2)}`,
           listing_title: booking.listing?.title,
