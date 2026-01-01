@@ -3259,6 +3259,18 @@ if (cardPaidOriginal > 0) {
       }
 
       console.log(`✅ Admin credit: ${walletType} wallet +€${amount} → €${newBalance}`);
+      
+      // ✅ Aggiorna anche wallets.balance_cents per il wallet renter
+      if (walletType === 'renter') {
+        await supabase
+          .from("wallets")
+          .update({ 
+            balance_cents: Math.round(newBalance * 100),
+            updated_at: new Date().toISOString()
+          })
+          .eq("user_id", userId);
+      }
+      
       return { newBalance };
     },
 
@@ -3333,8 +3345,20 @@ if (cardPaidOriginal > 0) {
       }
 
       console.log(`✅ Admin debit: ${walletType} wallet -€${amount} → €${newBalance}`);
-      return { newBalance };
-    },
+
+// ✅ Aggiorna anche wallets.balance_cents per il wallet renter
+if (walletType === 'renter') {
+  await supabase
+    .from("wallets")
+    .update({ 
+      balance_cents: Math.round(newBalance * 100),
+      updated_at: new Date().toISOString()
+    })
+    .eq("user_id", userId);
+}
+
+return { newBalance };
+ }, 
 
     /**
      * Accredita l'hubber al completamento di una prenotazione
