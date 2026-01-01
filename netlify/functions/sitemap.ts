@@ -45,28 +45,28 @@ export const handler: Handler = async (event, context) => {
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://renthubber.com/R-logo.png</image:loc>
-      <image:title>RentHubber Logo</image:title>
-      <image:caption>Logo principale di RentHubber</image:caption>
+      <image:title>Renthubber Logo</image:title>
+      <image:caption>Logo principale di Renthubber</image:caption>
     </image:image>
     <image:image>
       <image:loc>https://renthubber.com/android-chrome-192x192.png</image:loc>
-      <image:title>RentHubber Logo Android 192x192</image:title>
+      <image:title>Renthubber Logo Android 192x192</image:title>
     </image:image>
     <image:image>
       <image:loc>https://renthubber.com/android-chrome-512x512.png</image:loc>
-      <image:title>RentHubber Logo Android 512x512</image:title>
+      <image:title>Renthubber Logo Android 512x512</image:title>
     </image:image>
     <image:image>
       <image:loc>https://renthubber.com/apple-touch-icon.png</image:loc>
-      <image:title>RentHubber Apple Touch Icon</image:title>
+      <image:title>Renthubber Apple Touch Icon</image:title>
     </image:image>
     <image:image>
       <image:loc>https://renthubber.com/favicon-96x96.png</image:loc>
-      <image:title>RentHubber Favicon 96x96</image:title>
+      <image:title>Renthubber Favicon 96x96</image:title>
     </image:image>
     <image:image>
       <image:loc>https://renthubber.com/favicon.svg</image:loc>
-      <image:title>RentHubber Favicon SVG</image:title>
+      <image:title>Renthubber Favicon SVG</image:title>
     </image:image>
   </url>
   
