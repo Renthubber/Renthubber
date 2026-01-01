@@ -3863,7 +3863,7 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
           periodEnd: booking.end_date,
           subtotal: Math.round(subtotal * 100) / 100,
           vatRate: vatRate,
-          description: `Commissione servizio RentHubber - Noleggio "${listingTitle}" - ${startDate} / ${endDate}`,
+          description: `Commissione servizio Renthubber - Noleggio "${listingTitle}" - ${startDate} / ${endDate}`,
           lineItems: [
             { description: `Commissione variabile (${renterCommissionPct}%)`, quantity: 1, unitPrice: Math.round(renterCommissionVar * 100) / 100, total: Math.round(renterCommissionVar * 100) / 100 },
             { description: 'Fee fissa servizio', quantity: 1, unitPrice: fixedFeeRenter, total: fixedFeeRenter }
@@ -3932,7 +3932,7 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
           periodEnd: booking.end_date,
           subtotal: Math.round(subtotal * 100) / 100,
           vatRate: vatRate,
-          description: `Commissione RentHubber trattenuta - Noleggio "${listingTitle}" - ${startDate} / ${endDate}`,
+          description: `Commissione Renthubber trattenuta - Noleggio "${listingTitle}" - ${startDate} / ${endDate}`,
           lineItems: [
             { description: `Commissione variabile (${actualHubberCommissionPct}%)`, quantity: 1, unitPrice: Math.round(hubberCommissionVar * 100) / 100, total: Math.round(hubberCommissionVar * 100) / 100 },
             { description: 'Fee fissa servizio', quantity: 1, unitPrice: fixedFeeHubber, total: fixedFeeHubber }
