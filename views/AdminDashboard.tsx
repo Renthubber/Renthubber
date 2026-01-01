@@ -4338,13 +4338,40 @@ const renderFinanceWallets = () => {
                           € {(wallet.hubberBalanceEur || 0).toFixed(2)}
                         </span>
                       </td>
-                      <td className="p-4 text-right">
-                        <span className={`text-sm font-bold ${
-                          (wallet.renterBalanceEur || 0) > 0 ? 'text-blue-600' : 'text-gray-400'
-                        }`}>
-                          € {(wallet.renterBalanceEur || 0).toFixed(2)}
-                        </span>
-                      </td>
+                     <td className="p-4 text-right">
+  <div className="relative group">
+    <span className={`text-sm font-bold cursor-help ${
+      (wallet.renterBalanceEur || 0) > 0 ? 'text-blue-600' : 'text-gray-400'
+    }`}>
+      € {(wallet.renterBalanceEur || 0).toFixed(2)}
+    </span>
+    
+    {/* Tooltip con dettaglio wallet renter */}
+    {wallet.renterWalletDetail && (wallet.renterBalanceEur || 0) > 0 && (
+      <div className="hidden group-hover:block absolute right-0 bottom-full mb-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10">
+        <p className="text-xs font-semibold text-gray-700 mb-2">📊 Dettaglio Wallet Renter:</p>
+        <div className="space-y-1 text-xs">
+          <div className="flex justify-between">
+            <span className="text-gray-600">💳 Base:</span>
+            <span className="font-medium">€ {(wallet.renterWalletDetail.wallet || 0).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">🎁 Invita Amico:</span>
+            <span className="font-medium text-green-600">€ {(wallet.renterWalletDetail.referral || 0).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">↩️ Rimborsi:</span>
+            <span className="font-medium text-blue-600">€ {(wallet.renterWalletDetail.refund || 0).toFixed(2)}</span>
+          </div>
+          <div className="pt-1 mt-1 border-t border-gray-200 flex justify-between font-bold">
+            <span>Totale:</span>
+            <span className="text-blue-600">€ {(wallet.renterBalanceEur || 0).toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+</td>
                       <td className="p-4">
                         <span className="text-sm text-gray-500">
                           {wallet.updated_at 
