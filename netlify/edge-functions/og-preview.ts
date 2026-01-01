@@ -1,5 +1,3 @@
-import { Context } from "https://edge.netlify.com";
-
 // Lista User-Agent dei bot social che devono ricevere i meta tag
 const SOCIAL_BOTS = [
   'facebookexternalhit',
@@ -48,10 +46,10 @@ async function fetchListingData(listingId: string, supabaseUrl: string, supabase
 
 // Funzione per generare HTML con meta tag Open Graph
 function generateOGHtml(listing: any, url: string): string {
-  const title = listing.title || 'Annuncio su RentHubber';
+  const title = listing.title || 'Annuncio su Renthubber';
   const description = listing.description 
     ? listing.description.substring(0, 200) + (listing.description.length > 200 ? '...' : '')
-    : 'Noleggia questo oggetto o spazio su RentHubber';
+    : 'Noleggia questo oggetto o spazio su Renthubber';
   const price = listing.pricePerDay ? `${listing.pricePerDay}€/giorno` : '';
   const image = listing.images && listing.images.length > 0 
     ? listing.images[0] 
@@ -81,7 +79,7 @@ function generateOGHtml(listing: any, url: string): string {
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:locale" content="it_IT" />
-  <meta property="og:site_name" content="RentHubber" />
+  <meta property="og:site_name" content="Renthubber" />
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
@@ -126,23 +124,23 @@ function generateFallbackHtml(url: string): string {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>RentHubber - Noleggia qualsiasi cosa</title>
-  <meta name="description" content="La piattaforma di sharing economy per noleggiare oggetti e spazi in sicurezza. Non comprarlo, Noleggialo!" />
+  <title>Renthubber - Noleggia ciò che ti serve. Guadagna da ciò che non usi.</title>
+  <meta name="description" content="Noleggia ciò che ti serve. Guadagna da ciò che non usi. La piattaforma per oggetti e spazi vicino a te." />
   
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="${url}" />
-  <meta property="og:title" content="RentHubber - Noleggia qualsiasi cosa" />
-  <meta property="og:description" content="La piattaforma di sharing economy per noleggiare oggetti e spazi in sicurezza. Non comprarlo, Noleggialo!" />
+  <meta property="og:title" content="Renthubber - Noleggia ciò che ti serve. Guadagna da ciò che non usi." />
+  <meta property="og:description" content="La piattaforma per oggetti e spazi vicino a te." />
   <meta property="og:image" content="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png" />
   <meta property="og:locale" content="it_IT" />
-  <meta property="og:site_name" content="RentHubber" />
+  <meta property="og:site_name" content="Renthubber" />
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="${url}" />
-  <meta name="twitter:title" content="RentHubber - Noleggia qualsiasi cosa" />
-  <meta name="twitter:description" content="La piattaforma di sharing economy per noleggiare oggetti e spazi in sicurezza. Non comprarlo, Noleggialo!" />
+  <meta name="twitter:title" content="Renthubber - Noleggia ciò che ti serve. Guadagna da ciò che non usi." />
+  <meta name="twitter:description" content="La piattaforma per oggetti e spazi vicino a te." />
   <meta name="twitter:image" content="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png" />
   
   <!-- Redirect immediato alla SPA -->
@@ -174,7 +172,7 @@ function generateFallbackHtml(url: string): string {
 }
 
 // Handler principale della Edge Function
-export default async (request: Request, context: Context) => {
+export default async (request: Request, context: any) => {
   const url = new URL(request.url);
   const userAgent = request.headers.get('user-agent') || '';
   
@@ -196,8 +194,8 @@ export default async (request: Request, context: Context) => {
   console.log(`🤖 Bot social rilevato: ${userAgent} per listing: ${listingId}`);
   
   // Carica variabili ambiente
-  const supabaseUrl = Deno.env.get('VITE_SUPABASE_URL');
-  const supabaseKey = Deno.env.get('VITE_SUPABASE_ANON_KEY');
+  const supabaseUrl = Netlify.env.get('VITE_SUPABASE_URL');
+  const supabaseKey = Netlify.env.get('VITE_SUPABASE_ANON_KEY');
   
   if (!supabaseUrl || !supabaseKey) {
     console.error('❌ Variabili ambiente Supabase mancanti');
