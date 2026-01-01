@@ -8093,21 +8093,50 @@ const renderReviews = () => {
                     onChange={(e) => setSuperHubberFee(Number(e.target.value))}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
                   />
-                </div>
-              </div>
-              <div className="border-t border-gray-200 pt-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Costo Fisso Transazione (€)
-                </label>
-                <input
-                  type="number"
-                  value={fixedFee}
-                  onChange={(e) => setFixedFee(Number(e.target.value))}
-                  className="w-full max-w-xs px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                />
-              </div>
-            </div>
+                <div className="border-t border-gray-200 pt-4">
+  <label className="block text-sm font-semibold text-gray-700 mb-3">
+    💳 Fee Fisse (Dinamiche)
+  </label>
+  
+  <div className="bg-white border border-gray-200 rounded-lg p-4">
+    <div className="grid grid-cols-2 gap-4 mb-3">
+      <div>
+        <p className="text-xs font-bold text-gray-500 uppercase mb-2">RENTER</p>
+        <div className="space-y-1 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Importo ≤ €8.00:</span>
+            <span className="font-bold text-green-600">€0.50</span>
           </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Importo > €8.00:</span>
+            <span className="font-bold text-blue-600">€2.00</span>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <p className="text-xs font-bold text-gray-500 uppercase mb-2">HUBBER</p>
+        <div className="space-y-1 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Importo ≤ €10.00:</span>
+            <span className="font-bold text-green-600">€0.50</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Importo > €10.00:</span>
+            <span className="font-bold text-blue-600">€2.00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div className="pt-3 border-t border-gray-100">
+      <p className="text-xs text-gray-500">
+        ℹ️ Le fee fisse sono calcolate automaticamente in base all'importo della prenotazione. 
+        I valori sono definiti in <code className="bg-gray-100 px-1 py-0.5 rounded">utils/feeUtils.ts</code>
+      </p>
+    </div>
+  </div>
+</div>
 
           {/* RULES & QUALITY */}
           <div>
