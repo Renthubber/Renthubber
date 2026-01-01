@@ -4348,7 +4348,7 @@ const renderFinanceWallets = () => {
     
     {/* Tooltip con dettaglio wallet renter */}
     {wallet.renterWalletDetail && (wallet.renterBalanceEur || 0) > 0 && (
-      <div className="hidden group-hover:block absolute right-0 bottom-full mb-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10">
+      <div className="hidden group-hover:block absolute right-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10">
         <p className="text-xs font-semibold text-gray-700 mb-2">📊 Dettaglio Wallet Renter:</p>
         <div className="space-y-1 text-xs">
           <div className="flex justify-between">
