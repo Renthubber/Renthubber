@@ -8108,7 +8108,7 @@ const renderReviews = () => {
             <span className="font-bold text-green-600">€0.50</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Importo > €8.00:</span>
+            <span className="text-gray-600">Importo &gt; €8.00:</span>
             <span className="font-bold text-blue-600">€2.00</span>
           </div>
         </div>
@@ -8122,7 +8122,7 @@ const renderReviews = () => {
             <span className="font-bold text-green-600">€0.50</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Importo > €10.00:</span>
+            <span className="text-gray-600">Importo &gt; €10.00:</span>
             <span className="font-bold text-blue-600">€2.00</span>
           </div>
         </div>
