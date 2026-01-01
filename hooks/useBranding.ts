@@ -23,9 +23,9 @@ interface UseBrandingResult {
   refetch: () => Promise<void>;
 }
 
-// Valori di default (quelli attuali di RentHubber)
+// Valori di default (quelli attuali di Renthubber)
 const DEFAULT_BRANDING: BrandingData = {
-  site_name: "RentHubber",
+  site_name: "Renthubber",
   logo_url: null,
   logo_dark_url: null,
   favicon_url: null,

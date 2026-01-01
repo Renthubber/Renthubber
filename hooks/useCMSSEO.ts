@@ -21,7 +21,7 @@ interface UseCMSSEOResult {
  * const { seo, loading } = useCMSSEO('chi-siamo');
  * 
  * <Helmet>
- *   <title>{seo?.title || 'Chi Siamo'} | RentHubber</title>
+ *   <title>{seo?.title || 'Chi Siamo'} | Renthubber</title>
  *   <meta name="description" content={seo?.meta_description || 'Descrizione default'} />
  * </Helmet>
  * ```
@@ -63,7 +63,7 @@ export const useCMSSEO = (slug: string): UseCMSSEOResult => {
  *       <CMSSEOHead 
  *         slug="chi-siamo" 
  *         fallbackTitle="Chi Siamo"
- *         fallbackDescription="Scopri la storia di RentHubber"
+ *         fallbackDescription="Scopri la storia di Renthubber"
  *       />
  *       <div>...contenuto pagina...</div>
  *     </>
@@ -80,7 +80,7 @@ export const CMSSEOHead: React.FC<{
 
   useEffect(() => {
     const title = seo?.title || fallbackTitle;
-    document.title = `${title} | RentHubber`;
+    document.title = `${title} | Renthubber`;
 
     // Meta description
     let metaDesc = document.querySelector('meta[name="description"]');
