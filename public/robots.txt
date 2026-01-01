@@ -1,4 +1,4 @@
-# robots.txt per RentHubber
+# robots.txt per Renthubber
 
 User-agent: *
 Allow: /

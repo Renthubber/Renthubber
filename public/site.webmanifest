@@ -1,7 +1,7 @@
 {
-  "name": "RentHubber",
-  "short_name": "RentHubber",
-  "description": "La piattaforma di sharing economy per noleggiare oggetti e spazi in sicurezza. Risparmia, guadagna e riduci gli sprechi.",
+  "name": "Renthubber",
+  "short_name": "Renthubber",
+  "description": "Noleggia ciò che ti serve. Guadagna da ciò che non usi. La piattaforma per oggetti e spazi vicino a te.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
