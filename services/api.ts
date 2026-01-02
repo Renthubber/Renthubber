@@ -6906,7 +6906,7 @@ ${new Date(dispute.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', mi
           rating: overallRating,
           category_ratings: categoryRatings,
           comment: reviewData.comment || "",
-          status: "approved",
+          status: "pending",
           is_verified_booking: true,
           review_type: reviewType,
           created_at: new Date().toISOString(),
@@ -6932,6 +6932,11 @@ await api.reviews.updateUserRating(revieweeId);
 // ✅ NUOVO: Aggiorna rating e review_count del listing
 if (listingId) {
   await api.reviews.updateListingRating(listingId);
+}
+
+// ✅ Controlla se pubblicare recensioni reciproche
+if (bookingId) {
+  await api.reviews.checkAndPublishMutualReviews(bookingId);
 }
 
 return data;
@@ -7116,6 +7121,83 @@ updateListingRating: async (listingId: string) => {
 
   api.listings.invalidateCache();
   console.log(`✅ Listing ${listingId} aggiornato: rating=${avgRating}, review_count=${reviewCount}`);
+},
+
+/**
+ * Controlla e pubblica recensioni reciproche
+ */
+checkAndPublishMutualReviews: async (bookingId: string) => {
+  try {
+    // 1. Conta quante recensioni ci sono per questa prenotazione
+    const { data: reviews, error } = await supabase
+      .from("reviews")
+      .select("id, status, created_at, reviewee_id, listing_id")
+      .eq("booking_id", bookingId);
+
+    if (error || !reviews) {
+      console.error("Errore caricamento recensioni reciproche:", error);
+      return;
+    }
+
+    console.log(`🔍 Trovate ${reviews.length} recensioni per booking ${bookingId}`);
+
+    // 2. Se ci sono 2 recensioni (entrambi hanno recensito), pubblica entrambe
+    if (reviews.length === 2) {
+      const { error: updateError } = await supabase
+        .from("reviews")
+        .update({ status: "approved" })
+        .eq("booking_id", bookingId);
+      
+      if (updateError) {
+        console.error("Errore pubblicazione recensioni reciproche:", updateError);
+        return;
+      }
+      
+      console.log(`✅ Recensioni reciproche pubblicate per booking ${bookingId}`);
+      
+      // Aggiorna i rating dopo aver pubblicato
+      for (const review of reviews) {
+        await api.reviews.updateUserRating(review.reviewee_id);
+        if (review.listing_id) {
+          await api.reviews.updateListingRating(review.listing_id);
+        }
+      }
+    }
+    
+    // 3. Se c'è solo 1 recensione ma sono passati 7 giorni, pubblica
+    else if (reviews.length === 1) {
+      const review = reviews[0];
+      if (review.status === 'pending') {
+        const createdAt = new Date(review.created_at);
+        const now = new Date();
+        const daysPassed = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+        
+        console.log(`📅 Recensione pending da ${daysPassed.toFixed(1)} giorni`);
+        
+        if (daysPassed >= 7) {
+          const { error: updateError } = await supabase
+            .from("reviews")
+            .update({ status: "approved" })
+            .eq("id", review.id);
+          
+          if (updateError) {
+            console.error("Errore pubblicazione recensione dopo 7 giorni:", updateError);
+            return;
+          }
+          
+          console.log(`✅ Recensione pubblicata dopo 7 giorni per booking ${bookingId}`);
+          
+          // Aggiorna i rating
+          await api.reviews.updateUserRating(review.reviewee_id);
+          if (review.listing_id) {
+            await api.reviews.updateListingRating(review.listing_id);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Errore checkAndPublishMutualReviews:", err);
+  }
 },
 
 /**
