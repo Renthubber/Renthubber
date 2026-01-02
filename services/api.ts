@@ -7153,14 +7153,15 @@ checkAndPublishMutualReviews: async (bookingId: string) => {
       }
       
       // ✅ Sono 2 reviewer diversi → pubblica entrambe
-      const { error: updateError } = await supabase
-        .from("reviews")
-        .update({ status: "approved" })
-        .eq("booking_id", bookingId);
-      
-      if (updateError) {
-        console.error("Errore pubblicazione recensioni reciproche:", updateError);
-        return;
+      for (const review of reviews) {
+        const { error: updateError } = await supabase
+          .from("reviews")
+          .update({ status: "approved" })
+          .eq("id", review.id);
+        
+        if (updateError) {
+          console.error(`Errore pubblicazione recensione ${review.id}:`, updateError);
+        }
       }
       
       console.log(`✅ Recensioni reciproche pubblicate per booking ${bookingId}`);
