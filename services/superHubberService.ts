@@ -85,7 +85,8 @@ export async function updateHubberMetrics(userId: string): Promise<{
     const { count: reviewsCount } = await supabase
       .from('reviews')
       .select('*', { count: 'exact', head: true })
-      .eq('hubber_id', userId);
+      .eq('reviewee_id', userId)
+      .eq('status', 'approved');
 
     // 6. Conta annunci attivi
     const { count: activeListingsCount } = await supabase

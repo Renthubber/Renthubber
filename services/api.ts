@@ -7176,6 +7176,15 @@ checkAndPublishMutualReviews: async (bookingId: string) => {
       for (const listingId of listingIds) {
         await api.reviews.updateListingRating(listingId);
       }
+      // ✅ Verifica status SuperHubber per entrambi gli utenti
+      for (const revieweeId of revieweeIds) {
+        try {
+          const { checkAndUpdateSuperHubberStatus } = await import('./superHubberService');
+          await checkAndUpdateSuperHubberStatus(revieweeId);
+        } catch (superHubberErr) {
+          console.error("⚠️ Errore verifica SuperHubber (non bloccante):", superHubberErr);
+        }
+      }
     }
     
     // 3. Se c'è solo 1 recensione ma sono passati 7 giorni, pubblica
