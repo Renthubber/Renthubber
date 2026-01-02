@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Star } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../services/api';
 import { supabase } from '../services/supabaseClient';
 
@@ -22,6 +22,10 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [averageRating, setAverageRating] = useState(0);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(false);
 
   useEffect(() => {
     const loadReviews = async () => {
@@ -46,6 +50,28 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
       loadReviews();
     }
   }, [listingId]);
+
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setShowLeft(scrollLeft > 0);
+      setShowRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [reviews]);
+
+  const scroll = (dir: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const containerWidth = scrollRef.current.clientWidth;
+      scrollRef.current.scrollBy({ left: dir === 'left' ? -containerWidth : containerWidth, behavior: 'smooth' });
+      setTimeout(checkScroll, 300);
+    }
+  };
 
   if (loading) {
     return (
@@ -73,7 +99,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
   }
 
   return (
-    <div className="py-8">
+   <div className="py-8">
       <div className="flex items-center mb-8">
         <Star className="w-6 h-6 text-gray-900 fill-current mr-2" />
         <h2 className="text-2xl font-bold text-gray-900">
@@ -84,87 +110,95 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
       </div>
 
       {reviews.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-          {reviews.slice(0, 6).map((review) => {
-            // Estrai dati reviewer
-            const reviewer = review.reviewer;
-            const reviewerId = review.reviewer_id || reviewer?.id;
-            const reviewerName = reviewer?.public_name || 
-              [reviewer?.first_name, reviewer?.last_name].filter(Boolean).join(' ') || 
-              'Utente';
-            
-            // ✅ Avatar reale dal DB (solo se esiste e non è ui-avatars)
-            const rawAvatar = reviewer?.avatar_url;
-            const hasRealAvatar = hasRealAvatarUrl(rawAvatar);
-            const reviewerAvatar = rawAvatar || null;
-            const reviewerInitial = reviewerName.charAt(0).toUpperCase();
+        <div className="relative px-16">
+          {showLeft && (
+            <button onClick={() => scroll('left')} className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 bg-white border-2 border-gray-200 rounded-full p-2 shadow-lg hover:bg-gray-50">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
+          <div ref={scrollRef} onScroll={checkScroll} className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {reviews.slice(0, 6).map((review) => {
+              const reviewer = review.reviewer;
+              const reviewerId = review.reviewer_id || reviewer?.id;
+              const reviewerName = reviewer?.public_name || 
+                [reviewer?.first_name, reviewer?.last_name].filter(Boolean).join(' ') || 
+                'Utente';
+              
+              const rawAvatar = reviewer?.avatar_url;
+              const hasRealAvatar = hasRealAvatarUrl(rawAvatar);
+              const reviewerAvatar = rawAvatar || null;
+              const reviewerInitial = reviewerName.charAt(0).toUpperCase();
 
-            return (
-              <div key={review.id}>
-                <div 
-                  className={`flex items-center mb-3 ${onRenterClick && reviewerId ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
-                onClick={async () => {
-                    if (onRenterClick && reviewerId) {
-                      // Carica i dati raw da Supabase
-                      const { data, error } = await supabase
-                        .from("users")
-                        .select("id, name, avatar_url, created_at")
-                        .eq("id", reviewerId)
-                        .single();
-                      
-                      console.log('🔍 DEBUG data:', data);
-                      
-                      onRenterClick({
-                        id: reviewerId,
-                        name: reviewerName,
-                        avatar: reviewerAvatar || undefined,
-                        created_at: data?.created_at,
-                      });
-                    }
-                  }}
-                >
-                  {/* ✅ Mostra avatar reale se esiste, altrimenti gradiente con iniziale */}
-                  {hasRealAvatar ? (
-                    <img 
-                      src={reviewerAvatar!} 
-                      alt={reviewerName} 
-                      className="w-10 h-10 rounded-full mr-3 bg-gray-200 object-cover"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm mr-3">
-                      {reviewerInitial}
+              return (
+                <div key={review.id} className="flex-shrink-0 w-[calc(50%-8px)] snap-start">
+                  <div 
+                    className={`flex items-center mb-3 ${onRenterClick && reviewerId ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+                    onClick={async () => {
+                      if (onRenterClick && reviewerId) {
+                        const { data, error } = await supabase
+                          .from("users")
+                          .select("id, name, avatar_url, created_at")
+                          .eq("id", reviewerId)
+                          .single();
+                        
+                        console.log('🔍 DEBUG data:', data);
+                        
+                        onRenterClick({
+                          id: reviewerId,
+                          name: reviewerName,
+                          avatar: reviewerAvatar || undefined,
+                          created_at: data?.created_at,
+                        });
+                      }
+                    }}
+                  >
+                    {hasRealAvatar ? (
+                      <img 
+                        src={reviewerAvatar!} 
+                        alt={reviewerName} 
+                        className="w-10 h-10 rounded-full mr-3 bg-gray-200 object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm mr-3">
+                        {reviewerInitial}
+                      </div>
+                    )}
+                    <div>
+                      <h4 className={`font-bold text-gray-900 text-sm ${onRenterClick && reviewerId ? 'hover:text-brand hover:underline' : ''}`}>
+                        {reviewerName}
+                      </h4>
+                      <p className="text-xs text-gray-500">
+                        {new Date(review.created_at).toLocaleDateString('it-IT', {
+                          month: 'long', 
+                          year: 'numeric'
+                        })}
+                      </p>
                     </div>
-                  )}
-                  <div>
-                    <h4 className={`font-bold text-gray-900 text-sm ${onRenterClick && reviewerId ? 'hover:text-brand hover:underline' : ''}`}>
-                      {reviewerName}
-                    </h4>
-                    <p className="text-xs text-gray-500">
-                      {new Date(review.created_at).toLocaleDateString('it-IT', {
-                        month: 'long', 
-                        year: 'numeric'
-                      })}
-                    </p>
                   </div>
+                  <div className="flex items-center mb-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star 
+                        key={i} 
+                        className={`w-4 h-4 ${
+                          i < (review.rating || 0) 
+                            ? 'text-gray-900 fill-current' 
+                            : 'text-gray-300'
+                        }`} 
+                      />
+                    ))}
+                  </div>
+                  <p className="text-gray-600 text-sm leading-relaxed line-clamp-4">
+                    {review.comment || 'Nessun commento'}
+                  </p>
                 </div>
-                <div className="flex items-center mb-2 text-xs">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star 
-                      key={i} 
-                      className={`w-3 h-3 ${
-                        i < (review.rating || 0) 
-                          ? 'text-gray-900 fill-current' 
-                          : 'text-gray-300'
-                      }`} 
-                    />
-                  ))}
-                </div>
-                <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
-                  {review.comment || 'Nessun commento'}
-                </p>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+          {showRight && (
+            <button onClick={() => scroll('right')} className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 bg-white border-2 border-gray-200 rounded-full p-2 shadow-lg hover:bg-gray-50">
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          )}
         </div>
       ) : (
         <p className="text-gray-500 italic">
