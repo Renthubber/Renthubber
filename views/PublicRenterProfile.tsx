@@ -474,26 +474,27 @@ useEffect(() => {
                   )}
                 </div>
                 
-                {/* Nome */}
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-3xl font-bold text-gray-900 mb-1">
                   {privacyName}
                 </h1>
                 
-                {/* Badge Tipo Utente */}
-                <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-full ${
-                  (renter as any).userType && (renter as any).userType !== 'privato'
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {(renter as any).userType && (renter as any).userType !== 'privato' && (
-                    <Building2 className="w-3 h-3" />
-                  )}
-                  {formatUserType((renter as any).userType)}
-                </span>
+                <div className="flex items-center text-gray-500 text-sm mb-4">
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-full ${
+                    (renter as any).userType && (renter as any).userType !== 'privato'
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {(renter as any).userType && (renter as any).userType !== 'privato' && (
+                      <Building2 className="w-3 h-3" />
+                    )}
+                    {formatUserType((renter as any).userType)}
+                  </span>
+                </div>
               </div>
               
-              {/* Statistiche Grid 2x2 */}
+              {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-4 mb-8">
+
                 {/* Recensioni */}
                 <div className="bg-gray-50 p-3 rounded-xl text-center">
                   <p className="text-lg font-bold text-gray-900 flex items-center justify-center">
@@ -535,14 +536,13 @@ useEffect(() => {
                 </div>
               </div>
 
-              {/* Informazioni verificate */}
               <div className="border-t border-gray-100 pt-6">
-                <h3 className="font-semibold text-gray-900 mb-4">
+                <h3 className="font-semibold text-gray-900 mb-4 text-sm">
                   Informazioni verificate
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center text-sm">
-                    <CheckCircle2 className={`w-5 h-5 mr-3 ${
+                    <CheckCircle2 className={`w-5 h-5 mr-3 flex-shrink-0 ${
                       renter.idDocumentVerified 
                         ? 'text-green-500' 
                         : 'text-gray-300'
@@ -556,7 +556,7 @@ useEffect(() => {
                   </div>
                   
                   <div className="flex items-center text-sm">
-                    <CheckCircle2 className={`w-5 h-5 mr-3 ${
+                    <CheckCircle2 className={`w-5 h-5 mr-3 flex-shrink-0 ${
                       renter.emailVerified 
                         ? 'text-green-500' 
                         : 'text-gray-300'
@@ -570,7 +570,7 @@ useEffect(() => {
                   </div>
                   
                   <div className="flex items-center text-sm">
-                    <CheckCircle2 className={`w-5 h-5 mr-3 ${
+                    <CheckCircle2 className={`w-5 h-5 mr-3 flex-shrink-0 ${
                       renter.phoneVerified 
                         ? 'text-green-500' 
                         : 'text-gray-300'
