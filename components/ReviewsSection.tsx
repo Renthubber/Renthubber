@@ -103,16 +103,20 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
                   className={`flex items-center mb-3 ${onRenterClick && reviewerId ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
                 onClick={async () => {
                     if (onRenterClick && reviewerId) {
-                      // Carica i dati completi dell'utente
-                      const fullUser = await api.users.get(reviewerId);
-                      console.log('🔍 DEBUG fullUser:', fullUser);
-                      console.log('🔍 DEBUG fullUser.created_at:', (fullUser as any)?.created_at);
+                      // Carica i dati raw da Supabase
+                      const { data, error } = await (window as any).supabase
+                        .from("users")
+                        .select("id, name, avatar_url, created_at")
+                        .eq("id", reviewerId)
+                        .single();
+                      
+                      console.log('🔍 DEBUG data:', data);
                       
                       onRenterClick({
                         id: reviewerId,
                         name: reviewerName,
                         avatar: reviewerAvatar || undefined,
-                        created_at: (fullUser as any)?.created_at,
+                        created_at: data?.created_at,
                       });
                     }
                   }}
