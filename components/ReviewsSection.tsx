@@ -13,7 +13,7 @@ const hasRealAvatarUrl = (avatarUrl: string | null | undefined): boolean => {
 
 interface ReviewsSectionProps {
   listingId: string;
-  onRenterClick?: (renter: { id: string; name: string; avatar?: string }) => void;
+  onRenterClick?: (renter: { id: string; name: string; avatar?: string; created_at?: string }) => void;
 }
 
 export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRenterClick }) => {
@@ -107,6 +107,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
                         id: reviewerId,
                         name: reviewerName,
                         avatar: reviewerAvatar || undefined,
+                        created_at: reviewer?.created_at,
                       });
                     }
                   }}
