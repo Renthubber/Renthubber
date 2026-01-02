@@ -7226,7 +7226,7 @@ checkAndPublishMutualReviews: async (bookingId: string) => {
 /**
  * Aggiorna stato recensione (admin) - per sospendere/riattivare
  */
-updateStatus: async (reviewId: string, status: 'approved' | 'suspended' | 'rejected') => {
+updateStatus: async (reviewId: string, status: 'approved' | 'suspended' | 'rejected' | 'flagged') => {
   const { data, error } = await supabase
     .from("reviews")
     .update({ 
@@ -7240,6 +7240,16 @@ updateStatus: async (reviewId: string, status: 'approved' | 'suspended' | 'rejec
   if (error) {
     console.error("Errore aggiornamento stato recensione:", error);
     throw error;
+  }
+
+  // ✅ Verifica status SuperHubber quando admin approva una recensione
+  if (status === 'approved' && data) {
+    try {
+      const { checkAndUpdateSuperHubberStatus } = await import('./superHubberService');
+      await checkAndUpdateSuperHubberStatus(data.reviewee_id);
+    } catch (superHubberErr) {
+      console.error("⚠️ Errore verifica SuperHubber (non bloccante):", superHubberErr);
+    }
   }
 
   return data;
