@@ -411,6 +411,13 @@ useEffect(() => {
     ? new Date((renter as any).created_at).getFullYear()
     : new Date().getFullYear();
 
+    // ✅ DEBUG
+console.log('🔍 DEBUG joinYear:', {
+  hubberSince: renter.hubberSince,
+  created_at: (renter as any).created_at,
+  joinYear: joinYear
+});
+
   // Nome privacy
   const privacyName = 
     (renter as any).publicName ||
@@ -435,7 +442,7 @@ useEffect(() => {
   const location = (renter as any).location || renter.address || "Italia";
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-white-50 pb-20">
       {/* Navbar */}
       <div className="bg-white border-b">
         <div className="max-w-6xl mx-auto px-4 py-4">
