@@ -359,11 +359,12 @@ setIsAuthChecking(false);
     navigate('/my-listings');
   };
 
-  const handleRenterClick = (renter: User) => {
-    console.log("APP: renter cliccato:", renter);
-    setSelectedRenter(renter);
-    navigate('/renter-profile');
-  };
+ const handleRenterClick = (renter: User) => {
+  console.log("APP: renter cliccato:", renter);
+  console.log("🔍 DEBUG renter.created_at:", (renter as any).created_at);
+  setSelectedRenter(renter);
+  navigate('/renter-profile');
+};
 
   /* ------------------------------------------------------
       WRAPPER COMPONENTS PER GESTIRE PARAMS
