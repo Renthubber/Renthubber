@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
 import { api } from '../services/api';
+import { supabase } from '../services/supabaseClient';
+
 
 /* ------------------------------------------------------
    🖼️ HELPER: Verifica se l'avatar è reale (non generato)
@@ -104,7 +106,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
                 onClick={async () => {
                     if (onRenterClick && reviewerId) {
                       // Carica i dati raw da Supabase
-                      const { data, error } = await (window as any).supabase
+                      const { data, error } = await supabase
                         .from("users")
                         .select("id, name, avatar_url, created_at")
                         .eq("id", reviewerId)
