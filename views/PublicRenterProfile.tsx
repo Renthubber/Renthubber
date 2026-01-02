@@ -405,9 +405,10 @@ useEffect(() => {
     ? Number((reviews.reduce((sum, r) => sum + ((r as any).overallRating || (r as any).rating || 0), 0) / totalReviews).toFixed(1))
     : (renter as any).renterRating || 0;
 
-  // Anno iscrizione
-  const joinYear = renter.hubberSince
-    ? new Date(renter.hubberSince).getFullYear()
+ const joinYear = renter.hubberSince
+  ? new Date(renter.hubberSince).getFullYear()
+  : (renter as any).created_at 
+    ? new Date((renter as any).created_at).getFullYear()
     : new Date().getFullYear();
 
   // Nome privacy
@@ -492,43 +493,43 @@ useEffect(() => {
               </div>
               
               {/* Statistiche Grid 2x2 */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-2 gap-4 mb-8">
                 {/* Recensioni */}
-                <div className="text-center py-3 border-b border-r border-gray-100">
-                  <p className="text-2xl font-bold text-gray-900">
-                    {totalReviews}
+                <div className="bg-gray-50 p-3 rounded-xl text-center">
+                  <p className="text-lg font-bold text-gray-900 flex items-center justify-center">
+                    {totalReviews} <Star className="w-3 h-3 ml-1" />
                   </p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">
+                  <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wide">
                     Recensioni
                   </p>
                 </div>
                 
                 {/* Rating */}
-                <div className="text-center py-3 border-b border-gray-100">
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="bg-gray-50 p-3 rounded-xl text-center">
+                  <p className="text-lg font-bold text-gray-900">
                     {avgRating > 0 ? avgRating : "—"}
                   </p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">
+                  <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wide">
                     Rating
                   </p>
                 </div>
                 
                 {/* Anno iscrizione */}
-                <div className="text-center py-3 border-r border-gray-100">
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="bg-gray-50 p-3 rounded-xl text-center">
+                  <p className="text-lg font-bold text-gray-900">
                     {joinYear}
                   </p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">
+                  <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wide">
                     Iscritto dal
                   </p>
                 </div>
                 
                 {/* Prenotazioni */}
-                <div className="text-center py-3">
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="bg-gray-50 p-3 rounded-xl text-center">
+                  <p className="text-lg font-bold text-gray-900">
                     {completedBookings}
                   </p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">
+                  <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wide">
                     Prenotazioni
                   </p>
                 </div>
