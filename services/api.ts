@@ -4227,6 +4227,17 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
   await notifyKycRejected(userId);
 }
 
+// ✅ NUOVO: Verifica status SuperHubber dopo verifica documenti
+        if (updates.idDocumentVerified === true || (updates as any).id_document_verified === true) {
+          try {
+            const { checkAndUpdateSuperHubberStatus } = await import('./superHubberService');
+            await checkAndUpdateSuperHubberStatus(userId);
+            console.log("✅ Verifica SuperHubber completata dopo verifica documenti");
+          } catch (superHubberErr) {
+            console.error("⚠️ Errore verifica SuperHubber (non bloccante):", superHubberErr);
+          }
+        }
+
       } catch (err) {
         console.error("❌ admin.updateUser – errore inatteso:", err);
         throw err;
@@ -5550,6 +5561,23 @@ issued_at: new Date().toISOString()
             }
           } catch (payoutErr) {
             console.error("⚠️ Errore accredito hubber (non bloccante):", payoutErr);
+          }
+
+         // ✅ NUOVO: Verifica status SuperHubber dopo completamento
+          try {
+            const { data: booking } = await supabase
+              .from("bookings")
+              .select("hubber_id")
+              .eq("id", bookingId)
+              .single();
+
+            if (booking?.hubber_id) {
+              const { checkAndUpdateSuperHubberStatus } = await import('./superHubberService');
+              await checkAndUpdateSuperHubberStatus(booking.hubber_id);
+              console.log("✅ Verifica SuperHubber completata");
+            }
+          } catch (superHubberErr) {
+            console.error("⚠️ Errore verifica SuperHubber (non bloccante):", superHubberErr);
           }
 
           // 3. ✅ COMPLETA IL REFERRAL SE ESISTE
