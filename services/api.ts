@@ -7128,10 +7128,10 @@ updateListingRating: async (listingId: string) => {
  */
 checkAndPublishMutualReviews: async (bookingId: string) => {
   try {
-    // 1. Conta quante recensioni ci sono per questa prenotazione
+    // 1. Carica tutte le recensioni per questa prenotazione
     const { data: reviews, error } = await supabase
       .from("reviews")
-      .select("id, status, created_at, reviewee_id, listing_id")
+      .select("id, status, created_at, reviewee_id, reviewer_id, listing_id")
       .eq("booking_id", bookingId);
 
     if (error || !reviews) {
@@ -7141,8 +7141,18 @@ checkAndPublishMutualReviews: async (bookingId: string) => {
 
     console.log(`🔍 Trovate ${reviews.length} recensioni per booking ${bookingId}`);
 
-    // 2. Se ci sono 2 recensioni (entrambi hanno recensito), pubblica entrambe
+    // 2. Se ci sono 2 recensioni, verifica che siano di reviewer DIVERSI
     if (reviews.length === 2) {
+      const reviewer1 = reviews[0].reviewer_id;
+      const reviewer2 = reviews[1].reviewer_id;
+      
+      // ✅ Verifica che non siano duplicate (stesso reviewer)
+      if (reviewer1 === reviewer2) {
+        console.error(`❌ Recensioni duplicate! Stesso reviewer: ${reviewer1}`);
+        return;
+      }
+      
+      // ✅ Sono 2 reviewer diversi → pubblica entrambe
       const { error: updateError } = await supabase
         .from("reviews")
         .update({ status: "approved" })
@@ -7155,12 +7165,15 @@ checkAndPublishMutualReviews: async (bookingId: string) => {
       
       console.log(`✅ Recensioni reciproche pubblicate per booking ${bookingId}`);
       
-      // Aggiorna i rating dopo aver pubblicato
-      for (const review of reviews) {
-        await api.reviews.updateUserRating(review.reviewee_id);
-        if (review.listing_id) {
-          await api.reviews.updateListingRating(review.listing_id);
-        }
+      // ✅ Aggiorna i rating (usa Set per evitare duplicati)
+      const revieweeIds = [...new Set(reviews.map(r => r.reviewee_id))];
+      const listingIds = [...new Set(reviews.map(r => r.listing_id).filter(Boolean))];
+      
+      for (const revieweeId of revieweeIds) {
+        await api.reviews.updateUserRating(revieweeId);
+      }
+      for (const listingId of listingIds) {
+        await api.reviews.updateListingRating(listingId);
       }
     }
     
@@ -7199,7 +7212,7 @@ checkAndPublishMutualReviews: async (bookingId: string) => {
     console.error("Errore checkAndPublishMutualReviews:", err);
   }
 },
-
+    
 /**
  * Aggiorna stato recensione (admin) - per sospendere/riattivare
  */
