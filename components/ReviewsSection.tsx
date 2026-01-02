@@ -105,6 +105,8 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
                     if (onRenterClick && reviewerId) {
                       // Carica i dati completi dell'utente
                       const fullUser = await api.users.get(reviewerId);
+                      console.log('🔍 DEBUG fullUser:', fullUser);
+                      console.log('🔍 DEBUG fullUser.created_at:', (fullUser as any)?.created_at);
                       
                       onRenterClick({
                         id: reviewerId,
