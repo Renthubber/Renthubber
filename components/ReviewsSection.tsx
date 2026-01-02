@@ -101,13 +101,16 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
               <div key={review.id}>
                 <div 
                   className={`flex items-center mb-3 ${onRenterClick && reviewerId ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
-                  onClick={() => {
+                onClick={async () => {
                     if (onRenterClick && reviewerId) {
+                      // Carica i dati completi dell'utente
+                      const fullUser = await api.users.get(reviewerId);
+                      
                       onRenterClick({
                         id: reviewerId,
                         name: reviewerName,
                         avatar: reviewerAvatar || undefined,
-                        created_at: reviewer?.created_at,
+                        created_at: (fullUser as any)?.created_at,
                       });
                     }
                   }}
