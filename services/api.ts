@@ -7089,6 +7089,7 @@ updateListingRating: async (listingId: string) => {
     .from("reviews")
     .select("rating")
     .eq("listing_id", listingId)
+    .eq("review_type", "renter_to_hubber")  // ✅ Solo recensioni R→H
     .eq("status", "approved");
 
   if (error) {
