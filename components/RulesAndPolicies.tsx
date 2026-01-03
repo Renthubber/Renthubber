@@ -69,7 +69,7 @@ export const RulesAndPolicies: React.FC<RulesAndPoliciesProps> = ({
 
          {/* Policies */}
          <div>
-            <h4 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wide">Cancellazione e Cauzione</h4>
+            <h4 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wide">Politica di Cancellazione</h4>
             <div className="space-y-4">
                <div className="flex items-start">
                   <Calendar className="w-5 h-5 mr-3 text-gray-900 flex-shrink-0 mt-0.5" />
