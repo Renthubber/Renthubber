@@ -6934,8 +6934,6 @@ if (listingId) {
 
 // ✅ Controlla se pubblicare recensioni reciproche
 if (bookingId) {
-  await api.reviews.checkAndPublishMutualReviews(bookingId);
-  
   // 📧 NUOVO: Verifica se inviare email "review pending" all'altra parte
   const { data: existingReviews } = await supabase
     .from("reviews")
@@ -6952,6 +6950,9 @@ if (bookingId) {
     // 📧 Invia email: "X ha lasciato recensione, lascia la tua!"
     await notifyReviewPending(bookingId, reviewerId, otherUserId);
   }
+  
+  // POI: Pubblica se ci sono entrambe le recensioni
+  await api.reviews.checkAndPublishMutualReviews(bookingId);
 }
 
 return data;
@@ -7147,7 +7148,7 @@ checkAndPublishMutualReviews: async (bookingId: string) => {
     // 1. Carica tutte le recensioni per questa prenotazione
     const { data: reviews, error } = await supabase
       .from("reviews")
-      .select("id, status, created_at, reviewee_id, reviewer_id, listing_id")
+      .select("id, status, created_at, reviewee_id, reviewer_id, listing_id, rating, comment")
       .eq("booking_id", bookingId);
 
     if (error || !reviews) {
