@@ -42,9 +42,6 @@
 # ============================================
 
 # Pagine che esistono nella nuova webapp
-/faq                                               /faq                  301
-/privacy-policy                                    /privacy-policy       301
-/cookie-policy                                     /cookie-policy        301
 /contratto-di-noleggio                             /termini-condizioni   301
 /termini-e-condizioni                              /termini-condizioni   301
 
