@@ -538,9 +538,9 @@ export const notifyReviewRequest = async (bookingId: string, recipientRole: 'ren
     if (!booking) return;
     
     const bookingData = booking as any;
-    const slug = recipientRole === 'renter' ? 'review-invite-renter' : 'review-invite-hubber';
-    const userId = recipientRole === 'renter' ? bookingData.renter_id : bookingData.hubber_id;
-    
+const slug = recipientRole === 'renter' ? 'tpl-review-invite-renter' : 'tpl-review-invite-hubber';
+const userId = recipientRole === 'renter' ? bookingData.renter_id : bookingData.hubber_id;
+
     // Nome dell'altra parte (chi deve essere recensito)
     const otherUser = recipientRole === 'renter' ? bookingData.hubber : bookingData.renter;
     const reviewerName = otherUser?.public_name || 
@@ -554,9 +554,9 @@ export const notifyReviewRequest = async (bookingId: string, recipientRole: 'ren
       reviewer_name: reviewerName
     });
     
-    // 📧 NUOVO: Schedula reminder dopo 3 giorni
-    await notifyReviewReminder(bookingId, recipientRole);
-    
+    // 📧 RIMOSSO: Il reminder sarà implementato con cron job separato
+// await notifyReviewReminder(bookingId, recipientRole);
+
   } catch (error) {
     console.error('❌ Errore notifyReviewRequest:', error);
   }
@@ -588,8 +588,8 @@ export const notifyReviewPending = async (
     const bookingData = booking as any;
     
     // Determina chi è il reviewee (chi deve ancora lasciare recensione)
-    const recipientRole = revieweeId === bookingData.renter_id ? 'renter' : 'hubber';
-    const slug = recipientRole === 'renter' ? 'review-pending-renter' : 'review-pending-hubber';
+const recipientRole = revieweeId === bookingData.renter_id ? 'renter' : 'hubber';
+const slug = recipientRole === 'renter' ? 'tpl-review-pending-renter' : 'tpl-review-pending-hubber';
     
     // Nome di chi ha GIÀ lasciato recensione
     const reviewer = reviewerId === bookingData.renter_id ? bookingData.renter : bookingData.hubber;
@@ -636,9 +636,9 @@ export const notifyReviewPublished = async (
     const bookingData = booking as any;
     
     // Determina chi riceve la notifica
-    const recipientRole = revieweeId === bookingData.renter_id ? 'renter' : 'hubber';
-    const slug = recipientRole === 'renter' ? 'review-published-renter' : 'review-published-hubber';
-    
+const recipientRole = revieweeId === bookingData.renter_id ? 'renter' : 'hubber';
+const slug = recipientRole === 'renter' ? 'tpl-review-published-renter' : 'tpl-review-published-hubber';
+
     // Nome di chi ha scritto la recensione
     const reviewer = reviewerId === bookingData.renter_id ? bookingData.renter : bookingData.hubber;
     const reviewerName = reviewer?.public_name || 
@@ -680,9 +680,9 @@ export const notifyReviewReminder = async (
     if (!booking) return;
     
     const bookingData = booking as any;
-    const slug = recipientRole === 'renter' ? 'review-reminder-renter' : 'review-reminder-hubber';
-    const userId = recipientRole === 'renter' ? bookingData.renter_id : bookingData.hubber_id;
-    
+const slug = recipientRole === 'renter' ? 'tpl-review-reminder-renter' : 'tpl-review-reminder-hubber';
+const userId = recipientRole === 'renter' ? bookingData.renter_id : bookingData.hubber_id;
+
     // Nome dell'altra parte
     const otherUser = recipientRole === 'renter' ? bookingData.hubber : bookingData.renter;
     const reviewerName = otherUser?.public_name || 
