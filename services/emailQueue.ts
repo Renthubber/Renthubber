@@ -352,20 +352,17 @@ export async function queueCustomEmail(params: {
   scheduledAt?: Date;
 }): Promise<void> {
   try {
-    const template = await loadTemplate(params.templateId);
-    
-    await supabase.from('email_queue').insert({
-      template_id: params.templateId,
-      recipient_email: params.recipientEmail,
-      recipient_name: params.recipientName,
-      recipient_user_id: params.recipientUserId,
-      subject: template.subject,
-      body_html: template.body_html,
-      body_text: template.body_text,
-      variables: params.variables || {},
-      status: 'pending',
-      scheduled_at: (params.scheduledAt || new Date()).toISOString()
+    // ✅ Usa la funzione database per evitare errore 406 nel client
+    const { error } = await supabase.rpc('queue_email_from_template', {
+      p_template_id: params.templateId,
+      p_recipient_email: params.recipientEmail,
+      p_recipient_name: params.recipientName,
+      p_recipient_user_id: params.recipientUserId,
+      p_variables: params.variables || {},
+      p_scheduled_at: (params.scheduledAt || new Date()).toISOString()
     });
+    
+    if (error) throw error;
     
     console.log(`✅ Custom email queued: ${params.templateId}`);
   } catch (error) {
