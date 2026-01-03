@@ -525,27 +525,178 @@ export const notifyReviewRequest = async (bookingId: string, recipientRole: 'ren
   try {
     const { data: booking } = await supabase
       .from('bookings')
-      .select('renter_id, hubber_id, listing_type')
+      .select(`
+        renter_id, 
+        hubber_id, 
+        listing:listing_id(title),
+        renter:renter_id(first_name, last_name, public_name),
+        hubber:hubber_id(first_name, last_name, public_name)
+      `)
       .eq('id', bookingId)
       .single();
     
     if (!booking) return;
     
-    const listingType = booking.listing_type || 'object';
-    let slug: string;
-    let userId: string;
+    const bookingData = booking as any;
+    const slug = recipientRole === 'renter' ? 'review-invite-renter' : 'review-invite-hubber';
+    const userId = recipientRole === 'renter' ? bookingData.renter_id : bookingData.hubber_id;
     
-    if (recipientRole === 'hubber') {
-      slug = 'review-request-hubber';
-      userId = booking.hubber_id;
-    } else {
-      slug = listingType === 'space' ? 'review-request-space-renter' : 'review-request-object-renter';
-      userId = booking.renter_id;
-    }
+    // Nome dell'altra parte (chi deve essere recensito)
+    const otherUser = recipientRole === 'renter' ? bookingData.hubber : bookingData.renter;
+    const reviewerName = otherUser?.public_name || 
+      `${otherUser?.first_name || ''} ${otherUser?.last_name || ''}`.trim() || 
+      'Utente';
     
-    await sendToUser(userId, slug, { bookingId });
+    // 📧 Invia invito immediato
+    await sendToUser(userId, slug, { 
+      bookingId,
+      booking_title: bookingData.listing?.title || 'Annuncio',
+      reviewer_name: reviewerName
+    });
+    
+    // 📧 NUOVO: Schedula reminder dopo 3 giorni
+    await notifyReviewReminder(bookingId, recipientRole);
+    
   } catch (error) {
     console.error('❌ Errore notifyReviewRequest:', error);
+  }
+};
+
+/**
+ * Notifica che l'altra parte ha lasciato una recensione (pending)
+ */
+export const notifyReviewPending = async (
+  bookingId: string,
+  reviewerId: string,
+  revieweeId: string
+) => {
+  try {
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select(`
+        renter_id,
+        hubber_id,
+        listing:listing_id(title),
+        renter:renter_id(first_name, last_name, public_name),
+        hubber:hubber_id(first_name, last_name, public_name)
+      `)
+      .eq('id', bookingId)
+      .single();
+    
+    if (!booking) return;
+    
+    const bookingData = booking as any;
+    
+    // Determina chi è il reviewee (chi deve ancora lasciare recensione)
+    const recipientRole = revieweeId === bookingData.renter_id ? 'renter' : 'hubber';
+    const slug = recipientRole === 'renter' ? 'review-pending-renter' : 'review-pending-hubber';
+    
+    // Nome di chi ha GIÀ lasciato recensione
+    const reviewer = reviewerId === bookingData.renter_id ? bookingData.renter : bookingData.hubber;
+    const reviewerName = reviewer?.public_name || 
+      `${reviewer?.first_name || ''} ${reviewer?.last_name || ''}`.trim() || 
+      'Utente';
+    
+    await sendToUser(revieweeId, slug, {
+      bookingId,
+      booking_title: bookingData.listing?.title || 'Annuncio',
+      reviewer_name: reviewerName,
+      days_left: '7'
+    });
+  } catch (error) {
+    console.error('❌ Errore notifyReviewPending:', error);
+  }
+};
+
+/**
+ * Notifica recensione pubblicata (quando entrambe sono approvate)
+ */
+export const notifyReviewPublished = async (
+  bookingId: string,
+  reviewerId: string,
+  revieweeId: string,
+  rating: number,
+  comment: string
+) => {
+  try {
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select(`
+        renter_id,
+        hubber_id,
+        listing:listing_id(title),
+        renter:renter_id(first_name, last_name, public_name),
+        hubber:hubber_id(first_name, last_name, public_name)
+      `)
+      .eq('id', bookingId)
+      .single();
+    
+    if (!booking) return;
+    
+    const bookingData = booking as any;
+    
+    // Determina chi riceve la notifica
+    const recipientRole = revieweeId === bookingData.renter_id ? 'renter' : 'hubber';
+    const slug = recipientRole === 'renter' ? 'review-published-renter' : 'review-published-hubber';
+    
+    // Nome di chi ha scritto la recensione
+    const reviewer = reviewerId === bookingData.renter_id ? bookingData.renter : bookingData.hubber;
+    const reviewerName = reviewer?.public_name || 
+      `${reviewer?.first_name || ''} ${reviewer?.last_name || ''}`.trim() || 
+      'Utente';
+    
+    await sendToUser(revieweeId, slug, {
+      bookingId,
+      booking_title: bookingData.listing?.title || 'Annuncio',
+      reviewer_name: reviewerName,
+      stars: rating.toString(),
+      review_comment: comment || 'Nessun commento'
+    });
+  } catch (error) {
+    console.error('❌ Errore notifyReviewPublished:', error);
+  }
+};
+
+/**
+ * Notifica reminder recensione dopo 3 giorni
+ */
+export const notifyReviewReminder = async (
+  bookingId: string,
+  recipientRole: 'renter' | 'hubber'
+) => {
+  try {
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select(`
+        renter_id,
+        hubber_id,
+        listing:listing_id(title),
+        renter:renter_id(first_name, last_name, public_name),
+        hubber:hubber_id(first_name, last_name, public_name)
+      `)
+      .eq('id', bookingId)
+      .single();
+    
+    if (!booking) return;
+    
+    const bookingData = booking as any;
+    const slug = recipientRole === 'renter' ? 'review-reminder-renter' : 'review-reminder-hubber';
+    const userId = recipientRole === 'renter' ? bookingData.renter_id : bookingData.hubber_id;
+    
+    // Nome dell'altra parte
+    const otherUser = recipientRole === 'renter' ? bookingData.hubber : bookingData.renter;
+    const reviewerName = otherUser?.public_name || 
+      `${otherUser?.first_name || ''} ${otherUser?.last_name || ''}`.trim() || 
+      'Utente';
+    
+    await sendToUser(userId, slug, {
+      bookingId,
+      booking_title: bookingData.listing?.title || 'Annuncio',
+      reviewer_name: reviewerName,
+      days_left: '4'
+    });
+  } catch (error) {
+    console.error('❌ Errore notifyReviewReminder:', error);
   }
 };
 

@@ -31,6 +31,9 @@ import {
   notifyBookingCompleted,
   notifyInvoiceGenerated,
   notifyReviewRequest,
+  notifyReviewPending,
+  notifyReviewPublished,
+  notifyReviewReminder,  
   notifyKycApproved,
   notifyKycRejected,
   notifyKycReceived,
@@ -6921,12 +6924,7 @@ ${new Date(dispute.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', mi
 
       console.log("✅ Recensione creata:", data);
 
-      // 📧 Email notifica recensione
-await queueEmail('review_received', { 
-  revieweeId: revieweeId 
-});
-
-// Aggiorna rating medio del reviewee (utente)
+      // Aggiorna rating medio del reviewee (utente)
 await api.reviews.updateUserRating(revieweeId);
 
 // ✅ NUOVO: Aggiorna rating e review_count del listing
@@ -6937,6 +6935,23 @@ if (listingId) {
 // ✅ Controlla se pubblicare recensioni reciproche
 if (bookingId) {
   await api.reviews.checkAndPublishMutualReviews(bookingId);
+  
+  // 📧 NUOVO: Verifica se inviare email "review pending" all'altra parte
+  const { data: existingReviews } = await supabase
+    .from("reviews")
+    .select("*")
+    .eq("booking_id", bookingId);
+  
+  if (existingReviews && existingReviews.length === 1) {
+    // Solo 1 recensione = la prima è appena stata creata
+    // Trova chi deve ancora lasciare recensione
+    const otherUserId = reviewerId === existingReviews[0].reviewer_id 
+      ? revieweeId 
+      : reviewerId;
+    
+    // 📧 Invia email: "X ha lasciato recensione, lascia la tua!"
+    await notifyReviewPending(bookingId, reviewerId, otherUserId);
+  }
 }
 
 return data;
@@ -7186,6 +7201,21 @@ checkAndPublishMutualReviews: async (bookingId: string) => {
           console.error("⚠️ Errore verifica SuperHubber (non bloccante):", superHubberErr);
         }
       }
+      
+      // 📧 NUOVO: Invia email notifica a entrambi gli utenti
+      for (const review of reviews) {
+        try {
+          await notifyReviewPublished(
+            bookingId,
+            review.reviewer_id,
+            review.reviewee_id,
+            review.rating || 0,
+            review.comment || ''
+          );
+        } catch (emailErr) {
+          console.error("⚠️ Errore invio email recensione pubblicata:", emailErr);
+        }
+      }
     }
     
     // 3. Se c'è solo 1 recensione ma sono passati 7 giorni, pubblica
@@ -7215,6 +7245,19 @@ checkAndPublishMutualReviews: async (bookingId: string) => {
           await api.reviews.updateUserRating(review.reviewee_id);
           if (review.listing_id) {
             await api.reviews.updateListingRating(review.listing_id);
+          }
+          
+          // 📧 NUOVO: Invia email notifica recensione pubblicata
+          try {
+            await notifyReviewPublished(
+              bookingId,
+              review.reviewer_id,
+              review.reviewee_id,
+              review.rating || 0,
+              review.comment || ''
+            );
+          } catch (emailErr) {
+            console.error("⚠️ Errore invio email recensione pubblicata:", emailErr);
           }
         }
       }
