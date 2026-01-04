@@ -846,7 +846,7 @@ useEffect(() => {
 }, [selectedConversation]);
 
 const loadAllTickets = async () => {
-  
+
   console.log("🎫 [DASHBOARD] Inizio caricamento ticket...");
   setTicketsLoading(true);
   try {
@@ -1403,7 +1403,7 @@ const handleSavePage = async () => {
         contacts.push({
           id: SUPPORT_ID,
           recipientId: hubberId,
-          name: 'Supporto RentHubber',
+          name: 'Supporto Renthubber',
           avatar: 'https://ui-avatars.com/api/?name=Support&background=FF6B35&color=fff',
           lastMessage: `Notifica: Annuncio "${listingTitle}" ${action}`,
           unreadCount: 1,
@@ -3028,7 +3028,7 @@ const handleSavePage = async () => {
                     </button>
                   </div>
                   <p className="text-xs text-gray-400 mt-2">
-                    Il messaggio verrà inviato come comunicazione ufficiale del supporto RentHubber
+                    Il messaggio verrà inviato come comunicazione ufficiale del supporto Renthubber
                   </p>
                 </div>
               </>
@@ -9341,7 +9341,7 @@ const renderReviews = () => {
                   <MessageSquare className="w-5 h-5 mr-2" /> Messaggio all'Hubber
                 </h4>
                 <p className="text-sm text-blue-700 mb-3">
-                  Se inserisci un messaggio, verrà inviato all'hubber nella sezione <strong>Messaggi</strong> come comunicazione dal Supporto RentHubber.
+                  Se inserisci un messaggio, verrà inviato all'hubber nella sezione <strong>Messaggi</strong> come comunicazione dal Supporto Renthubber.
                 </p>
                 <textarea
                   value={adminActionNote}
