@@ -25,7 +25,6 @@ export const useAdminNotifications = () => {
       const notifs: AdminNotification[] = [];
 
       // 1. DISPUTE APERTE E NON VISTE
-      // Prima otteniamo tutte le dispute aperte
       const { data: openDisputes } = await supabase
         .from('disputes')
         .select('id')
@@ -33,8 +32,6 @@ export const useAdminNotifications = () => {
 
       if (openDisputes && openDisputes.length > 0) {
         const disputeIds = openDisputes.map(d => d.id);
-
-        // Poi otteniamo quelle già viste
         const { data: viewedDisputes } = await supabase
           .from('admin_viewed_items')
           .select('item_id')
@@ -43,8 +40,6 @@ export const useAdminNotifications = () => {
           .in('item_id', disputeIds);
 
         const viewedIds = viewedDisputes?.map(v => v.item_id) || [];
-
-        // Contiamo solo quelle NON viste
         const unseenCount = disputeIds.filter(id => !viewedIds.includes(id)).length;
 
         if (unseenCount > 0) {
@@ -77,12 +72,56 @@ export const useAdminNotifications = () => {
   useEffect(() => {
     loadNotifications();
 
-    // Polling ogni 10 secondi
+    // ✅ REALTIME: Ascolta nuove dispute
+    const disputesChannel = supabase
+      .channel('admin-disputes-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'disputes' },
+        () => {
+          console.log('🚨 Nuova disputa in tempo reale!');
+          loadNotifications(); // Ricarica notifiche
+        }
+      )
+      .subscribe();
+
+    // ✅ REALTIME: Ascolta nuovi booking
+    const bookingsChannel = supabase
+      .channel('admin-bookings-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'bookings' },
+        () => {
+          console.log('📦 Nuova prenotazione in tempo reale!');
+          loadNotifications();
+        }
+      )
+      .subscribe();
+
+    // ✅ REALTIME: Ascolta nuovi messaggi
+    const messagesChannel = supabase
+      .channel('admin-messages-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        () => {
+          console.log('💬 Nuovo messaggio in tempo reale!');
+          loadNotifications();
+        }
+      )
+      .subscribe();
+
+    // Polling ogni 10 secondi (backup)
     const interval = setInterval(() => {
       loadNotifications();
     }, 10000);
 
-    return () => clearInterval(interval);
+    return () => {
+      supabase.removeChannel(disputesChannel);
+      supabase.removeChannel(bookingsChannel);
+      supabase.removeChannel(messagesChannel);
+      clearInterval(interval);
+    };
   }, [loadNotifications]);
 
   return {
