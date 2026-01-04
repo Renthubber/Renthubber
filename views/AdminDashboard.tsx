@@ -38,17 +38,21 @@ import {
 } from 'recharts';
 
 import { api } from '../services/api';
+import { supabase } from '../lib/supabase';
 import { ReferralSettings } from "../components/admin/ReferralSettings";
 import { downloadInvoicePDF } from '../services/invoicePdfGenerator';
 import { AdminEmailSection } from './AdminEmailSection';
 import { AdminCMSBranding } from "../components/admin//AdminCMSBranding";
 import { AdminNotificationBell } from '../components/admin/AdminNotificationBell';
 import { markAsViewed } from '../hooks/useAdminNotifications';
+import { useAdminNotifications } from '../hooks/useAdminNotifications';
 import { AdminRefundsOverview } from "../components/admin/AdminRefundsOverview";
 import { AdminAnnouncements } from "../components/admin/AdminAnnouncements";
 import { EditUserComplete } from "../components/admin/EditUserComplete";
 import { useNavigate } from 'react-router-dom';
 import { InvoiceXmlExport } from '../components/InvoiceXmlExport';
+import * as cmsService from '../services/cmsService';
+import * as financeSettingsService from '../services/financeSettingsService';
 
 // Funzione per formattare data in italiano
 const formatDateIT = (isoDate: string | null | undefined): string => {
@@ -301,6 +305,9 @@ const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState(false);
 const [invoiceActionLoading, setInvoiceActionLoading] = useState(false);
 const [localInvoiceSettingsSaving, setlocalInvoiceSettingsSaving] = useState(false);
+
+// ========== REALTIME NOTIFICATIONS ==========
+const { refresh: refreshNotifications } = useAdminNotifications();
 
 // ========== WALLET ADMIN STATES ==========
 const [selectedWalletUser, setSelectedWalletUser] = useState<any>(null);
@@ -731,7 +738,17 @@ const [userDocumentFilter, setUserDocumentFilter] = useState<'all' | 'to_verify'
 
   // ========== SUPPORT TICKET STATES ==========
   const [allTickets, setAllTickets] = useState<any[]>([]);
-  const [supportStats, setSupportStats] = useState({ total: 0, new: 0, assigned: 0, inProgress: 0, waitingUser: 0, resolved: 0, closed: 0, unread: 0, urgent: 0 });
+  const [supportStats, setSupportStats] = useState<{ 
+  total: number; 
+  new: number; 
+  assigned: number; 
+  inProgress: number; 
+  waitingUser?: number;  // ✅ Opzionale
+  resolved: number; 
+  closed: number; 
+  unread: number; 
+  urgent: number; 
+}>({ total: 0, new: 0, assigned: 0, inProgress: 0, waitingUser: 0, resolved: 0, closed: 0, unread: 0, urgent: 0 });
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [ticketMessages, setTicketMessages] = useState<any[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(false);
@@ -751,27 +768,105 @@ const [userDocumentFilter, setUserDocumentFilter] = useState<'all' | 'to_verify'
     }
   }, [activeTab]);
 
-  const loadAllTickets = async () => {
-    console.log("🎫 [DASHBOARD] Inizio caricamento ticket...");
-    setTicketsLoading(true);
-    try {
-      const [tickets, stats, operators] = await Promise.all([
-        api.support.getAllTickets(),
-        api.support.getTicketStats(),
-        api.support.getSupportOperators(),
-      ]);
-      console.log("🎫 [DASHBOARD] Ticket ricevuti:", tickets);
-      console.log("🎫 [DASHBOARD] Stats:", stats);
-      console.log("🎫 [DASHBOARD] Operatori:", operators);
-      setAllTickets(tickets);
-      setSupportStats(stats);
-      setSupportOperators(operators);
-    } catch (e) {
-      console.error('❌ [DASHBOARD] Errore caricamento ticket:', e);
-    } finally {
-      setTicketsLoading(false);
-    }
+// ✅ SUBSCRIPTION REAL-TIME per messaggi supporto admin
+useEffect(() => {
+  if (!selectedTicket) return;
+
+  const supportChannel = supabase
+    .channel(`admin-support-ticket-${selectedTicket.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'support_messages',
+        filter: `ticket_id=eq.${selectedTicket.id}`
+      },
+      (payload) => {
+        console.log('💬 [ADMIN] Nuovo messaggio supporto ricevuto:', payload.new);
+        const newMsg = payload.new as any;
+
+        // Aggiungi il messaggio alla lista
+        setTicketMessages(prev => {
+          if (prev.some((msg: any) => msg.id === newMsg.id)) {
+            return prev;
+          }
+          return [...prev, newMsg];
+        });
+
+        // Aggiorna stats
+        api.support.getTicketStats().then(stats => setSupportStats(stats));
+      }
+    )
+    .subscribe((status) => {
+      console.log('📡 [ADMIN] Status subscription supporto:', status);
+    });
+
+  return () => {
+    supabase.removeChannel(supportChannel);
   };
+return () => {
+    supabase.removeChannel(supportChannel);
+  };
+}, [selectedTicket]);
+
+// ✅ SUBSCRIPTION REAL-TIME per messaggi conversazioni admin
+useEffect(() => {
+  if (!selectedConversation) return;
+
+  const messagesChannel = supabase
+    .channel(`admin-conversation-${selectedConversation.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${selectedConversation.id}`
+      },
+      (payload) => {
+        console.log('💬 [ADMIN] Nuovo messaggio conversazione ricevuto:', payload.new);
+        const newMsg = payload.new as any;
+
+        setConversationMessages(prev => {
+          if (prev.some((msg: any) => msg.id === newMsg.id)) {
+            return prev;
+          }
+          return [...prev, newMsg];
+        });
+      }
+    )
+    .subscribe((status) => {
+      console.log('📡 [ADMIN] Status subscription messaggi:', status);
+    });
+
+  return () => {
+    supabase.removeChannel(messagesChannel);
+  };
+}, [selectedConversation]);
+
+const loadAllTickets = async () => {
+  console.log("🎫 [DASHBOARD] Inizio caricamento ticket...");
+  setTicketsLoading(true);
+  try {
+    const [tickets, stats, operators] = await Promise.all([
+      api.support.getAllTickets(),
+      api.support.getTicketStats(),
+      api.support.getSupportOperators(),
+    ]);
+    console.log("🎫 [DASHBOARD] Ticket ricevuti:", tickets);
+    console.log("🎫 [DASHBOARD] Stats:", stats);
+    console.log("🎫 [DASHBOARD] Operatori:", operators);
+    setAllTickets(tickets);
+    setSupportStats(stats);
+    setSupportOperators(operators);
+    refreshNotifications(); // ✅ AGGIUNTO
+  } catch (e) {
+    console.error('❌ [DASHBOARD] Errore caricamento ticket:', e);
+  } finally {
+    setTicketsLoading(false);
+  }
+};
 
   const loadTicketMessages = async (ticketId: string) => {
     try {
@@ -938,16 +1033,45 @@ const [userDocumentFilter, setUserDocumentFilter] = useState<'all' | 'to_verify'
     .filter(b => b.status === 'completed')
     .reduce((acc, b) => acc + (b.commission || 0), 0);
 
-  // Mock data for charts (TODO: usare dati reali)
-  const chartData = [
-    { name: 'Lun', users: 12, revenue: 150 },
-    { name: 'Mar', users: 19, revenue: 230 },
-    { name: 'Mer', users: 3, revenue: 45 },
-    { name: 'Gio', users: 25, revenue: 320 },
-    { name: 'Ven', users: 40, revenue: 500 },
-    { name: 'Sab', users: 55, revenue: 650 },
-    { name: 'Dom', users: 48, revenue: 580 },
-  ];
+  // Calcola dati reali per i grafici (ultimi 7 giorni)
+const chartData = useMemo(() => {
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    return date;
+  });
+
+  return last7Days.map(date => {
+    const dateStr = date.toISOString().split('T')[0];
+    const dayName = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][date.getDay()];
+    
+    // Conta bookings di quel giorno
+    const dayBookings = localBookings.filter(b => {
+      if (!b.createdAt) return false;
+      const bookingDate = new Date(b.createdAt).toISOString().split('T')[0];
+      return bookingDate === dateStr;
+    });
+    
+    // Calcola revenue di quel giorno (solo completed)
+    const dayRevenue = dayBookings
+      .filter(b => b.status === 'completed')
+      .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+    
+    // Conta nuovi utenti di quel giorno (campo created_at esiste!)
+    const dayUsers = localUsers.filter(u => {
+      if (!(u as any).created_at) return false;
+      const userDate = new Date((u as any).created_at).toISOString().split('T')[0];
+      return userDate === dateStr;
+    }).length;
+    
+    return {
+      name: dayName,
+      users: dayUsers,
+      revenue: Math.round(dayRevenue),
+      bookings: dayBookings.length
+    };
+  });
+}, [localBookings, localUsers]);
 
   const handleSaveConfig = async () => {
     try {
@@ -982,7 +1106,12 @@ const [userDocumentFilter, setUserDocumentFilter] = useState<'all' | 'to_verify'
     }
   };
 
-  const handleSaveBranding = () => {
+  const handleSaveBranding = async () => {
+  try {
+    // Salva su database
+    await cmsService.updateBranding(brandingForm);
+    
+    // Aggiorna anche state locale
     const newConfig: SystemConfig = {
       ...systemConfig,
       cms: {
@@ -991,11 +1120,22 @@ const [userDocumentFilter, setUserDocumentFilter] = useState<'all' | 'to_verify'
       }
     };
     onUpdateConfig(newConfig);
-    alert("Branding aggiornato.");
-  };
+    
+    alert("✅ Branding salvato su database!");
+  } catch (error) {
+    console.error('Errore salvataggio branding:', error);
+    alert("❌ Errore durante il salvataggio");
+  }
+};
 
-  const handleSavePage = () => {
-    if (!editingPage) return;
+const handleSavePage = async () => {
+  if (!editingPage) return;
+  
+  try {
+    // Salva su database
+    await cmsService.updatePage(editingPage);
+    
+    // Aggiorna anche state locale
     const updatedPages = systemConfig.cms.pages.map(p => p.id === editingPage.id ? editingPage : p);
     const newConfig: SystemConfig = {
       ...systemConfig,
@@ -1006,8 +1146,13 @@ const [userDocumentFilter, setUserDocumentFilter] = useState<'all' | 'to_verify'
     };
     onUpdateConfig(newConfig);
     setEditingPage(null);
-    alert("Pagina aggiornata.");
-  };
+    
+    alert("✅ Pagina salvata su database!");
+  } catch (error) {
+    console.error('Errore salvataggio pagina:', error);
+    alert("❌ Errore durante il salvataggio");
+  }
+};
 
   // ========== LISTING MANAGEMENT ACTIONS ==========
 
@@ -5114,17 +5259,17 @@ const renderFinanceWallets = () => {
 };
 
 const renderFinanceSettings = () => {
-  // Salva impostazioni (per ora in localStorage, poi su Supabase)
+  // Salva impostazioni su database
   const handleSaveSettings = async () => {
     setSettingsSaving(true);
     try {
-      // Salva in localStorage per ora
+      // Salva su database
+      await financeSettingsService.updateFinanceSettings(financeSettings);
+      
+      // Salva anche in localStorage per compatibilità
       localStorage.setItem('financeSettings', JSON.stringify(financeSettings));
       
-      // TODO: Salvare su Supabase quando serve
-      // await api.admin.updateFinanceSettings(financeSettings);
-      
-      alert('✅ Impostazioni salvate!');
+      alert('✅ Impostazioni salvate su database!');
     } catch (error) {
       console.error('Errore salvataggio impostazioni:', error);
       alert('❌ Errore durante il salvataggio');

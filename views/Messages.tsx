@@ -847,8 +847,9 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
           ) || tickets[0]; // Prendi il più recente se non ce n'è uno aperto
 
           if (openTicket) {
-            // Carica messaggi dal ticket
-            const ticketData = await api.support.getTicketWithMessages(openTicket.id);
+  setSelectedTicketId(openTicket.id);
+  // Carica messaggi dal ticket
+  const ticketData = await api.support.getTicketWithMessages(openTicket.id);
             
             if (ticketData && ticketData.messages.length > 0) {
               const formattedMsgs: ChatMessage[] = ticketData.messages
@@ -868,7 +869,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
               const welcomeMsg: ChatMessage = {
                 id: "support-welcome",
                 from: "contact",
-                text: "Ciao! 👋 Benvenuto nel supporto RentHubber.\n\nCome possiamo aiutarti oggi? Siamo qui per rispondere a qualsiasi domanda su:\n\n• Prenotazioni e pagamenti\n• Problemi con annunci\n• Contestazioni e rimborsi\n• Funzionalità della piattaforma\n\nScrivici pure!",
+                text: "Ciao! 👋 Benvenuto nel supporto RentHubber.\n\n Come possiamo aiutarti oggi? Siamo qui per rispondere a qualsiasi domanda su:\n\n• Prenotazioni e pagamenti\n• Problemi con annunci\n• Contestazioni e rimborsi\n• Funzionalità della piattaforma\n\nScrivici pure!",
                 time: "09:00",
               };
               setChatMessages([welcomeMsg, ...formattedMsgs]);
@@ -936,11 +937,109 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
       };
 
       loadConversationMessages();
+
+      // ✅ SUBSCRIPTION REAL-TIME per nuovi messaggi
+      const messagesChannel = supabase
+        .channel(`admin-chat-${activeChatId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `conversation_id=eq.${activeChatId}`
+          },
+          (payload) => {
+            console.log('💬 Nuovo messaggio ricevuto:', payload.new);
+const newMsg = payload.new as any;
+const isFromMe = newMsg.from_user_id === currentUser?.id;
+const isSystem = newMsg.from_user_id === "system" || newMsg.is_system_message;
+const isAdmin = newMsg.from_user_id === "admin" || newMsg.is_admin_message || newMsg.sender_type === "admin";
+
+            const chatMsg: ChatMessage = {
+              id: newMsg.id,
+              from: isSystem ? "system" : (isFromMe ? "me" : "contact"),
+              text: newMsg.text,
+              imageUrl: newMsg.image_url,
+              time: new Date(newMsg.created_at).toLocaleTimeString("it-IT", {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              isSystemMessage: isSystem,
+              isAdminMessage: isAdmin,
+              senderName: newMsg.senderName || (isAdmin ? "Supporto RentHubber" : null),
+            };
+
+            setChatMessages(prev => {
+  // Controlla se il messaggio esiste già
+  if (prev.some(msg => msg.id === chatMsg.id)) {
+    return prev; // Non aggiungere duplicati
+  }
+  return [...prev, chatMsg];
+});
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(messagesChannel);
+      };
+    
     } else {
       // Nessuna conversazione selezionata o contatto non trovato
       setChatMessages([]);
     }
   }, [activeChatId, currentUser, supportMessages]);
+
+
+// ✅ SUBSCRIPTION REAL-TIME per messaggi supporto
+useEffect(() => {
+  if (!selectedTicketId || activeChatId !== "support") return;
+  console.log('🎫 Ticket ID per subscription:', selectedTicketId);
+
+  const supportChannel = supabase
+    .channel(`support-ticket-${selectedTicketId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'support_messages',
+        filter: `ticket_id=eq.${selectedTicketId}`
+      },
+      (payload) => {
+        console.log('💬 Nuovo messaggio supporto ricevuto:', payload.new);
+        const newMsg = payload.new as any;
+        
+        if (newMsg.is_internal) return;
+
+        const chatMsg: ChatMessage = {
+          id: newMsg.id,
+          from: newMsg.sender_type === 'user' ? 'me' : 'contact',
+          text: newMsg.message,
+          time: new Date(newMsg.created_at).toLocaleTimeString("it-IT", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          senderType: newMsg.sender_type,
+        };
+
+        setChatMessages(prev => {
+          if (prev.some(msg => msg.id === chatMsg.id)) {
+            return prev;
+          }
+          return [...prev, chatMsg];
+        });
+      }
+    )
+    .subscribe((status) => {
+  console.log('📡 Status subscription supporto:', status);
+});
+
+  return () => {
+    supabase.removeChannel(supportChannel);
+  };
+}, [selectedTicketId, activeChatId]);
 
   // 📜 AUTO-SCROLL ai nuovi messaggi (scrolla il CONTENITORE, non la pagina)
   useEffect(() => {
@@ -1031,7 +1130,7 @@ const handleSend = async () => {
       
             // ✅ Se è chat supporto, usa il sistema TICKET
             if (activeChatId === "support" && supportView === 'chat' && selectedTicketId) {
-                setChatMessages(prev => [...prev, newMessage]);
+               // setChatMessages(prev => [...prev, newMessage]);
         setMessageInput("");
         
         // Salva su Supabase tramite sistema ticket
@@ -1050,10 +1149,6 @@ const handleSend = async () => {
         return;
       }
 
-            setChatMessages((prev) => [
-        ...prev,
-        newMessage,
-      ]);
       
             // ✅ Se è conversazione reale, salva su Supabase
             if (activeContact?.isRealConversation && currentUser) {
