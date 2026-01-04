@@ -24,31 +24,33 @@ export const SicurezzaPage: React.FC = () => {
           <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
 
             {/* TESTO */}
-            <div>
-              <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
-                Pagamenti protetti
-              </h2>
-              <p className="text-gray-600 mb-4 leading-relaxed text-justify">
-                Tutti i pagamenti vengono elaborati tramite sistemi sicuri e certificati.
-                Il Renter paga direttamente su Renthubber, e l’importo rimane sospeso
-                fino alla conferma dell’Hubber e alla conclusione del noleggio.
-              </p>
-              <p className="text-gray-600 leading-relaxed text-justify">
-                Questo garantisce che ogni transazione sia tracciata, verificata e
-                priva di rischi di truffe o accordi privati non controllati.
-              </p>
-            </div>
+<div>
+  <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
+    Pagamenti protetti
+  </h2>
+  <p className="text-gray-600 mb-4 leading-relaxed text-justify">
+    Tutti i pagamenti vengono elaborati tramite <strong>Stripe</strong>, uno dei 
+    sistemi più sicuri al mondo. Il Renter paga direttamente su Renthubber, e 
+    l'importo rimane sospeso fino alla conferma dell'Hubber e alla conclusione 
+    del noleggio.
+  </p>
+  <p className="text-gray-600 leading-relaxed text-justify">
+    Questo garantisce che ogni transazione sia tracciata, verificata e priva di 
+    rischi di truffe o accordi privati non controllati.
+  </p>
+</div>
 
-            {/* IMMAGINE */}
-            <div>
-              <img
-                src="https://images.unsplash.com/photo-1605902711622-cfb43c44367e"
-                alt="Pagamenti sicuri Renthubber"
-                className="rounded-xl shadow-lg"
-              />
-            </div>
-          </div>
-        </section>
+          {/* IMMAGINE */}
+<div className="flex justify-center items-center bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+  <img
+    src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg"
+    alt="Pagamenti sicuri con Stripe"
+    className="w-64 h-auto"
+  />
+</div>
+
+ </div>
+</section>
 
         {/* SEZIONE 2 – CAUZIONI & DANNI */}
         <section className="py-20">
@@ -101,27 +103,43 @@ export const SicurezzaPage: React.FC = () => {
             </div>
 
             {/* IMMAGINE */}
-            <div>
-              <img
-                src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e"
-                alt="Verifica identità"
-                className="rounded-xl shadow-lg"
-              />
-            </div>
+<div className="flex justify-center items-center bg-[#0D414B] rounded-xl shadow-lg p-16">
+  <div className="relative">
+    <div className="w-48 h-48 bg-white rounded-full shadow-xl flex items-center justify-center border-4 border-green-500">
+      <svg className="w-32 h-32 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+      </svg>
+    </div>
+  </div>
+</div>
           </div>
         </section>
 
         {/* SEZIONE 4 – RECENSIONI REALI */}
         <section className="py-20">
           <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
-
-            {/* IMMAGINE */}
-            <div className="order-2 md:order-1">
-              <img
-                src="https://images.unsplash.com/photo-1573497019418-b400bb3ab063"
-                alt="Recensioni Renthubber"
-                className="rounded-xl shadow-lg"
-              />
+{/* IMMAGINE */}
+<div className="order-2 md:order-1">
+  <div className="bg-white rounded-xl shadow-lg p-8 border-2 border-gray-100">
+    <div className="flex items-center mb-4">
+      <div className="w-12 h-12 bg-[#0D414B] rounded-full flex items-center justify-center text-white font-bold">
+        MR
+      </div>
+      <div className="ml-3">
+        <div className="font-semibold text-gray-900">Mario Rossi</div>
+        <div className="flex text-yellow-400">
+          {'★'.repeat(5)}
+        </div>
+      </div>
+    </div>
+    <p className="text-gray-600 italic">
+      "Esperienza fantastica! L'oggetto era perfetto e il proprietario molto disponibile. 
+      Consiglio vivamente!"
+    </p>
+    <div className="mt-4 text-sm text-gray-400">
+      Noleggio completato il 15 gennaio 2026
+    </div>
+  </div>
             </div>
 
             {/* TESTO */}
@@ -162,13 +180,42 @@ export const SicurezzaPage: React.FC = () => {
             </div>
 
             {/* IMMAGINE */}
-            <div>
-              <img
-                src="https://images.unsplash.com/photo-1551817958-20204d6ab1e8"
-                alt="Chat protetta"
-                className="rounded-xl shadow-lg"
-              />
-            </div>
+<div className="bg-gray-50 rounded-xl shadow-lg p-6 border border-gray-200">
+  <div className="bg-white rounded-lg p-4 mb-3 shadow-sm">
+    <div className="flex items-start">
+      <div className="w-8 h-8 bg-[#0D414B] rounded-full flex items-center justify-center text-white text-xs font-bold mr-2">
+        H
+      </div>
+      <div className="flex-1">
+        <div className="text-sm font-semibold text-gray-900 mb-1">Hubber</div>
+        <div className="text-sm text-gray-600 bg-gray-100 rounded-lg p-2">
+          Ciao! L'oggetto è disponibile per quelle date 👍
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div className="bg-white rounded-lg p-4 shadow-sm">
+    <div className="flex items-start flex-row-reverse">
+      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold ml-2">
+        R
+      </div>
+      <div className="flex-1 text-right">
+        <div className="text-sm font-semibold text-gray-900 mb-1">Renter</div>
+        <div className="text-sm text-gray-600 bg-blue-50 rounded-lg p-2 inline-block">
+          Perfetto! Procedo con la prenotazione
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div className="mt-4 flex items-center justify-center text-green-600 text-sm">
+    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/>
+    </svg>
+    Chat protetta end-to-end
+  </div>
+</div>
           </div>
         </section>
 

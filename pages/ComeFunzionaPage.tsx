@@ -21,7 +21,7 @@ export const ComeFunzionaPage: React.FC = () => {
         {/* DUE MODI DI USARE RENTHUBBER */}
         <section className="py-16">
           <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-3xl font-semibold text-gray-900 mb-10 text-left">
+            <h2 className="text-3xl font-semibold text-gray-900 mb-10 text-center">
               Due modi per usare Renthubber
             </h2>
             <div className="grid md:grid-cols-2 gap-10">
@@ -187,20 +187,20 @@ export const ComeFunzionaPage: React.FC = () => {
         </section>
 
         {/* TUTTO PASSA DALLA PIATTAFORMA */}
-        <section className="py-16 bg-white border-y">
-          <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4 text-left">
-              Tutto passa attraverso Renthubber
-            </h2>
-            <p className="text-gray-600 max-w-3xl text-justify">
-              Pagamenti, cauzioni, recensioni e comunicazioni sono gestiti
-              direttamente sulla piattaforma. In questo modo possiamo tutelare
-              sia chi noleggia sia chi mette a disposizione, riducendo rischi,
-              incomprensioni e perdite di tempo. L’obiettivo è garantire un
-              ecosistema chiaro, tracciato e affidabile per tutti.
-            </p>
-          </div>
-        </section>
+<section className="py-16 bg-white border-y">
+  <div className="max-w-6xl mx-auto px-6">
+    <h2 className="text-2xl font-semibold text-gray-900 mb-4 text-center">
+      Tutto passa attraverso Renthubber
+    </h2>
+    <p className="text-gray-600 max-w-3xl mx-auto text-center">
+      Pagamenti, cauzioni, recensioni e comunicazioni sono gestiti
+      direttamente sulla piattaforma. In questo modo possiamo tutelare
+      sia chi noleggia sia chi mette a disposizione, riducendo rischi,
+      incomprensioni e perdite di tempo. L'obiettivo è garantire un
+      ecosistema chiaro, tracciato e affidabile per tutti.
+    </p>
+  </div>
+</section>
 
         {/* CTA FINALE */}
         <section

@@ -22,24 +22,24 @@ export const ChiSiamoPage: React.FC = () => {
       </section>
 
       {/* SEZIONE – COS'È RENTHUBBER */}
-      <section className="py-20 bg-white border-y">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4 text-left">
-            Cos'è Renthubber
-          </h2>
-          <p className="text-gray-600 leading-relaxed text-justify mb-4 max-w-3xl">
-            Renthubber è una piattaforma di sharing economy che permette a chiunque
-            di mettere a disposizione o noleggiare oggetti, attrezzature e spazi:
-            dal piccolo accessorio di uso quotidiano, alla sala per eventi, fino
-            a mezzi e strumenti specializzati.
-          </p>
-          <p className="text-gray-600 leading-relaxed text-justify max-w-3xl">
-            Il nostro obiettivo è ridurre sprechi, costi inutili e acquisti
-            "una tantum", valorizzando il riutilizzo e la condivisione in modo
-            organizzato e tracciabile.
-          </p>
-        </div>
-      </section>
+<section className="py-20 bg-white border-y">
+  <div className="max-w-6xl mx-auto px-6">
+    <h2 className="text-2xl font-semibold text-gray-900 mb-4 text-center">
+      Cos'è Renthubber
+    </h2>
+    <p className="text-gray-600 leading-relaxed text-center mb-4 max-w-3xl mx-auto">
+      Renthubber è una piattaforma di sharing economy che permette a chiunque
+      di mettere a disposizione o noleggiare oggetti, attrezzature e spazi:
+      dal piccolo accessorio di uso quotidiano, alla sala per eventi, fino
+      a mezzi e strumenti specializzati.
+    </p>
+    <p className="text-gray-600 leading-relaxed text-center max-w-3xl mx-auto">
+      Il nostro obiettivo è ridurre sprechi, costi inutili e acquisti
+      "una tantum", valorizzando il riutilizzo e la condivisione in modo
+      organizzato e tracciabile.
+    </p>
+  </div>
+</section>
 
       {/* SEZIONE – PERCHÉ È NATA LA PIATTAFORMA */}
       <section className="py-20">

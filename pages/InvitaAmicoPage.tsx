@@ -114,19 +114,22 @@ export const InvitaAmicoPage: React.FC = () => {
             </div>
 
             <div className="bg-white rounded-xl p-8 shadow-sm border">
-              <h3 className="text-xl font-bold text-gray-900 mb-3 text-left">
-                Esempio di bonus
-              </h3>
-              <p className="text-gray-600 text-sm md:text-base text-justify mb-2">
-                • Bonus standard per invito: 5€ per te e 5€ per il tuo amico  
-                • Valore minimo della prima prenotazione: ad esempio 30€  
-                • Accreditato solo dopo il completamento del noleggio
-              </p>
-              <p className="text-gray-600 text-sm md:text-base text-justify">
-                Gli importi del bonus possono variare in base a promozioni attive o
-                campagne speciali. L’ammontare attuale viene sempre indicato chiaramente
-                nella sezione dedicata del tuo account.
-              </p>
+  <h3 className="text-xl font-bold text-gray-900 mb-3 text-left">
+    Come funziona il bonus
+  </h3>
+  <p className="text-gray-600 text-sm md:text-base text-justify mb-4">
+    • Bonus per invito: 5€ per te e 5€ per il tuo amico  
+    • Nessun importo minimo richiesto per la prenotazione  
+    • Accreditato nel wallet "Invita un amico" al completamento della prenotazione
+  </p>
+  <p className="text-gray-600 text-sm md:text-base text-justify font-semibold mb-2">
+    Come utilizzare il bonus:
+  </p>
+  <p className="text-gray-600 text-xs md:text-sm text-justify">
+    Il credito viene accreditato nel wallet "Invita un amico" e può essere utilizzato 
+    fino al 30% per coprire le commissioni delle tue prenotazioni. Ad esempio, con €10 
+    di credito puoi pagare fino a €3 di commissioni.
+  </p>
             </div>
           </div>
         </section>
@@ -175,7 +178,7 @@ export const InvitaAmicoPage: React.FC = () => {
         {/* REGOLE & LIMITI */}
         <section className="py-20">
           <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4 text-left">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4 text-center">
               Regole principali del programma
             </h2>
             <p className="text-gray-600 leading-relaxed text-justify mb-4">

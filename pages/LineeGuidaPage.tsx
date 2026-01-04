@@ -22,40 +22,38 @@ export const LineeGuidaPage: React.FC = () => {
         </section>
 
         {/* PRINCIPI DI BASE */}
-        <section className="py-20 bg-white border-y">
-          <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
-              Principi di base
-            </h2>
-            <p className="text-gray-600 leading-relaxed text-justify mb-4 max-w-3xl">
-              Tutti gli utenti di Renthubber si impegnano a rispettare alcuni
-              principi fondamentali che stanno alla base di ogni interazione sulla
-              piattaforma.
-            </p>
-
-            <ul className="list-disc list-inside text-gray-700 text-sm md:text-base space-y-2 max-w-3xl">
-              <li className="text-justify">
-                <span className="font-semibold">Rispetto reciproco</span>: trattare
-                gli altri utenti con educazione, senza offese, insulti o linguaggio
-                discriminatorio.
-              </li>
-              <li className="text-justify">
-                <span className="font-semibold">Trasparenza</span>: fornire
-                informazioni corrette su sé stessi, sugli oggetti e sugli spazi
-                messi a disposizione.
-              </li>
-              <li className="text-justify">
-                <span className="font-semibold">Affidabilità</span>: rispettare
-                accordi, orari, condizioni di noleggio e regole degli annunci.
-              </li>
-              <li className="text-justify">
-                <span className="font-semibold">Sicurezza</span>: adottare
-                comportamenti che non mettano a rischio la propria incolumità e
-                quella altrui.
-              </li>
-            </ul>
-          </div>
-        </section>
+       <section className="py-20 bg-white border-y">
+  <div className="max-w-6xl mx-auto px-6">
+    <h2 className="text-3xl font-semibold text-gray-900 mb-6 text-center">
+      Principi di base
+    </h2>
+    <p className="text-gray-600 leading-relaxed text-justify mb-6">
+      Tutti gli utenti di Renthubber si impegnano a rispettare alcuni principi fondamentali che stanno alla base di ogni interazione sulla piattaforma.
+    </p>
+    
+    <ul className="list-disc list-inside text-gray-700 text-sm md:text-base space-y-2">
+      <li className="text-justify">
+        <span className="font-semibold">Rispetto reciproco</span>: trattare
+        gli altri utenti con educazione, senza offese, insulti o linguaggio
+        discriminatorio.
+      </li>
+      <li className="text-justify">
+        <span className="font-semibold">Trasparenza</span>: fornire
+        informazioni corrette su sé stessi, sugli oggetti e sugli spazi
+        messi a disposizione.
+      </li>
+      <li className="text-justify">
+        <span className="font-semibold">Affidabilità</span>: rispettare
+        accordi, orari, condizioni di noleggio e regole degli annunci.
+      </li>
+      <li className="text-justify">
+        <span className="font-semibold">Sicurezza</span>: adottare
+        comportamenti che non mettano a rischio la propria incolumità e
+        quella altrui.
+      </li>
+    </ul>
+  </div>
+</section>
 
         {/* COMPORTAMENTI CONSIGLIATI */}
         <section className="py-20">
@@ -97,47 +95,47 @@ export const LineeGuidaPage: React.FC = () => {
                 Un atteggiamento corretto, puntuale e rispettoso aumenta la
                 probabilità di ricevere recensioni positive, di essere scelti più
                 spesso dai Renter e, per gli Hubber, di accedere a programmi
-                dedicati come il badge SuperHubber.
+                dedicati come il badge Superhubber.
               </p>
             </div>
           </div>
         </section>
 
         {/* CONTENUTI E COMPORTAMENTI VIETATI */}
-        <section className="py-20 bg-white border-y">
-          <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
-              Contenuti e comportamenti non ammessi
-            </h2>
-            <p className="text-gray-600 leading-relaxed text-justify mb-4 max-w-3xl">
-              Per tutelare la community, alcuni comportamenti e contenuti sono
-              espressamente vietati sulla piattaforma.
-            </p>
+       <section className="py-20 bg-white border-y">
+  <div className="max-w-6xl mx-auto px-6">
+    <h2 className="text-3xl font-semibold text-gray-900 mb-6 text-center">
+      Contenuti e comportamenti non ammessi
+    </h2>
+    <p className="text-gray-600 leading-relaxed text-justify mb-6">
+      Per tutelare la community, alcuni comportamenti e contenuti sono
+      espressamente vietati sulla piattaforma.
+    </p>
 
-            <ul className="list-disc list-inside text-gray-700 text-sm md:text-base space-y-2 max-w-3xl">
-              <li className="text-justify">
-                Linguaggio offensivo, minacce, molestie, discriminazione o
-                incitamento all’odio.
-              </li>
-              <li className="text-justify">
-                Pubblicazione di annunci falsi, ingannevoli o con informazioni
-                volutamente incomplete.
-              </li>
-              <li className="text-justify">
-                Tentativi di truffa, richieste di pagamento fuori piattaforma,
-                schemi fraudolenti o attività illegali.
-              </li>
-              <li className="text-justify">
-                Condivisione di dati sensibili propri o altrui in violazione
-                della privacy.
-              </li>
-              <li className="text-justify">
-                Utilizzo della piattaforma per scopi diversi da quelli previsti
-                (ad esempio promuovere attività estranee al noleggio consentito).
-              </li>
-            </ul>
-          </div>
-        </section>
+    <ul className="list-disc list-inside text-gray-700 text-sm md:text-base space-y-2">
+      <li className="text-justify">
+        Linguaggio offensivo, minacce, molestie, discriminazione o
+        incitamento all'odio.
+      </li>
+      <li className="text-justify">
+        Pubblicazione di annunci falsi, ingannevoli o con informazioni
+        volutamente incomplete.
+      </li>
+      <li className="text-justify">
+        Tentativi di truffa, richieste di pagamento fuori piattaforma,
+        schemi fraudolenti o attività illegali.
+      </li>
+      <li className="text-justify">
+        Condivisione di dati sensibili propri o altrui in violazione
+        della privacy.
+      </li>
+      <li className="text-justify">
+        Utilizzo della piattaforma per scopi diversi da quelli previsti
+        (ad esempio promuovere attività estranee al noleggio consentito).
+      </li>
+    </ul>
+  </div>
+</section>
 
         {/* COMUNICAZIONE & CHAT INTERNA */}
         <section className="py-20">
@@ -187,35 +185,35 @@ export const LineeGuidaPage: React.FC = () => {
 
         {/* RECENSIONI & FEEDBACK */}
         <section className="py-20 bg-white border-y">
-          <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
-              Recensioni e feedback
-            </h2>
-            <p className="text-gray-600 leading-relaxed text-justify mb-4 max-w-3xl">
-              Le recensioni sono uno strumento fondamentale per creare fiducia
-              all’interno della community. Ti invitiamo a utilizzarle in modo
-              responsabile.
-            </p>
+  <div className="max-w-6xl mx-auto px-6">
+    <h2 className="text-3xl font-semibold text-gray-900 mb-6 text-center">
+      Recensioni e feedback
+    </h2>
+    <p className="text-gray-600 leading-relaxed text-justify mb-6">
+      Le recensioni sono uno strumento fondamentale per creare fiducia
+      all'interno della community. Ti invitiamo a utilizzarle in modo
+      responsabile.
+    </p>
 
-            <ul className="list-disc list-inside text-gray-700 text-sm md:text-base space-y-2 max-w-3xl">
-              <li className="text-justify">
-                Esprimi il tuo giudizio in modo onesto, basandoti su fatti reali.
-              </li>
-              <li className="text-justify">
-                Evita insulti o attacchi personali: descrivi l’esperienza, non la
-                persona.
-              </li>
-              <li className="text-justify">
-                Se ci sono stati problemi, prova prima a risolverli comunicando
-                in modo diretto e rispettoso.
-              </li>
-              <li className="text-justify">
-                Segnala eventuali recensioni palesemente false o offensive tramite
-                gli strumenti di assistenza.
-              </li>
-            </ul>
-          </div>
-        </section>
+    <ul className="list-disc list-inside text-gray-700 text-sm md:text-base space-y-2">
+      <li className="text-justify">
+        Esprimi il tuo giudizio in modo onesto, basandoti su fatti reali.
+      </li>
+      <li className="text-justify">
+        Evita insulti o attacchi personali: descrivi l'esperienza, non la
+        persona.
+      </li>
+      <li className="text-justify">
+        Se ci sono stati problemi, prova prima a risolverli comunicando
+        in modo diretto e rispettoso.
+      </li>
+      <li className="text-justify">
+        Segnala eventuali recensioni palesemente false o offensive tramite
+        gli strumenti di assistenza.
+      </li>
+    </ul>
+  </div>
+</section>
 
         {/* CONSEGUENZE DELLE VIOLAZIONI */}
         <section className="py-20">

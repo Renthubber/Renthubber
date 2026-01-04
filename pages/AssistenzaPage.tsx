@@ -105,7 +105,7 @@ export const AssistenzaPage: React.FC = () => {
                 <li className="text-justify">
                   <span className="font-semibold">1. Accedi al tuo account</span>
                   <br />
-                  Entra con le tue credenziali e vai nella sezione “Supporto” o “Centro assistenza”.
+                  Entra con le tue credenziali e vai nella sezione messaggi “Supporto Renthubber”.
                 </li>
                 <li className="text-justify">
                   <span className="font-semibold">2. Scegli l’area del problema</span>
@@ -145,33 +145,32 @@ export const AssistenzaPage: React.FC = () => {
         </section>
 
         {/* SEZIONE – TEMPI DI RISPOSTA & PRIORITÀ */}
-        <section className="py-20">
-          <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
-              Tempi di risposta e priorità
-            </h2>
-            <p className="text-gray-600 leading-relaxed text-justify mb-4 max-w-3xl">
-              Facciamo il possibile per rispondere alle richieste nel più breve tempo
-              possibile. Alcuni casi, però, richiedono verifiche approfondite per
-              tutelare tutte le parti coinvolte.
-            </p>
+       <section className="py-20">
+  <div className="max-w-6xl mx-auto px-6">
+    <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-center">
+      Tempi di risposta e priorità
+    </h2>
+    <p className="text-gray-600 leading-relaxed text-justify mb-4 max-w-3xl mx-auto">
+  Facciamo il possibile per rispondere alle richieste nel più breve tempo
+  possibile. Alcuni casi, però, richiedono verifiche approfondite per tutelare tutte le parti coinvolte.
+</p>
 
-            <ul className="space-y-3 text-gray-700 text-sm md:text-base max-w-3xl">
-              <li className="text-justify">
-                Le richieste urgenti legate a problemi in corso (ad esempio: accesso a uno
-                spazio o consegna di un oggetto in tempo reale) ricevono la priorità più alta.
-              </li>
-              <li className="text-justify">
-                Le segnalazioni su pagamenti, cauzioni e contestazioni vengono gestite
-                con particolare attenzione, nel rispetto delle regole della piattaforma.
-              </li>
-              <li className="text-justify">
-                Le richieste generali di informazioni possono richiedere tempi leggermente
-                più lunghi, soprattutto in periodi di alto traffico.
-              </li>
-            </ul>
-          </div>
-        </section>
+<ul className="space-y-3 text-gray-700 text-sm md:text-base max-w-3xl mx-auto">
+  <li className="text-justify">
+    Le richieste urgenti legate a problemi in corso (ad esempio: accesso a uno
+    spazio o consegna di un oggetto in tempo reale) ricevono la priorità più alta.
+  </li>
+      <li className="text-justify">
+        Le segnalazioni su pagamenti, cauzioni e contestazioni vengono gestite
+        con particolare attenzione, nel rispetto delle regole della piattaforma.
+      </li>
+      <li className="text-justify">
+        Le richieste generali di informazioni possono richiedere tempi leggermente
+        più lunghi, soprattutto in periodi di alto traffico.
+      </li>
+    </ul>
+  </div>
+</section>
 
         {/* SEZIONE – SICUREZZA & SEGNALAZIONI */}
         <section className="py-20 bg-white border-y">

@@ -24,23 +24,23 @@ export const AntidiscriminazionePage: React.FC = () => {
 
         {/* PRINCIPI DI PARITÀ */}
         <section className="py-20 bg-white border-y">
-          <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
-              Il nostro impegno per la parità
-            </h2>
-            <p className="text-gray-600 leading-relaxed text-justify mb-4 max-w-3xl">
-              Crediamo che la diversità sia un valore e che ogni persona debba poter 
-              accedere ai servizi offerti da Renthubber senza paura di essere giudicata, 
-              esclusa o penalizzata. Per questo adottiamo pratiche volte a prevenire 
-              discriminazioni di qualsiasi tipo.
-            </p>
-            <p className="text-gray-600 leading-relaxed text-justify max-w-3xl">
-              La piattaforma e la community operano nel rispetto dei principi di 
-              uguaglianza, correttezza e inclusione, garantendo lo stesso trattamento 
-              a tutti gli utenti.
-            </p>
-          </div>
-        </section>
+  <div className="max-w-6xl mx-auto px-6">
+    <h2 className="text-3xl font-semibold text-gray-900 mb-6 text-center">
+      Il nostro impegno per la parità
+    </h2>
+    <p className="text-gray-600 leading-relaxed text-justify mb-6">
+      Crediamo che la diversità sia un valore e che ogni persona debba poter 
+      accedere ai servizi offerti da Renthubber senza paura di essere giudicata, 
+      esclusa o penalizzata. Per questo adottiamo pratiche volte a prevenire 
+      discriminazioni di qualsiasi tipo.
+    </p>
+    <p className="text-gray-600 leading-relaxed text-justify">
+      La piattaforma e la community operano nel rispetto dei principi di 
+      uguaglianza, correttezza e inclusione, garantendo lo stesso trattamento 
+      a tutti gli utenti.
+    </p>
+  </div>
+</section>
 
         {/* CRITERI DI NON DISCRIMINAZIONE */}
         <section className="py-20">
@@ -86,41 +86,41 @@ export const AntidiscriminazionePage: React.FC = () => {
         </section>
 
         {/* COMPORTAMENTI NON AMMESSI */}
-        <section className="py-20 bg-white border-y">
-          <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
-              Comportamenti non ammessi
-            </h2>
+       <section className="py-20 bg-white border-y">
+  <div className="max-w-6xl mx-auto px-6">
+    <h2 className="text-3xl font-semibold text-gray-900 mb-6 text-center">
+      Comportamenti non ammessi
+    </h2>
 
-            <p className="text-gray-600 leading-relaxed text-justify mb-4 max-w-3xl">
-              Sono vietati comportamenti o contenuti che mirano a discriminare o 
-              escludere altri utenti, tra cui:
-            </p>
+    <p className="text-gray-600 leading-relaxed text-justify mb-6">
+      Sono vietati comportamenti o contenuti che mirano a discriminare o 
+      escludere altri utenti, tra cui:
+    </p>
 
-            <ul className="list-disc list-inside text-gray-700 text-sm md:text-base space-y-2 max-w-3xl">
-              <li className="text-justify">
-                Rifiuto immotivato di una prenotazione basato su caratteristiche personali.
-              </li>
-              <li className="text-justify">
-                Commenti, messaggi o recensioni offensivi o discriminatori.
-              </li>
-              <li className="text-justify">
-                Pubblicazione di contenuti denigratori, razzisti, sessisti o aggressivi.
-              </li>
-              <li className="text-justify">
-                Comportamenti che creano ambienti ostili o non sicuri.
-              </li>
-              <li className="text-justify">
-                Incitamento all’odio, alla violenza o all’esclusione.
-              </li>
-            </ul>
+    <ul className="list-disc list-inside text-gray-700 text-sm md:text-base space-y-2">
+      <li className="text-justify">
+        Rifiuto immotivato di una prenotazione basato su caratteristiche personali.
+      </li>
+      <li className="text-justify">
+        Commenti, messaggi o recensioni offensivi o discriminatori.
+      </li>
+      <li className="text-justify">
+        Pubblicazione di contenuti denigratori, razzisti, sessisti o aggressivi.
+      </li>
+      <li className="text-justify">
+        Comportamenti che creano ambienti ostili o non sicuri.
+      </li>
+      <li className="text-justify">
+        Incitamento all'odio, alla violenza o all'esclusione.
+      </li>
+    </ul>
 
-            <p className="text-gray-600 leading-relaxed text-justify mt-4 max-w-3xl">
-              Ogni violazione sarà valutata attentamente e può comportare interventi
-              come richiami, sospensioni o chiusura definitiva dell’account.
-            </p>
-          </div>
-        </section>
+    <p className="text-gray-600 leading-relaxed text-justify mt-6">
+      Ogni violazione sarà valutata attentamente e può comportare interventi
+      come richiami, sospensioni o chiusura definitiva dell'account.
+    </p>
+  </div>
+</section>
 
         {/* RESPONSABILITÀ DEGLI UTENTI */}
         <section className="py-20">

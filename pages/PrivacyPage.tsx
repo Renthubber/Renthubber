@@ -29,40 +29,40 @@ export const PrivacyPage: React.FC = () => {
         </section>
 
         {/* INDICE */}
-        <section className="py-10 bg-white border-b">
-          <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Indice
-            </h2>
-            <div className="grid md:grid-cols-2 gap-2 text-sm">
-              {[
-                ["#titolare", "1. Titolare del trattamento"],
-                ["#dati", "2. Tipologie di dati raccolti"],
-                ["#finalita", "3. Finalità del trattamento"],
-                ["#base", "4. Base giuridica"],
-                ["#modalita", "5. Modalità di trattamento"],
-                ["#conservazione", "6. Conservazione dei dati"],
-                ["#destinatari", "7. Comunicazione dei dati"],
-                ["#trasferimenti", "8. Trasferimenti extra UE"],
-                ["#diritti", "9. Diritti dell’interessato"],
-                ["#cookie", "10. Cookie e tracciamento"],
-                ["#sicurezza", "11. Sicurezza dei dati"],
-                ["#minori", "12. Dati di minori"],
-                ["#automatizzati", "13. Processi automatizzati"],
-                ["#aggiornamenti", "14. Aggiornamenti"],
-                ["#contatti", "15. Contatti"],
-              ].map(([href, label]) => (
-                <a
-                  key={href}
-                  href={href}
-                  className="text-[#0D414B] hover:underline"
-                >
-                  {label}
-                </a>
-              ))}
-            </div>
-          </div>
-        </section>
+       <section className="py-10 bg-white border-b">
+  <div className="max-w-6xl mx-auto px-6">
+    <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+      Indice
+    </h2>
+<div className="grid md:grid-cols-2 gap-2 text-sm max-w-2xl mx-auto">
+      {[
+        ["#titolare", "1. Titolare del trattamento"],
+        ["#dati", "2. Tipologie di dati raccolti"],
+        ["#finalita", "3. Finalità del trattamento"],
+        ["#base", "4. Base giuridica"],
+        ["#modalita", "5. Modalità di trattamento"],
+        ["#conservazione", "6. Conservazione dei dati"],
+        ["#destinatari", "7. Comunicazione dei dati"],
+        ["#trasferimenti", "8. Trasferimenti extra UE"],
+        ["#diritti", "9. Diritti dell'interessato"],
+        ["#cookie", "10. Cookie e tracciamento"],
+        ["#sicurezza", "11. Sicurezza dei dati"],
+        ["#minori", "12. Dati di minori"],
+        ["#automatizzati", "13. Processi automatizzati"],
+        ["#aggiornamenti", "14. Aggiornamenti"],
+        ["#contatti", "15. Contatti"],
+      ].map(([href, label]) => (
+        <a
+          key={href}
+          href={href}
+          className="text-[#0D414B] hover:underline"
+        >
+          {label}
+        </a>
+      ))}
+    </div>
+  </div>
+</section>
 
         {/* CONTENUTO */}
         <section className="py-16">

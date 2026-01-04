@@ -97,20 +97,33 @@ export const TariffePage: React.FC = () => {
             </div>
 
             <div className="bg-white rounded-xl p-8 shadow-sm border">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 text-left">
-                Esempio per il Renter
-              </h3>
-              <p className="text-gray-600 text-sm md:text-base text-justify mb-2">
-                • Noleggio attrezzatura per 2 giorni: 80€  
-                • Commissione di servizio: 8€  
-                • Totale da pagare:{" "}
-                <span className="font-semibold">88€</span>
-              </p>
-              <p className="text-gray-600 text-sm md:text-base text-justify">
-                In questo esempio, l’Hubber riceve l’importo di noleggio al netto
-                delle commissioni previste, mentre la tua spesa totale è chiara
-                fin dall’inizio.
-              </p>
+  <h3 className="text-xl font-bold text-gray-900 mb-4 text-left">
+    Esempio per il Renter
+  </h3>
+  <div className="space-y-2 mb-4">
+    <div className="flex justify-between text-gray-700">
+      <span>Noleggio attrezzatura</span>
+      <span className="font-medium">€50,00</span>
+    </div>
+    <div className="flex justify-between text-gray-700">
+      <span>Commissione servizio (10% + €2)</span>
+      <span className="font-medium">€7,00</span>
+    </div>
+    <div className="border-t pt-2 flex justify-between text-gray-900 font-bold">
+      <span>Totale da pagare</span>
+      <span>€57,00</span>
+    </div>
+  </div>
+  <p className="text-gray-600 text-sm text-justify mb-3">
+  L'importo totale che vedi in fase di conferma è quello che verrà
+  addebitato: non ci sono aggiunte inaspettate dopo la prenotazione.
+</p>
+<div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+  <p className="text-xs font-semibold text-gray-700 mb-2">Come funzionano le commissioni:</p>
+  <ul className="text-xs text-gray-600 space-y-1">
+    <li>• <strong>Commissione:</strong> 10% + fee fissa (€0,50 fino a €8, €2 oltre)</li>
+  </ul>
+</div>
             </div>
           </div>
         </section>
@@ -153,20 +166,33 @@ export const TariffePage: React.FC = () => {
             </div>
 
             <div className="order-1 md:order-2 bg-gray-50 rounded-xl p-8 shadow-sm border">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 text-left">
-                Esempio per l’Hubber
-              </h3>
-              <p className="text-gray-600 text-sm md:text-base text-justify mb-2">
-                • Importo di noleggio impostato dall’Hubber: 100€  
-                • Commissione Renthubber: 10€  
-                • Importo netto per l’Hubber:{" "}
-                <span className="font-semibold">90€</span>
-              </p>
-              <p className="text-gray-600 text-sm md:text-base text-justify">
-                Le percentuali di commissione possono variare in base alla categoria,
-                a promozioni in corso o a condizioni personalizzate per partner e
-                grandi volumi.
-              </p>
+  <h3 className="text-xl font-bold text-gray-900 mb-4 text-left">
+    Esempio per l'Hubber
+  </h3>
+  <div className="space-y-2 mb-4">
+    <div className="flex justify-between text-gray-700">
+      <span>Importo noleggio</span>
+      <span className="font-medium">€50,00</span>
+    </div>
+    <div className="flex justify-between text-gray-700">
+      <span>Commissione piattaforma (10% + €2)</span>
+      <span className="font-medium text-red-600">-€7,00</span>
+    </div>
+    <div className="border-t pt-2 flex justify-between text-gray-900 font-bold">
+      <span>Importo netto Hubber</span>
+      <span>€43,00</span>
+    </div>
+  </div>
+ <p className="text-gray-600 text-sm text-justify mb-3">
+  L'Hubber riceve l'importo di noleggio al netto delle commissioni previste.
+</p>
+<div className="bg-white rounded-lg p-4 border border-gray-200">
+  <p className="text-xs font-semibold text-gray-700 mb-2">Come funzionano le commissioni:</p>
+  <ul className="text-xs text-gray-600 space-y-1">
+    <li>• <strong>Hubber standard:</strong> 10% + fee fissa (€0,50 fino a €10, €2 oltre)</li>
+    <li>• <strong>SuperHubber:</strong> 8% + fee fissa (€0,50 fino a €10, €2 oltre)</li>
+  </ul>
+</div>
             </div>
           </div>
         </section>
