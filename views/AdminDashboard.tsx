@@ -846,6 +846,7 @@ useEffect(() => {
 }, [selectedConversation]);
 
 const loadAllTickets = async () => {
+  
   console.log("🎫 [DASHBOARD] Inizio caricamento ticket...");
   setTicketsLoading(true);
   try {
