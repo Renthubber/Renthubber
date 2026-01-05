@@ -417,6 +417,7 @@ interface PublicHostProfileProps {
   onBack: () => void;
   onListingClick: (listing: Listing) => void;
   onRenterClick?: (renter: { id: string; name: string; avatar?: string }) => void;
+  currentUser?: User | null;
 }
 
 export const PublicHostProfile: React.FC<PublicHostProfileProps> = ({
@@ -425,6 +426,7 @@ export const PublicHostProfile: React.FC<PublicHostProfileProps> = ({
   onBack,
   onListingClick,
   onRenterClick,
+  currentUser,
 }) => {
   // 🔍 DEBUG
   console.log("🔍 PublicHostProfile - host:", host);
@@ -658,6 +660,7 @@ export const PublicHostProfile: React.FC<PublicHostProfileProps> = ({
                         <ListingCard
                           listing={listing}
                           onClick={onListingClick}
+                          currentUser={currentUser}
                         />
                       </div>
                     ))}
@@ -671,6 +674,7 @@ export const PublicHostProfile: React.FC<PublicHostProfileProps> = ({
                       key={listing.id}
                       listing={listing}
                       onClick={onListingClick}
+                      currentUser={currentUser}
                     />
                   ))}
                 </div>
