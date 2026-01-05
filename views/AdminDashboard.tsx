@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   LayoutDashboard, Users, Package, Shield, Settings, FileText, 
   TrendingUp, AlertTriangle, Search, Ban, DollarSign, CheckCircle, XCircle, 
@@ -136,6 +136,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 const [financeSubTab, setFinanceSubTab] = useState <
   'overview' | 'transactions' | 'wallets' | 'payouts' | 'fees' | 'refunds' | 'reports' | 'settings'
 >('overview');
+const messagesEndRef = useRef<HTMLDivElement>(null);
+const supportMessagesEndRef = useRef<HTMLDivElement>(null);
 
   // Filtro periodo per Panoramica Finanziaria
 const [financePeriod, setFinancePeriod] = useState<'today' | '7days' | '30days' | 'year'>('30days');
@@ -761,12 +763,66 @@ const [userDocumentFilter, setUserDocumentFilter] = useState<'all' | 'to_verify'
   const [supportOperators, setSupportOperators] = useState<any[]>([]);
   const [supportSubTab, setSupportSubTab] = useState<'active' | 'archive'>('active');
 
+  // Auto-scroll messaggi conversazioni
+useEffect(() => {
+  if (messagesEndRef.current) {
+    messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  }
+}, [conversationMessages]);
+
+// Auto-scroll messaggi supporto
+useEffect(() => {
+  if (supportMessagesEndRef.current) {
+    supportMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  }
+}, [ticketMessages]);
+
+
   // Carica ticket quando si apre la tab supporto
   useEffect(() => {
     if (activeTab === 'support') {
       loadAllTickets();
     }
   }, [activeTab]);
+
+
+// ✅ SUBSCRIPTION REAL-TIME per messaggi conversazioni admin
+useEffect(() => {
+  if (!selectedConversation) return;
+
+  const messagesChannel = supabase
+    .channel(`admin-conversation-${selectedConversation.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${selectedConversation.id}`
+      },
+      (payload) => {
+        console.log('💬 [ADMIN] Nuovo messaggio conversazione ricevuto:', payload.new);
+        const newMsg = {
+  ...payload.new,
+  createdAt: payload.new.created_at || new Date().toISOString()
+} as any;
+
+setConversationMessages(prev => {
+          if (prev.some((msg: any) => msg.id === newMsg.id)) {
+            return prev;
+          }
+          return [...prev, newMsg];
+        });
+      }
+    )
+    .subscribe((status) => {
+      console.log('📡 [ADMIN] Status subscription messaggi:', status);
+    });
+
+  return () => {
+    supabase.removeChannel(messagesChannel);
+  };
+}, [selectedConversation]);
 
 // ✅ SUBSCRIPTION REAL-TIME per messaggi supporto admin
 useEffect(() => {
@@ -786,7 +842,6 @@ useEffect(() => {
         console.log('💬 [ADMIN] Nuovo messaggio supporto ricevuto:', payload.new);
         const newMsg = payload.new as any;
 
-        // Aggiungi il messaggio alla lista
         setTicketMessages(prev => {
           if (prev.some((msg: any) => msg.id === newMsg.id)) {
             return prev;
@@ -794,8 +849,11 @@ useEffect(() => {
           return [...prev, newMsg];
         });
 
-        // Aggiorna stats
-        api.support.getTicketStats().then(stats => setSupportStats(stats));
+        // Aggiorna stats e ricarica lista per riordinare
+        api.support.getTicketStats().then(stats => {
+          setSupportStats(stats);
+          loadAllTickets();
+        });
       }
     )
     .subscribe((status) => {
@@ -805,45 +863,7 @@ useEffect(() => {
   return () => {
     supabase.removeChannel(supportChannel);
   };
-return () => {
-    supabase.removeChannel(supportChannel);
-  };
 }, [selectedTicket]);
-
-// ✅ SUBSCRIPTION REAL-TIME per messaggi conversazioni admin
-useEffect(() => {
-  if (!selectedConversation) return;
-
-  const messagesChannel = supabase
-    .channel(`admin-conversation-${selectedConversation.id}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `conversation_id=eq.${selectedConversation.id}`
-      },
-      (payload) => {
-        console.log('💬 [ADMIN] Nuovo messaggio conversazione ricevuto:', payload.new);
-        const newMsg = payload.new as any;
-
-        setConversationMessages(prev => {
-          if (prev.some((msg: any) => msg.id === newMsg.id)) {
-            return prev;
-          }
-          return [...prev, newMsg];
-        });
-      }
-    )
-    .subscribe((status) => {
-      console.log('📡 [ADMIN] Status subscription messaggi:', status);
-    });
-
-  return () => {
-    supabase.removeChannel(messagesChannel);
-  };
-}, [selectedConversation]);
 
 const loadAllTickets = async () => {
 
@@ -891,28 +911,31 @@ const loadAllTickets = async () => {
   };
 
   const handleSendSupportReply = async () => {
-    if (!supportReplyText.trim() || !selectedTicket) return;
-    
-    setIsSendingSupportReply(true);
-    try {
-      await api.support.sendSupportMessage({
-        ticketId: selectedTicket.id,
-        senderId: currentUser?.id || '', // Usa ID utente loggato
-        senderType: currentUser?.role === 'admin' ? 'admin' : 'support',
-        text: supportReplyText,
-        isInternal: isInternalNote,
-      });
+  if (!supportReplyText.trim() || !selectedTicket) return;
+  
+  setIsSendingSupportReply(true);
+  try {
+    await api.support.sendSupportMessage({
+      ticketId: selectedTicket.id,
+      senderId: currentUser?.id || '',
+      senderType: currentUser?.role === 'admin' ? 'admin' : 'support',
+      text: supportReplyText,
+      isInternal: isInternalNote,
+    });
 
-      setSupportReplyText('');
-      setIsInternalNote(false);
-      await loadTicketMessages(selectedTicket.id);
-      await loadAllTickets();
-    } catch (e) {
-      console.error('Errore invio risposta:', e);
-    } finally {
-      setIsSendingSupportReply(false);
-    }
-  };
+    setSupportReplyText('');
+    setIsInternalNote(false);
+    await loadTicketMessages(selectedTicket.id);
+    
+    // Aggiorna solo stats, non tutta la lista
+    const stats = await api.support.getTicketStats();
+    setSupportStats(stats);
+  } catch (e) {
+    console.error('Errore invio risposta:', e);
+  } finally {
+    setIsSendingSupportReply(false);
+  }
+};
 
  const handleUpdateTicketStatus = async (ticketId: string, newStatus: string) => {
   try {
@@ -2694,7 +2717,7 @@ const handleSavePage = async () => {
                 onClick={() => setSupportSubTab('active')}
                 className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-colors ${
                   supportSubTab === 'active'
-                    ? 'bg-orange-500 text-white'
+                    ? 'bg-[#0D414B] text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -2769,12 +2792,15 @@ const handleSavePage = async () => {
                   
                   return (
                     <div
-                      key={conv.id}
-                      onClick={() => handleSelectConversation(conv)}
-                      className={`p-4 border-b border-gray-50 cursor-pointer transition-colors hover:bg-gray-50 ${
-                        selectedConversation?.id === conv.id ? 'bg-blue-50 border-l-4 border-l-brand' : ''
-                      }`}
-                    >
+  key={conv.id}
+  onClick={(e) => {
+    e.preventDefault();
+    handleSelectConversation(conv);
+  }}
+  className={`p-4 border-b border-gray-50 cursor-pointer transition-colors hover:bg-gray-50 ${
+    selectedConversation?.id === conv.id ? 'bg-blue-50 border-l-4 border-l-brand' : ''
+  }`}
+>
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}>
@@ -2805,16 +2831,21 @@ const handleSavePage = async () => {
                             alt=""
                             className="w-8 h-8 rounded-full border-2 border-white"
                           />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {getUserName(conv.renter)} ↔ {getUserName(conv.hubber)}
-                          </p>
-                          {conv.listing && (
-                            <p className="text-xs text-gray-500 truncate">📦 {conv.listing.title}</p>
-                          )}
-                        </div>
-                      </div>
+                       </div>
+  <div className="flex-1 min-w-0">
+  <p className="text-sm font-medium text-gray-900 truncate">
+    {getUserName(conv.renter)} ↔ {getUserName(conv.hubber)}
+  </p>
+  {conv.listing && (
+    <p className="text-xs text-gray-500 truncate">{conv.listing.title}</p>
+  )}
+  {conv.id?.includes('conv-booking-') && (
+    <p className="text-xs text-gray-500 truncate">
+      Prenotazione #{conv.id.replace('conv-booking-', '').slice(0, 8)}
+    </p>
+  )}
+</div>
+</div>
                       
                       <p className="text-sm text-gray-600 truncate">
                         {conv.lastMessagePreview || 'Nessun messaggio'}
@@ -2859,11 +2890,17 @@ const handleSavePage = async () => {
                       </div>
                       <div>
                         <p className="font-bold text-gray-900">
-                          {getUserName(selectedConversation.renter)} ↔ {getUserName(selectedConversation.hubber)}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {selectedConversation.listing?.title || 'Conversazione diretta'}
-                        </p>
+  {getUserName(selectedConversation.renter)} ↔ {getUserName(selectedConversation.hubber)}
+</p>
+<p className="text-xs text-gray-500">
+  {selectedConversation.listing?.title || 'Conversazione diretta'}
+</p>
+{selectedConversation.id?.includes('conv-booking-') && (
+  <p className="text-xs text-gray-600">
+    Prenotazione #{selectedConversation.id.replace('conv-booking-', '').slice(0, 8)}
+  </p>
+)}
+                      
                       </div>
                     </div>
                     
@@ -2943,7 +2980,7 @@ const handleSavePage = async () => {
                 </div>
 
                 {/* Messaggi */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 max-h-[350px]">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 max-h-[550px]">
                   {conversationMessages.length === 0 ? (
                     <div className="text-center text-gray-400 py-8">
                       Nessun messaggio in questa conversazione
@@ -2967,6 +3004,11 @@ const handleSavePage = async () => {
                           }`}>
                             {isAdmin && (
                               <p className="text-xs font-bold text-purple-600 mb-1"> Renthubber</p>
+                            )}
+                            {!isAdmin && (
+                            <p className="text-xs font-bold mb-1" style={{ color: isRenter ? '#10B981' : '#6366F1' }}>
+                              {isRenter ? 'R' : 'H'}: {getUserName(isRenter ? selectedConversation.renter : selectedConversation.hubber)}
+                              </p>
                             )}
                             <p className={`text-sm ${isAdmin ? 'text-purple-900' : isRenter ? 'text-gray-900' : 'text-white'}`}>
                               {msg.text}
@@ -2996,6 +3038,7 @@ const handleSavePage = async () => {
                       );
                     })
                   )}
+                  <div ref={messagesEndRef} />
                 </div>
 
                 {/* Input risposta admin */}
@@ -3144,11 +3187,11 @@ const handleSavePage = async () => {
             {/* Tab Attivi/Archivio */}
             <div className="p-3 border-b border-gray-100 flex gap-2">
               <button
-                onClick={() => setSupportSubTab('active')}
-                className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-colors ${
-                  supportSubTab === 'active'
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+  onClick={() => setSupportSubTab('active')}
+  className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-colors ${
+    supportSubTab === 'active'
+      ? 'bg-[#0D414B] text-white'
+      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 📬 Attivi ({allTickets.filter(t => t.status !== 'closed').length})
@@ -3405,7 +3448,7 @@ const handleSavePage = async () => {
                               ? 'bg-yellow-100 border-2 border-dashed border-yellow-400'
                               : isUser 
                                 ? 'bg-white border border-gray-200' 
-                                : 'bg-orange-500 text-white'
+                                : 'bg-[#0D414B] text-white'
                           }`}>
                             {isInternal && (
                               <p className="text-xs font-bold text-yellow-700 mb-1 flex items-center">
@@ -3428,6 +3471,7 @@ const handleSavePage = async () => {
                       );
                     })
                   )}
+                  <div ref={supportMessagesEndRef} />
                 </div>
 
                 {/* Input risposta */}
@@ -3438,7 +3482,7 @@ const handleSavePage = async () => {
                       onClick={() => setIsInternalNote(false)}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                         !isInternalNote 
-                          ? 'bg-orange-500 text-white' 
+                          ? 'bg-[#0D414B] text-white' 
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
@@ -3459,15 +3503,21 @@ const handleSavePage = async () => {
                   <div className="flex items-center gap-3">
                     <div className="flex-1 relative">
                       <textarea
-                        value={supportReplyText}
-                        onChange={(e) => setSupportReplyText(e.target.value)}
-                        placeholder={isInternalNote ? "Scrivi una nota interna (non visibile all'utente)..." : "Scrivi la risposta all'utente..."}
-                        rows={2}
-                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 outline-none resize-none ${
-                          isInternalNote 
-                            ? 'border-yellow-300 focus:ring-yellow-500 bg-yellow-50' 
-                            : 'border-gray-200 focus:ring-orange-500'
-                        }`}
+  value={supportReplyText}
+  onChange={(e) => setSupportReplyText(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendSupportReply();
+    }
+  }}
+  placeholder={isInternalNote ? "Scrivi una nota interna (non visibile all'utente)..." : "Scrivi la risposta all'utente..."}
+  rows={2}
+  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 outline-none resize-none ${
+    isInternalNote 
+      ? 'border-yellow-300 focus:ring-yellow-500 bg-yellow-50' 
+      : 'border-gray-200 focus:ring-[#0D414B]'  // ← Cambia anche qui focus:ring-orange-500
+  }`}
                       />
                     </div>
                     <button
@@ -3476,7 +3526,7 @@ const handleSavePage = async () => {
                       className={`px-4 py-3 rounded-xl font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
                         isInternalNote
                           ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                          : 'bg-orange-500 text-white hover:bg-orange-600'
+                          : 'bg-[#0D414B] text-white hover:bg-orange-600'
                       }`}
                     >
                       {isSendingSupportReply ? (

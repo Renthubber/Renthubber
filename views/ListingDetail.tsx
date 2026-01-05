@@ -223,6 +223,10 @@ useEffect(() => {
   const [checkInTime, setCheckInTime] = useState("09:00");
   const [checkOutTime, setCheckOutTime] = useState("10:00");
   const [guests, setGuests] = useState(1);
+
+  // ✅ Slot orari occupati per la data selezionata
+const [bookedTimeSlots, setBookedTimeSlots] = useState<string[]>([]); // Slot dove NON puoi INIZIARE
+const [bookedEndTimeSlots, setBookedEndTimeSlots] = useState<string[]>([]); // Slot dove NON puoi FINIRE
   
   // Custom dropdown orari
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
@@ -254,11 +258,18 @@ useEffect(() => {
   const isOwnerSuperHubber = owner?.isSuperHubber ?? false;
   const actualHubberFeePercentage = isOwnerSuperHubber ? superHubberFeePercentage : hubberFeePercentage;
 
-  // Opzioni orari
-  const timeOptions = Array.from({ length: 16 }, (_, i) => {
-    const h = i + 8;
-    return `${h < 10 ? "0" + h : h}:00`;
-  });
+ // Opzioni orari ogni 30 minuti (08:00 - 23:30)
+const timeOptions = useMemo(() => {
+  const slots: string[] = [];
+  for (let hour = 8; hour <= 23; hour++) {
+    slots.push(`${hour.toString().padStart(2, '0')}:00`);
+    if (hour < 23) {
+      slots.push(`${hour.toString().padStart(2, '0')}:30`);
+    }
+  }
+  slots.push('23:30');
+  return slots;
+}, []);
 
   // Helper formato data
   const formatDate = (date: Date | undefined) => {
@@ -298,36 +309,114 @@ useEffect(() => {
   }, []);
 
   // ✅ CARICA DATE GIÀ PRENOTATE DA SUPABASE
-  useEffect(() => {
-    const loadBookedDates = async () => {
-      try {
-        const bookings = await api.bookings.getByListingId(listing.id);
+useEffect(() => {
+  const loadBookedDates = async () => {
+    try {
+      const bookings = await api.bookings.getByListingId(listing.id);
+      
+      const allBookedDates: Date[] = [];
+      
+      bookings.forEach((booking) => {
+        // ✅ SKIPPA le prenotazioni a ore (hanno start_time e end_time)
+        // Quelle occupano solo slot orari, non l'intera giornata
+        if (booking.startTime && booking.endTime) {
+          console.log('⏭️ Skip prenotazione a ore:', booking.startDate, booking.startTime, '-', booking.endTime);
+          return;
+        }
         
-        const allBookedDates: Date[] = [];
+        const start = new Date(booking.startDate);
+        const end = new Date(booking.endDate);
         
-        bookings.forEach((booking) => {
-          const start = new Date(booking.startDate);
-          const end = new Date(booking.endDate);
-          
-          // Aggiungi tutte le date tra start e end (incluse)
-          const current = new Date(start);
-          while (current <= end) {
-            allBookedDates.push(new Date(current));
-            current.setDate(current.getDate() + 1);
-          }
-        });
-        
-        setBookedDates(allBookedDates);
-        console.log("📅 Date prenotate caricate:", allBookedDates.length);
-      } catch (err) {
-        console.error("Errore caricamento date prenotate:", err);
-      }
-    };
-
-    if (listing.id) {
-      loadBookedDates();
+        // Aggiungi tutte le date tra start e end (incluse)
+        const current = new Date(start);
+        while (current <= end) {
+          allBookedDates.push(new Date(current));
+          current.setDate(current.getDate() + 1);
+        }
+      });
+      
+      setBookedDates(allBookedDates);
+      console.log("📅 Date prenotate caricate:", allBookedDates.length);
+    } catch (err) {
+      console.error("Errore caricamento date prenotate:", err);
     }
-  }, [listing.id]);
+  };
+
+  if (listing.id) {
+    loadBookedDates();
+  }
+}, [listing.id]);
+
+  // ✅ CARICA SLOT ORARI OCCUPATI per la data selezionata
+useEffect(() => {
+  const loadBookedTimeSlots = async () => {
+    console.log('🔍 loadBookedTimeSlots chiamato', {
+      startDate,
+      category: listing.category,
+      priceUnit: listing.priceUnit
+    });
+    
+    if (!startDate || listing.category !== 'spazio' || listing.priceUnit !== 'ora') {
+      console.log('⏭️ Skip: condizioni non soddisfatte');
+      return;
+    }
+    
+    try {
+      const bookings = await api.bookings.getByListingId(listing.id);
+      console.log('📥 Bookings ricevuti:', bookings);
+      
+      const bookedSlots: string[] = [];
+      const bookedEndSlots: string[] = [];
+      const selectedDateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+      console.log('📅 Data selezionata (ISO):', selectedDateStr);
+      
+      bookings.forEach((booking: any) => {
+        const bookingDateStr = new Date(booking.startDate).toISOString().split('T')[0];
+        console.log('🔍 Confronto date:', { bookingDateStr, selectedDateStr, match: bookingDateStr === selectedDateStr });
+        
+       if (bookingDateStr === selectedDateStr) {
+  console.log('✅ Match! StartTime:', booking.startTime, 'EndTime:', booking.endTime);
+  if (booking.startTime && booking.endTime) {
+    // Genera tutti gli slot tra start e end
+    const startH = parseInt(booking.startTime.split(':')[0]);
+    const startM = parseInt(booking.startTime.split(':')[1]);
+    const endH = parseInt(booking.endTime.split(':')[0]);
+    const endM = parseInt(booking.endTime.split(':')[1]);
+    
+    let currentMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+    
+    while (currentMinutes < endMinutes) {
+      const h = Math.floor(currentMinutes / 60);
+      const m = currentMinutes % 60;
+      const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      bookedSlots.push(timeStr);
+      currentMinutes += 30; // Incremento di 30 minuti
+    }
+    // Genera gli slot per NON FINIRE (esclude start, include end)
+    currentMinutes = startH * 60 + startM + 30; // Parti dal primo slot DOPO lo start
+   while (currentMinutes <= endMinutes) {
+  const h = Math.floor(currentMinutes / 60);
+  const m = currentMinutes % 60;
+  const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  bookedEndSlots.push(timeStr);
+  currentMinutes += 30;
+ }
+  }
+}
+});
+      
+      console.log('⏰ Slot INIZIO occupati (non puoi iniziare):', bookedSlots);
+console.log('⏰ Slot FINE occupati (non puoi finire):', bookedEndSlots);
+setBookedTimeSlots(bookedSlots);
+setBookedEndTimeSlots(bookedEndSlots);
+    } catch (err) {
+      console.error('Errore caricamento slot orari:', err);
+    }
+  };
+
+  loadBookedTimeSlots();
+}, [startDate, listing.id, listing.category, listing.priceUnit]);
 
   // Date disabilitate = date già prenotate
   const disabledDates = bookedDates;
@@ -415,20 +504,21 @@ const totalCalc = completeSubtotal + renterTotalFee + deposit;
   ]);
 
   // Chiudi dropdown quando clicchi fuori
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.relative')) {
-        setIsCheckInOpen(false);
-        setIsCheckOutOpen(false);
-      }
-    };
-
-    if (isCheckInOpen || isCheckOutOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+  
+useEffect(() => {
+  const handleClickOutside = (e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.relative')) {
+      setIsCheckInOpen(false);
+      setIsCheckOutOpen(false);
     }
-  }, [isCheckInOpen, isCheckOutOpen]);
+  };
+
+  if (isCheckInOpen || isCheckOutOpen) {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }
+}, [isCheckInOpen, isCheckOutOpen]);
 
   const handleCalendarChange = (
     start: Date | undefined,
@@ -507,30 +597,64 @@ const totalCalc = completeSubtotal + renterTotalFee + deposit;
   };
 
   const handleBookingClick = () => {
-    if (!currentUser) {
-      alert("Devi accedere per prenotare.");
+  if (!currentUser) {
+    alert("Devi accedere per prenotare.");
+    return;
+  }
+  
+  // ✅ BLOCCO: Non puoi prenotare il tuo stesso annuncio
+  if (currentUser.id === listing.hostId) {
+    alert("❌ Non puoi prenotare il tuo stesso annuncio!");
+    return;
+  }
+  
+  if (!startDate) {
+    setIsCalendarOpen(true);
+    return;
+  }
+  
+  // ✅ CONTROLLO SLOT ORARI per spazi a ore
+  if (listing.category === 'spazio' && listing.priceUnit === 'ora') {
+    if (!checkInTime || !checkOutTime) {
+      alert("❌ Seleziona gli orari di inizio e fine!");
       return;
     }
     
-    // ✅ BLOCCO: Non puoi prenotare il tuo stesso annuncio
-    if (currentUser.id === listing.hostId) {
-      alert("❌ Non puoi prenotare il tuo stesso annuncio!");
-      return;
+    // Genera tutti gli slot tra check-in e check-out
+    const startH = parseInt(checkInTime.split(':')[0]);
+    const startM = parseInt(checkInTime.split(':')[1]);
+    const endH = parseInt(checkOutTime.split(':')[0]);
+    const endM = parseInt(checkOutTime.split(':')[1]);
+    
+    let currentMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+    
+    const selectedSlots: string[] = [];
+    while (currentMinutes < endMinutes) {
+      const h = Math.floor(currentMinutes / 60);
+      const m = currentMinutes % 60;
+      const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      selectedSlots.push(timeStr);
+      currentMinutes += 30;
     }
     
-    if (!startDate) {
-      setIsCalendarOpen(true);
+    // Controlla se qualche slot è già occupato
+    const hasConflict = selectedSlots.some(slot => bookedTimeSlots.includes(slot));
+    
+    if (hasConflict) {
+      alert("❌ Orari non disponibili!\n\nAlcuni slot nel periodo selezionato sono già prenotati.\nScegli altri orari.");
       return;
     }
-    
-    // ✅ CONTROLLO DISPONIBILITÀ: tutte le date devono essere libere
-    if (!isRangeAvailable(startDate, endDate || startDate)) {
-      alert("❌ Date non disponibili!\n\nAlcuni giorni nel periodo selezionato sono già prenotati.\nScegli altre date o prenota solo i giorni liberi.");
-      return;
-    }
-    
-    setShowPaymentModal(true);
-  };
+  }
+  
+  // ✅ CONTROLLO DISPONIBILITÀ DATE: tutte le date devono essere libere
+  if (!isRangeAvailable(startDate, endDate || startDate)) {
+    alert("❌ Date non disponibili!\n\nAlcuni giorni nel periodo selezionato sono già prenotati.\nScegli altre date o prenota solo i giorni liberi.");
+    return;
+  }
+  
+  setShowPaymentModal(true);
+};
 
   const handleContactHubber = () => {
   // Se non sei loggato, vai al login con redirect
@@ -823,109 +947,134 @@ const totalCalc = completeSubtotal + renterTotalFee + deposit;
                               }}
                               className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-center text-gray-900 font-medium hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors"
                             >
-                              {checkInTime}
-                            </button>
-                            {isCheckInOpen && (
-                              <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-[160px] overflow-y-auto">
-                                {timeOptions.slice(0, -1).map((t) => (
-                                  <div
-                                    key={t}
-                                    onClick={() => {
-                                      setCheckInTime(t);
-                                      setIsCheckInOpen(false);
-                                      // Auto-aggiusta check-out se necessario
-                                      if (parseInt(t) >= parseInt(checkOutTime)) {
-                                        const nextHour = parseInt(t.split(":")[0]) + 1;
-                                        if (nextHour <= 23) {
-                                          setCheckOutTime(`${nextHour < 10 ? "0" + nextHour : nextHour}:00`);
-                                        }
-                                      }
-                                    }}
-                                    className={`px-3 py-2 text-center cursor-pointer hover:bg-blue-50 transition-colors ${
-                                      checkInTime === t ? "bg-blue-100 font-semibold" : ""
-                                    }`}
-                                  >
-                                    {t}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+  {checkInTime}
+</button>
+{isCheckInOpen && (
+  <>
+    {/* Overlay per chiudere al click fuori */}
+    <div 
+      className="fixed inset-0 z-40" 
+      onClick={() => setIsCheckInOpen(false)}
+    />
+    <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-[160px] overflow-y-auto">
+      {timeOptions.slice(0, -1).map((t) => {
+        const isBooked = bookedTimeSlots.includes(t);
+        return (
+          <div
+            key={t}
+            onClick={() => {
+              if (isBooked) return;
+              setCheckInTime(t);
+              setIsCheckInOpen(false);
+              if (parseInt(t) >= parseInt(checkOutTime)) {
+                const nextHour = parseInt(t.split(":")[0]) + 1;
+                if (nextHour <= 23) {
+                  setCheckOutTime(`${nextHour < 10 ? "0" + nextHour : nextHour}:00`);
+                }
+              }
+            }}
+            className={`px-3 py-2 text-center transition-colors ${
+              isBooked 
+                ? "bg-gray-100 text-gray-300 cursor-not-allowed" 
+                : checkInTime === t 
+                  ? "bg-blue-100 font-semibold cursor-pointer hover:bg-blue-50" 
+                  : "cursor-pointer hover:bg-blue-50"
+            }`}
+          >
+            {t} {isBooked && 'PRENOTATO'}
+          </div>
+        );
+      })}
+    </div>
+  </>
+)}
+</div>
 
-                          <span className="text-gray-400 font-medium">-</span>
+<span className="text-gray-400 font-medium">-</span>
 
                           {/* Custom Dropdown Check-Out */}
-                          <div className="flex-1 relative">
-                            <button
-                              onClick={() => {
-                                setIsCheckOutOpen(!isCheckOutOpen);
-                                setIsCheckInOpen(false);
-                              }}
-                              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-center text-gray-900 font-medium hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors"
-                            >
-                              {checkOutTime}
-                            </button>
-                            {isCheckOutOpen && (
-                              <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-[160px] overflow-y-auto">
-                                {timeOptions.map((t) => (
-                                  <div
-                                    key={t}
-                                    onClick={() => {
-                                      if (parseInt(t) > parseInt(checkInTime)) {
-                                        setCheckOutTime(t);
-                                        setIsCheckOutOpen(false);
-                                      }
-                                    }}
-                                    className={`px-3 py-2 text-center cursor-pointer transition-colors ${
-                                      parseInt(t) <= parseInt(checkInTime)
-                                        ? "text-gray-300 cursor-not-allowed"
-                                        : checkOutTime === t
-                                        ? "bg-blue-100 font-semibold hover:bg-blue-50"
-                                        : "hover:bg-blue-50"
-                                    }`}
-                                  >
-                                    {t}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
+<div className="flex-1 relative">
+  <button
+    onClick={() => {
+      setIsCheckOutOpen(!isCheckOutOpen);
+      setIsCheckInOpen(false);
+    }}
+    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-center text-gray-900 font-medium hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors"
+  >
+    {checkOutTime}
+  </button>
+  {isCheckOutOpen && (
+    <>
+      {/* Overlay per chiudere al click fuori */}
+      <div 
+        className="fixed inset-0 z-40" 
+        onClick={() => setIsCheckOutOpen(false)}
+      />
+      <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-[160px] overflow-y-auto">
+        {timeOptions.map((t) => {
+          const isBooked = bookedEndTimeSlots.includes(t);
+          const isTooEarly = parseInt(t) <= parseInt(checkInTime);
+          const isDisabled = isBooked || isTooEarly;
+          return (
+            <div
+              key={t}
+              onClick={() => {
+                if (isDisabled) return;
+                setCheckOutTime(t);
+                setIsCheckOutOpen(false);
+              }}
+              className={`px-3 py-2 text-center transition-colors ${
+                isDisabled
+                  ? "text-gray-300 cursor-not-allowed bg-gray-50"
+                  : checkOutTime === t
+                  ? "bg-blue-100 font-semibold hover:bg-blue-50 cursor-pointer"
+                  : "hover:bg-blue-50 cursor-pointer"
+              }`}
+            >
+              {t} {isBooked && ' PRENOTATO'}
+            </div>
+          );
+        })}
+      </div>
+    </>
+  )}
+</div>
+</div>
+</div>
+</div>
+</>
+)}
 
-                {/* Ore per OGGETTI ad ore */}
-                {listing.priceUnit === "ora" &&
-                  listing.category === "oggetto" && (
-                    <div className="p-3 cursor-pointer hover:bg-gray-50 transition-colors flex justify-between items-center rounded-b-xl">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase text-gray-800">
-                          Ore
-                        </p>
-                        <p className="text-sm text-gray-900">{hours} ore</p>
-                      </div>
-                      <div
-                        className="flex items-center space-x-2"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          onClick={() => setHours(Math.max(1, hours - 1))}
-                          className="p-1 rounded-full border border-gray-400 text-gray-600 hover:border-black"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setHours(hours + 1)}
-                          className="p-1 rounded-full border border-gray-400 text-gray-600 hover:border-black"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-              </div>
+{/* Ore per OGGETTI ad ore */}
+{listing.priceUnit === "ora" &&
+  listing.category === "oggetto" && (
+    <div className="p-3 cursor-pointer hover:bg-gray-50 transition-colors flex justify-between items-center rounded-b-xl">
+      <div>
+        <p className="text-[10px] font-bold uppercase text-gray-800">
+          Ore
+        </p>
+        <p className="text-sm text-gray-900">{hours} ore</p>
+      </div>
+      <div
+        className="flex items-center space-x-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={() => setHours(Math.max(1, hours - 1))}
+          className="p-1 rounded-full border border-gray-400 text-gray-600 hover:border-black"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => setHours(hours + 1)}
+          className="p-1 rounded-full border border-gray-400 text-gray-600 hover:border-black"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )}
+</div>
 
               {/* ✅ Toggle wallet CON SALDI SEPARATI */}
               {currentUser && (
