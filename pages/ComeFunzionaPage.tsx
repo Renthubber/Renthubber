@@ -108,13 +108,13 @@ export const ComeFunzionaPage: React.FC = () => {
               </ol>
             </div>
 
-            <div>
-              <img
-                src="https://images.unsplash.com/photo-1520607162513-77705c0f0d4a"
-                alt="Renter Renthubber"
-                className="rounded-xl shadow-lg"
-              />
-            </div>
+           <div>
+  <img
+    src="https://i.imgur.com/Zvwn1Em.png"
+    alt="Renter Renthubber"
+    className="rounded-xl shadow-lg"
+  />
+</div>
           </div>
         </section>
 
@@ -122,13 +122,14 @@ export const ComeFunzionaPage: React.FC = () => {
         <section className="py-20">
           <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-start">
             <div className="order-2 md:order-1">
-              <img
-                src="https://images.unsplash.com/photo-1553877522-43269d4ea984"
-                alt="Hubber Renthubber"
-                className="rounded-xl shadow-lg"
+              <div className="order-2 md:order-1">
+  <img
+    src="https://i.imgur.com/DWayyBZ.png"
+    alt="Hubber Renthubber"
+    className="rounded-xl shadow-lg"
               />
             </div>
-
+          </div>
             <div className="order-1 md:order-2">
               <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
                 Per chi mette a disposizione (Hubber)
