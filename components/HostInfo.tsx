@@ -91,8 +91,6 @@ export const HostInfo: React.FC<HostInfoProps> = ({ owner, onHostClick }) => {
   // ✅ Estrai il primo nome per il messaggio bio
   const firstName = (owner as any).firstName || displayName.split(" ")[0] || "questo hubber";
 
-console.log("🔍 OWNER BIO:", owner.bio);
-
   return (
     <div className="border-t border-b border-gray-100 py-8 flex items-start gap-4">
       <div
