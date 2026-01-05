@@ -30,22 +30,24 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, onClick, curr
       onClick={handleClick}
     >
       {/* Image SMALL */}
-      <div className="relative w-full h-[115px] overflow-hidden bg-gray-200">
+      <div className="relative w-full h-[115px] overflow-hidden bg-gray-100">
         <img
           src={coverImage}
           alt={listing.title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
         />
         
-        {/* Cuore preferiti - SEMPRE VISIBILE */}
+       {/* Cuore preferiti - IN ALTO A SINISTRA */}
         <FavoriteButton 
           listingId={listing.id} 
           userId={currentUser?.id}
           variant="card"
+          style={{ position: 'absolute', top: '6px', left: '6px', right: 'auto' }}
         />
         
+        {/* Categoria - IN ALTO A DESTRA */}
         {listing.subCategory && (
-          <div className="absolute top-1.5 right-1.5 bg-white/90 px-1.5 py-0.5 
+          <div className="absolute top-1.5 left-1.5 bg-white/90 px-1.5 py-0.5 
                           rounded text-[9px] font-semibold text-brand uppercase shadow-sm">
             {listing.subCategory}
           </div>
