@@ -28,6 +28,7 @@ import OrdinamentoRisultati from './pages/OrdinamentoRisultati';
 import ScrollToTop from './components/ScrollToTop';
 import { Annunci } from "./views/Annunci";
 import { AnnouncementPopup } from './components/AnnouncementPopup';
+import { useUserPresence } from './hooks/useUserPresence';
 
 
 
@@ -128,6 +129,8 @@ const App: React.FC = () => {
   const [activeMode, setActiveMode] = useState<ActiveMode>("renter");
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  // Attiva tracking presenza per utente loggato
+   useUserPresence(currentUser?.id);
 
   // ✅ Utenti completi per Admin (da Supabase)
   const [adminUsers, setAdminUsers] = useState<User[]>([]);
@@ -139,7 +142,7 @@ const App: React.FC = () => {
   const loadAdminUsers = async () => {
     try {
       const list = await api.admin.getAllUsers();
-      console.log("👑 ADMIN USERS DA SUPABASE:", list?.length, list);
+ 
       setAdminUsers(list || []);
     } catch (err) {
       console.error("Errore nel caricamento utenti admin:", err);
@@ -153,12 +156,10 @@ const App: React.FC = () => {
   useEffect(() => {
     // ✅ Evita doppia inizializzazione in React StrictMode
     if (isInitialized.current) {
-      console.log("⏭️ Init già eseguito, skip");
+   
       return;
     }
     isInitialized.current = true;
-
-    console.log("🔄 useEffect INIT chiamato - timestamp:", Date.now());
     
     // ✅ Salva URL corrente per preservarlo dopo auth
     const currentPath = window.location.pathname;
@@ -174,7 +175,7 @@ if (hash.includes('type=recovery') && hash.includes('access_token')) {
 }
 
     const init = async () => {
-      console.log("🚀 Avvio Renthubber...");
+      
 
       await api.init();
 
@@ -184,7 +185,7 @@ const session = data.session;
 
       // DOPO: Carico dati base (l'app è già visibile)
       const loadedListings = await api.admin.getAllListings();
-      console.log("🧩 App.init – listings da Supabase:", loadedListings);
+      
       setListings(loadedListings);
 
       setTransactions(await api.wallet.getTransactions());
@@ -217,7 +218,6 @@ const session = data.session;
 
           await loadAdminUsers();
         } else {
-          console.log("🔑 Utente loggato:", session.user.id);
 
           try {
             const dbUser = await Promise.race([
@@ -228,13 +228,13 @@ const session = data.session;
             ]);
 
             if (dbUser) {
-              console.log("✅ Utente caricato dal DB:", dbUser);
+             
               setCurrentUser(dbUser);
               const userRoles = dbUser.roles || [dbUser.role];
               
               // ✅ FIX: Controlla se è admin dal ruolo DB
               if (dbUser.role === "admin" || userRoles.includes("admin")) {
-                console.log("🔑 Admin riconosciuto dal ruolo DB!");
+               
                 setActiveMode("hubber");
                 
                 // ✅ Redirect solo se sulla home, NON se su altre pagine
@@ -249,20 +249,20 @@ const session = data.session;
                 setActiveMode("renter");
               }
             } else {
-              console.log("⚠️ Timeout o utente non trovato, uso fallback");
+            
               const fallbackUser = buildFallbackUser(session.user);
               setCurrentUser(fallbackUser);
               setActiveMode("renter");
             }
           } catch (e) {
-            console.log("⚠️ Errore caricamento utente, uso fallback:", e);
+          
             const fallbackUser = buildFallbackUser(session.user);
             setCurrentUser(fallbackUser);
             setActiveMode("renter");
           }
         }
       } else {
-        console.log("❌ Nessuna sessione attiva");
+       
       }
        // ✅ Nascondi spinner SUBITO dopo auth check
 setIsAuthChecking(false);
@@ -328,20 +328,30 @@ setIsAuthChecking(false);
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setCurrentUser(null);
-    setActiveMode("renter");
-    navigate('/');
-  };
+  // Setta utente offline prima del logout
+  if (currentUser?.id) {
+    await supabase
+      .from('user_presence')
+      .update({
+        is_online: false,
+        last_seen: new Date().toISOString()
+      })
+      .eq('user_id', currentUser.id);
+  }
+  
+  await supabase.auth.signOut();
+  setCurrentUser(null);
+  setActiveMode("renter");
+  navigate('/');
+};
 
   const handleAddListing = async (listing: Listing) => {
   try {
-    console.log('💾 Salvataggio listing su Supabase...', listing);
+
     
     // 👇 SALVA SU SUPABASE (questa chiamata mancava!)
     const savedListing = await api.listings.create(listing);
     
-    console.log('✅ Listing salvato con successo!', savedListing);
     
     // 👇 POI aggiorna lo stato locale
     setListings((prev) => [...prev, savedListing]);
@@ -359,10 +369,11 @@ setIsAuthChecking(false);
     navigate('/my-listings');
   };
 
- const handleRenterClick = (renter: User) => {
-  console.log("APP: renter cliccato:", renter);
-  console.log("🔍 DEBUG renter.created_at:", (renter as any).created_at);
-  setSelectedRenter(renter);
+const handleRenterClick = async (renter: User) => {
+  
+  // Ricarica dati completi dell'utente
+  const fullRenter = await api.users.get(renter.id);
+  setSelectedRenter(fullRenter);
   navigate('/renter-profile');
 };
 
@@ -379,17 +390,19 @@ setIsAuthChecking(false);
 
     return (
       <ListingDetail
-        listing={listing}
-        currentUser={currentUser}
-        onBack={() => navigate(-1)}
-        systemConfig={systemConfig}
-        onPaymentSuccess={() => {}}
-        onHostClick={(host) => {
-          setSelectedHost(host);
-          navigate('/host-profile');
-        }}
-        onRenterClick={handleRenterClick}
-      />
+  listing={listing}
+  currentUser={currentUser}
+  onBack={() => navigate(-1)}
+  systemConfig={systemConfig}
+  onPaymentSuccess={() => {}}
+  onHostClick={async (host) => {
+    // Ricarica dati completi dell'utente
+    const fullHost = await api.users.get(host.id);
+    setSelectedHost(fullHost);
+    navigate('/host-profile');
+  }}
+  onRenterClick={handleRenterClick}
+/>
     );
   };
 
@@ -410,6 +423,7 @@ setIsAuthChecking(false);
           navigate(`/listing/${listing.id}`);
         }}
         onRenterClick={handleRenterClick}
+        currentUser={currentUser}
       />
     );
   };
@@ -587,7 +601,7 @@ setIsAuthChecking(false);
                 }}
                 onUpdateProfile={async (updated) => {
                   // Qui dovresti implementare l'aggiornamento del profilo
-                  console.log('Update profile:', updated);
+              
                 }}
                 onViewRenterProfile={handleRenterClick}
               />

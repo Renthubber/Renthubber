@@ -368,6 +368,7 @@ export interface Listing {
   description: string;
   price: number;
   priceUnit: "ora" | "giorno" | "settimana" | "mese";
+  pricePerHour?: number;
   images: string[];
   location: string;
   coordinates: { lat: number; lng: number };
