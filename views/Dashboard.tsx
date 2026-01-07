@@ -148,6 +148,22 @@ const deposit =
     ? raw.deposit
     : 0;
 
+// ✅ service_fee = commissione totale hubber (10% + fee fissa)
+const hubberTotalFee =
+  typeof raw.serviceFee === 'number'
+    ? raw.serviceFee
+    : typeof raw.service_fee === 'number'
+    ? raw.service_fee
+    : 0;
+
+// ✅ platform_fee = commissione totale renter (10% + fee fissa)  
+const renterTotalFee =
+  typeof raw.platformFee === 'number'
+    ? raw.platformFee
+    : typeof raw.platform_fee === 'number'
+    ? raw.platform_fee
+    : 0;
+
   // ✅ Prezzo base dell'oggetto = netto hubber + commissione hubber
   // Esempio: €2.50 (netto) + €2.50 (comm) = €5.00 (prezzo base)
   const baseRentalPrice = netEarnings + hubberCommission;
@@ -200,6 +216,8 @@ const deposit =
     status: raw.status || 'pending',
     cleaningFee,                      // ✅ NUOVO: Costo pulizia
     deposit,                          // ✅ NUOVO: Cauzione
+    hubberTotalFee,                   // ✅ AGGIUNGI QUESTA
+    renterTotalFee,                   // ✅ AGGIUNGI QUESTA
   } as BookingRequest & { 
     start_date?: string; 
     end_date?: string; 
@@ -212,6 +230,8 @@ const deposit =
     deposit?: number;  
     hubberName?: string;        // ✅ AGGIUNGI QUESTA
     hubberAvatar?: string;
+    hubberTotalFee?: number;        // ✅ NUOVO
+    renterTotalFee?: number;        // ✅ NUOVO
   };
 };
 
@@ -5139,7 +5159,7 @@ const handleChangePassword = async (e: React.FormEvent) => {
       Noleggio
     </span>
     <span className="font-medium text-gray-900">
-      €{(selectedBooking.totalPrice - ((selectedBooking as any).cleaningFee || 0)).toFixed(2)}
+     €{((selectedBooking as any).renterTotalPaid - (selectedBooking as any).renterTotalFee - ((selectedBooking as any).cleaningFee || 0)).toFixed(2)}
     </span>
   </div>
   {/* ✅ Costo pulizia (se presente) */}
@@ -5159,7 +5179,7 @@ const handleChangePassword = async (e: React.FormEvent) => {
       Commissione di servizio
     </span>
     <span className="font-medium text-gray-900">
-      €{(((selectedBooking as any).renterTotalPaid || 0) - selectedBooking.totalPrice - ((selectedBooking as any).deposit || 0)).toFixed(2)}
+     €{((selectedBooking as any).renterTotalFee || 0).toFixed(2)}
     </span>
   </div>
   {/* ✅ Cauzione (se presente) */}
@@ -5253,7 +5273,7 @@ const handleChangePassword = async (e: React.FormEvent) => {
           Importo noleggio
         </span>
         <span className="font-medium text-gray-900">
-          €{(selectedBooking.totalPrice - ((selectedBooking as any).cleaningFee || 0)).toFixed(2)}
+          €{(selectedBooking.netEarnings + ((selectedBooking as any).hubberTotalFee || 0) - ((selectedBooking as any).cleaningFee || 0)).toFixed(2)}
         </span>
       </div>
       
@@ -5269,39 +5289,35 @@ const handleChangePassword = async (e: React.FormEvent) => {
         </div>
       )}
       
-      {/* ✅ Commissione variabile (10%) */}
+      {/* ✅ Commissione hubber (10%) */}
 {(() => {
-  // Ricostruisci il subtotale: netto hubber + commissioni hubber
-  const netEarnings = selectedBooking.netEarnings ?? (selectedBooking.totalPrice - (selectedBooking.commission || 0));
-  const totalCommission = selectedBooking.commission || 0;
-  const subtotal = netEarnings + totalCommission;
-  
-  const variableCommission = subtotal * 0.10;
-  const fixedFee = calculateHubberFixedFee(subtotal);
+  const hubberFee = (selectedBooking as any).hubberTotalFee || 0;
+  const baseAmount = selectedBooking.netEarnings + hubberFee - ((selectedBooking as any).cleaningFee || 0);
+  const variableCommission = baseAmount * 0.10;
+  const fixedFee = hubberFee - variableCommission;
 
-    return (
-          <>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">
-                Commissione di servizio (10% IVA inclusa)
-              </span>
-              <span className="font-medium text-red-500">
-                -€{variableCommission.toFixed(2)}
-              </span>
-            </div>
-            
-            {/* ✅ Fee fissa */}
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">
-                Fee fissa piattaforma
-              </span>
-              <span className="font-medium text-red-500">
-                -€{fixedFee.toFixed(2)}
-              </span>
-            </div>
-          </>
-        );
-      })()}
+  return (
+    <>
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-600">
+          Commissione di servizio (10% IVA inclusa)
+        </span>
+        <span className="font-medium text-red-500">
+          -€{variableCommission.toFixed(2)}
+        </span>
+      </div>
+      
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-600">
+          Fee fissa piattaforma
+        </span>
+        <span className="font-medium text-red-500">
+          -€{fixedFee.toFixed(2)}
+        </span>
+      </div>
+    </>
+  );
+})()}
       
       {/* Totale */}
       <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
