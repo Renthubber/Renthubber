@@ -1,5 +1,6 @@
 import { Handler } from '@netlify/functions';
 import Stripe from 'stripe';
+import { calculateRenterFee, calculateHubberFee } from '../../utils/feeUtils';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia',
@@ -180,7 +181,7 @@ export const handler: Handler = async (event, context) => {
         start_date: startDate,
         end_date: endDate,
         amount_total: totalAmount,
-        platform_fee: renterFee,
+        platform_fee: renterFee + hubberFee,
         hubber_net_amount: basePrice + cleaningFee - hubberFee,
         cleaning_fee: cleaningFee,
         deposit: deposit,

@@ -1,5 +1,6 @@
 import { Handler } from '@netlify/functions';
 import Stripe from 'stripe';
+import { calculateRenterFee, calculateHubberFee } from '../../utils/feeUtils';
 
 /**
  * Netlify Function: Stripe Webhook Handler
@@ -180,7 +181,7 @@ async function handlePaymentIntentSucceeded(
         start_date: startDate,
         end_date: endDate,
         amount_total: totalAmount,
-        platform_fee: renterFee,
+        platform_fee: renterFee + hubberFee,
         hubber_net_amount: basePrice + cleaningFee - hubberFee,
         cleaning_fee: cleaningFee,
         deposit: deposit,
