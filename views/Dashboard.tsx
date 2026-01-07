@@ -5273,7 +5273,7 @@ const handleChangePassword = async (e: React.FormEvent) => {
           Importo noleggio
         </span>
         <span className="font-medium text-gray-900">
-          €{(selectedBooking.netEarnings + ((selectedBooking as any).hubberTotalFee || 0) - ((selectedBooking as any).cleaningFee || 0)).toFixed(2)}
+          €{((selectedBooking as any).renterTotalPaid - (selectedBooking as any).renterTotalFee - ((selectedBooking as any).cleaningFee || 0)).toFixed(2)}
         </span>
       </div>
       
