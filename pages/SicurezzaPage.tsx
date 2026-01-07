@@ -52,36 +52,39 @@ export const SicurezzaPage: React.FC = () => {
  </div>
 </section>
 
-        {/* SEZIONE 2 – CAUZIONI & DANNI */}
-        <section className="py-20">
-          <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+        {/* SEZIONE 2 – PROTEZIONE & DANNI */}
+<section className="py-20">
+  <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
 
-            {/* IMMAGINE */}
-            <div className="order-2 md:order-1">
-              <img
-                src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4"
-                alt="Cauzione Renthubber"
-                className="rounded-xl shadow-lg"
-              />
-            </div>
+ {/* IMMAGINE */}
+<div className="order-2 md:order-1">
+ <img
+  src="https://images.unsplash.com/photo-1521791136064-7986c2920216"
+  alt="Protezione e gestione danni Renthubber"
+  className="rounded-xl shadow-lg"
+/>
+</div>
 
-            {/* TESTO */}
-            <div className="order-1 md:order-2">
-              <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
-                Cauzioni e protezione danni
-              </h2>
-              <p className="text-gray-600 leading-relaxed text-justify mb-4">
-                Gli Hubber possono richiedere una cauzione per proteggersi da eventuali danni.
-                La cauzione viene temporaneamente bloccata e non trasferita all'Hubber
-                fino a quando non conferma la restituzione regolare dell’oggetto o dello spazio.
-              </p>
-              <p className="text-gray-600 leading-relaxed text-justify">
-                In caso di contestazioni, Renthubber interviene per analizzare la situazione,
-                applicare le policy e tutelare entrambe le parti.
-              </p>
-            </div>
-          </div>
-        </section>
+    {/* TESTO */}
+    <div className="order-1 md:order-2">
+      <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
+        Protezione e gestione dei danni
+      </h2>
+      <p className="text-gray-600 leading-relaxed text-justify mb-4">
+        Al momento Renthubber non prevede un sistema di cauzione automatica.
+        La piattaforma favorisce rapporti chiari tra Hubber e Renter attraverso
+        prenotazioni tracciate, comunicazione interna e regole di utilizzo definite
+        all’interno di ogni annuncio.
+      </p>
+      <p className="text-gray-600 leading-relaxed text-justify">
+        In caso di contestazioni o segnalazioni di danni, Renthubber interviene
+        per analizzare la situazione, verificare le informazioni disponibili e
+        supportare entrambe le parti nell’applicazione delle policy della piattaforma.
+      </p>
+    </div>
+  </div>
+</section>
+
 
         {/* SEZIONE 3 – VERIFICHE PROFILO */}
         <section className="py-20 bg-white border-y">
