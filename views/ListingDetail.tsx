@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { format } from 'date-fns';
 import { Listing, SystemConfig, User } from "../types";
 import {
   Star,
@@ -25,6 +26,7 @@ import { referralApi } from "../services/referralApi";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from 'react-router-dom';
 import { calculateHubberFixedFee, calculateRenterFixedFee } from '../utils/feeUtils';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 interface ListingDetailProps {
   listing: Listing;
@@ -689,8 +691,8 @@ useEffect(() => {
   
   const remainingToPay = total - walletUsedEur;
 
-  const startDateIso = startDate ? startDate.toISOString() : "";
-  const endDateIso = endDate ? endDate.toISOString() : startDateIso;
+  const startDateIso = startDate ? format(startDate, 'yyyy-MM-dd') : "";
+ const endDateIso = endDate ? format(endDate, 'yyyy-MM-dd') : startDateIso;
 
   // 🔗 DOPO IL PAGAMENTO: Solo aggiorna wallet (il webhook crea la prenotazione)
   const handlePaymentSuccess = async () => {
