@@ -22,6 +22,7 @@ import { supabase } from "../lib/supabase";
 import { referralApi } from './referralApi';
 import { generateAndSaveInvoicePDF } from '../services/invoicePdfGenerator';
 import { calculateRenterFixedFee, calculateHubberFixedFee } from '../utils/feeUtils';
+import { getAvatarUrl } from '../utils/avatarUtils';
 import { queueEmail } from '../services/emailQueue';
 import {
   notifyBookingRequested,
@@ -80,21 +81,15 @@ const mapSupabaseUserToAppUser = (sbUser: any, authUser: any): User => {
     (firstName ? `${firstName} ${lastName ? lastName.charAt(0) + '.' : ''}`.trim() : finalName);
 
  return {
-    id: sbUser.id || authUser.id,
-    email: sbUser.email || authUser.email,
-    name: finalName,
-    firstName,      // ✅ AGGIUNTO
-    lastName,       // ✅ AGGIUNTO
-    publicName,     // ✅ AGGIUNTO
-
-    avatar:
-      sbUser.avatar_url ||
-      `https://ui-avatars.com/api/?name=${
-        encodeURIComponent(finalName || "User")
-      }&background=random`,
-
-    role: sbUser.role || "renter",
-    roles: sbUser.roles || [sbUser.role || "renter"],
+  id: sbUser.id || authUser.id,
+  email: sbUser.email || authUser.email,
+  name: finalName,
+  firstName,
+  lastName,
+  publicName,
+ avatar: getAvatarUrl(sbUser),
+role: sbUser.role || "renter",
+roles: sbUser.roles || [sbUser.role || "renter"],
 
     rating: sbUser.rating || 0,
     isSuperHubber: sbUser.is_super_hubber || false,
@@ -158,19 +153,16 @@ const mapDbUserToAppUser = (row: any): User => {
   const publicName = row.public_name || 
     (rawFirstName ? `${rawFirstName} ${rawLastName ? rawLastName.charAt(0) + '.' : ''}`.trim() : displayName);
 
-  return {
-    id: row.id,
-    email: row.email,
-    name: displayName,
-    firstName: rawFirstName,
-    lastName: rawLastName,
-    publicName,
-    avatar:
-      row.avatar_url ||
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        avatarBaseName
-      )}&background=random`,
-    avatar_url: row.avatar_url || undefined, // ✅ AGGIUNTO diretto
+ return {
+  id: row.id,
+  email: row.email,
+  name: displayName,
+  firstName: rawFirstName,
+  lastName: rawLastName,
+  publicName,
+  avatar: row.avatar_url || 
+    `https://ui-avatars.com/api/?name=${rawFirstName?.charAt(0) || ''}${rawLastName?.charAt(0) || 'U'}&background=0D414B&color=fff&bold=true`,
+  avatar_url: row.avatar_url || undefined,
 
     role: row.role || "renter",
     roles: row.roles || [row.role || "renter"],
@@ -660,6 +652,7 @@ const mapDbListingToAppListing = (row: any): Listing => {
     description: row.description || "",
     price: row.price ?? 0,
     priceUnit: row.price_unit || "giorno",
+    pricePerHour: row.price_per_hour ?? undefined,
     location: row.location || "",
     rating: row.rating ?? 0,
     reviewCount: row.review_count ?? 0,
@@ -708,7 +701,8 @@ const mapDbBookingToAppBooking = (row: any) => {
   // 🔹 Estrai dati renter dal JOIN (se presente)
   const renterData = row.renter;
   let renterName = "Renter";
-  let renterAvatar = "https://ui-avatars.com/api/?name=Renter&background=random";
+  let renterAvatar = renterData?.avatar_url || 
+    `https://ui-avatars.com/api/?name=${renterData?.first_name?.charAt(0) || 'R'}${renterData?.last_name?.charAt(0) || 'R'}&background=0D414B&color=fff&bold=true`;
 
   if (renterData) {
     // Costruisci il nome dal renter
@@ -716,10 +710,6 @@ const mapDbBookingToAppBooking = (row: any) => {
     const lastName = renterData.last_name || "";
     const fullName = [firstName, lastName].filter(Boolean).join(" ");
     renterName = fullName || renterData.name || renterData.email?.split("@")[0] || "Renter";
-    
-    // Avatar
-    renterAvatar = renterData.avatar_url || 
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(renterName)}&background=random`;
   }
 
   // 🔹 Estrai dati listing dal JOIN (se presente)
@@ -737,21 +727,17 @@ const mapDbBookingToAppBooking = (row: any) => {
     const images = listingData.images;
     if (images) {
       if (Array.isArray(images) && images.length > 0) {
-        // Array di stringhe
         listingImage = images[0];
       } else if (typeof images === 'string') {
-        // Stringa singola o JSON stringificato
         try {
           const parsed = JSON.parse(images);
           if (Array.isArray(parsed) && parsed.length > 0) {
             listingImage = parsed[0];
           }
         } catch {
-          // È una stringa singola URL
           listingImage = images;
         }
       } else if (typeof images === 'object' && images !== null) {
-        // Oggetto con chiavi numeriche o altra struttura
         const vals = Object.values(images);
         if (vals.length > 0 && typeof vals[0] === 'string') {
           listingImage = vals[0] as string;
@@ -781,15 +767,12 @@ const mapDbBookingToAppBooking = (row: any) => {
     status: row.status,
     paymentId: row.payment_id,
     createdAt: row.created_at,
-    // ✅ Dati renter e listing
     renterName,
     renterAvatar,
     listingTitle,
     listingImage,
-    // ✅ Prezzo listing per calcoli
     listingPrice,
     priceUnit,
-    // ✅ NUOVO: Politica di cancellazione
     cancellationPolicy,
   };
 };
@@ -1124,19 +1107,19 @@ export const api = {
           }
           
           const { data: newUserRow } = await supabase
-            .from("users")
-            .insert({
-              id: userId,
-              email: authUser.email,
-              name: finalFullName,
-              first_name: finalFirstName || finalFullName.split(" ")[0] || "",
-              last_name: finalLastName || finalFullName.split(" ").slice(1).join(" ") || "",
-              role: "renter",
-              roles: ["renter"],
-              avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(finalFullName)}&background=random`,
-            })
-            .select()
-            .single();
+  .from("users")
+  .insert({
+    id: userId,
+    email: authUser.email,
+    name: finalFullName,
+    first_name: finalFirstName || finalFullName.split(" ")[0] || "",
+    last_name: finalLastName || finalFullName.split(" ").slice(1).join(" ") || "",
+    role: "renter",
+    roles: ["renter"],
+    avatar_url: `https://ui-avatars.com/api/?name=${(finalFirstName || 'U').charAt(0)}${(finalLastName || 'U').charAt(0)}&background=0D414B&color=fff&bold=true`,
+  })
+  .select()
+  .single();
 
           if (newUserRow)
             return mapSupabaseUserToAppUser(newUserRow, authUser);
@@ -1491,6 +1474,7 @@ if (ownerIds.length > 0) {
         description: listing.description,
         price: listing.price ?? 0,
         price_unit: (listing as any).priceUnit || "giorno",
+        price_per_hour: (listing as any).pricePerHour ?? null,
         location: listing.location || "",
         lat: listing.coordinates?.lat ?? null,
         lng: listing.coordinates?.lng ?? null,
@@ -1563,6 +1547,7 @@ if (ownerIds.length > 0) {
         description: listing.description,
         price: listing.price ?? 0,
         price_unit: (listing as any).priceUnit || "giorno",
+        price_per_hour: (listing as any).pricePerHour ?? null,
         location: listing.location || "",
         lat: listing.coordinates?.lat ?? null,
         lng: listing.coordinates?.lng ?? null,
@@ -1922,15 +1907,15 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
           const mapped = mapDbBookingToAppBooking(row);
           
           // ✅ Aggiungi dati hubber
-          const hubberData = row.hubber;
-          if (hubberData) {
-            const firstName = hubberData.first_name || "";
-            const lastName = hubberData.last_name || "";
-            const fullName = [firstName, lastName].filter(Boolean).join(" ");
-            mapped.hubberName = hubberData.name || fullName || "Hubber";
-            mapped.hubberAvatar = hubberData.avatar_url || 
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(mapped.hubberName)}&background=random`;
-          }
+const hubberData = row.hubber;
+if (hubberData) {
+  const firstName = hubberData.first_name || "";
+  const lastName = hubberData.last_name || "";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  mapped.hubberName = hubberData.name || fullName || "Hubber";
+  mapped.hubberAvatar = hubberData.avatar_url || 
+    `https://ui-avatars.com/api/?name=${firstName.charAt(0) || 'H'}${lastName.charAt(0) || 'H'}&background=0D414B&color=fff&bold=true`;
+}
 
           // ✅ Aggiungi categoria listing
           if (row.listing?.category) {
@@ -1970,31 +1955,33 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
      * Usato per mostrare date già prenotate nel calendario
      * Ritorna solo prenotazioni confermate/in corso
      */
-    getByListingId: async (listingId: string): Promise<{ startDate: string; endDate: string }[]> => {
-      try {
-        const { data, error } = await supabase
-          .from("bookings")
-          .select("start_date, end_date, status")
-          .eq("listing_id", listingId)
-          .in("status", ["confirmed", "pending", "active"])
-          .gte("end_date", new Date().toISOString());
+    getByListingId: async (listingId: string): Promise<{ startDate: string; endDate: string; startTime?: string; endTime?: string }[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("start_date, end_date, start_time, end_time, status")
+      .eq("listing_id", listingId)
+      .in("status", ["confirmed", "pending", "active"])
+      .gte("end_date", new Date().toISOString());
 
-        if (error) {
-          console.error("Errore fetch bookings per listing:", error);
-          return [];
-        }
+    if (error) {
+      console.error("Errore fetch bookings per listing:", error);
+      return [];
+    }
 
-        if (!data) return [];
+    if (!data) return [];
 
-        return data.map((b) => ({
-          startDate: b.start_date,
-          endDate: b.end_date,
-        }));
-      } catch (e) {
-        console.error("Errore inatteso getByListingId:", e);
-        return [];
-      }
-    },
+    return data.map((b) => ({
+      startDate: b.start_date,
+      endDate: b.end_date,
+      startTime: b.start_time,
+      endTime: b.end_time,
+    }));
+  } catch (e) {
+    console.error("Errore inatteso getByListingId:", e);
+    return [];
+  }
+},
 
     /**
      * 🔹 CANCELLA PRENOTAZIONE (per Renter)
@@ -4327,7 +4314,7 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
             custom_fee_percentage: userData.customFeePercentage || null,
             hubber_since: new Date().toISOString(),
             created_at: new Date().toISOString(),
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=random`,
+            avatar: `https://ui-avatars.com/api/?name=${(userData.firstName || 'U').charAt(0)}${(userData.lastName || 'U').charAt(0)}&background=0D414B&color=fff&bold=true`,
           });
           
         if (dbError) {
@@ -4349,7 +4336,7 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
           roles: userData.roles as ('renter' | 'hubber' | 'admin')[],
           isSuperHubber: userData.isSuperHubber || false,
           customFeePercentage: userData.customFeePercentage,
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=random`,
+          avatar: `https://ui-avatars.com/api/?name=${(userData.firstName || 'U').charAt(0)}${(userData.lastName || 'U').charAt(0)}&background=0D414B&color=fff&bold=true`,
           hubberSince: new Date().toISOString(),
           verificationStatus: 'unverified',
           emailVerified: false,
@@ -5642,6 +5629,7 @@ issued_at: new Date().toISOString()
             : null,
           refund_currency: payload.refundCurrency || "EUR",
           refund_document_name: payload.refundDocumentName || null,
+          refund_document_url: payload.refundDocumentUrl || null,
           evidence_images: payload.evidenceImages || [],
           status: payload.status || "open",
           created_at: payload.createdAt || new Date().toISOString(),
@@ -5953,6 +5941,7 @@ issued_at: new Date().toISOString()
         fromUserId: m.from_user_id,
         toUserId: m.to_user_id,
         text: m.text,
+        imageUrl: m.image_url, // ← AGGIUNTO
         createdAt: m.created_at,
         read: m.read,
         flagged: m.flagged,
@@ -6177,8 +6166,9 @@ issued_at: new Date().toISOString()
       adminId: string;
       toUserId: string;
       text: string;
+      image_url?: string; // ← AGGIUNTO
     }) => {
-      const { conversationId, adminId, toUserId, text } = params;
+      const { conversationId, adminId, toUserId, text, image_url } = params;
       const now = new Date().toISOString();
       const msgId = `msg-admin-${Date.now()}`;
 
@@ -6188,6 +6178,7 @@ issued_at: new Date().toISOString()
         from_user_id: adminId,
         to_user_id: toUserId,
         text: text,
+        image_url: image_url || null, // ← AGGIUNTO
         created_at: now,
         read: false,
         flagged: false,
@@ -6610,18 +6601,29 @@ await queueEmail('support_ticket_created', {
         throw ticketError;
       }
 
-      // Aggiungi messaggio iniziale con dettagli disputa
-      const bookingCode = dispute.booking_id ? `#${dispute.booking_id.slice(0, 6).toUpperCase()}` : 'N/A';
-      const initialMessage = `🚨 CONTROVERSIA APERTA
+// Aggiungi messaggio iniziale con dettagli disputa
+const bookingCode = dispute.booking_id ? `#${dispute.booking_id.slice(0, 6).toUpperCase()}` : 'N/A';
+const reasonFormatted = dispute.reason
+  ? dispute.reason.replace(/_/g, ' ').charAt(0).toUpperCase() + dispute.reason.replace(/_/g, ' ').slice(1)
+  : 'Non specificato';
 
-📋 ID Disputa: ${dispute.dispute_id || dispute.id}
-🎫 Prenotazione: ${bookingCode}
-👤 Aperta da: ${dispute.opened_by_role === 'hubber' ? 'Hubber' : 'Renter'}
-📝 Motivo: ${dispute.reason?.replace(/_/g, ' ')}
-💬 Dettagli: ${dispute.details || 'N/A'}
-💰 Importo richiesto: ${dispute.refund_amount ? `€${dispute.refund_amount}` : 'N/A'}
-📅 Data apertura: ${new Date(dispute.created_at).toLocaleDateString('it-IT')}
-${new Date(dispute.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+const initialMessage = `È stata aperta una controversia per questa prenotazione.
+
+DETTAGLI CONTROVERSIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ID Disputa: ${dispute.dispute_id || dispute.id}
+Prenotazione: ${bookingCode}
+Aperta da: ${dispute.opened_by_role === 'hubber' ? 'Hubber' : 'Renter'}
+Motivo: ${reasonFormatted}
+Importo richiesto: ${dispute.refund_amount ? `€${dispute.refund_amount}` : 'Da definire'}
+Data apertura: ${new Date(dispute.created_at).toLocaleDateString('it-IT')}
+${new Date(dispute.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+
+DESCRIZIONE
+${dispute.details || 'Nessuna descrizione fornita'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Il team RentHubber esaminerà la controversia e vi contatterà entro 48 ore lavorative.`;
 
       await supabase.from("support_messages").insert({
         id: `smsg-dsp-${timestamp}`,
@@ -6675,8 +6677,11 @@ ${new Date(dispute.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', mi
       senderType: "support" | "admin";
       text: string;
       isInternal?: boolean;
+      attachment_url?: string;
+      attachment_name?: string;
+      attachment_type?: string;
     }) => {
-      const { ticketId, senderId, senderType, text, isInternal } = params;
+      const { ticketId, senderId, senderType, text, isInternal, attachment_url, attachment_name, attachment_type } = params;
       const now = new Date().toISOString();
 
       // Inserisci messaggio
@@ -6687,6 +6692,7 @@ ${new Date(dispute.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', mi
         sender_type: senderType,
         message: text,
         is_internal: isInternal || false,
+        attachments: attachment_url ? JSON.stringify([{ url: attachment_url, name: attachment_name, type: attachment_type }]) : null,
         created_at: now,
       });
 
