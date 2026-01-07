@@ -6623,7 +6623,7 @@ DESCRIZIONE
 ${dispute.details || 'Nessuna descrizione fornita'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Il team RentHubber esaminerà la controversia e vi contatterà entro 48 ore lavorative.`;
+Il team Renthubber esaminerà la controversia entro 48 ore lavorative.`;
 
       await supabase.from("support_messages").insert({
         id: `smsg-dsp-${timestamp}`,
