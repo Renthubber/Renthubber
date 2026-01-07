@@ -7,6 +7,7 @@ import {
 import { searchItalianCities, CitySuggestion } from '../services/geocodingService';
 import { processImageSingle } from '../utils/imageProcessing';
 import { supabase } from '../lib/supabase';
+import { CityAutocomplete } from '../components/CityAutocomplete';
 
 interface HubberListingEditorProps {
   listing: Listing;
@@ -825,68 +826,24 @@ const handleSave = async () => {
         {activeTab === 'location' && (
            <div className="space-y-6 animate-in fade-in">
               {/* Posizione pubblica */}
-              <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-                 <h3 className="text-lg font-bold text-gray-900">Posizione Pubblica</h3>
-                 <p className="text-xs text-gray-500 -mt-2">Questa informazione sarà visibile nell'annuncio.</p>
-                 
-                 <div className="relative">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Città / Zona *</label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                        {isSearchingCity ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Search className="w-4 h-4" />
-                        )}
-                      </div>
-                      <input 
-                        type="text" 
-                        value={formData.location}
-                        onChange={(e) => handleCityInput(e.target.value)}
-                        onFocus={() => citySuggestions.length > 0 && setShowCitySuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)}
-                        placeholder="Cerca una città italiana..."
-                        className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                        autoComplete="off"
-                      />
-                    </div>
+<div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+  <h3 className="text-lg font-bold text-gray-900">Posizione Pubblica</h3>
+  <p className="text-xs text-gray-500 -mt-2">Questa informazione sarà visibile nell'annuncio.</p>
+  
+ <CityAutocomplete
+  value={formData.location}
+  onChange={(value, suggestion) => {
+    const formattedLocation = suggestion 
+      ? `${suggestion.city}, ${suggestion.region}`
+      : value;
+    setFormData({...formData, location: formattedLocation});
+  }}
+  placeholder="Cerca una città italiana..."
+  label="Città / Zona"
+  required={true}
+/>
+  </div>
                     
-                    {/* Dropdown suggerimenti */}
-                    {showCitySuggestions && citySuggestions.length > 0 && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                        {citySuggestions.map((suggestion, idx) => (
-                          <button
-                            key={`${suggestion.city}-${idx}`}
-                            type="button"
-                            onMouseDown={() => selectCity(suggestion)}
-                            className={`w-full px-4 py-3 text-left flex items-center text-sm transition-colors hover:bg-gray-50 ${
-                              idx === 0 ? 'rounded-t-xl' : ''
-                            } ${idx === citySuggestions.length - 1 ? 'rounded-b-xl' : ''}`}
-                          >
-                            <MapPin className="w-4 h-4 mr-3 text-gray-400" />
-                            <div>
-                              <span className="font-medium">{suggestion.city}</span>
-                              {suggestion.province && (
-                                <span className="text-gray-500 ml-1">({suggestion.province})</span>
-                              )}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                 </div>
-
-                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Descrizione Zona / Quartiere</label>
-                    <textarea 
-                       rows={3}
-                       value={(formData as any).zoneDescription || ''}
-                       onChange={(e) => setFormData({...formData, zoneDescription: e.target.value} as any)}
-                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
-                       placeholder="Descrivi i dintorni, i parcheggi, i mezzi pubblici..."
-                    />
-                 </div>
-              </div>
 
               {/* Indirizzo privato (ritiro/spazio) */}
               <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 space-y-4">

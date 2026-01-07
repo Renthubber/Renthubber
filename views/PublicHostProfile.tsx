@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { ListingCard } from "../components/ListingCard";
 import { api } from "../services/api";
+import { getAvatarUrl } from "../utils/avatarUtils";
 
 /* ------------------------------------------------------
    🔒 HELPER: Formatta nome per privacy ("Davide P.")
@@ -52,14 +53,6 @@ const formatReviewDate = (dateString: string): string => {
   });
 };
 
-/* ------------------------------------------------------
-   🖼️ HELPER: Verifica se l'avatar è reale (non generato)
--------------------------------------------------------*/
-const hasRealAvatarUrl = (avatarUrl: string | null | undefined): boolean => {
-  if (!avatarUrl) return false;
-  // Considera "reale" qualsiasi URL che non sia ui-avatars.com
-  return !avatarUrl.includes('ui-avatars.com');
-};
 
 /* ------------------------------------------------------
    COMPONENTE: Card singola recensione
@@ -77,11 +70,14 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review, onRenterClick }) => {
     (review as any).userName || 
     "Utente";
   
-  // ✅ Avatar reale dal DB (solo se esiste e non è un URL ui-avatars)
-  const rawAvatar = (review as any).reviewer?.avatar_url;
-  const hasRealAvatar = hasRealAvatarUrl(rawAvatar);
-  const reviewerAvatar = rawAvatar || null;
-  const reviewerInitial = reviewerName.charAt(0).toUpperCase();
+  // ✅ Avatar uniforme con getAvatarUrl
+  const reviewer = (review as any).reviewer || {
+    first_name: reviewerName.split(' ')[0],
+    last_name: reviewerName.split(' ').slice(1).join(' '),
+    avatar_url: (review as any).reviewer?.avatar_url,
+    id: reviewerId
+  };
+  const reviewerAvatar = getAvatarUrl(reviewer);
   const rating = review.overallRating || review.rating || 5;
   const comment = review.comment || "";
   const date = review.createdAt || review.created_at || review.date || "";
@@ -103,18 +99,12 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review, onRenterClick }) => {
           }
         }}
       >
-        {/* ✅ Mostra avatar reale se esiste, altrimenti gradiente con iniziale */}
-        {hasRealAvatar ? (
-          <img 
-            src={reviewerAvatar!} 
-            alt={reviewerName}
-            className="w-10 h-10 rounded-full object-cover mr-3 bg-gray-200"
-          />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm mr-3">
-            {reviewerInitial}
-          </div>
-        )}
+        {/* ✅ Avatar uniforme */}
+        <img 
+          src={reviewerAvatar} 
+          alt={reviewerName}
+          className="w-10 h-10 rounded-full object-cover mr-3 bg-gray-200"
+        />
         <div>
           <h4 className={`font-semibold text-gray-900 text-sm ${isClickable ? 'hover:text-brand hover:underline' : ''}`}>
             {reviewerName}
@@ -334,11 +324,14 @@ const AllReviewsModal: React.FC<AllReviewsModalProps> = ({
               [review.reviewer?.first_name, review.reviewer?.last_name].filter(Boolean).join(' ') ||
               review.userName || "Utente";
             
-            // ✅ Avatar reale dal DB
-            const rawAvatar = review.reviewer?.avatar_url;
-            const hasRealAvatar = hasRealAvatarUrl(rawAvatar);
-            const reviewerAvatar = rawAvatar || null;
-            const reviewerInitial = reviewerName.charAt(0).toUpperCase();
+            // ✅ Avatar uniforme con getAvatarUrl
+            const reviewer = review.reviewer || {
+              first_name: reviewerName.split(' ')[0],
+              last_name: reviewerName.split(' ').slice(1).join(' '),
+              avatar_url: review.reviewer?.avatar_url,
+              id: reviewerId
+            };
+            const reviewerAvatar = getAvatarUrl(reviewer);
             const rating = review.overallRating || review.rating || 5;
             const comment = review.comment || "";
             const date = review.createdAt || review.created_at || review.date || "";
@@ -360,18 +353,12 @@ const AllReviewsModal: React.FC<AllReviewsModalProps> = ({
                     }
                   }}
                 >
-                  {/* ✅ Mostra avatar reale se esiste, altrimenti gradiente con iniziale */}
-                  {hasRealAvatar ? (
-                    <img 
-                      src={reviewerAvatar!} 
-                      alt={reviewerName}
-                      className="w-12 h-12 rounded-full object-cover mr-4 bg-gray-200"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold mr-4">
-                      {reviewerInitial}
-                    </div>
-                  )}
+                  {/* ✅ Avatar uniforme */}
+                  <img 
+                    src={reviewerAvatar} 
+                    alt={reviewerName}
+                    className="w-12 h-12 rounded-full object-cover mr-4 bg-gray-200"
+                  />
                   <div>
                     <h4 className={`font-semibold text-gray-900 ${isClickable ? 'hover:text-brand hover:underline' : ''}`}>
                       {reviewerName}
@@ -476,9 +463,8 @@ export const PublicHostProfile: React.FC<PublicHostProfileProps> = ({
   // ✅ Estrai il primo nome per i messaggi personalizzati
   const firstName = (host as any).firstName || host.name?.split(" ")[0] || "questo hubber";
 
-  // ✅ Verifica se l'hubber ha un avatar reale
-  const hasRealAvatar = hasRealAvatarUrl(host.avatar);
-  const avatarUrl = host.avatar;
+ // ✅ Avatar uniforme con getAvatarUrl
+  const avatarUrl = getAvatarUrl(host);
 
   // Iniziale per avatar fallback
   const initial = privacyName?.charAt(0).toUpperCase() || "H";
@@ -501,18 +487,12 @@ export const PublicHostProfile: React.FC<PublicHostProfileProps> = ({
           <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-sm sticky top-24">
             <div className="flex flex-col items-center text-center mb-6">
               <div className="relative mb-4">
-                {/* ✅ Mostra avatar reale se esiste, altrimenti gradiente con iniziale */}
-                {hasRealAvatar ? (
-                  <img
-                    src={avatarUrl}
-                    alt={privacyName}
-                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md"
-                  />
-                ) : (
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-5xl font-bold shadow-lg">
-                    {initial}
-                  </div>
-                )}
+                {/* ✅ Avatar uniforme */}
+                <img
+                  src={avatarUrl}
+                  alt={privacyName}
+                  className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md"
+                />
                 {host.isSuperHubber && (
                   <div
                     className="absolute bottom-0 right-0 bg-brand text-white p-2 rounded-full border-4 border-white shadow-sm"
@@ -587,7 +567,7 @@ export const PublicHostProfile: React.FC<PublicHostProfileProps> = ({
 
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Identità</span>
-                {host.idDocumentVerified ? (
+                {(host.idDocumentVerified || host.id_document_verified) ? (
                   <CheckCircle2 className="w-5 h-5 text-green-500" />
                 ) : (
                   <span className="text-gray-300 text-xs">Non verificata</span>
@@ -596,7 +576,7 @@ export const PublicHostProfile: React.FC<PublicHostProfileProps> = ({
 
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Indirizzo Email</span>
-                {host.emailVerified ? (
+                {(host.emailVerified || host.email_verified) ? (
                   <CheckCircle2 className="w-5 h-5 text-green-500" />
                 ) : (
                   <span className="text-gray-300 text-xs">Non verificata</span>
@@ -605,7 +585,7 @@ export const PublicHostProfile: React.FC<PublicHostProfileProps> = ({
 
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Numero di telefono</span>
-                {host.phoneVerified ? (
+                {(host.phoneVerified || host.phone_verified) ? (
                   <CheckCircle2 className="w-5 h-5 text-green-500" />
                 ) : (
                   <span className="text-gray-300 text-xs">Non verificata</span>

@@ -53,6 +53,8 @@ import { useNavigate } from 'react-router-dom';
 import { InvoiceXmlExport } from '../components/InvoiceXmlExport';
 import * as cmsService from '../services/cmsService';
 import * as financeSettingsService from '../services/financeSettingsService';
+import { OnlineIndicator } from '../components/OnlineIndicator';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 // Funzione per formattare data in italiano
 const formatDateIT = (isoDate: string | null | undefined): string => {
@@ -738,6 +740,67 @@ const [userDocumentFilter, setUserDocumentFilter] = useState<'all' | 'to_verify'
     }
   };
 
+// 📎 Upload immagine nella chat admin
+  const handleAdminImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedConversation) return;
+
+    try {
+      // Verifica/crea bucket images
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const imagesBucket = buckets?.find((b) => b.name === 'images');
+      if (!imagesBucket) {
+        await supabase.storage.createBucket('images', { public: true });
+      }
+      
+      // Upload file
+      const fileExt = file.name.split('.').pop();
+      const fileName = `admin_${Date.now()}.${fileExt}`;
+      const filePath = `chat-images/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Errore upload:', uploadError);
+        alert('Errore durante l\'upload dell\'immagine');
+        return;
+      }
+
+      // Ottieni URL pubblico
+      const { data: urlData } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl;
+
+      // Determina destinatario
+      const lastMsg = conversationMessages[conversationMessages.length - 1];
+      const toUserId = lastMsg?.fromUserId === selectedConversation.renterId 
+        ? selectedConversation.renterId 
+        : selectedConversation.hubberId;
+
+      // Salva messaggio con immagine
+      await api.messages.sendAdminMessage({
+        conversationId: selectedConversation.id,
+        toUserId,
+        adminId: currentUser?.id || '',
+        text: '',
+        image_url: publicUrl
+      });
+
+      // Ricarica messaggi
+      await loadConversationMessages(selectedConversation.id);
+      
+      // Reset input
+      e.target.value = '';
+    } catch (err) {
+      console.error('Errore invio immagine:', err);
+      alert('Errore durante l\'invio dell\'immagine');
+    }
+  };
+
   // ========== SUPPORT TICKET STATES ==========
   const [allTickets, setAllTickets] = useState<any[]>([]);
   const [supportStats, setSupportStats] = useState<{ 
@@ -937,9 +1000,61 @@ const loadAllTickets = async () => {
   }
 };
 
- const handleUpdateTicketStatus = async (ticketId: string, newStatus: string) => {
-  try {
-    await api.support.updateTicketStatus(ticketId, newStatus, currentUser?.id || '');
+const handleTicketAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedTicket) return;
+
+    try {
+      // Upload file su Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `ticket_${selectedTicket.id}_${Date.now()}.${fileExt}`;
+      const filePath = `support-attachments/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Errore upload:', uploadError);
+        alert('Errore durante l\'upload del file');
+        return;
+      }
+
+      // Ottieni URL pubblico
+      const { data: urlData } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl;
+
+      // Determina tipo file
+      const isImage = file.type.startsWith('image/');
+      
+      // Invia messaggio con allegato
+      await api.support.sendSupportMessage({
+        ticketId: selectedTicket.id,
+        senderId: currentUser?.id || '',
+        senderType: currentUser?.role === 'admin' ? 'admin' : 'support',
+        text: isImage ? '' : `[File: ${file.name}]`,
+        attachment_url: publicUrl,
+        attachment_name: file.name,
+        attachment_type: file.type,
+      });
+
+      // Ricarica messaggi
+      await loadTicketMessages(selectedTicket.id);
+      
+      // Reset input
+      e.target.value = '';
+    } catch (err) {
+      console.error('Errore invio allegato:', err);
+      alert('Errore durante l\'invio del file');
+    }
+ };
+
+  const handleUpdateTicketStatus = async (ticketId: string, newStatus: string) => {
+    try {
+      await api.support.updateTicketStatus(ticketId, newStatus, currentUser?.id || '');
     await loadAllTickets();
     
     // ✨ RICARICA DISPUTE quando il ticket cambia stato
@@ -2071,7 +2186,7 @@ const handleSavePage = async () => {
                 >
                   <td className="p-4 flex items-center">
                     <img
-                      src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`}
+                      src={getAvatarUrl(user)}
                       alt={user.name}
                       className="w-8 h-8 rounded-full mr-3"
                     />
@@ -2290,7 +2405,7 @@ const handleSavePage = async () => {
                     <td className="p-4">
                       <div className="flex items-center">
                         <img
-                          src={listing.owner?.avatar || 'https://via.placeholder.com/24'}
+                          src={listing.owner ? getAvatarUrl(listing.owner) : 'https://via.placeholder.com/24'}
                           className="w-6 h-6 rounded-full mr-2"
                           alt=""
                         />
@@ -2822,29 +2937,39 @@ const handleSavePage = async () => {
                       <div className="flex items-center gap-3 mb-2">
                         <div className="flex -space-x-2">
                           <img
-                            src={conv.renter?.avatar_url || `https://ui-avatars.com/api/?name=${getUserName(conv.renter)}&background=10B981&color=fff`}
+                            src={conv.renter ? getAvatarUrl(conv.renter) : getAvatarUrl({ name: 'Renter', id: 'r' })}
                             alt=""
                             className="w-8 h-8 rounded-full border-2 border-white"
                           />
                           <img
-                            src={conv.hubber?.avatar_url || `https://ui-avatars.com/api/?name=${getUserName(conv.hubber)}&background=6366F1&color=fff`}
+                            src={conv.hubber ? getAvatarUrl(conv.hubber) : getAvatarUrl({ name: 'Hubber', id: 'h' })}
                             alt=""
                             className="w-8 h-8 rounded-full border-2 border-white"
                           />
                        </div>
+                       </div>
   <div className="flex-1 min-w-0">
-  <p className="text-sm font-medium text-gray-900 truncate">
-    {getUserName(conv.renter)} ↔ {getUserName(conv.hubber)}
-  </p>
+  <div className="flex items-center gap-2">
+    <p className="text-sm font-medium text-gray-900 truncate">
+      <span className="inline-flex items-center gap-1">
+        {conv.renter?.id && <OnlineIndicator userId={conv.renter.id} size="sm" />}
+        {getUserName(conv.renter)}
+      </span>
+      {' ↔ '}
+      <span className="inline-flex items-center gap-1">
+        {conv.hubber?.id && <OnlineIndicator userId={conv.hubber.id} size="sm" />}
+        {getUserName(conv.hubber)}
+      </span>
+    </p>
+  </div>
   {conv.listing && (
-    <p className="text-xs text-gray-500 truncate">{conv.listing.title}</p>
+    <p className="text-xs text-gray-500 truncate"> {conv.listing.title}</p>
   )}
   {conv.id?.includes('conv-booking-') && (
-    <p className="text-xs text-gray-500 truncate">
-      Prenotazione #{conv.id.replace('conv-booking-', '').slice(0, 8)}
+    <p className="text-xs text-gray-400 truncate">
+       Prenotazione #{conv.id.replace('conv-booking-', '').slice(0, 8)}
     </p>
   )}
-</div>
 </div>
                       
                       <p className="text-sm text-gray-600 truncate">
@@ -2878,23 +3003,31 @@ const handleSavePage = async () => {
                     <div className="flex items-center gap-3">
                       <div className="flex -space-x-2">
                         <img
-                          src={selectedConversation.renter?.avatar_url || `https://ui-avatars.com/api/?name=R&background=10B981&color=fff`}
+                          src={selectedConversation.renter ? getAvatarUrl(selectedConversation.renter) : getAvatarUrl({ name: 'Renter', id: 'r' })}
                           alt=""
                           className="w-10 h-10 rounded-full border-2 border-white"
                         />
                         <img
-                          src={selectedConversation.hubber?.avatar_url || `https://ui-avatars.com/api/?name=H&background=6366F1&color=fff`}
+                          src={selectedConversation.hubber ? getAvatarUrl(selectedConversation.hubber) : getAvatarUrl({ name: 'Hubber', id: 'h' })}
                           alt=""
                           className="w-10 h-10 rounded-full border-2 border-white"
                         />
                       </div>
-                      <div>
-                        <p className="font-bold text-gray-900">
-  {getUserName(selectedConversation.renter)} ↔ {getUserName(selectedConversation.hubber)}
-</p>
-<p className="text-xs text-gray-500">
-  {selectedConversation.listing?.title || 'Conversazione diretta'}
-</p>
+                     <div>
+  <p className="font-bold text-gray-900 flex items-center gap-2">
+    <span className="inline-flex items-center gap-1">
+      {selectedConversation.renter?.id && <OnlineIndicator userId={selectedConversation.renter.id} size="sm" />}
+      {getUserName(selectedConversation.renter)}
+    </span>
+    {' ↔ '}
+    <span className="inline-flex items-center gap-1">
+      {selectedConversation.hubber?.id && <OnlineIndicator userId={selectedConversation.hubber.id} size="sm" />}
+      {getUserName(selectedConversation.hubber)}
+    </span>
+  </p>
+  <p className="text-xs text-gray-500">
+    {selectedConversation.listing?.title || 'Conversazione diretta'}
+  </p>
 {selectedConversation.id?.includes('conv-booking-') && (
   <p className="text-xs text-gray-600">
     Prenotazione #{selectedConversation.id.replace('conv-booking-', '').slice(0, 8)}
@@ -2927,7 +3060,7 @@ const handleSavePage = async () => {
                       <p className="text-xs font-bold text-gray-500 mb-2">RENTER</p>
                       <div className="flex items-center gap-2">
                         <img
-                          src={selectedConversation.renter?.avatar_url || `https://ui-avatars.com/api/?name=R&background=10B981&color=fff`}
+                          src={selectedConversation.renter ? getAvatarUrl(selectedConversation.renter) : getAvatarUrl({ name: 'Renter', id: 'r' })}
                           alt=""
                           className="w-8 h-8 rounded-full"
                         />
@@ -2943,7 +3076,7 @@ const handleSavePage = async () => {
                       <p className="text-xs font-bold text-gray-500 mb-2">HUBBER</p>
                       <div className="flex items-center gap-2">
                         <img
-                          src={selectedConversation.hubber?.avatar_url || `https://ui-avatars.com/api/?name=H&background=6366F1&color=fff`}
+                          src={selectedConversation.hubber ? getAvatarUrl(selectedConversation.hubber) : getAvatarUrl({ name: 'Hubber', id: 'h' })}
                           alt=""
                           className="w-8 h-8 rounded-full"
                         />
@@ -2995,37 +3128,53 @@ const handleSavePage = async () => {
                           key={msg.id}
                           className={`flex ${isRenter ? 'justify-start' : 'justify-end'}`}
                         >
-                          <div className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                            isAdmin 
-                              ? 'bg-purple-100 border border-purple-300'
-                              : isRenter 
-                                ? 'bg-white border border-gray-200' 
-                                : 'bg-brand text-white'
-                          }`}>
-                            {isAdmin && (
-                              <p className="text-xs font-bold text-purple-600 mb-1"> Renthubber</p>
-                            )}
-                            {!isAdmin && (
-                            <p className="text-xs font-bold mb-1" style={{ color: isRenter ? '#10B981' : '#6366F1' }}>
-                              {isRenter ? 'R' : 'H'}: {getUserName(isRenter ? selectedConversation.renter : selectedConversation.hubber)}
-                              </p>
-                            )}
-                            <p className={`text-sm ${isAdmin ? 'text-purple-900' : isRenter ? 'text-gray-900' : 'text-white'}`}>
-                              {msg.text}
-                            </p>
-                            <div className="flex items-center justify-between mt-1">
-                              <p className={`text-xs ${isRenter ? 'text-gray-400' : 'text-white/70'}`}>
+                          {msg.imageUrl ? (
+                            // Messaggio con immagine (senza bolla)
+                            <div>
+                              <img
+                                src={msg.imageUrl}
+                                alt="allegato"
+                                className="max-w-[200px] rounded-xl cursor-pointer hover:opacity-90 transition-opacity shadow-md"
+                                onClick={() => window.open(msg.imageUrl, '_blank')}
+                              />
+                              <p className={`text-xs mt-1 ${isRenter ? 'text-gray-500 text-left' : 'text-gray-400 text-right'}`}>
                                 {new Date(msg.createdAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                                 {msg.read && ' ✓✓'}
                               </p>
-                              {msg.flagged && (
-                                <span className="text-xs text-red-500 ml-2" title={msg.flagReason}>
-                                  ⚠️ {msg.flagReason}
-                                </span>
-                              )}
                             </div>
-                          </div>
-                          {!isAdmin && (
+                          ) : (
+                            // Messaggio di testo (con bolla)
+                            <div className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                              isAdmin 
+                                ? 'bg-purple-100 border border-purple-300'
+                                : isRenter 
+                                  ? 'bg-white border border-gray-200' 
+                                  : 'bg-brand text-white'
+                            }`}>
+                              {isAdmin && (
+                                <p className="text-xs font-bold text-purple-600 mb-1">Renthubber</p>
+                              )}
+                              {!isAdmin && (
+                                <p className="text-xs font-bold mb-1" style={{ color: isRenter ? '#10B981' : '#6366F1' }}>
+                                  {isRenter ? 'R' : 'H'}: {getUserName(isRenter ? selectedConversation.renter : selectedConversation.hubber)}
+                                </p>
+                              )}
+                           <p className={`text-sm whitespace-pre ${isAdmin ? 'text-purple-900' : isRenter ? 'text-gray-900' : 'text-white'}`}>
+                            {msg.text}
+                              </p>
+                              <div className="flex items-center justify-between mt-1">
+                                <p className={`text-xs ${isRenter ? 'text-gray-500' : 'text-white/80'}`}>
+                                  {new Date(msg.createdAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                  {msg.read && ' ✓✓'}
+                                </p>
+                                {msg.flagged && (
+                                  <span className="text-xs text-red-500 ml-2" title={msg.flagReason}>
+                                    ⚠️ {msg.flagReason}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
                             <button
                               onClick={() => handleDeleteMessage(msg.id)}
                               className="ml-2 p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100"
@@ -3033,7 +3182,6 @@ const handleSavePage = async () => {
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
-                          )}
                         </div>
                       );
                     })
@@ -3044,6 +3192,17 @@ const handleSavePage = async () => {
                 {/* Input risposta admin */}
                 <div className="p-4 border-t border-gray-100 bg-white">
                   <div className="flex items-center gap-3">
+                    {/* Pulsante upload immagine */}
+                    <label className="cursor-pointer p-3 hover:bg-gray-100 rounded-xl transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAdminImageUpload}
+                      />
+                      <ImageIcon className="w-5 h-5 text-gray-500 hover:text-brand" />
+                    </label>
+                    
                     <div className="flex-1 relative">
                       <input
                         type="text"
@@ -3292,7 +3451,7 @@ const handleSavePage = async () => {
                         
                         <div className="flex items-center gap-3 mb-2">
                           <img
-                            src={ticket.user?.avatar_url || `https://ui-avatars.com/api/?name=${getUserName(ticket.user)}&background=FF6B35&color=fff`}
+                            src={ticket.user ? getAvatarUrl(ticket.user) : getAvatarUrl({ name: 'User', id: 'u' })}
                             alt=""
                             className="w-10 h-10 rounded-full"
                           />
@@ -3368,7 +3527,7 @@ const handleSavePage = async () => {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <img
-                        src={selectedTicket.user?.avatar_url || `https://ui-avatars.com/api/?name=U&background=FF6B35&color=fff`}
+                        src={selectedTicket.user ? getAvatarUrl(selectedTicket.user) : getAvatarUrl({ name: 'User', id: 'u' })}
                         alt=""
                         className="w-12 h-12 rounded-full"
                       />
@@ -3428,7 +3587,7 @@ const handleSavePage = async () => {
                 </div>
 
                 {/* Messaggi */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 max-h-[320px]">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 max-h-[500px]">
                   {ticketMessages.length === 0 ? (
                     <div className="text-center text-gray-400 py-8">
                       Nessun messaggio
@@ -3443,7 +3602,7 @@ const handleSavePage = async () => {
                           key={msg.id}
                           className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}
                         >
-                          <div className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+                          <div className={`max-w-[85%] rounded-2xl px-4 py-2 ${
                             isInternal 
                               ? 'bg-yellow-100 border-2 border-dashed border-yellow-400'
                               : isUser 
@@ -3460,9 +3619,97 @@ const handleSavePage = async () => {
                                 {msg.sender_type === 'admin' ? '👑 Admin' : '💬 Supporto'}: {getUserName(msg.sender)}
                               </p>
                             )}
-                            <p className={`text-sm ${isInternal ? 'text-yellow-900' : isUser ? 'text-gray-900' : 'text-white'}`}>
-                              {msg.message}
+                            {/* Messaggio di testo */}
+                            <p className={`text-sm whitespace-pre ${isInternal ? 'text-yellow-900' : isUser ? 'text-gray-900' : 'text-white'}`}>
+                            {msg.message}
                             </p>
+                            
+                            {/* Allegati */}
+                            {msg.attachments && (() => {
+                              try {
+                                const attachments = JSON.parse(msg.attachments);
+                                return attachments.map((att: any, idx: number) => {
+                                  const isImage = att.type?.startsWith('image/');
+                                  return (
+                                    <div key={idx} className="mt-2">
+                                      {isImage ? (
+                                        <img
+                                          src={att.url}
+                                          alt={att.name}
+                                          className="max-w-[200px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                          onClick={() => window.open(att.url, '_blank')}
+                                        />
+                                      ) : (
+                                        <a
+                                          href={att.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                                            isInternal ? 'bg-yellow-200 hover:bg-yellow-300' :
+                                            isUser ? 'bg-gray-100 hover:bg-gray-200' : 
+                                            'bg-white/20 hover:bg-white/30'
+                                          }`}
+                                        >
+                                          <FileText className="w-4 h-4" />
+                                          <span className="text-sm">{att.name || 'File allegato'}</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  );
+                                });
+                              } catch (e) {
+                                return null;
+                              }
+                            })()}
+                            
+                            {/* Allegati dispute (immagini prove + documento rimborso) */}
+                            {selectedTicket?.related_dispute_id && isUser && msg.message?.includes('È stata aperta una controversia') && (() => {
+                              const dispute = localDisputes.find((d: any) => d.id === selectedTicket.related_dispute_id);
+                              if (!dispute) return null;
+                              
+                              return (
+                                <div className="mt-3 space-y-3 pt-3 border-t border-gray-200">
+                                  {/* Immagini prove */}
+                                  {dispute.evidence_images && dispute.evidence_images.length > 0 && (
+                                    <div>
+                                      <p className="text-xs font-semibold text-gray-600 mb-2">
+                                        📸 Prove allegate ({dispute.evidence_images.length})
+                                      </p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {dispute.evidence_images.map((url: string, idx: number) => (
+                                          <img
+                                            key={idx}
+                                            src={url}
+                                            alt={`Prova ${idx + 1}`}
+                                            className="w-24 h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity border-2 border-gray-300"
+                                            onClick={() => window.open(url, '_blank')}
+                                          />
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Documento rimborso */}
+                                  {dispute.refund_document_url && (
+                                    <div>
+                                      <p className="text-xs font-semibold text-gray-600 mb-2">
+                                        📄 Documento rimborso
+                                      </p>
+                                      <a
+                                        href={dispute.refund_document_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg text-blue-700 text-sm transition-colors"
+                                       >
+                                        <FileText className="w-4 h-4" />
+                                        <span>{dispute.refund_document_name || 'Documento.pdf'}</span>
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                            
                             <p className={`text-xs mt-1 ${isInternal ? 'text-yellow-600' : isUser ? 'text-gray-400' : 'text-white/70'}`}>
                               {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                             </p>
@@ -3501,6 +3748,17 @@ const handleSavePage = async () => {
                   </div>
 
                   <div className="flex items-center gap-3">
+                    {/* Pulsante upload allegato */}
+                    <label className="cursor-pointer p-3 hover:bg-gray-100 rounded-xl transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf,.doc,.docx"
+                        className="hidden"
+                        onChange={handleTicketAttachmentUpload}
+                      />
+                      <ImageIcon className="w-5 h-5 text-gray-500 hover:text-brand" />
+                    </label>
+                    
                     <div className="flex-1 relative">
                       <textarea
   value={supportReplyText}
@@ -4106,7 +4364,7 @@ const renderFinanceTransactions = () => {
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <img 
-                            src={payment.renter?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(renterName)}&background=random`}
+                            src={payment.renter ? getAvatarUrl(payment.renter) : getAvatarUrl({ name: renterName, id: 'r' })}
                             alt={renterName}
                             className="w-8 h-8 rounded-full object-cover"
                           />
@@ -4119,7 +4377,7 @@ const renderFinanceTransactions = () => {
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <img 
-                            src={payment.hubber?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(hubberName)}&background=random`}
+                            src={payment.hubber ? getAvatarUrl(payment.hubber) : getAvatarUrl({ name: hubberName, id: 'h' })}
                             alt={hubberName}
                             className="w-8 h-8 rounded-full object-cover"
                           />
@@ -4231,7 +4489,7 @@ const renderFinanceTransactions = () => {
                   <p className="text-xs text-gray-500 uppercase font-medium mb-3">Renter (Pagante)</p>
                   <div className="flex items-center gap-3">
                     <img 
-                      src={selectedPayment.renter?.avatar_url || `https://ui-avatars.com/api/?name=Renter&background=random`}
+                      src={selectedPayment.renter ? getAvatarUrl(selectedPayment.renter) : getAvatarUrl({ name: 'Renter', id: 'r' })}
                       alt="Renter"
                       className="w-10 h-10 rounded-full object-cover"
                     />
@@ -4247,7 +4505,7 @@ const renderFinanceTransactions = () => {
                   <p className="text-xs text-gray-500 uppercase font-medium mb-3">Hubber (Ricevente)</p>
                   <div className="flex items-center gap-3">
                     <img 
-                      src={selectedPayment.hubber?.avatar_url || `https://ui-avatars.com/api/?name=Hubber&background=random`}
+                      src={selectedPayment.hubber ? getAvatarUrl(selectedPayment.hubber) : getAvatarUrl({ name: 'Hubber', id: 'h' })}
                       alt="Hubber"
                       className="w-10 h-10 rounded-full object-cover"
                     />
@@ -4503,7 +4761,7 @@ const renderFinanceWallets = () => {
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <img 
-                            src={wallet.user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`}
+                            src={wallet.user ? getAvatarUrl(wallet.user) : getAvatarUrl({ name: userName, id: 'u' })}
                             alt={userName}
                             className="w-10 h-10 rounded-full object-cover"
                           />
@@ -4652,7 +4910,7 @@ const renderFinanceWallets = () => {
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <img 
-                            src={tx.user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`}
+                            src={tx.user ? getAvatarUrl(tx.user) : getAvatarUrl({ name: userName, id: 'u' })}
                             alt={userName}
                             className="w-8 h-8 rounded-full object-cover"
                           />
@@ -5081,7 +5339,7 @@ const renderFinanceWallets = () => {
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <img 
-                            src={payout.user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`}
+                            src={payout.user ? getAvatarUrl(payout.user) : getAvatarUrl({ name: userName, id: 'u' })}
                             alt={userName}
                             className="w-10 h-10 rounded-full object-cover"
                           />
@@ -5178,7 +5436,7 @@ const renderFinanceWallets = () => {
               {/* Hubber Info */}
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
                 <img 
-                  src={selectedPayout.user?.avatar_url || `https://ui-avatars.com/api/?name=User&background=random`}
+                  src={selectedPayout.user ? getAvatarUrl(selectedPayout.user) : getAvatarUrl({ name: 'User', id: 'u' })}
                   alt="User"
                   className="w-14 h-14 rounded-full object-cover"
                 />
@@ -6290,7 +6548,7 @@ const renderFinanceRefunds = () => {
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <img 
-                          src={refund.renter?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName(refund.renter))}&background=10B981&color=fff`}
+                          src={refund.renter ? getAvatarUrl(refund.renter) : getAvatarUrl({ name: 'Renter', id: 'r' })}
                           alt=""
                           className="w-8 h-8 rounded-full object-cover"
                         />
@@ -6303,7 +6561,7 @@ const renderFinanceRefunds = () => {
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <img 
-                          src={refund.hubber?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName(refund.hubber))}&background=6366F1&color=fff`}
+                          src={refund.hubber ? getAvatarUrl(refund.hubber) : getAvatarUrl({ name: 'Hubber', id: 'h' })}
                           alt=""
                           className="w-8 h-8 rounded-full object-cover"
                         />
@@ -6411,7 +6669,7 @@ const renderFinanceRefunds = () => {
                   <p className="text-xs font-bold text-green-600 uppercase mb-2">Renter (riceve rimborso)</p>
                   <div className="flex items-center gap-3">
                     <img 
-                      src={selectedRefund.renter?.avatar_url || `https://ui-avatars.com/api/?name=R&background=10B981&color=fff`}
+                      src={selectedRefund.renter ? getAvatarUrl(selectedRefund.renter) : getAvatarUrl({ name: 'Renter', id: 'r' })}
                       alt=""
                       className="w-10 h-10 rounded-full"
                     />
@@ -6425,7 +6683,7 @@ const renderFinanceRefunds = () => {
                   <p className="text-xs font-bold text-purple-600 uppercase mb-2">Hubber</p>
                   <div className="flex items-center gap-3">
                     <img 
-                      src={selectedRefund.hubber?.avatar_url || `https://ui-avatars.com/api/?name=H&background=6366F1&color=fff`}
+                      src={selectedRefund.hubber ? getAvatarUrl(selectedRefund.hubber) : getAvatarUrl({ name: 'Hubber', id: 'h' })}
                       alt=""
                       className="w-10 h-10 rounded-full"
                     />
@@ -6860,7 +7118,7 @@ const renderFinanceRefunds = () => {
             <td className="p-4">
               <div className="flex items-center gap-2">
                 <img 
-                  src={invoice.recipient?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(invoice.recipient_name || 'U')}&background=random`}
+                  src={invoice.recipient ? getAvatarUrl(invoice.recipient) : getAvatarUrl({ name: invoice.recipient_name || 'User', id: 'u' })}
                   alt=""
                   className="w-8 h-8 rounded-full"
                 />
@@ -7076,7 +7334,7 @@ const renderFinanceRefunds = () => {
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <img 
-                            src={invoice.recipient?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(invoice.recipient_name || 'R')}&background=10B981&color=fff`}
+                            src={invoice.recipient ? getAvatarUrl(invoice.recipient) : getAvatarUrl({ name: invoice.recipient_name || 'Renter', id: 'r' })}
                             alt=""
                             className="w-8 h-8 rounded-full"
                           />
@@ -7199,7 +7457,7 @@ const renderFinanceRefunds = () => {
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <img 
-                            src={invoice.recipient?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(invoice.recipient_name || 'H')}&background=6366F1&color=fff`}
+                            src={invoice.recipient ? getAvatarUrl(invoice.recipient) : getAvatarUrl({ name: invoice.recipient_name || 'Hubber', id: 'h' })}
                             alt=""
                             className="w-8 h-8 rounded-full"
                           />
@@ -9374,7 +9632,7 @@ const renderReviews = () => {
                 <h4 className="font-bold text-gray-900 mb-3">Proprietario (Hubber)</h4>
                 <div className="flex items-center">
                   <img
-                    src={selectedListingForEdit.owner?.avatar || 'https://via.placeholder.com/40'}
+                    src={selectedListingForEdit.owner ? getAvatarUrl(selectedListingForEdit.owner) : 'https://via.placeholder.com/40'}
                     className="w-10 h-10 rounded-full mr-3"
                     alt=""
                   />

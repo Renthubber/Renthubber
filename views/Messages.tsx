@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Send, MoreVertical, Phone, Image as ImageIcon, Loader2, Archive, Trash2, RotateCcw, ChevronDown } from "lucide-react";
+import { Send, MoreVertical, Phone, Image as ImageIcon, Loader2, Archive, Trash2, RotateCcw, ChevronDown, Paperclip, FileText } from "lucide-react";
 import { api } from "../services/api";
 import { User, Dispute } from "../types";
 import { useRealtimeMessages } from "../hooks/useRealtimeMessages";
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-
+import { OnlineIndicator } from '../components/OnlineIndicator';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 
 interface MessagesProps {
@@ -18,10 +19,11 @@ type ChatMessage = {
   from: "me" | "contact" | "system";
   text?: string;
   imageUrl?: string;
+  attachments?: string; // ← AGGIUNTO (JSON string)
   time: string;
   isSystemMessage?: boolean;
-  isAdminMessage?: boolean;  // ✅ AGGIUNTO per messaggi admin
-  senderName?: string;       // ✅ AGGIUNTO per nome mittente
+  isAdminMessage?: boolean;
+  senderName?: string;
 };
 
 // ✅ TIPO CONVERSAZIONE REALE
@@ -349,7 +351,7 @@ export const Messages: React.FC<MessagesProps> = ({
 
           if (hoursPassed >= 48) {
             setIsBookingConfirmed(false);
-            console.log(`🔒 Booking completato da ${Math.floor(hoursPassed)} ore - Contatti bloccati`);
+           // console.log(`🔒 Booking completato da ${Math.floor(hoursPassed)} ore - Contatti bloccati`);
             return;
           }
         }
@@ -445,6 +447,7 @@ export const Messages: React.FC<MessagesProps> = ({
   const [disputeImages, setDisputeImages] = useState<string[]>([]);
   const [refundAmount, setRefundAmount] = useState<string>("");
   const [refundDocumentName, setRefundDocumentName] = useState<string>("");
+  const [refundDocumentUrl, setRefundDocumentUrl] = useState<string>("");
   const [disputeId, setDisputeId] = useState<string | null>(null);
   const [disputeRole, setDisputeRole] = useState<"renter" | "hubber">("renter");
   const [disputeScope, setDisputeScope] = useState<"object" | "space">("object");
@@ -474,8 +477,7 @@ export const Messages: React.FC<MessagesProps> = ({
           const contactName = contactData?.public_name || 
             `${contactData?.first_name || ''} ${contactData?.last_name || ''}`.trim() || 
             (isRenter ? "Hubber" : "Renter");
-          const contactAvatar = contactData?.avatar_url || 
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=0D414B&color=fff`;
+          const contactAvatar = getAvatarUrl(contactData);
 
           const bookingData = conv.booking || {};
           const listingTitle = conv.listing?.title || conv.listing?.name || "Annuncio";
@@ -532,7 +534,6 @@ export const Messages: React.FC<MessagesProps> = ({
       // Usa solo conversazioni reali
       setContacts(realContacts);
 
-      console.log("✅ Conversazioni reali caricate da Supabase:", realContacts.length);
     } catch (err) {
       console.error("Errore caricamento conversazioni:", err);
     } finally {
@@ -541,7 +542,7 @@ export const Messages: React.FC<MessagesProps> = ({
   }, [currentUser]);
 
   const handleNewMessage = useCallback((message: any) => {
-    console.log('🆕 Nuovo messaggio in tempo reale!', message);
+   // console.log('🆕 Nuovo messaggio in tempo reale!', message);
     // Ricarica conversazioni per aggiornare lista
     loadRealConversations();
   }, [loadRealConversations]);
@@ -645,11 +646,10 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
         const contactId = isRenter ? conv.hubberId : conv.renterId;
         const contactData = isRenter ? conv.hubber : conv.renter;
         
-        const contactName = contactData?.public_name || 
-          `${contactData?.first_name || ''} ${contactData?.last_name || ''}`.trim() || 
-          'Utente';
-        const contactAvatar = contactData?.avatar_url || 
-          `https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=0D414B&color=fff`;
+       const contactName = contactData?.public_name || 
+  `${contactData?.first_name || ''} ${contactData?.last_name || ''}`.trim() || 
+  'Utente';
+const contactAvatar = getAvatarUrl(contactData);
 
         return {
           id: conv.id,
@@ -760,25 +760,25 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
   const handleOpenTicket = async (ticketId: string) => {
     setSelectedTicketId(ticketId);
     setSupportView('chat');
-    
+  
+
     // Carica messaggi del ticket
     if (currentUser) {
+
       try {
         const ticketData = await api.support.getTicketWithMessages(ticketId);
-        if (ticketData && ticketData.messages) {
-          const formattedMsgs = ticketData.messages
+       if (ticketData && ticketData.messages) {          const formattedMsgs: ChatMessage[] = ticketData.messages
             .filter((m: any) => !m.is_internal)
             .map((m: any) => ({
               id: m.id,
-              from: m.sender_type === 'user' ? 'me' : 'contact',
+              from: (m.sender_type === 'user' ? 'me' : 'contact') as "me" | "contact",
               text: m.message,
+              attachments: m.attachments,
               time: new Date(m.created_at).toLocaleTimeString("it-IT", {
                 hour: "2-digit",
                 minute: "2-digit",
               }),
-            }));
-          setChatMessages(formattedMsgs);
-          
+            }));          setChatMessages(formattedMsgs);          
           // Segna come letto
           await api.support.markAsReadByUser(ticketId);
           setSupportUnreadCount(0);
@@ -832,7 +832,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
     if (!activeContact) return;
 
     // ✅ Se è la chat supporto, carica da Supabase
-    if (activeChatId === "support") {
+    if (activeChatId === "support" && !selectedTicketId) {
       const loadSupportMessages = async () => {
         if (!currentUser) {
           setChatMessages(supportMessages);
@@ -853,11 +853,12 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
             
             if (ticketData && ticketData.messages.length > 0) {
               const formattedMsgs: ChatMessage[] = ticketData.messages
-                .filter((m: any) => !m.is_internal) // Nascondi note interne all'utente
+            .filter((m: any) => !m.is_internal) // Nascondi note interne all'utente
                 .map((m: any) => ({
                   id: m.id,
                   from: m.sender_type === 'user' ? 'me' : 'contact',
                   text: m.message,
+                  attachments: m.attachments,
                   time: new Date(m.created_at).toLocaleTimeString("it-IT", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -872,7 +873,7 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
                 text: "Ciao! 👋 Benvenuto nel supporto RentHubber.\n\n Come possiamo aiutarti oggi? Siamo qui per rispondere a qualsiasi domanda su:\n\n• Prenotazioni e pagamenti\n• Problemi con annunci\n• Contestazioni e rimborsi\n• Funzionalità della piattaforma\n\nScrivici pure!",
                 time: "09:00",
               };
-              setChatMessages([welcomeMsg, ...formattedMsgs]);
+              setChatMessages(formattedMsgs);
               
               // Segna come letto dall'utente
               await api.support.markAsReadByUser(openTicket.id);
@@ -950,7 +951,6 @@ const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
             filter: `conversation_id=eq.${activeChatId}`
           },
           (payload) => {
-            console.log('💬 Nuovo messaggio ricevuto:', payload.new);
 const newMsg = payload.new as any;
 const isFromMe = newMsg.from_user_id === currentUser?.id;
 const isSystem = newMsg.from_user_id === "system" || newMsg.is_system_message;
@@ -989,14 +989,12 @@ const isAdmin = newMsg.from_user_id === "admin" || newMsg.is_admin_message || ne
       // Nessuna conversazione selezionata o contatto non trovato
       setChatMessages([]);
     }
-  }, [activeChatId, currentUser, supportMessages]);
+  }, [activeChatId, currentUser]);
 
 
 // ✅ SUBSCRIPTION REAL-TIME per messaggi supporto
 useEffect(() => {
   if (!selectedTicketId || activeChatId !== "support") return;
-  console.log('🎫 Ticket ID per subscription:', selectedTicketId);
-
   const supportChannel = supabase
     .channel(`support-ticket-${selectedTicketId}`)
     .on(
@@ -1007,22 +1005,22 @@ useEffect(() => {
         table: 'support_messages',
         filter: `ticket_id=eq.${selectedTicketId}`
       },
-      (payload) => {
-        console.log('💬 Nuovo messaggio supporto ricevuto:', payload.new);
-        const newMsg = payload.new as any;
+      (payload) => {        const newMsg = payload.new as any;
+      //  console.log('🔍 PAYLOAD SUPPORTO:', newMsg);
         
         if (newMsg.is_internal) return;
 
         const chatMsg: ChatMessage = {
-          id: newMsg.id,
-          from: newMsg.sender_type === 'user' ? 'me' : 'contact',
-          text: newMsg.message,
-          time: new Date(newMsg.created_at).toLocaleTimeString("it-IT", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          senderType: newMsg.sender_type,
-        };
+  id: newMsg.id,
+  from: newMsg.sender_type === 'user' ? 'me' : 'contact',
+  text: newMsg.message,
+  attachments: newMsg.attachments && newMsg.attachments.length > 0 ? JSON.stringify(newMsg.attachments) : undefined,
+  time: new Date(newMsg.created_at).toLocaleTimeString("it-IT", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }),
+  senderType: newMsg.sender_type,
+};
 
         setChatMessages(prev => {
           if (prev.some(msg => msg.id === chatMsg.id)) {
@@ -1032,9 +1030,7 @@ useEffect(() => {
         });
       }
     )
-    .subscribe((status) => {
-  console.log('📡 Status subscription supporto:', status);
-});
+    .subscribe((status) => {});
 
   return () => {
     supabase.removeChannel(supportChannel);
@@ -1101,6 +1097,10 @@ useEffect(() => {
   openListingChat();
 }, [searchParams, currentUser?.id]);
 
+// ← AGGIUNGI QUI
+useEffect(() => {}, [chatMessages]);
+
+
 const handleSend = async () => {
   if (!messageInput.trim()) {
     return;
@@ -1137,7 +1137,7 @@ const handleSend = async () => {
         if (currentUser) {
           try {
             await api.support.sendUserMessage(selectedTicketId, currentUser.id, safeText);
-            console.log('📧 Messaggio aggiunto al ticket:', selectedTicketId);
+            
             
             // Ricarica ticket per aggiornare la lista
             await loadAllUserTickets();
@@ -1200,6 +1200,53 @@ const handleSend = async () => {
     }
   };
 
+  // ← AGGIUNGI QUI
+  const handleSupportImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedTicketId || !currentUser) return;
+
+    try {
+      // Upload immagine su Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `ticket_${selectedTicketId}_${Date.now()}.${fileExt}`;
+      const filePath = `support-attachments/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Errore upload:', uploadError);
+        return;
+      }
+
+      // Ottieni URL pubblico
+      const { data: urlData } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      // Invia messaggio con allegato
+      await api.support.sendSupportMessage({
+        ticketId: selectedTicketId,
+        senderId: currentUser.id,
+        senderType: 'user',
+        text: '',
+        attachment_url: urlData.publicUrl,
+        attachment_name: file.name,
+        attachment_type: file.type,
+      });
+
+      
+      // Ricarica ticket
+      await loadAllUserTickets();
+      
+      // Reset input file
+      e.target.value = '';
+    } catch (error) {
+      console.error('Errore upload immagine supporto:', error);
+    }
+  };
+
   const handleImageAttach = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     if (!isBookingConfirmed) return;
 
@@ -1232,13 +1279,6 @@ const handleSend = async () => {
     try {
       const { supabase } = await import('../lib/supabase');
       
-      // Verifica/crea bucket images
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const imagesBucket = buckets?.find((b) => b.name === 'images');
-      if (!imagesBucket) {
-        await supabase.storage.createBucket('images', { public: true });
-      }
-      
       // Crea nome file unico
       const fileExt = file.name.split('.').pop();
       const fileName = `${currentUser?.id || 'user'}_${Date.now()}.${fileExt}`;
@@ -1261,7 +1301,7 @@ const handleSend = async () => {
 
       const publicUrl = urlData.publicUrl;
 
-      // Salva messaggio nel database con immagine
+      /// Salva messaggio nel database con immagine
       if (activeContact?.isRealConversation && currentUser) {
         const msgId = `msg-img-${Date.now()}`;
         await supabase.from("messages").insert({
@@ -1269,13 +1309,14 @@ const handleSend = async () => {
           conversation_id: activeContact.id,
           from_user_id: currentUser.id,
           to_user_id: activeContact.contactId || null,
-          text: '', // Messaggio vuoto, solo immagine
+          text: '[Immagine]', // ← CAMBIATO
           image_url: publicUrl,
+          has_confirmed_booking: true, // ← AGGIUNTO
+          is_support: false,
+          is_admin_message: false,
           created_at: now.toISOString(),
           read: false,
           flagged: false,
-          is_support: false,
-          is_admin_message: false,
         });
 
         // Aggiorna messaggio locale con URL reale
@@ -1293,27 +1334,83 @@ const handleSend = async () => {
     }
   };
 
-  const handleDisputeImageUpload = (
+  const handleDisputeImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>
-  ): void => {
+  ): Promise<void> => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const urls: string[] = Array.from(files).map((f: File) =>
-      URL.createObjectURL(f)
-    );
+   // console.log('🖼️ Inizio upload immagini, numero file:', files.length);
 
-    setDisputeImages((prev) => [...prev, ...urls]);
-    e.target.value = "";
+    try {
+      const uploadedUrls: string[] = [];
+
+      for (const file of Array.from(files)) {
+        // Upload su Storage
+        const fileExt = file.name.split('.').pop();
+        const fileName = `dispute_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `dispute-evidence/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('images')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          console.error('Errore upload immagine:', uploadError);
+          continue;
+        }
+
+        // Ottieni URL pubblico
+        const { data: urlData } = supabase.storage
+          .from('images')
+          .getPublicUrl(filePath);
+
+        uploadedUrls.push(urlData.publicUrl);
+      }
+
+      setDisputeImages((prev) => [...prev, ...uploadedUrls]);
+      // console.log('✅ Upload completato, URLs:', uploadedUrls);
+      e.target.value = "";
+    } catch (error) {
+      console.error('Errore upload immagini dispute:', error);
+    }
   };
 
-  const handleRefundDocumentUpload = (
+  const handleRefundDocumentUpload = async (
     e: React.ChangeEvent<HTMLInputElement>
-  ): void => {
+  ): Promise<void> => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setRefundDocumentName(file.name);
-    e.target.value = "";
+
+   // console.log('📄 Inizio upload documento:', file.name);
+
+    try {
+      // Upload su Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `refund_doc_${Date.now()}.${fileExt}`;
+      const filePath = `dispute-documents/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Errore upload documento:', uploadError);
+        return;
+      }
+
+      // Ottieni URL pubblico
+      const { data: urlData } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      setRefundDocumentName(file.name);
+      setRefundDocumentUrl(urlData.publicUrl);
+     // console.log('✅ Documento caricato, URL:', urlData.publicUrl);
+      e.target.value = "";
+    } catch (error) {
+      console.error('Errore upload documento rimborso:', error);
+    }
   };
 
   const getStatusLabel = () => {
@@ -1381,6 +1478,7 @@ const handleSend = async () => {
     setDisputeImages([]);
     setRefundAmount("");
     setRefundDocumentName("");
+    setRefundDocumentUrl(""); 
     setDisputeId(null);
     setDisputeRole("renter");
     setDisputeScope("object");
@@ -1388,9 +1486,14 @@ const handleSend = async () => {
 
   // 🔥 SALVATAGGIO DELLA CONTESTAZIONE (locale + Supabase)
   const handleConfirmDispute = async () => {
-    if (!isBookingConfirmed) return;
+    
+    if (!isBookingConfirmed) {
+    
+      return;
+    }
 
     if (!refundAmount.trim()) {
+
       return;
     }
 
@@ -1415,6 +1518,7 @@ const handleSend = async () => {
           refundAmount,
           refundCurrency: "EUR",
           refundDocumentName,
+          refundDocumentUrl,
           evidenceImages: disputeImages,
           status: "open",
           createdAt: createdAtIso,
@@ -1463,6 +1567,7 @@ const handleSend = async () => {
       (dispute as any).refundAmount = refundAmount;
       (dispute as any).refundCurrency = "EUR";
       (dispute as any).refundDocumentName = refundDocumentName;
+      (dispute as any).refundDocumentUrl = refundDocumentUrl;
       (dispute as any).bookingId = activeBookingId;
       (dispute as any).againstUserId = activeContact.contactId || activeContact.id;
       (dispute as any).againstUserName = activeContact.name;
@@ -1603,28 +1708,24 @@ const handleSend = async () => {
             </div>
           )}
           
-          {(showArchived ? archivedContacts : contacts).map((contact) => (
-            <div
-              key={contact.id}
-              onClick={async () => {
-                console.log('🖱️ CLICK CONTATTO:', contact.name, contact.id);
-                console.log('📱 showMobileList PRIMA:', showMobileList);
-                setActiveChatId(contact.id);
-                setShowMobileList(false);
-                console.log('📱 showMobileList DOPO:', false);
-                setTimeout(() => console.log('📱 showMobileList dopo 100ms:', showMobileList), 100);
-                setShowMenu(false);
-                setShowPhoneInfo(false);
-                setShowDisputeModal(false);
-                resetDisputeState();
-                setContextMenuContactId(null);
-                if (!showArchived) {
-                  setContacts((prev) =>
-                    prev.map((c) =>
-                      c.id === contact.id ? { ...c, unreadCount: 0 } : c
-                    )
-                  );
-                }
+         {(showArchived ? archivedContacts : contacts).map((contact) => (
+  <div
+    key={contact.id}
+    onClick={async () => {
+      setActiveChatId(contact.id);
+      setShowMobileList(false);
+      setShowMenu(false);
+      setShowPhoneInfo(false);
+      setShowDisputeModal(false);
+      resetDisputeState();
+      setContextMenuContactId(null);
+      if (!showArchived) {
+        setContacts((prev) =>
+          prev.map((c) =>
+            c.id === contact.id ? { ...c, unreadCount: 0 } : c
+          )
+        );
+      }
 
                 // 🔔 Segna conversazione come letta nel DB
                 if (contact.isRealConversation && currentUser) {
@@ -1639,7 +1740,6 @@ const handleSend = async () => {
                       .update({ [field]: false })
                       .eq('id', contact.id);
                     
-                    console.log('✅ Conversazione segnata come letta');
                     
                     // 🔔 Emetti evento per aggiornare badge immediatamente
                     window.dispatchEvent(new Event('unread-changed'));
@@ -1657,31 +1757,28 @@ const handleSend = async () => {
               }`}
             >
               {/* Area contenuto */}
-              <div className="flex items-center flex-1">
-              <div className="relative">
-                {hasRealAvatarUrl(contact.avatar) ? (
-                  <img
-                    src={contact.avatar}
-                    alt={contact.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">
-                    {contact.name?.charAt(0).toUpperCase() || "?"}
-                  </div>
-                )}
-                {contact.unreadCount > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full font-bold">
-                    {contact.unreadCount}
-                  </div>
-                )}
-                {/* ✅ BADGE VERDE PER CONVERSAZIONI REALI */}
-                {contact.isRealConversation && !showArchived && (
-                  <div className="absolute -bottom-1 -right-1 bg-green-500 w-3 h-3 rounded-full border-2 border-white" title="Conversazione attiva"></div>
-                )}
-              </div>
-              <div className="ml-3 flex-1 overflow-hidden">
-                {/* ✅ LAYOUT AIRBNB: Nome persona + data */}
+<div className="flex items-center flex-1">
+  <div className="relative">
+    <img
+      src={contact.avatar}
+      alt={contact.name}
+      className="w-12 h-12 rounded-full object-cover"
+    />
+    {contact.unreadCount > 0 && (
+      <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full font-bold">
+        {contact.unreadCount}
+      </div>
+    )}
+    {/* ✅ BADGE ONLINE/OFFLINE */}
+    {contact.isRealConversation && !showArchived && contact.contactId && (
+      <div className="absolute -bottom-1 -right-1">
+        <OnlineIndicator userId={contact.contactId} size="sm" />
+      </div>
+    )}
+  </div>
+  
+  <div className="ml-3 flex-1 overflow-hidden">  
+    {/* ✅ LAYOUT AIRBNB: Nome persona + data */}
                 <div className="flex justify-between items-start mb-1">
                   <h4 className="font-semibold text-gray-900 text-base">
                     {contact.name}
@@ -1787,7 +1884,7 @@ const handleSend = async () => {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Eliminare conversazione?</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Vuoi eliminare la conversazione?</h3>
             <p className="text-gray-600 text-sm mb-4">
               La conversazione verrà rimossa dalla tua lista. L'altro utente potrà ancora vederla.
             </p>
@@ -1832,11 +1929,11 @@ const handleSend = async () => {
               </button>
               
               <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center mr-3">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
+                <img 
+                  src="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/avatars/avatars/avatar__Renthubber.png"
+                  alt="Supporto"
+                  className="w-10 h-10 rounded-full object-cover mr-3"
+                />
                 <div>
                   <h3 className="font-bold text-gray-900">Supporto RentHubber</h3>
                   <p className="text-xs text-gray-500">
@@ -2047,27 +2144,72 @@ const handleSend = async () => {
                 })()}
 
                 {/* Messaggi */}
-                <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 pb-40 md:pb-4 space-y-4">
-                  {chatMessages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.from === "me" ? "justify-end" : "justify-start"}`}
-                    >
-                      <div
-                        className={`max-w-[75%] rounded-2xl px-4 py-3 ${
-                          message.from === "me"
-                            ? "bg-brand text-white rounded-br-md"
-                            : "bg-white border border-gray-200 rounded-bl-md"
-                        }`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap">{message.text}</p>
-                        <p className={`text-xs mt-1 ${message.from === "me" ? "text-white/70" : "text-gray-400"}`}>
-                          {message.time}
-                        </p>
+<div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 pb-40 md:pb-4 space-y-4">
+  {chatMessages.map((message) => {
+  
+    return (
+      <div
+        key={message.id}
+        className={`flex ${message.from === "me" ? "justify-end" : "justify-start"}`}
+      >
+                      {(message.attachments && message.attachments.length > 0 && message.attachments !== '[]') ? (
+                        // Messaggio con allegati (senza bolla)
+                        <div>
+                          {(() => {
+                            try {
+                              const attachments = JSON.parse(message.attachments);
+                              return attachments.map((att: any, idx: number) => {
+                                const isImage = att.type?.startsWith('image/');
+                                return (
+                                  <div key={idx} className="mb-2">
+                                    {isImage ? (
+                                      <img
+                                        src={att.url}
+                                        alt={att.name}
+                                        className="max-w-[200px] rounded-xl cursor-pointer hover:opacity-90 transition-opacity shadow-md"
+                                        onClick={() => window.open(att.url, '_blank')}
+                                      />
+                                    ) : (
+                                      <a
+                                        href={att.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+                                      >
+                                        <FileText className="w-4 h-4" />
+                                        <span className="text-sm">{att.name || 'File allegato'}</span>
+                                      </a>
+                                    )}
+                                  </div>
+                                );
+                              });
+                            } catch (e) {
+                              return null;
+                            }
+                          })()}
+                          <p className={`text-xs ${message.from === "me" ? "text-gray-400 text-right" : "text-gray-400 text-left"}`}>
+                            {message.time}
+                          </p>
+                        </div>
+                      ) : (
+                        // Messaggio di testo (con bolla)
+                        <div
+                          className={`max-w-[75%] rounded-2xl px-4 py-3 ${
+                            message.from === "me"
+                              ? "bg-brand text-white rounded-br-md"
+                              : "bg-white border border-gray-200 rounded-bl-md"
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                          <p className={`text-xs mt-1 ${message.from === "me" ? "text-white/70" : "text-gray-400"}`}>
+                            {message.time}
+                          </p>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
                 {/* Input Messaggio (solo se ticket aperto) */}
                 {(() => {
@@ -2089,8 +2231,21 @@ const handleSend = async () => {
                   }
                   
                   return (
-                   <div className="fixed lg:sticky bottom-16 md:bottom-20 lg:bottom-0 left-0 right-0 lg:left-auto lg:right-auto p-4 bg-white border-t border-gray-200 z-10">
+                    <div className="fixed lg:sticky bottom-16 md:bottom-20 lg:bottom-0 left-0 right-0 lg:left-auto lg:right-auto p-4 bg-white border-t border-gray-200 z-10">
                       <div className="flex gap-3">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleSupportImageUpload}
+                          className="hidden"
+                          id="support-image-upload"
+                        />
+                        <label
+                          htmlFor="support-image-upload"
+                          className="cursor-pointer px-3 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 flex items-center justify-center"
+                        >
+                          <Paperclip className="w-5 h-5 text-gray-600" />
+                        </label>
                         <input
                           type="text"
                           value={messageInput}
@@ -2114,6 +2269,7 @@ const handleSend = async () => {
             )}
           </div>
         ) : (
+ 
           /* ✅ CHAT NORMALE (NON SUPPORTO) */
          <div className="flex flex-col h-full min-h-0 max-h-screen">
        {/* Chat Header */}
@@ -2129,17 +2285,11 @@ const handleSend = async () => {
           </button>
           
           <div className="flex items-center">
-            {hasRealAvatarUrl(activeContact.avatar) ? (
-              <img
-                src={activeContact.avatar}
-                alt={activeContact.name}
-                className="w-10 h-10 rounded-full object-cover mr-3"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm mr-3">
-                {activeContact.name?.charAt(0).toUpperCase() || "?"}
-              </div>
-            )}
+            <img
+              src={getAvatarUrl(activeContact)}
+              alt={activeContact.name}
+              className="w-10 h-10 rounded-full object-cover mr-3"
+            />
             <div>
               <h3 className="font-bold text-gray-900">{activeContact.name}</h3>
               {activeContact?.isRealConversation && activeContact?.bookingId ? (
@@ -2242,56 +2392,65 @@ const handleSend = async () => {
 ) : msg.from === "contact" ? (
               <div key={msg.id} className="flex items-end">
                 {msg.isAdminMessage ? (
-                  <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center mb-1 mr-2" title="Supporto RentHubber">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  </div>
-                ) : hasRealAvatarUrl(activeContact.avatar) ? (
+  <img
+    src="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/avatars/avatars/avatar__Renthubber.png"
+    alt="Supporto Renthubber"
+    className="w-8 h-8 rounded-full object-cover mb-1 mr-2"
+    title="Supporto RentHubber"
+  />
+                ) : (
                   <img
-                    src={activeContact.avatar}
+                    src={getAvatarUrl(activeContact)}
                     className="w-8 h-8 rounded-full object-cover mb-1 mr-2"
                     alt="avatar"
                   />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-xs mb-1 mr-2">
-                    {activeContact.name?.charAt(0).toUpperCase() || "?"}
-                  </div>
                 )}
-                <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-none px-4 py-2 shadow-sm max-w-md">
-                  {msg.isAdminMessage && (
-                    <p className="text-xs font-semibold text-brand mb-1">Supporto RentHubber</p>
-                  )}
-                  {msg.imageUrl ? (
+                {msg.imageUrl ? (
+                  <div>
                     <img
                       src={msg.imageUrl}
                       alt="allegato"
-                      className="max-w-[200px] rounded-2xl shadow-sm"
+                      className="max-w-[200px] rounded-xl cursor-pointer hover:opacity-90 transition-opacity shadow-md"
+                      onClick={() => window.open(msg.imageUrl, '_blank')}
                     />
-                  ) : (
+                    <span className="text-[10px] text-gray-400 block text-left mt-1">
+                      {msg.time}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-none px-4 py-2 shadow-sm max-w-md">
+                    {msg.isAdminMessage && (
+                      <p className="text-xs font-semibold text-brand mb-1">Supporto Renthubber</p>
+                    )}
                     <p className="text-sm text-gray-800">{msg.text}</p>
-                  )}
-                  <span className="text-[10px] text-gray-400 block text-right mt-1">
-                    {msg.time}
-                  </span>
-                </div>
+                    <span className="text-[10px] text-gray-400 block text-right mt-1">
+                      {msg.time}
+                    </span>
+                  </div>
+                )}
               </div>
             ) : (
               <div key={msg.id} className="flex items-end justify-end">
-                <div className="bg-brand text-white rounded-2xl rounded-br-none px-4 py-2 shadow-md max-w-md">
-                  {msg.imageUrl ? (
+                {msg.imageUrl ? (
+                  <div>
                     <img
                       src={msg.imageUrl}
                       alt="allegato"
-                      className="max-w-[200px] rounded-2xl shadow-sm"
+                      className="max-w-[200px] rounded-xl cursor-pointer hover:opacity-90 transition-opacity shadow-md"
+                      onClick={() => window.open(msg.imageUrl, '_blank')}
                     />
-                  ) : (
+                    <span className="text-[10px] text-gray-400 block text-right mt-1">
+                      {msg.time}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="bg-brand text-white rounded-2xl rounded-br-none px-4 py-2 shadow-md max-w-md">
                     <p className="text-sm">{msg.text}</p>
-                  )}
-                  <span className="text-[10px] text-brand-light block text-right mt-1">
-                    {msg.time}
-                  </span>
-                </div>
+                    <span className="text-[10px] text-white/80 block text-right mt-1">
+                      {msg.time}
+                    </span>
+                  </div>
+                )}
               </div>
             )
           )}
@@ -2679,7 +2838,7 @@ const handleSend = async () => {
                       }
                     >
                       Avanti
-                    </button>
+                   </button>
                   )}
 
                   {disputeStep === 4 && (
