@@ -2,16 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../services/api';
 import { supabase } from '../services/supabaseClient';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
-
-/* ------------------------------------------------------
-   🖼️ HELPER: Verifica se l'avatar è reale (non generato)
--------------------------------------------------------*/
-const hasRealAvatarUrl = (avatarUrl: string | null | undefined): boolean => {
-  if (!avatarUrl) return false;
-  // Considera "reale" qualsiasi URL che non sia ui-avatars.com
-  return !avatarUrl.includes('ui-avatars.com');
-};
 
 interface ReviewsSectionProps {
   listingId: string;
@@ -124,11 +116,8 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
                 [reviewer?.first_name, reviewer?.last_name].filter(Boolean).join(' ') || 
                 'Utente';
               
-              const rawAvatar = reviewer?.avatar_url;
-              const hasRealAvatar = hasRealAvatarUrl(rawAvatar);
-              const reviewerAvatar = rawAvatar || null;
-              const reviewerInitial = reviewerName.charAt(0).toUpperCase();
-
+            const reviewerAvatar = getAvatarUrl(reviewer);
+             
               return (
                 <div key={review.id} className="flex-shrink-0 w-[calc(50%-8px)] snap-start">
                   <div 
@@ -144,25 +133,19 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
                         console.log('🔍 DEBUG data:', data);
                         
                         onRenterClick({
-                          id: reviewerId,
-                          name: reviewerName,
-                          avatar: reviewerAvatar || undefined,
-                          created_at: data?.created_at,
-                        });
+  id: reviewerId,
+  name: reviewerName,
+  avatar: reviewerAvatar || undefined,
+  created_at: data?.created_at,
+});
                       }
                     }}
                   >
-                    {hasRealAvatar ? (
-                      <img 
-                        src={reviewerAvatar!} 
-                        alt={reviewerName} 
-                        className="w-10 h-10 rounded-full mr-3 bg-gray-200 object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm mr-3">
-                        {reviewerInitial}
-                      </div>
-                    )}
+                    <img 
+                      src={reviewerAvatar} 
+                      alt={reviewerName} 
+                      className="w-10 h-10 rounded-full mr-3 bg-gray-200 object-cover"
+                    />
                     <div>
                       <h4 className={`font-bold text-gray-900 text-sm ${onRenterClick && reviewerId ? 'hover:text-brand hover:underline' : ''}`}>
                         {reviewerName}

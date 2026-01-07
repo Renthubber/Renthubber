@@ -77,7 +77,6 @@ const CheckoutForm: React.FC<{
         console.error('❌ Payment error:', error);
         onError(error.message || 'Errore durante il pagamento');
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        console.log('✅ Payment succeeded:', paymentIntent.id);
         onSuccess();
       }
     } catch (err: any) {
@@ -167,14 +166,7 @@ export const StripePaymentModal: React.FC<StripePaymentModalProps> = ({
     setError(null);
 
     try {
-      console.log('💳 Creating Payment Intent...', {
-        totalAmount,
-        amountToPay,
-        useWallet,
-        refundBalanceToUse,
-        referralBalanceToUse,
-      });
-
+      
       const result = await stripeService.createPaymentIntent({
         listingId,
         renterId,
@@ -193,14 +185,13 @@ export const StripePaymentModal: React.FC<StripePaymentModalProps> = ({
 
       if (result.paidWithWallet) {
         // Pagamento 100% con wallet - nessun Payment Intent necessario
-        console.log('✅ Paid 100% with wallet');
+       
         setPaidWithWallet(true);
         setTimeout(() => {
           onSuccess();
         }, 1500);
       } else if (result.clientSecret) {
         // Pagamento parziale/totale con Stripe
-        console.log('✅ Payment Intent created:', result.paymentIntentId);
         setClientSecret(result.clientSecret);
       } else {
         throw new Error('Invalid response from server');
@@ -217,7 +208,6 @@ export const StripePaymentModal: React.FC<StripePaymentModalProps> = ({
   };
 
   const handleSuccess = () => {
-    console.log('🎉 Payment completed successfully');
     onSuccess();
   };
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { User } from "../types";
 import { Star, ShieldCheck, Award } from "lucide-react";
 import { api } from "../services/api";
+import { getAvatarUrl } from "../utils/avatarUtils";
 
 interface HostInfoProps {
   owner?: User | null;
@@ -21,11 +22,6 @@ const formatPrivacyName = (fullName: string | undefined): string => {
   return `${firstName} ${lastInitial}.`;
 };
 
-// 🖼️ Helper per verificare se l'avatar è reale (non generato)
-const hasRealAvatarUrl = (avatarUrl: string | null | undefined): boolean => {
-  if (!avatarUrl) return false;
-  return !avatarUrl.includes('ui-avatars.com');
-};
 
 export const HostInfo: React.FC<HostInfoProps> = ({ owner, onHostClick }) => {
   // ✅ State per il conteggio recensioni
@@ -73,10 +69,8 @@ export const HostInfo: React.FC<HostInfoProps> = ({ owner, onHostClick }) => {
       ? `${(owner as any).firstName} ${(owner as any).lastName.charAt(0)}.`  // Poi firstName + iniziale lastName
       : formatPrivacyName(owner.name));  // Fallback: genera da name
 
-  // ✅ Verifica se ha un avatar reale
-  const hasRealAvatar = hasRealAvatarUrl(owner.avatar);
-  const avatarUrl = owner.avatar;
-  const initial = displayName?.charAt(0).toUpperCase() || "H";
+  // ✅ Genera avatar uniforme
+const avatarUrl = getAvatarUrl(owner);
 
   const hubberSinceYear = owner.hubberSince
     ? new Date(owner.hubberSince).getFullYear()
@@ -97,18 +91,12 @@ export const HostInfo: React.FC<HostInfoProps> = ({ owner, onHostClick }) => {
         className={`relative ${onHostClick ? "cursor-pointer" : ""}`}
         onClick={handleClick}
       >
-        {/* ✅ Mostra avatar reale se esiste, altrimenti gradiente con iniziale */}
-        {hasRealAvatar ? (
-          <img
-            src={avatarUrl}
-            alt={displayName}
-            className="w-16 h-16 rounded-full object-cover border border-gray-200 hover:opacity-90 transition-opacity"
-          />
-        ) : (
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold hover:opacity-90 transition-opacity">
-            {initial}
-          </div>
-        )}
+        {/* ✅ Avatar uniforme con iniziali */}
+<img
+  src={avatarUrl}
+  alt={displayName}
+  className="w-16 h-16 rounded-full object-cover border border-gray-200 hover:opacity-90 transition-opacity"
+/>
         {owner.isSuperHubber && (
           <div className="absolute bottom-0 right-0 bg-brand text-white p-1 rounded-full border-2 border-white shadow-sm">
             <Award className="w-3 h-3" />

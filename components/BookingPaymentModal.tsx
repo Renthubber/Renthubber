@@ -23,8 +23,6 @@ async function createBookingConversation(params: {
 }): Promise<void> {
   const { bookingId, renterId, hubberId, listingId, listingTitle, startDate, endDate } = params;
   
-  console.log("📧 createBookingConversation chiamata con:", params);
-  
   const now = new Date().toISOString();
   const conversationId = `conv-booking-${bookingId}`;
   
@@ -94,7 +92,6 @@ async function createBookingConversation(params: {
 
   // ✅ Salva anche su Supabase
   try {
-    console.log("📝 Inserisco conversazione su Supabase:", conversationId);
     
     const { data: convData, error: convError } = await supabase.from("conversations").upsert(
       {
@@ -113,10 +110,8 @@ async function createBookingConversation(params: {
     if (convError) {
       console.error("❌ Errore inserimento conversazione:", convError);
     } else {
-      console.log("✅ Conversazione inserita:", convData);
+    
     }
-
-    console.log("📝 Inserisco messaggio su Supabase:", message.id);
     
     // Per i messaggi di sistema, usiamo l'hubber come from_user_id ma con flag is_system_message
     const { data: msgData, error: msgError } = await supabase.from("messages").upsert(
@@ -136,10 +131,9 @@ async function createBookingConversation(params: {
     if (msgError) {
       console.error("❌ Errore inserimento messaggio:", msgError);
     } else {
-      console.log("✅ Messaggio inserito:", msgData);
+    
     }
     
-    console.log("✅ Conversazione prenotazione creata:", conversationId);
   } catch (e) {
     console.warn("⚠️ Errore sync conversazione Supabase:", e);
   }
@@ -208,7 +202,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
         const fees = await api.admin.getFees();
         if (fees) {
           setPlatformFees(fees);
-          console.log("✅ Fee caricate nel modal:", fees);
+         
         }
       } catch (err) {
         console.error("Errore caricamento fee:", err);
@@ -219,42 +213,37 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
     loadFees();
   }, []);
 
-  // ✅ Carica saldi wallet all'apertura del modal
-  useEffect(() => {
-    const loadWalletBalances = async () => {
-      if (!isOpen || !renter.id) return;
+ // ✅ Carica saldi wallet all'apertura del modal
+useEffect(() => {
+  const loadWalletBalances = async () => {
+    if (!isOpen || !renter.id) return;
+    
+    setLoadingBalances(true);
+    try {
+      const { data: wallet, error } = await supabase
+        .from('wallets')
+        .select('balance_cents, referral_balance_cents, refund_balance_cents')
+        .eq('user_id', renter.id)
+        .single();
       
-      setLoadingBalances(true);
-      try {
-        const { data: wallet, error } = await supabase
-          .from('wallets')
-          .select('balance_cents, referral_balance_cents, refund_balance_cents')
-          .eq('user_id', renter.id)
-          .single();
-        
-        if (!error && wallet) {
-          setGeneralBalance((wallet.balance_cents || 0) / 100);
-          setReferralBalance((wallet.referral_balance_cents || 0) / 100);
-          setRefundBalance((wallet.refund_balance_cents || 0) / 100);
-          console.log('✅ Saldi wallet modal:', {
-            general: (wallet.balance_cents || 0) / 100,
-            referral: (wallet.referral_balance_cents || 0) / 100,
-            refund: (wallet.refund_balance_cents || 0) / 100
-          });
-        }
-      } catch (err) {
-        console.error('Errore caricamento saldi wallet:', err);
-      } finally {
-        setLoadingBalances(false);
+      if (!error && wallet) {
+        setGeneralBalance((wallet.balance_cents || 0) / 100);
+        setReferralBalance((wallet.referral_balance_cents || 0) / 100);
+        setRefundBalance((wallet.refund_balance_cents || 0) / 100);
       }
-    };
+    } catch (err) {
+      console.error('Errore caricamento saldi wallet:', err);
+    } finally {
+      setLoadingBalances(false);
+    }
+  };
 
-   loadWalletBalances();
-  }, [isOpen, renter.id]);
+  loadWalletBalances();
+}, [isOpen, renter.id]);
 
-  // ✅ Calcola quanto wallet può essere usato in base alla scelta
-  const actualWalletUsable = useMemo(() => {
-    // Se non c'è nessun saldo disponibile, ritorna 0
+// ✅ Calcola quanto wallet può essere usato in base alla scelta
+const actualWalletUsable = useMemo(() => {
+  // Se non c'è nessun saldo disponibile, ritorna 0
     if (walletUsedEur === 0 || (generalBalance === 0 && referralBalance === 0 && refundBalance === 0)) return 0;
     
     if (walletType === 'referral') {
@@ -362,7 +351,6 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
         }
       }
 
-      console.log("💳 Creazione Payment Intent...");
 
       // ✅ CHIAMATA ALLA NETLIFY FUNCTION
       const response = await fetch("/.netlify/functions/create-payment-intent", {
@@ -398,7 +386,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
 
       // Se pagato completamente con wallet
       if (paidWithWallet) {
-        console.log("✅ Prenotazione pagata con wallet:", bookingId);
+      
         
         // Crea conversazione
         try {
@@ -422,7 +410,6 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       }
 
       // ✅ CONFERMA PAGAMENTO CON STRIPE
-      console.log("🔐 Conferma pagamento...");
 
       const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
         clientSecret,
@@ -442,7 +429,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
       }
 
       if (paymentIntent?.status === "succeeded") {
-        console.log("✅ Pagamento confermato:", paymentIntent.id);
+       
         
         // ✅ POLLING: Aspetta che il webhook crei la prenotazione (max 10 tentativi)
         let booking = null;
@@ -451,7 +438,7 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
         
         while (attempts < maxAttempts && !booking) {
           attempts++;
-          console.log(`🔄 Tentativo ${attempts}/${maxAttempts} - Cerco prenotazione creata dal webhook...`);
+         
           
           const { data, error } = await supabase
             .from("bookings")
@@ -461,12 +448,12 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
 
           if (data) {
             booking = data;
-            console.log("✅ Prenotazione trovata:", booking.id);
+            
             break;
           }
           
           if (error) {
-            console.error("❌ Errore ricerca prenotazione:", error);
+           
           }
           
           // Aspetta 1 secondo prima del prossimo tentativo
