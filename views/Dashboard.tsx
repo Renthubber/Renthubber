@@ -5296,6 +5296,12 @@ const handleChangePassword = async (e: React.FormEvent) => {
   const variableCommission = baseAmount * 0.10;
   const fixedFee = hubberFee - variableCommission;
 
+  console.log('🔍 DEBUG hubberFee:', hubberFee);
+  console.log('🔍 DEBUG netEarnings:', selectedBooking.netEarnings);
+  console.log('🔍 DEBUG baseAmount:', baseAmount);
+  console.log('🔍 DEBUG variableCommission:', variableCommission);
+  console.log('🔍 DEBUG fixedFee:', fixedFee);
+
   return (
     <>
       <div className="flex justify-between text-sm">
