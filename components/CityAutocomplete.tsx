@@ -25,6 +25,7 @@ export const CityAutocomplete: React.FC<CityAutocompleteProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [isSelected, setIsSelected] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -46,9 +47,12 @@ export const CityAutocomplete: React.FC<CityAutocompleteProps> = ({
     debounceRef.current = setTimeout(async () => {
       try {
         const results = await searchItalianCities(value);
-        setSuggestions(results);
-        setShowSuggestions(results.length > 0);
-        setSelectedIndex(-1);
+setSuggestions(results);
+// Mostra suggerimenti SOLO se il valore non contiene già una città completa (con virgola)
+if (results.length > 0 && !value.includes(',')) {
+  setShowSuggestions(true);
+}
+setSelectedIndex(-1);
       } catch (error) {
         console.error('Errore ricerca città:', error);
         setSuggestions([]);
@@ -112,10 +116,10 @@ export const CityAutocomplete: React.FC<CityAutocompleteProps> = ({
   };
 
   const handleFocus = () => {
-    if (suggestions.length > 0) {
-      setShowSuggestions(true);
-    }
-  };
+  // Non mostrare suggerimenti se il campo ha già un valore
+  // (l'utente ha già selezionato o digitato qualcosa)
+  return;
+};
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
@@ -184,8 +188,9 @@ export const CityAutocomplete: React.FC<CityAutocompleteProps> = ({
         </div>
       )}
 
-      {/* Messaggio nessun risultato */}
-      {showSuggestions && suggestions.length === 0 && value.length >= 2 && !isLoading && (
+          {/* Messaggio nessun risultato */}
+
+            {showSuggestions && suggestions.length === 0 && value.length >= 2 && !isLoading && !value.includes(',') && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-4 text-center text-sm text-gray-500">
           <MapPin className="w-6 h-6 mx-auto mb-2 text-gray-300" />
           Nessuna città trovata per "{value}"
