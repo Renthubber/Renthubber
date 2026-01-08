@@ -5460,7 +5460,6 @@ const renderHubberCalendar = () => (
         <ICalManager
           userId={user.id}
           userName={user.name}
-          exportUrl={icalExportUrl}
           importedCalendars={importedCalendars}
           onExportUrl={(url) => setICalExportUrl(url)}
           onImportCalendar={handleImportCalendar}
