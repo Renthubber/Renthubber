@@ -90,6 +90,7 @@ interface ImportedCalendar {
    - Prezzo base = hubber_net_amount + platform_fee
 -------------------------------------------------------*/
 const mapDbBookingToUiBooking = (raw: any): BookingRequest => {
+
   const formatDate = (dStr?: string) => {
     if (!dStr) return '';
     const d = new Date(dStr);
@@ -5289,18 +5290,13 @@ const handleChangePassword = async (e: React.FormEvent) => {
         </div>
       )}
       
-      {/* ✅ Commissione hubber (10%) */}
+{/* ✅ Commissione hubber (10%) */}
 {(() => {
   const hubberFee = (selectedBooking as any).hubberTotalFee || 0;
-  const baseAmount = selectedBooking.netEarnings + hubberFee - ((selectedBooking as any).cleaningFee || 0);
+  const cleaningFee = (selectedBooking as any).cleaningFee || 0;
+  const baseAmount = (selectedBooking as any).renterTotalPaid - (selectedBooking as any).renterTotalFee - cleaningFee;
   const variableCommission = baseAmount * 0.10;
   const fixedFee = hubberFee - variableCommission;
-
-  console.log('🔍 DEBUG hubberFee:', hubberFee);
-  console.log('🔍 DEBUG netEarnings:', selectedBooking.netEarnings);
-  console.log('🔍 DEBUG baseAmount:', baseAmount);
-  console.log('🔍 DEBUG variableCommission:', variableCommission);
-  console.log('🔍 DEBUG fixedFee:', fixedFee);
 
   return (
     <>
