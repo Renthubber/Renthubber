@@ -5646,10 +5646,10 @@ issued_at: new Date().toISOString()
       }
 
 // 📧 Email notifica disputa
-      await queueEmail('dispute_opened', { 
-        userId: payload.againstUserId,
-        disputeId: data.dispute_id 
-      });
+     // await queueEmail('dispute_opened', { 
+       // userId: payload.againstUserId,
+       // disputeId: data.dispute_id 
+     // });
 
       return data;
     },
