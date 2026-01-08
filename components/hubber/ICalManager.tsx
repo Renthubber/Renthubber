@@ -64,10 +64,17 @@ export const ICalManager: React.FC<ICalManagerProps> = ({
   // Sync state
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
-  // Genera URL export se non esiste
+  console.log('🎨 ICalManager MOUNTED - userId:', userId, 'exportUrl:', exportUrl);
+
+// Genera URL export se non esiste
 useEffect(() => {
+  console.log('🔍 ICalManager useEffect - exportUrl:', exportUrl, 'userId:', userId);
+  
   if (!exportUrl && userId) {
+    console.log('🔄 Chiamando getOrCreateExportUrl...');
+    
     getOrCreateExportUrl(userId).then(({ url }) => {
+      console.log('✅ URL generato:', url);
       setExportUrl(url);
       if (onExportUrl) {
         onExportUrl(url);
