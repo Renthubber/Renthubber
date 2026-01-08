@@ -551,7 +551,7 @@ export const getOrCreateExportUrl = async (
       ? window.location.origin 
       : 'https://renthubber.com';
     return {
-      url: `${baseUrl}/api/ical/${userId}/${existing.token}.ics`,
+      url: `${baseUrl}/.netlify/functions/ical?userId=${userId}&token=${existing.token}`,
       token: existing.token,
     };
   }
@@ -572,7 +572,7 @@ export const getOrCreateExportUrl = async (
     : 'https://renthubber.com';
 
   return {
-    url: `${baseUrl}/api/ical/${userId}/${token}.ics`,
+    url: `${baseUrl}/.netlify/functions/ical?userId=${userId}&token=${token}`,
     token,
   };
 };
@@ -601,7 +601,7 @@ export const regenerateExportToken = async (
     : 'https://renthubber.com';
 
   return {
-    url: `${baseUrl}/api/ical/${userId}/${token}.ics`,
+    url: `${baseUrl}/.netlify/functions/ical?userId=${userId}&token=${token}`,
     token,
   };
 };
