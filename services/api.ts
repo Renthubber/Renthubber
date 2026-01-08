@@ -1262,16 +1262,40 @@ export const api = {
   // LISTINGS (ANNUNCI)
   // =========================
   listings: {
-    // Cache in memoria per evitare ricaricamenti
-    _cache: null as Listing[] | null,
-    _cacheTimestamp: 0,
-    _cacheDuration: 60000, // 1 minuto
+  // Cache in memoria per evitare ricaricamenti
+  _cache: null as Listing[] | null,
+  _cacheTimestamp: 0,
+  _cacheDuration: 60000, // 1 minuto
 
-    /**
-     * 🚀 VERSIONE LIGHT - Per Home e liste (VELOCE)
-     * Carica solo i campi essenziali, NO JOIN con users
-     */
-    getAllLight: async (): Promise<Listing[]> => {
+  /**
+   * 🔍 Carica annunci di un utente specifico
+   */
+  getByUserId: async (userId: string): Promise<Listing[]> => {
+    try {
+
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('owner_id', userId)
+        .order('created_at', { descending: true });
+
+      if (error) {
+        console.error('❌ Errore listings.getByUserId:', error);
+        throw error;
+      }
+      
+      return data || [];
+    } catch (err) {
+      console.error('❌ Errore listings.getByUserId:', err);
+      return [];
+    }
+  },
+
+  /**
+   * 🚀 VERSIONE LIGHT - Per Home e liste (VELOCE)
+   * Carica solo i campi essenziali, NO JOIN con users
+   */
+  getAllLight: async (): Promise<Listing[]> => {
       try {
         console.log("⚡ listings.getAllLight – query ottimizzata...");
 

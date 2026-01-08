@@ -56,7 +56,8 @@ export interface CalendarBlock {
  */
 export const generateHubberICalFeed = async (
   hubberId: string,
-  token: string
+  token: string,
+  listingId: string
 ): Promise<string> => {
   // Verifica token (in produzione: validare contro DB)
   if (!token || token.length < 10) {
@@ -85,6 +86,7 @@ export const generateHubberICalFeed = async (
       )
     `)
     .eq('hubber_id', hubberId)
+    .eq('listing_id', listingId) 
     .in('status', ['confirmed', 'accepted', 'active', 'completed'])
     .order('start_date', { ascending: true });
 
@@ -537,7 +539,8 @@ export const syncImportedCalendar = async (
  * Genera o recupera l'URL di export iCal per un hubber
  */
 export const getOrCreateExportUrl = async (
-  userId: string
+  userId: string,
+  listingId: string
 ): Promise<{ url: string; token: string }> => {
   // Cerca token esistente
   const { data: existing } = await supabase
@@ -547,13 +550,13 @@ export const getOrCreateExportUrl = async (
     .single();
 
   if (existing?.token) {
-    const baseUrl = typeof window !== 'undefined' 
-      ? window.location.origin 
-      : 'https://renthubber.com';
-    return {
-      url: `${baseUrl}/.netlify/functions/ical?userId=${userId}&token=${existing.token}`,
-      token: existing.token,
-    };
+  const baseUrl = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : 'https://renthubber.com';
+  return {
+    url: `${baseUrl}/.netlify/functions/ical?userId=${userId}&listingId=${listingId}&token=${existing.token}`, // 🆕 existing.token non token
+    token: existing.token,
+}
   }
 
   // Genera nuovo token
@@ -571,17 +574,18 @@ export const getOrCreateExportUrl = async (
     ? window.location.origin 
     : 'https://renthubber.com';
 
-  return {
-    url: `${baseUrl}/.netlify/functions/ical?userId=${userId}&token=${token}`,
-    token,
-  };
+ return {
+  url: `${baseUrl}/.netlify/functions/ical?userId=${userId}&listingId=${listingId}&token=${token}`,
+  token,
+};
 };
 
 /**
  * Rigenera il token di export (invalida il precedente)
  */
 export const regenerateExportToken = async (
-  userId: string
+  userId: string,
+  listingId: string
 ): Promise<{ url: string; token: string }> => {
   const token = generateSecureToken();
 
@@ -601,9 +605,9 @@ export const regenerateExportToken = async (
     : 'https://renthubber.com';
 
   return {
-    url: `${baseUrl}/.netlify/functions/ical?userId=${userId}&token=${token}`,
-    token,
-  };
+  url: `${baseUrl}/.netlify/functions/ical?userId=${userId}&listingId=${listingId}&token=${token}`,
+  token,
+};
 };
 
 // =====================================================
