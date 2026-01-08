@@ -1794,6 +1794,8 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
           .order("start_date", { ascending: true })
           .limit(100);
 
+       console.log("🔍 RAW DATA FROM SUPABASE:", JSON.stringify(data?.[0], null, 2));
+        
         if (error) {
           console.error("Errore fetch bookings hubber:", error);
           return [];
@@ -7476,4 +7478,5 @@ export async function createBookingWithPaymentApi(params: {
   const booking = data as Booking;
 
   return booking;
+
 }
