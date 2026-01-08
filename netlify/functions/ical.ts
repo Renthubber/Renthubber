@@ -23,19 +23,20 @@ export const handler: Handler = async (
 
   try {
     // Estrai parametri dall'URL
-    const params = event.queryStringParameters || {};
-    const userId = params.userId;
-    const token = params.token;
+const params = event.queryStringParameters || {};
+const userId = params.userId;
+const token = params.token;
+const listingId = params.listingId; // 🆕 AGGIUNGI
 
-    if (!userId || !token) {
-      return {
-        statusCode: 400,
-        body: 'Missing userId or token',
-      };
-    }
+if (!userId || !token || !listingId) { // 🆕 Aggiungi || !listingId
+  return {
+    statusCode: 400,
+    body: 'Missing userId, token, or listingId', // 🆕 Aggiorna messaggio
+  };
+}
 
-    // Genera il feed iCal
-    const icalContent = await generateHubberICalFeed(userId, token);
+// Genera il feed iCal
+const icalContent = await generateHubberICalFeed(userId, token, listingId); // 🆕 Passa listingId
 
     // Restituisci con header appropriati
     return {
