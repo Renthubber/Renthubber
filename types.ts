@@ -390,6 +390,7 @@ export interface Listing {
 
   zoneDescription?: string;
   openingHours?: string;
+  closingHours?: string;
   maxGuests?: number;
   manualBadges?: string[];
   hostRules?: string[];
@@ -473,6 +474,18 @@ export interface ListingDraft {
   cancellationPolicy: CancellationPolicyType;
   location: string;
   images: string[];
+  rules?: string;
+  // 🆕 CAMPI AGGIUNTIVI
+  cleaningFee?: string;
+  pickupAddress?: string;
+  pickupCity?: string;
+  pickupInstructions?: string;
+  zoneDescription?: string;
+  maxGuests?: string;
+  openingHours?: string;
+  closingHours?: string;
+  manualBadges?: string[];
+  selectedFeatures?: string[];
 }
 
 // --- BOOKING REQUEST (UI / MOCK DASHBOARD) ---
@@ -526,6 +539,21 @@ export interface BookingRequest {
   // ✅ NUOVO: Info per bottone recensione
   canReview?: boolean;
   canReviewUntil?: string;
+
+  // ✅ NUOVI CAMPI PER DASHBOARD
+  renterTotalPaid?: number;
+  hubberTotalFee?: number;
+  renterTotalFee?: number;
+  cleaningFee?: number;
+  deposit?: number;
+  walletUsedCents?: number;
+  listingPrice?: number;
+  priceUnit?: string;
+  cancellationPolicy?: string;
+  start_date?: string;
+  end_date?: string;
+  hubberName?: string;
+  hubberAvatar?: string;
 }
 
 // --- BOOKING (DB REALE - TABELLA bookings) ---
