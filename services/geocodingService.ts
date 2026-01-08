@@ -39,13 +39,13 @@ export const searchItalianCities = async (query: string): Promise<CitySuggestion
 
   try {
     const params = new URLSearchParams({
-      q: query,
-      format: 'json',
-      addressdetails: '1',
-      limit: '8',
-      countrycodes: 'it', // Solo Italia
-      featuretype: 'city,town,village,municipality', // Solo città/comuni
-    });
+  q: query,
+  format: 'json',
+  addressdetails: '1',
+  limit: '10',
+  countrycodes: 'it', // Solo Italia
+  'accept-language': 'it',
+});
 
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?${params}`,
