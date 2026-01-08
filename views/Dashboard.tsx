@@ -167,7 +167,7 @@ const renterTotalFee =
 
   // ✅ Prezzo base dell'oggetto = netto hubber + commissione hubber
   // Esempio: €2.50 (netto) + €2.50 (comm) = €5.00 (prezzo base)
-  const baseRentalPrice = netEarnings + hubberCommission;
+  const baseRentalPrice = renterTotalPaid - renterTotalFee;
 
   return {
     // campi "core" della richiesta già usati dalla UI
@@ -264,6 +264,10 @@ interface DashboardProps {
   emailVerified?: boolean;
 }) => Promise<void> | void;
   onViewRenterProfile?: (renter: { id: string; name: string; avatar?: string }) => void;
+ // ✅ NUOVE CALLBACK CALENDARIO
+onImportCalendar?: (listingId: string, calendarUrl: string, calendarName: string) => Promise<void>;
+onSyncCalendar?: (calendarId: string) => Promise<void>;
+onRemoveCalendar?: (calendarId: string) => Promise<void>;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -299,7 +303,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [loadingPayments, setLoadingPayments] = useState(false);
   
  const [activeTab, setActiveTab] = useState<
-  'overview' | 'payments' | 'security' | 'profile' | 'bookings' | 'hubber_bookings' | 'calendar'
+  'overview' | 'payments' | 'security' | 'profile' | 'bookings' | 'hubber_bookings' | 'calendar' | 'favorites'
 >('overview');
 
   // Avatar & input ref per upload immagine
@@ -1136,40 +1140,41 @@ const handleRequestAction = (id: string, action: 'accepted' | 'rejected') => {
   };
 
   // ========== HANDLER CALENDARIO iCAL ==========
-  const handleImportCalendar = (url: string, name: string) => {
-    const newCalendar: ImportedCalendar = {
-      id: `cal-${Date.now()}`,
-      name,
-      url,
-      lastSync: new Date().toISOString(),
-      eventsCount: 0,
-      status: 'active'
-    };
-    setImportedCalendars(prev => [...prev, newCalendar]);
+const handleImportCalendar = async (url: string, name: string): Promise<void> => {
+  const newCalendar: ImportedCalendar = {
+    id: `cal-${Date.now()}`,
+    name,
+    url,
+    lastSync: new Date().toISOString(),
+    eventsCount: 0,
+    status: 'active'
   };
+  setImportedCalendars(prev => [...prev, newCalendar]);
+};
 
-  const handleSyncCalendar = (calendarId: string) => {
-    setImportedCalendars(prev =>
-      prev.map(cal =>
-        cal.id === calendarId
-          ? { ...cal, status: 'syncing' as const }
-          : cal
-      )
-    );
-    setTimeout(() => {
-      setImportedCalendars(prev =>
-        prev.map(cal =>
-          cal.id === calendarId
-            ? { ...cal, status: 'active' as const, lastSync: new Date().toISOString() }
-            : cal
-        )
-      );
-    }, 2000);
-  };
+const handleSyncCalendar = async (calendarId: string): Promise<void> => {
+  setImportedCalendars(prev =>
+    prev.map(cal =>
+      cal.id === calendarId
+        ? { ...cal, status: 'syncing' as const }
+        : cal
+    )
+  );
+  
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  setImportedCalendars(prev =>
+    prev.map(cal =>
+      cal.id === calendarId
+        ? { ...cal, status: 'active' as const, lastSync: new Date().toISOString() }
+        : cal
+    )
+  );
+};
 
-  const handleRemoveCalendar = (calendarId: string) => {
-    setImportedCalendars(prev => prev.filter(cal => cal.id !== calendarId));
-  };
+const handleRemoveCalendar = async (calendarId: string): Promise<void> => {
+  setImportedCalendars(prev => prev.filter(cal => cal.id !== calendarId));
+};
   // --- HANDLER CANCELLAZIONE PRENOTAZIONE RENTER ---
   const openCancelModal = (booking: BookingRequest) => {
     setBookingToCancel(booking);
@@ -1804,6 +1809,7 @@ const handleProfileSave = async (e: React.FormEvent) => {
         bio: editProfileForm.bio,
         user_type: editProfileForm.userType,
         date_of_birth: editProfileForm.dateOfBirth || null,
+        phone_number: editProfileForm.phoneNumber || null,
       })
       .eq('id', user.id);
       
@@ -5294,7 +5300,7 @@ const handleChangePassword = async (e: React.FormEvent) => {
 {(() => {
   const hubberFee = (selectedBooking as any).hubberTotalFee || 0;
   const cleaningFee = (selectedBooking as any).cleaningFee || 0;
-  const baseAmount = (selectedBooking as any).renterTotalPaid - (selectedBooking as any).renterTotalFee - cleaningFee;
+  const baseAmount = (selectedBooking as any).renterTotalPaid - (selectedBooking as any).renterTotalFee;  // ← RIMOSSO - cleaningFee
   const variableCommission = baseAmount * 0.10;
   const fixedFee = hubberFee - variableCommission;
 

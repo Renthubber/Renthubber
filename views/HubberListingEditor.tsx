@@ -63,6 +63,21 @@ export const HubberListingEditor: React.FC<HubberListingEditorProps> = ({ listin
 const handleSave = async () => {
   setIsSaving(true);
   
+  // Validazione prezzo
+  const price = typeof formData.price === 'string' ? parseFloat(formData.price) : formData.price;
+  if (!price || price <= 0) {
+    alert('Il prezzo deve essere maggiore di 0€');
+    setIsSaving(false);
+    return;
+  }
+  
+// Validazione foto
+if (!formData.images || formData.images.length === 0) {
+  alert('Devi caricare almeno una foto per salvare l\'annuncio');
+  setIsSaving(false);
+  return;
+}
+
   try {
     const dataToSave = {
       ...formData,
@@ -600,11 +615,23 @@ const handleSave = async () => {
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                     <input 
-                      type="number" 
-                      value={formData.price}
-                      onChange={e => setFormData({...formData, price: e.target.value as any})}
-                      className="w-full pl-9 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none font-bold"
-                    />
+  type="number"
+  min="0.01"
+  step="0.01"
+  value={formData.price}
+  onChange={e => {
+  const value = e.target.value;
+  // Permetti di digitare mentre l'utente scrive
+  setFormData({...formData, price: value as any});
+}}
+  onBlur={e => {
+    const value = parseFloat(e.target.value);
+    if (isNaN(value) || value < 0.01) {
+      setFormData({...formData, price: '' as any});
+    }
+  }}
+  className="w-full pl-9 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none font-bold"
+/>
                   </div>
                 </div>
                 <div>

@@ -238,6 +238,35 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
     }));
   };
 
+// 🔄 Funzioni per spostare foto con frecce
+const moveImageLeft = (index: number) => {
+  if (index === 0) return; // Già alla prima posizione
+  
+  const newImages = [...draft.images];
+  const temp = newImages[index];
+  newImages[index] = newImages[index - 1];
+  newImages[index - 1] = temp;
+  
+  setDraft(prev => ({
+    ...prev,
+    images: newImages
+  }));
+};
+
+const moveImageRight = (index: number) => {
+  if (index === draft.images.length - 1) return; // Già all'ultima posizione
+  
+  const newImages = [...draft.images];
+  const temp = newImages[index];
+  newImages[index] = newImages[index + 1];
+  newImages[index + 1] = temp;
+  
+  setDraft(prev => ({
+    ...prev,
+    images: newImages
+  }));
+};
+
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
@@ -249,6 +278,7 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
     if (!draft.title) missingFields.push('Titolo');
     if (!draft.description) missingFields.push('Descrizione');
     if (!draft.price) missingFields.push('Prezzo');
+    if (parseFloat(draft.price) <= 0) missingFields.push('Prezzo valido (maggiore di 0)');
     if (!draft.location && !draft.pickupCity) missingFields.push('Città / Zona');
     if (draft.images.length === 0) missingFields.push('Almeno una foto');
 
@@ -285,6 +315,7 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
         description: draft.description,
         price: parseFloat(draft.price) || 0,
         priceUnit: draft.priceUnit as 'ora' | 'giorno' | 'settimana' | 'mese',
+        pricePerHour: draft.priceUnit === 'ora' ? parseFloat(draft.price) || 0 : undefined,
         images: draft.images,
         location: draft.location || draft.pickupCity, // Usa pickupCity come fallback
         coordinates: selectedCityCoords || { lat: 0, lng: 0 },
@@ -810,12 +841,25 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 font-bold">€</span>
             <input
-              type="number"
-              className="w-full pl-8 px-4 py-3 rounded-xl border border-gray-300 font-bold text-lg"
-              placeholder="0.00"
-              value={draft.price}
-              onChange={(e) => setDraft({ ...draft, price: e.target.value })}
-            />
+  type="number"
+  min="0.01"
+  step="0.01"
+  className="w-full pl-8 px-4 py-3 rounded-xl border border-gray-300 font-bold text-lg"
+  placeholder="0.00"
+  value={draft.price}
+  onChange={(e) => {
+    const value = e.target.value;
+    // Permetti di digitare mentre l'utente scrive (incluso "0" iniziale per "0.50")
+    setDraft({ ...draft, price: value });
+  }}
+  onBlur={(e) => {
+    // Validazione finale quando l'utente esce dal campo
+    const value = parseFloat(e.target.value);
+    if (isNaN(value) || value < 0.01) {
+      setDraft({ ...draft, price: '' });
+    }
+  }}
+/>
           </div>
         </div>
         <div>
@@ -1212,18 +1256,51 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
         )}
       </div>
 
-      {draft.images.length > 0 ? (
-        <div className="grid grid-cols-3 gap-4">
-          {draft.images.map((img, idx) => (
-            <div key={idx} className="relative aspect-[4/3] bg-gray-100 rounded-xl border border-gray-200 overflow-hidden group">
-              <img src={img} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeImage(idx);
-                }}
-                className="absolute top-2 right-2 bg-white/80 hover:bg-white text-red-500 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-              >
+     {draft.images.length > 0 ? (
+  <div className="grid grid-cols-3 gap-4">
+    {draft.images.map((img, idx) => (
+      <div key={idx} className="relative aspect-[4/3] bg-gray-100 rounded-xl border border-gray-200 overflow-hidden group">
+        <img src={img} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
+        
+        {/* Bottoni controlli */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all">
+          {/* Freccia Sinistra */}
+          {idx > 0 && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                moveImageLeft(idx);
+              }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/95 p-2 rounded-full text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-white hover:scale-110"
+              title="Sposta a sinistra"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
+          
+          {/* Freccia Destra */}
+          {idx < draft.images.length - 1 && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                moveImageRight(idx);
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/95 p-2 rounded-full text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-white hover:scale-110"
+              title="Sposta a destra"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          )}
+          
+          {/* Bottone Elimina */}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              removeImage(idx);
+            }}
+            className="absolute top-2 right-2 bg-white/95 p-1.5 rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-white hover:scale-110"
+            title="Elimina foto"
+          >
                 <X className="w-4 h-4" />
               </button>
               {idx === 0 && (
@@ -1231,6 +1308,7 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
                   Copertina
                 </div>
               )}
+            </div>
             </div>
           ))}
           <div
@@ -1369,12 +1447,13 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
           {STEPS.map(step => (
             <div
               key={step.id}
-              className={`flex items-center p-3 rounded-xl transition-colors ${
+              onClick={() => setCurrentStep(step.id)}
+              className={`flex items-center p-3 rounded-xl transition-colors cursor-pointer ${
                 currentStep === step.id
                   ? 'bg-brand text-white shadow-md'
                   : currentStep > step.id
-                    ? 'text-brand font-medium'
-                    : 'text-gray-400'
+                    ? 'text-brand font-medium hover:bg-brand/10'
+                    : 'text-gray-400 hover:bg-gray-100'
               }`}
             >
               <step.icon className={`w-5 h-5 mr-3 ${currentStep === step.id ? 'text-brand-accent' : ''}`} />

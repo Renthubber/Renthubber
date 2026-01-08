@@ -1532,7 +1532,7 @@ const handleSend = async () => {
       try {
         const { supabase } = await import('../lib/supabase');
         const msgId = `msg-dispute-${Date.now()}`;
-        const messageText = "Hai avviato una contestazione per questa prenotazione. Il team di supporto di Renthubber valuterà la situazione e proverà a trovare una soluzione tra le parti.";
+        const messageText = "Contestazione aperta per questa prenotazione. Il team di supporto di Renthubber valuterà la situazione e proverà a trovare una soluzione tra le parti.";
         
         await supabase.from("messages").insert({
           id: msgId,
@@ -1578,33 +1578,14 @@ const handleSend = async () => {
 
       onCreateDispute(dispute);
 
-      // 4) Messaggio di conferma nella chat (locale per UI immediata)
-      const now = new Date();
-      const time = now.toLocaleTimeString("it-IT", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+setShowDisputeModal(false);
+resetDisputeState();
+} catch (err) {
+  console.error("Errore durante conferma contestazione:", err);
+}
+};
 
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          id: `dispute-${now.getTime()}`,
-          from: "me",
-          text:
-            "Hai avviato una contestazione per questa prenotazione. " +
-            "Il team di supporto di Renthubber valuterà la situazione e proverà a trovare una soluzione tra le parti.",
-          time,
-        },
-      ]);
-
-      setShowDisputeModal(false);
-      resetDisputeState();
-    } catch (err) {
-      console.error("Errore durante conferma contestazione:", err);
-    }
-  };
-
-  const steps = [
+const steps = [
     { id: 1, label: "Motivo" },
     { id: 2, label: "Dettagli" },
     { id: 3, label: "Immagini" },
