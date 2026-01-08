@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, BookingRequest, ActiveMode, Invoice } from '../types';
+import { User, BookingRequest, ActiveMode, Invoice, Listing } from '../types';
 import { RenterFavorites } from '../components/RenterFavorites';
 import {
   TrendingUp,
@@ -44,6 +44,8 @@ import { HubberCalendar } from '../components/hubber/HubberCalendar';
 import { ICalManager } from '../components/hubber/ICalManager';
 import { BillingDataSection } from '../components/BillingDataSection';
 import { calculateHubberFixedFee, calculateRenterFixedFee } from '../utils/feeUtils';
+import { CalendarListingSelector } from '../components/hubber/CalendarListingSelector';
+import { DashboardReviewsSection } from '../components/DashboardReviewsSection';
 
 // Mock Data for Charts (rimane fittizio per ora)
 type UserTypeOption =
@@ -303,7 +305,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [loadingPayments, setLoadingPayments] = useState(false);
   
  const [activeTab, setActiveTab] = useState<
-  'overview' | 'payments' | 'security' | 'profile' | 'bookings' | 'hubber_bookings' | 'calendar' | 'favorites'
+  'overview' | 'payments' | 'security' | 'profile' | 'bookings' | 'hubber_bookings' | 'calendar' | 'favorites' | 'reviews'
 >('overview');
 
   // Avatar & input ref per upload immagine
@@ -538,6 +540,7 @@ const [calendarBookings, setCalendarBookings] = useState<CalendarBooking[]>([]);
 const [loadingCalendar, setLoadingCalendar] = useState(false);
 const [icalExportUrl, setICalExportUrl] = useState<string>('');
 const [importedCalendars, setImportedCalendars] = useState<ImportedCalendar[]>([]);
+const [hubberListings, setHubberListings] = useState<Listing[]>([]); 
 // ✅ FATTURE UTENTE (da Supabase)
   const [userInvoices, setUserInvoices] = useState<any[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
@@ -713,6 +716,15 @@ const [importedCalendars, setImportedCalendars] = useState<ImportedCalendar[]>([
   ]);
   
   if (cancelled) return;
+
+   // 🆕 CARICA GLI ANNUNCI DELL'HUBBER
+  try {
+    const listings = await api.listings.getByUserId(user.id);
+    setHubberListings(listings);
+  } catch (err) {
+    console.error('Errore caricamento annunci hubber:', err);
+    setHubberListings([]);
+  }
 
   // Salva payments
   setHubberPayments(payments);
@@ -5420,76 +5432,21 @@ const handleChangePassword = async (e: React.FormEvent) => {
     );
   };
 
-  // --- CALENDARIO HUBBER ---
-const renderHubberCalendar = () => (
-  <div className="space-y-8 animate-in fade-in duration-300">
-    <div>
-      <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center md:text-left">Calendario Prenotazioni</h2>
-      <p className="text-sm text-gray-500 mt-1">
-        Visualizza tutte le tue prenotazioni e sincronizza con calendari esterni.
-      </p>
-    </div>
-
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-2">
-        {loadingCalendar ? (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
-            <div className="animate-spin w-8 h-8 border-2 border-brand border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-500">Caricamento calendario...</p>
-          </div>
-        ) : (
-          <HubberCalendar
-            bookings={calendarBookings}
-            onBookingClick={(booking) => {
-              const fullBooking = hubberBookings.find((b) => b.id === booking.id);
-              if (fullBooking) {
-                setSelectedHubberBookingId(fullBooking.id);
-                setActiveTab('hubber_bookings');
-              }
-            }}
-            onViewRenterProfile={(renter) => {
-              if (onViewRenterProfile && renter.id) {
-                onViewRenterProfile(renter);
-              }
-            }}
-          />
-        )}
-      </div>
-
-      <div>
-        <ICalManager
-          userId={user.id}
-          userName={user.name}
-          importedCalendars={importedCalendars}
-          onExportUrl={(url) => setICalExportUrl(url)}
-          onImportCalendar={handleImportCalendar}
-          onSyncCalendar={handleSyncCalendar}
-          onRemoveCalendar={handleRemoveCalendar}
-        />
-      </div>
-    </div>
-
-    <div className="bg-gradient-to-r from-brand/5 to-brand/10 border border-brand/20 rounded-xl p-5">
-      <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-        <span className="text-xl">💡</span> Come funziona
-      </h4>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-        <div className="bg-white/60 rounded-lg p-3">
-          <p className="font-semibold text-gray-800 mb-1">📅 Calendario</p>
-          <p className="text-gray-600">Vedi tutte le prenotazioni in un'unica vista mensile.</p>
-        </div>
-        <div className="bg-white/60 rounded-lg p-3">
-          <p className="font-semibold text-gray-800 mb-1">📤 Esporta iCal</p>
-          <p className="text-gray-600">Sincronizza con Google Calendar, Apple o Outlook.</p>
-        </div>
-        <div className="bg-white/60 rounded-lg p-3">
-          <p className="font-semibold text-gray-800 mb-1">📥 Importa</p>
-          <p className="text-gray-600">Importa calendari esterni per bloccare date.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-);
+ // --- CALENDARIO HUBBER ---
+const renderHubberCalendar = () => {
+  
+  return (
+    <CalendarListingSelector
+      userId={user.id}
+      userName={user.name}
+      listings={hubberListings} // 🆕 NON user.listings!
+      onViewRenterProfile={onViewRenterProfile}
+      onImportCalendar={handleImportCalendar}
+      onSyncCalendar={handleSyncCalendar}
+      onRemoveCalendar={handleRemoveCalendar}
+    />
+  );
+};
 
   // --- DASHBOARD HUBBER ---
   const renderHubberDashboard = () => (
@@ -5578,6 +5535,16 @@ const renderHubberCalendar = () => (
           }`}
         >
           Sicurezza & Verifica
+          </button>
+          <button
+          onClick={() => setActiveTab('reviews')}
+          className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
+            activeTab === 'reviews'
+              ? 'bg-gray-100 text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Recensioni
         </button>
       </div>
 
@@ -5587,7 +5554,16 @@ const renderHubberCalendar = () => (
       {activeTab === 'payments' && renderHubberPayments()}
       {activeTab === 'security' && renderSecurity()}
       {activeTab === 'profile' && renderProfile()}
-    </div>
+      {activeTab === 'reviews' && (
+        <DashboardReviewsSection
+          userId={user.id}
+          userType={activeMode}
+          onViewProfile={(profile) => {
+            console.log('View profile:', profile);
+          }}
+        />
+      )}
+   </div>
   );
 
 // --- PAGAMENTI & FATTURE RENTER ---
@@ -6426,13 +6402,23 @@ const renderRenterPayments = () => {
   >
     Preferiti
   </button>
+  <button
+    onClick={() => setActiveTab('reviews')}
+    className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
+      activeTab === 'reviews'
+        ? 'bg-gray-100 text-gray-900 shadow-sm'
+        : 'text-gray-500 hover:text-gray-700'
+    }`}
+  >
+    Recensioni
+  </button>
 </div>
 
      {activeTab === 'security' && renderSecurity()}
       {activeTab === 'profile' && renderProfile()}
       {activeTab === 'payments' && renderRenterPayments()}
       {activeTab === 'bookings' && renderRenterBookings()}
-      {activeTab === 'favorites' && (
+     {activeTab === 'favorites' && (
         <RenterFavorites
           currentUser={user}
           onListingClick={(listing) => {
@@ -6441,6 +6427,15 @@ const renderRenterPayments = () => {
             }
           }}
           onExploreClick={onManageListings}
+        />
+      )}
+      {activeTab === 'reviews' && (
+        <DashboardReviewsSection
+          userId={user.id}
+          userType={activeMode}
+          onViewProfile={(profile) => {
+            console.log('View profile:', profile);
+          }}
         />
       )}
 

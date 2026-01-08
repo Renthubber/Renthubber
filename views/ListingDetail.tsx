@@ -21,6 +21,7 @@ import { MapSection } from "../components/MapSection";
 import { ReviewsSection } from "../components/ReviewsSection";
 import { RelatedListingsSection } from "../components/RelatedListingsSection";
 import { api } from "../services/api";
+import { calendarBlocksApi } from '../services/calendarBlocksApi';
 import { BookingPaymentModal } from "../components/BookingPaymentModal";
 import { referralApi } from "../services/referralApi";
 import { supabase } from "../lib/supabase";
@@ -71,14 +72,14 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
         const fees = await api.admin.getFees();
         if (fees) {
           setPlatformFees(fees);
-          console.log("✅ Fee caricate da Supabase:", fees);
+  
         }
         
         // Carica anche settings referral per il limite wallet
         const refSettings = await referralApi.getSettings();
         if (refSettings) {
           setMaxCreditUsagePercent(refSettings.maxCreditUsagePercent);
-          console.log("✅ Referral settings caricate:", refSettings.maxCreditUsagePercent, "%");
+      
         }
       } catch (err) {
         console.error("Errore caricamento fee:", err);
@@ -204,6 +205,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
   
   // ✅ Date già prenotate (caricate da Supabase)
   const [bookedDates, setBookedDates] = useState<Date[]>([]);
+
+  // ✅ Date bloccate manualmente dall'hubber
+const [blockedDates, setBlockedDates] = useState<Date[]>([]);
 
   // ✅ TRACCIA ANNUNCIO VISUALIZZATO (per "Ultimi Visti") - DATABASE
 useEffect(() => {
@@ -349,6 +353,37 @@ useEffect(() => {
   }
 }, [listing.id]);
 
+// ✅ CARICA DATE BLOCCATE DALL'HUBBER
+useEffect(() => {
+  const loadBlockedDates = async () => {
+    try {
+      const blocksData = await calendarBlocksApi.getByListingId(listing.id);
+      const allBlockedDates: Date[] = [];
+      
+      blocksData.forEach((block) => {
+        const start = new Date(block.startDate);
+        const end = new Date(block.endDate);
+        
+        // Aggiungi tutte le date tra start e end (incluse)
+        const current = new Date(start);
+        while (current <= end) {
+          allBlockedDates.push(new Date(current));
+          current.setDate(current.getDate() + 1);
+        }
+      });
+      
+      setBlockedDates(allBlockedDates);
+      console.log("🚫 Date bloccate caricate:", allBlockedDates.length);
+    } catch (err) {
+      console.error("Errore caricamento date bloccate:", err);
+    }
+  };
+  
+  if (listing.id) {
+    loadBlockedDates();
+  }
+}, [listing.id]);
+
   // ✅ CARICA SLOT ORARI OCCUPATI per la data selezionata
 useEffect(() => {
   const loadBookedTimeSlots = async () => {
@@ -408,8 +443,6 @@ useEffect(() => {
 }
 });
       
-      console.log('⏰ Slot INIZIO occupati (non puoi iniziare):', bookedSlots);
-console.log('⏰ Slot FINE occupati (non puoi finire):', bookedEndSlots);
 setBookedTimeSlots(bookedSlots);
 setBookedEndTimeSlots(bookedEndSlots);
     } catch (err) {
@@ -420,8 +453,8 @@ setBookedEndTimeSlots(bookedEndSlots);
   loadBookedTimeSlots();
 }, [startDate, listing.id, listing.category, listing.priceUnit]);
 
-  // Date disabilitate = date già prenotate
-  const disabledDates = bookedDates;
+  // Date disabilitate = date già prenotate + date bloccate dall'hubber
+const disabledDates = [...bookedDates, ...blockedDates];
 
   // 🔥 CALCOLO durata + costi (oggetti + spazi, tutte le unità)
   useEffect(() => {
@@ -704,7 +737,6 @@ useEffect(() => {
     try {
       // ✅ Il webhook ha già creato la prenotazione
       // Dobbiamo solo aggiornare il wallet locale per riflettere l'uso del credito
-      console.log("✅ Prenotazione creata dal webhook, aggiornamento wallet locale...");
       
       onPaymentSuccess(total, walletUsedEur);
     } catch (err) {
