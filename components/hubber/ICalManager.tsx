@@ -15,6 +15,7 @@ import {
   Plus,
 } from 'lucide-react';
  import { supabase } from '../../lib/supabase';
+ import { getOrCreateExportUrl } from '../../services/ical';
 
 // Tipo per calendario importato
 interface ImportedCalendar {
@@ -64,17 +65,18 @@ export const ICalManager: React.FC<ICalManagerProps> = ({
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
   // Genera URL export se non esiste
-  useEffect(() => {
-    if (!exportUrl && userId) {
-      // Genera un token univoco basato su userId
-      const token = btoa(`${userId}-${Date.now()}`).replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
-      const generatedUrl = `${window.location.origin}/api/ical/${userId}/${token}.ics`;
-      setExportUrl(generatedUrl);
+useEffect(() => {
+  if (!exportUrl && userId) {
+    getOrCreateExportUrl(userId).then(({ url }) => {
+      setExportUrl(url);
       if (onExportUrl) {
-        onExportUrl(generatedUrl);
+        onExportUrl(url);
       }
-    }
-  }, [userId, exportUrl, onExportUrl]);
+    }).catch(err => {
+      console.error('Errore generazione URL iCal:', err);
+    });
+  }
+}, [userId, exportUrl, onExportUrl]);
 
   // Copia URL negli appunti
   const copyToClipboard = async () => {
