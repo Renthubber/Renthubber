@@ -760,6 +760,7 @@ const mapDbBookingToAppBooking = (row: any) => {
     endDate: row.end_date,
     amountTotal: Number(row.amount_total || 0),
     platformFee: Number(row.platform_fee || 0),
+    serviceFee: Number(row.service_fee || 0),
     hubberNetAmount: Number(row.hubber_net_amount || 0),
     cleaningFee: Number(row.cleaning_fee || 0),
     deposit: Number(row.deposit || 0),
@@ -1794,8 +1795,6 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
           .order("start_date", { ascending: true })
           .limit(100);
 
-       console.log("🔍 RAW DATA FROM SUPABASE:", JSON.stringify(data?.[0], null, 2));
-        
         if (error) {
           console.error("Errore fetch bookings hubber:", error);
           return [];
@@ -7478,5 +7477,4 @@ export async function createBookingWithPaymentApi(params: {
   const booking = data as Booking;
 
   return booking;
-
 }
