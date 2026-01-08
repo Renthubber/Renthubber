@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -28,8 +28,12 @@ interface CalendarBooking {
 
 interface HubberCalendarProps {
   bookings: CalendarBooking[];
+  listingId?: string; // 🆕 ID annuncio per salvare blocchi
   onBookingClick?: (booking: CalendarBooking) => void;
   onViewRenterProfile?: (renter: { id: string; name: string; avatar?: string }) => void;
+  onBlockDates?: (dates: Date[]) => Promise<void>; // 🆕 Callback per bloccare date
+  onUnblockDate?: (date: Date) => Promise<void>; // 🆕 Callback per sbloccare singola data
+  blockedDates?: Date[]; // 🆕 Date già bloccate
 }
 
 // Colori per differenziare gli annunci
@@ -53,12 +57,31 @@ const MONTHS_IT = [
 
 export const HubberCalendar: React.FC<HubberCalendarProps> = ({
   bookings,
+  listingId, // 🆕
   onBookingClick,
   onViewRenterProfile,
+  onBlockDates, // 🆕
+   onUnblockDate,
+  blockedDates: blockedDatesProp = [], // 🆕
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<CalendarBooking | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+
+  // 🆕 STATO PER BLOCCO MANUALE DATE
+  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+  const [blockedDates, setBlockedDates] = useState<Date[]>([]); // Date già bloccate nel DB
+
+// Sincronizza blocchi dalle props (con confronto profondo per evitare loop)
+useEffect(() => {
+  // Confronta le date convertendole in stringhe per evitare loop infiniti
+  const currentDatesStr = blockedDates.map(d => d.toISOString()).sort().join(',');
+  const newDatesStr = blockedDatesProp.map(d => d.toISOString()).sort().join(',');
+  
+  if (currentDatesStr !== newDatesStr) {
+    setBlockedDates(blockedDatesProp);
+  }
+}, [blockedDatesProp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mappa listingId -> colore
   const listingColorMap = useMemo(() => {
@@ -200,6 +223,45 @@ export const HubberCalendar: React.FC<HubberCalendarProps> = ({
     return Array.from(seen.values());
   }, [bookings, listingColorMap]);
 
+// Helper per verificare se una data è bloccata
+const isDateBlocked = (date: Date) => {
+  return blockedDates.some(d => 
+    d.getDate() === date.getDate() && 
+    d.getMonth() === date.getMonth() &&
+    d.getFullYear() === date.getFullYear()
+  );
+};
+  
+
+// 🆕 FUNZIONE PER SALVARE LE MODIFICHE (blocco/sblocco)
+const handleBlockSelectedDates = async () => {
+  if (selectedDates.length === 0) return;
+  
+  try {
+    // Separa date da bloccare e da sbloccare
+    const datesToBlock = selectedDates.filter(d => !isDateBlocked(d));
+    const datesToUnblock = selectedDates.filter(d => isDateBlocked(d));
+    
+    // Blocca le date libere
+    if (datesToBlock.length > 0 && onBlockDates) {
+      await onBlockDates(datesToBlock);
+    }
+    
+    // Sblocca le date bloccate
+    if (datesToUnblock.length > 0 && onUnblockDate) {
+      for (const date of datesToUnblock) {
+        await onUnblockDate(date);
+      }
+    }
+    
+    // Reset selezione
+    setSelectedDates([]);
+  } catch (err) {
+    console.error('Errore salvataggio modifiche:', err);
+    alert('Errore durante il salvataggio delle modifiche');
+  }
+};
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
       {/* ✅ FIX: Header responsive migliorato */}
@@ -234,6 +296,39 @@ export const HubberCalendar: React.FC<HubberCalendarProps> = ({
             </button>
           </div>
         </div>
+
+        {/* 🆕 PULSANTE SALVA MODIFICHE (appare solo quando ci sono date selezionate) */}
+{selectedDates.length > 0 && (() => {
+  const toBlock = selectedDates.filter(d => !isDateBlocked(d)).length;
+  const toUnblock = selectedDates.filter(d => isDateBlocked(d)).length;
+  
+  let buttonText = '';
+  if (toBlock > 0 && toUnblock > 0) {
+    buttonText = `Blocca ${toBlock} e Sblocca ${toUnblock} ${toBlock + toUnblock === 1 ? 'giorno' : 'giorni'}`;
+  } else if (toBlock > 0) {
+    buttonText = `Blocca ${toBlock} ${toBlock === 1 ? 'giorno' : 'giorni'}`;
+  } else {
+    buttonText = `Sblocca ${toUnblock} ${toUnblock === 1 ? 'giorno' : 'giorni'}`;
+  }
+  
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={handleBlockSelectedDates}
+        className="px-4 py-2 text-sm font-medium bg-[#0D414B] text-white rounded-lg hover:bg-[#0D414B]/90 transition-all"
+      >
+        {buttonText}
+      </button>
+    
+    <button
+      onClick={() => setSelectedDates([])}
+      className="px-3 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
+    >
+      ✕ Annulla
+    </button>
+  </div>
+);  
+})()}
 
         {/* Legenda annunci - scrollabile su mobile */}
         {uniqueListings.length > 0 && (
@@ -274,15 +369,50 @@ export const HubberCalendar: React.FC<HubberCalendarProps> = ({
             const dayBookings = getBookingsForDay(dayInfo.date);
             const isTodayDate = isToday(dayInfo.date);
 
+            // 🆕 CHECK SE GIORNO È SELEZIONATO O BLOCCATO
+const isSelected = selectedDates.some(d => 
+  d.getDate() === dayInfo.date.getDate() && 
+  d.getMonth() === dayInfo.date.getMonth() &&
+  d.getFullYear() === dayInfo.date.getFullYear()
+);
+
+const isBlocked = blockedDates.some(d => 
+  d.getDate() === dayInfo.date.getDate() && 
+  d.getMonth() === dayInfo.date.getMonth() &&
+  d.getFullYear() === dayInfo.date.getFullYear()
+);
+
+// 🆕 HANDLER PER CLICK SU GIORNO (MODALITÀ BLOCCO)
+const handleDayClick = () => {
+  // Se ha prenotazioni, non fare nulla
+  if (dayBookings.length > 0) return;
+  
+  if (isSelected) {
+    // Deseleziona
+    setSelectedDates(prev => prev.filter(d => 
+      !(d.getDate() === dayInfo.date.getDate() && 
+        d.getMonth() === dayInfo.date.getMonth() &&
+        d.getFullYear() === dayInfo.date.getFullYear())
+    ));
+  } else {
+    // Seleziona (sia per bloccare che per sbloccare)
+    setSelectedDates(prev => [...prev, dayInfo.date]);
+  }
+};
+
             return (
               <div
-                key={index}
-                className={`
-                  aspect-square border rounded-lg p-1 sm:p-2 cursor-pointer
-                  hover:bg-gray-50 transition-colors relative overflow-hidden
-                  ${isTodayDate ? 'border-brand bg-brand/5' : 'border-gray-200'}
-                `}
-              >
+  key={index}
+  onClick={handleDayClick}
+ className={`
+  aspect-square border rounded-lg p-1 sm:p-2 transition-colors relative overflow-hidden
+  ${dayBookings.length === 0 ? 'cursor-pointer' : 'cursor-default'}
+  ${isSelected ? 'bg-[#0D414B]/10 border-[#0D414B] border-2' : ''}
+  ${isBlocked ? 'bg-teal-100 border-2 border-teal-600 opacity-100' : ''}
+  ${!isSelected && !isBlocked && dayBookings.length === 0 ? 'hover:bg-[#0D414B]/5' : ''}
+  ${isTodayDate && !isSelected && !isBlocked ? 'border-[#0D414B] bg-[#0D414B]/5' : !isSelected && !isBlocked ? 'border-gray-200' : ''}
+`}
+>
                 {/* Numero giorno */}
                 <div className={`
                   text-xs font-medium mb-1 flex items-center justify-between px-1

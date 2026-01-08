@@ -31,6 +31,7 @@ interface ImportedCalendar {
 interface ICalManagerProps {
   userId: string;
   userName?: string;
+  listingId?: string;
   onExportUrl?: (url: string) => void;
   onImportCalendar?: (url: string, name: string) => Promise<void>;
   onRemoveCalendar?: (calendarId: string) => Promise<void>;
@@ -42,6 +43,7 @@ interface ICalManagerProps {
 export const ICalManager: React.FC<ICalManagerProps> = ({
   userId,
   userName,
+  listingId,
   onExportUrl,
   onImportCalendar,
   onRemoveCalendar,
@@ -70,20 +72,17 @@ export const ICalManager: React.FC<ICalManagerProps> = ({
 useEffect(() => {
   console.log('🔍 ICalManager useEffect - exportUrl:', exportUrl, 'userId:', userId);
   
-  if (!exportUrl && userId) {
-    console.log('🔄 Chiamando getOrCreateExportUrl...');
-    
-    getOrCreateExportUrl(userId).then(({ url }) => {
-      console.log('✅ URL generato:', url);
-      setExportUrl(url);
-      if (onExportUrl) {
-        onExportUrl(url);
-      }
-    }).catch(err => {
-      console.error('Errore generazione URL iCal:', err);
-    });
-  }
-}, [userId, exportUrl, onExportUrl]);
+  if (!exportUrl && userId && listingId) {
+  getOrCreateExportUrl(userId, listingId).then(({ url }) => {
+    setExportUrl(url);
+    if (onExportUrl) {
+      onExportUrl(url);
+    }
+  }).catch(err => {
+    console.error('Errore generazione URL iCal:', err);
+  });
+}
+}, [userId, listingId, exportUrl, onExportUrl]);
 
   // Copia URL negli appunti
   const copyToClipboard = async () => {
