@@ -2,6 +2,7 @@
 export default {
   content: [
     "./index.html",
+    "./pages/**/*.{js,ts,jsx,tsx}",      // ✅ AGGIUNTO
     "./components/**/*.{js,ts,jsx,tsx}",
     "./views/**/*.{js,ts,jsx,tsx}",
     "./services/**/*.{js,ts,jsx,tsx}",
