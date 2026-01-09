@@ -928,10 +928,11 @@ const [hubberListings, setHubberListings] = useState<Listing[]>([]);
     setLoadingNextBooking(false);
   }, [user.id, activeMode]);
 
-  // --- REALTIME: Ascolta cambiamenti bookings e reviews ---
+ // --- REALTIME: Canali separati per evitare limiti ---
 useEffect(() => {
-  const channel = supabase
-    .channel('dashboard-realtime')
+  // CANALE 1: Bookings & Reviews
+  const channel1 = supabase
+    .channel('dashboard-bookings-reviews')
     .on(
       'postgres_changes',
       { 
@@ -941,8 +942,11 @@ useEffect(() => {
         filter: activeMode === 'hubber' ? `hubber_id=eq.${user.id}` : `renter_id=eq.${user.id}`
       },
       () => {
-        console.log('📡 Booking aggiornato, ricarico conteggio recensioni...');
+        console.log('📡 Booking aggiornato');
         loadPendingReviewsCount();
+        if (activeMode === 'hubber') {
+          loadHubberStats();
+        }
       }
     )
     .on(
@@ -953,16 +957,132 @@ useEffect(() => {
         table: 'reviews'
       },
       () => {
-        console.log('📡 Review aggiornata, ricarico...');
+        console.log('📡 Review aggiornata');
         loadPendingReviewsCount();
       }
     )
     .subscribe((status) => {
-  console.log('🔌 Realtime Dashboard status:', status);
-});
+      console.log('🔌 Channel 1 (Bookings/Reviews):', status);
+    });
+
+  // CANALE 2: Finanze
+  const channel2 = supabase
+    .channel('dashboard-finances')
+    .on(
+      'postgres_changes',
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'payments',
+        filter: `user_id=eq.${user.id}`
+      },
+      () => {
+        console.log('📡 Payment aggiornato');
+      }
+    )
+    .on(
+      'postgres_changes',
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'invoices',
+        filter: `user_id=eq.${user.id}`
+      },
+      () => {
+        console.log('📡 Invoice aggiornata');
+      }
+    )
+    .on(
+      'postgres_changes',
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'wallets',
+        filter: `user_id=eq.${user.id}`
+      },
+      () => {
+        console.log('📡 Wallet aggiornato');
+        if (activeMode === 'hubber') {
+          loadHubberBalance();
+        }
+      }
+    )
+    .on(
+      'postgres_changes',
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'wallet_transactions',
+        filter: `user_id=eq.${user.id}`
+      },
+      () => {
+        console.log('📡 Transazione wallet');
+        if (activeMode === 'hubber') {
+          loadHubberBalance();
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log('🔌 Channel 2 (Finances):', status);
+    });
+
+  // CANALE 3: Listings & Altro
+  const channel3 = supabase
+    .channel('dashboard-misc')
+    .on(
+      'postgres_changes',
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'calendar_blocks'
+      },
+      (payload) => {
+        console.log('📡 Calendar block aggiornato', payload);
+      }
+    )
+    .on(
+      'postgres_changes',
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'favorites',
+        filter: `user_id=eq.${user.id}`
+      },
+      () => {
+        console.log('📡 Favorito aggiornato');
+      }
+    )
+    .on(
+      'postgres_changes',
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'disputes'
+      },
+      () => {
+        console.log('📡 Dispute aggiornata');
+      }
+    )
+    .on(
+      'postgres_changes',
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'refunds',
+        filter: `user_id=eq.${user.id}`
+      },
+      () => {
+        console.log('📡 Refund aggiornato');
+      }
+    )
+    .subscribe((status) => {
+      console.log('🔌 Channel 3 (Misc):', status);
+    });
 
   return () => {
-    supabase.removeChannel(channel);
+    supabase.removeChannel(channel1);
+    supabase.removeChannel(channel2);
+    supabase.removeChannel(channel3);
   };
 }, [user.id, activeMode]);
 

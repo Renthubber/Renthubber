@@ -19,14 +19,42 @@ interface AdminDispute {
 }
 
 // CORRETTO (senza React.FC)
-export const AdminDisputesPage = () => {
-  const [disputes, setDisputes] = useState<AdminDispute[]>([]);
+interface AdminDisputesPageProps {
+  onManageDispute: (disputeId: string) => Promise<void>;
+}
+
+export const AdminDisputesPage = ({ onManageDispute }: AdminDisputesPageProps) => {
+const [disputes, setDisputes] = useState<AdminDispute[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | AdminDisputeStatus>("open");
+  const [statusTab, setStatusTab] = useState<"active" | "resolved">("active");
+  const [timeFilter, setTimeFilter] = useState<"all" | "today" | "yesterday" | "week" | "month" | "year">("all");
 
   useEffect(() => {
-    loadDisputes();
-  }, []);
+  loadDisputes();
+
+  // Subscription real-time per aggiornamenti dispute
+  const channel = supabase
+    .channel('admin_disputes_changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*', // INSERT, UPDATE, DELETE
+        schema: 'public',
+        table: 'disputes'
+      },
+      (payload) => {
+        console.log('Dispute aggiornata:', payload);
+        // Ricarica le dispute quando cambia qualcosa
+        loadDisputes();
+      }
+    )
+    .subscribe();
+
+  // Cleanup alla dismissione del componente
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, []);
 
   const loadDisputes = async () => {
     setLoading(true);
@@ -89,35 +117,129 @@ export const AdminDisputesPage = () => {
     setLoading(false);
   };
 
-  const filtered = disputes.filter(
-    (d) => filter === "all" || d.status === filter
-  );
+  // Filtra per data
+  const filterByTime = (dispute: AdminDispute) => {
+    if (timeFilter === "all") return true;
+    
+    const createdDate = new Date(dispute.createdAt);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    switch (timeFilter) {
+      case "today":
+        return createdDate >= today;
+      case "yesterday":
+        return createdDate >= yesterday && createdDate < today;
+      case "week":
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return createdDate >= weekAgo;
+      case "month":
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        return createdDate >= monthAgo;
+      case "year":
+        const yearAgo = new Date(today);
+        yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+        return createdDate >= yearAgo;
+      default:
+        return true;
+    }
+  };
+
+  // Filtra per stato in base al tab
+  const filterByStatus = (dispute: AdminDispute) => {
+    switch (statusTab) {
+      case "active":
+        return dispute.status === "open" || dispute.status === "in_review";
+      case "resolved":
+        return dispute.status === "resolved" || dispute.status === "rejected";
+      default:
+        return true;
+    }
+  };
+
+  const filtered = disputes.filter(d => filterByStatus(d) && filterByTime(d));
+
+  // Contatori per i tab
+  const activeCount = disputes.filter(d => d.status === "open" || d.status === "in_review").length;
+  const resolvedCount = disputes.filter(d => d.status === "resolved" || d.status === "rejected").length;
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Gestione Contestazioni</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Gestione Contestazioni</h1>
+        
+        {/* TAB A DESTRA */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setStatusTab("active")}
+            className={`px-4 py-2 font-medium text-sm rounded-lg transition-colors ${
+              statusTab === "active"
+                ? "bg-red-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Attive
+            {activeCount > 0 && (
+              <span className="ml-2 px-2 py-0.5 text-xs bg-white/20 rounded-full">
+                {activeCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setStatusTab("resolved")}
+            className={`px-4 py-2 font-medium text-sm rounded-lg transition-colors ${
+              statusTab === "resolved"
+                ? "bg-green-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Risolte
+            {resolvedCount > 0 && (
+              <span className="ml-2 px-2 py-0.5 text-xs bg-white/20 rounded-full">
+                {resolvedCount}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
 
-      {/* FILTRO */}
-      <div className="flex gap-2 mb-4">
+      {/* FILTRI TEMPORALI */}
+      <div className="flex gap-2 mb-6 flex-wrap">
         {[
-          { label: "Tutte", v: "all" as const },
-          { label: "Aperte", v: "open" as const },
-          { label: "In revisione", v: "in_review" as const },
-          { label: "Risolte", v: "resolved" as const },
-          { label: "Chiuse", v: "rejected" as const },
+          { label: "Tutte", value: "all" as const },
+          { label: "Oggi", value: "today" as const },
+          { label: "Ieri", value: "yesterday" as const },
+          { label: "Ultima settimana", value: "week" as const },
+          { label: "Ultimo mese", value: "month" as const },
+          { label: "Ultimo anno", value: "year" as const },
         ].map((btn) => (
           <button
-            key={btn.v}
-            onClick={() => setFilter(btn.v)}
-            className={`px-3 py-1 rounded-full border text-sm ${
-              filter === btn.v
-                ? "bg-red-600 text-white border-red-600"
-                : "bg-white border-gray-300 text-gray-700"
+            key={btn.value}
+            onClick={() => setTimeFilter(btn.value)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              timeFilter === btn.value
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
             {btn.label}
           </button>
         ))}
+      </div>
+
+      {/* CONTATORE RISULTATI */}
+      <div className="mb-4 text-sm text-gray-600">
+        {filtered.length} {filtered.length === 1 ? "contestazione" : "contestazioni"} {timeFilter !== "all" && `(${
+          timeFilter === "today" ? "oggi" :
+          timeFilter === "yesterday" ? "ieri" :
+          timeFilter === "week" ? "ultima settimana" :
+          timeFilter === "month" ? "ultimo mese" :
+          "ultimo anno"
+        })`}
       </div>
 
       {/* LISTA */}
@@ -157,7 +279,7 @@ export const AdminDisputesPage = () => {
 
                 {/* STATO */}
                 <span
-                  className={`px-2 py-1 text-xs rounded-full ${
+                  className={`px-2 py-1 text-xs rounded-full h-fit whitespace-nowrap ${
                     d.status === "open"
                       ? "bg-red-100 text-red-600"
                       : d.status === "in_review"
@@ -221,6 +343,16 @@ export const AdminDisputesPage = () => {
               <div className="text-xs text-gray-400 mt-3">
                 Creata il{" "}
                 {new Date(d.createdAt).toLocaleString("it-IT")}
+              </div>
+
+              {/* BOTTONE GESTISCI */}
+              <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+                <button
+                  onClick={() => onManageDispute(d.id)}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  Gestisci →
+                </button>
               </div>
             </div>
           ))}

@@ -55,6 +55,7 @@ import * as cmsService from '../services/cmsService';
 import * as financeSettingsService from '../services/financeSettingsService';
 import { OnlineIndicator } from '../components/OnlineIndicator';
 import { getAvatarUrl } from '../utils/avatarUtils';
+import { AdminDisputesPage } from './AdminDisputesPage';
 
 // Funzione per formattare data in italiano
 const formatDateIT = (isoDate: string | null | undefined): string => {
@@ -8073,146 +8074,58 @@ const renderFinanceRefunds = () => {
     );
   };
 
-  const renderCMS = () => <AdminCMSBranding />;
+const renderDisputes = () => (
+  <AdminDisputesPage 
+    onManageDispute={async (disputeId: string) => {
+      try {
+        // Marca come vista
+        await markAsViewed('dispute', disputeId);
+        
+        // Verifica se esiste già un ticket per questa disputa
+        const { data: existingTicket } = await (await import('../lib/supabase')).supabase
+          .from('support_tickets')
+          .select('id')
+          .eq('related_dispute_id', disputeId)
+          .maybeSingle();
 
-  const renderDisputes = () => (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in">
-      <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-        <h3 className="font-bold text-gray-900 flex items-center">
-          <AlertTriangle className="w-5 h-5 mr-2 text-red-500" /> Gestione Controversie
-        </h3>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full font-medium">
-            {localDisputes.filter(d => d.status === 'open').length} Aperte
-          </span>
-          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium">
-            {localDisputes.filter(d => d.status === 'resolved').length} Risolte
-          </span>
-        </div>
-      </div>
-      <table className="w-full text-left text-sm text-gray-600">
-        <thead className="bg-gray-50 text-gray-900 font-semibold border-b border-gray-100">
-          <tr>
-            <th className="p-4">ID</th>
-            <th className="p-4">Prenotazione</th>
-            <th className="p-4">Data</th>
-            <th className="p-4">Aperta da</th>
-            <th className="p-4">Motivo</th>
-            <th className="p-4">Importo</th>
-            <th className="p-4">Stato</th>
-            <th className="p-4 text-right">Azioni</th>
-          </tr>
-        </thead>
-        <tbody>
-          {localDisputes.map((d) => (
-            <tr
-              key={d.id}
-              className="border-b border-gray-50 hover:bg-gray-50"
-            >
-              <td className="p-4 text-xs font-mono">{d.dispute_id || d.id.slice(0,8)}</td>
-              <td className="p-4">
-                {d.booking_id ? (
-                  <code className="text-xs bg-brand/10 text-brand px-2 py-1 rounded font-mono font-bold">
-                    #{d.booking_id.slice(0, 6).toUpperCase()}
-                  </code>
-                ) : (
-                  <span className="text-xs text-gray-400">-</span>
-                )}
-              </td>
-              <td className="p-4 text-xs">{new Date(d.created_at).toLocaleDateString('it-IT')}</td>
-              <td className="p-4">
-                <span className={`px-2 py-1 rounded text-xs font-bold ${
-                  d.opened_by_role === 'hubber' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                }`}>
-                  {d.opened_by_role === 'hubber' ? 'Hubber' : 'Renter'}
-                </span>
-              </td>
-              <td className="p-4">
-                <span className="block text-xs uppercase font-bold text-gray-500 mb-1">
-                  {d.reason?.replace(/_/g, ' ')}
-                </span>
-                <p className="text-gray-900 line-clamp-1">{d.details}</p>
-              </td>
-              <td className="p-4 font-medium">
-                {d.refund_amount ? `€${d.refund_amount}` : '-'}
-              </td>
-              <td className="p-4">
-                <span
-                  className={`px-2 py-1 rounded text-xs font-bold uppercase ${
-                    d.status === 'open'
-                      ? 'bg-red-100 text-red-700'
-                      : d.status === 'resolved'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  {d.status === 'open' ? 'Aperta' : d.status === 'resolved' ? 'Risolta' : d.status}
-                </span>
-              </td>
-              <td className="p-4 text-right">
-                <button
-                  onClick={async () => {
-                    try {
-                      // ✨ MARCA COME VISTA
-                     await markAsViewed('dispute', d.id);
-      
-                      // Verifica se esiste già un ticket per questa disputa
-                      const { data: existingTicket } = await (await import('../lib/supabase')).supabase
-                        .from('support_tickets')
-                        .select('id')
-                        .eq('related_dispute_id', d.id)
-                        .maybeSingle();
+        let ticketId;
+        if (existingTicket) {
+          ticketId = existingTicket.id;
+        } else {
+          // Trova la disputa completa
+          const dispute = localDisputes.find(d => d.id === disputeId);
+          if (!dispute) throw new Error('Disputa non trovata');
+          
+          // Crea nuovo ticket dalla disputa
+          ticketId = await api.support.createTicketFromDispute(dispute);
+        }
 
-                      let ticketId;
-                      if (existingTicket) {
-                        ticketId = existingTicket.id;
-                      } else {
-                        // Crea nuovo ticket dalla disputa
-                        ticketId = await api.support.createTicketFromDispute(d);
-                      }
-
-                      // Vai alla sezione supporto
-                      setActiveTab('support');
-                      
-                      // Aspetta che i ticket si carichino e seleziona quello giusto
-                      setTimeout(async () => {
-                        const { data: tickets } = await (await import('../lib/supabase')).supabase
-                          .from('support_tickets')
-                          .select(`
-                            *,
-                            user:users!support_tickets_user_id_fkey(id, first_name, last_name, public_name, avatar_url, email),
-                            assigned:users!support_tickets_assigned_to_fkey(id, first_name, last_name, public_name, avatar_url)
-                          `)
-                          .eq('id', ticketId)
-                          .single();
-                        
-                        if (tickets) {
-                          handleSelectTicket(tickets);
-                        }
-                      }, 500);
-                    } catch (error) {
-                      console.error('Errore gestione disputa:', error);
-                      alert('Errore nell\'apertura del ticket');
-                    }
-                  }}
-                  className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg"
-                >
-                  Gestisci →
-                </button>
-              </td>
-            </tr>
-          ))}
-          {localDisputes.length === 0 && (
-            <tr>
-              <td colSpan={8} className="p-8 text-center text-gray-400">
-                Nessuna controversia trovata.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
+        // Vai alla sezione supporto
+        setActiveTab('support');
+        
+        // Aspetta che i ticket si carichino e seleziona quello giusto
+        setTimeout(async () => {
+          const { data: tickets } = await (await import('../lib/supabase')).supabase
+            .from('support_tickets')
+            .select(`
+              *,
+              user:users!support_tickets_user_id_fkey(id, first_name, last_name, public_name, avatar_url, email),
+              assigned:users!support_tickets_assigned_to_fkey(id, first_name, last_name, public_name, avatar_url)
+            `)
+            .eq('id', ticketId)
+            .single();
+          
+          if (tickets) {
+            handleSelectTicket(tickets);
+          }
+        }, 500);
+      } catch (error) {
+        console.error('Errore gestione disputa:', error);
+        alert('Errore nell\'apertura del ticket');
+      }
+    }}
+  />
+);
 
   // ✅ RENDER RECENSIONI ADMIN
 const renderReviews = () => {
