@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle, FileText, CheckCircle2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 import { User } from '../types';
 
 type UserTypeOption = 'privato' | 'ditta_individuale' | 'societa' | 'associazione';

@@ -9,13 +9,13 @@ import {
   LayoutDashboard
 } from "lucide-react";
 import { User as UserType, ActiveMode } from "../types";
-import { useRealtimeMessages } from "../hooks/useRealtimeMessages";
 
 interface BottomNavBarProps {
   currentUser: UserType | null;
   activeMode: ActiveMode;
   onSwitchMode: (mode: ActiveMode) => void;
   onPublish?: () => void;
+  unreadCount?: number;
 }
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({
@@ -23,27 +23,23 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   activeMode,
   onSwitchMode,
   onPublish,
+  unreadCount = 0,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const currentView = location.pathname;
 
   const isHubber = currentUser?.roles?.includes("hubber") || currentUser?.role === "hubber";
-  const [unreadCount, setUnreadCount] = useState(0);
+ const [localUnreadCount, setLocalUnreadCount] = useState(0);
 
-  // 🔔 REALTIME: Messaggi non letti
-const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
-  userId: currentUser?.id || null,
-});
-
-// Azzera badge se sei nella sezione messaggi
+// ✅ Azzera badge se sei nella sezione messaggi
 useEffect(() => {
   if (currentView === '/messages') {
-    setUnreadCount(0);
+    setLocalUnreadCount(0);  // ← CAMBIA QUI
   } else {
-    setUnreadCount(realtimeUnreadCount);
+    setLocalUnreadCount(unreadCount || 0);  // ← CAMBIA QUI
   }
-}, [realtimeUnreadCount, currentView]);
+}, [unreadCount, currentView]);
 
   // ✅ Determina il path corretto per la dashboard in base al ruolo
   const isAdmin = currentUser?.role === 'admin' || currentUser?.roles?.includes('admin');
@@ -119,13 +115,13 @@ useEffect(() => {
     }`}
                 >
                   <div className="relative">
-                    <Icon className={`w-6 h-6 mb-1 ${isActive ? "stroke-2" : ""}`} />
-                    {item.id === "messages" && unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-2 bg-brand text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    )}
-                  </div>
+  <Icon className={`w-6 h-6 mb-1 ${isActive ? "stroke-2" : ""}`} />
+  {item.id === "messages" && localUnreadCount > 0 && (
+    <span className="absolute -top-1 -right-2 bg-brand text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+      {localUnreadCount > 9 ? '9+' : localUnreadCount}
+    </span>
+  )}
+</div>
                   <span className="text-xs font-medium">{item.label}</span>
                 </button>
               );

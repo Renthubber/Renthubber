@@ -8,7 +8,7 @@ import {
 import { stripePromise } from "../lib/stripe";
 import { api } from "../services/api";
 import { Listing, User } from "../types";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../services/supabaseClient";
 import { calculateHubberFixedFee } from '../utils/feeUtils';
 
 // ✅ Funzione per creare conversazione dopo prenotazione

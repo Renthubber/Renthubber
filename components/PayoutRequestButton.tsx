@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DollarSign, Loader, AlertCircle, CheckCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 
 interface PayoutRequestButtonProps {
   userId: string;

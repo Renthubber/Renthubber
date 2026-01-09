@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, PlusCircle, MessageSquare, Wallet, LogOut, LayoutDashboard } from "lucide-react";
 import { User, ActiveMode } from "../types";
-import { useRealtimeMessages } from "../hooks/useRealtimeMessages";
 
 interface HeaderProps {
   currentUser: User | null;
@@ -10,6 +9,7 @@ interface HeaderProps {
   onSwitchMode: (mode: ActiveMode) => void;
   onLogout: () => void;
   onPublish?: () => void;
+  unreadCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -18,6 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSwitchMode,
   onLogout,
   onPublish,
+  unreadCount = 0,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [localUnreadCount, setLocalUnreadCount] = useState(0);
 
   // ✅ Controlla se l'utente ha il ruolo hubber
   const isHubber = currentUser?.roles?.includes("hubber") || currentUser?.role === "hubber";
@@ -44,19 +45,14 @@ export const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // 🔔 REALTIME: Messaggi non letti
-const { unreadCount: realtimeUnreadCount } = useRealtimeMessages({
-  userId: currentUser?.id || null,
-});
-
-// Azzera badge se sei nella sezione messaggi
+// ✅ Azzera badge se sei nella sezione messaggi
 useEffect(() => {
   if (currentView === '/messages') {
-    setUnreadCount(0);
+    setLocalUnreadCount(0);
   } else {
-    setUnreadCount(realtimeUnreadCount);
+    setLocalUnreadCount(unreadCount || 0);
   }
-}, [realtimeUnreadCount, currentView]);
+}, [unreadCount, currentView]);
 
   return (
     <header className="sticky top-0 z-[9999] bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
@@ -154,13 +150,13 @@ useEffect(() => {
                     }`}
                   >
                     <div className="relative">
-                      <MessageSquare className="w-4 h-4 mr-1.5" />
-                      {unreadCount > 0 && (
-                        <span className="absolute -top-1.5 -right-1 bg-brand text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
-                          {unreadCount > 9 ? '9+' : unreadCount}
-                        </span>
-                      )}
-                    </div>
+  <MessageSquare className="w-4 h-4 mr-1.5" />
+  {localUnreadCount > 0 && (
+    <span className="absolute -top-1.5 -right-1 bg-brand text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+      {localUnreadCount > 9 ? '9+' : localUnreadCount}
+    </span>
+  )}
+</div>
                     <span>Messaggi</span>
                   </button>
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../services/supabaseClient";
 
 interface PageSEO {
   title: string;

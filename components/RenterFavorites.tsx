@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, MapPin } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 import { Listing } from '../types';
 
 interface RenterFavoritesProps {
