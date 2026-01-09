@@ -14,7 +14,7 @@ import {
   X,
   Plus,
 } from 'lucide-react';
- import { supabase } from '../../lib/supabase';
+import { supabase } from "../../services/supabaseClient";
  import { getOrCreateExportUrl } from '../../services/ical';
 
 // Tipo per calendario importato
