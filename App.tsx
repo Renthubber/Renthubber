@@ -29,6 +29,7 @@ import ScrollToTop from './components/ScrollToTop';
 import { Annunci } from "./views/Annunci";
 import { AnnouncementPopup } from './components/AnnouncementPopup';
 import { useUserPresence } from './hooks/useUserPresence';
+import { useRealtimeMessages } from './hooks/useRealtimeMessages';
 
 
 
@@ -70,7 +71,7 @@ import {
 
 import { DEFAULT_SYSTEM_CONFIG, DEMO_ADMIN } from "./constants";
 import { api } from "./services/api";
-import { supabase } from "./lib/supabase";
+import { supabase } from "./services/supabaseClient";
 
 /* ------------------------------------------------------
    FALLBACK USER - evita rotelline, permette login sicuro
@@ -131,6 +132,11 @@ const App: React.FC = () => {
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   // Attiva tracking presenza per utente loggato
    useUserPresence(currentUser?.id);
+
+// 🔔 REALTIME: Messaggi non letti (UNA VOLTA SOLA)
+  const { unreadCount } = useRealtimeMessages({
+    userId: currentUser?.id || null,
+  });
 
   // ✅ Utenti completi per Admin (da Supabase)
   const [adminUsers, setAdminUsers] = useState<User[]>([]);
@@ -477,6 +483,7 @@ const handleRenterClick = async (renter: User) => {
         onSwitchMode={setActiveMode}
         onLogout={handleLogout}
         onPublish={() => setIsPublishModalOpen(true)}
+        unreadCount={unreadCount}
       />
 
       <main className="flex-1">
@@ -782,6 +789,7 @@ const handleRenterClick = async (renter: User) => {
         activeMode={activeMode}
         onSwitchMode={setActiveMode}
         onPublish={() => setIsPublishModalOpen(true)}
+        unreadCount={unreadCount}
       />
 
       {/* Footer - Solo pagine pubbliche (NON dashboard) */}

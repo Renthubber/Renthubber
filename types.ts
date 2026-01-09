@@ -554,6 +554,9 @@ export interface BookingRequest {
   end_date?: string;
   hubberName?: string;
   hubberAvatar?: string;
+  hubberNetAmount?: number;    // ✅ Aggiunto
+  hubberEmail?: string;         // ✅ Aggiunto
+  renterEmail?: string;         // ✅ Aggiunto
 }
 
 // --- BOOKING (DB REALE - TABELLA bookings) ---
