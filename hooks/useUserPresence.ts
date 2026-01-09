@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 
 export const useUserPresence = (userId: string | undefined) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -7,27 +7,38 @@ export const useUserPresence = (userId: string | undefined) => {
   useEffect(() => {
     if (!userId) return;
 
-    // Funzione per aggiornare presenza
-    const updatePresence = async () => {
-      try {
-        await supabase
-          .from('user_presence')
-          .upsert({
-            user_id: userId,
-            is_online: true,
-            last_seen: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-      } catch (error) {
-        console.error('Errore aggiornamento presenza:', error);
-      }
-    };
+   // Aspetta che la sessione sia pronta
+const initPresence = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    console.warn('⚠️ Sessione non disponibile per user_presence');
+    return;
+  }
 
-    // Aggiorna subito
-    updatePresence();
+  // Funzione per aggiornare presenza
+  const updatePresence = async () => {
+    try {
+      await supabase
+        .from('user_presence')
+        .upsert({
+          user_id: userId,
+          is_online: true,
+          last_seen: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.error('Errore aggiornamento presenza:', error);
+    }
+  };
 
-    // Aggiorna ogni 30 secondi
-    intervalRef.current = setInterval(updatePresence, 30000);
+  // Aggiorna subito
+  await updatePresence();
+
+  // Aggiorna ogni 30 secondi
+  intervalRef.current = setInterval(updatePresence, 30000);
+};
+
+initPresence();
 
     // Cleanup quando l'utente chiude/lascia la pagina
     const handleBeforeUnload = async () => {

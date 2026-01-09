@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../services/supabaseClient";
 
 export interface BrandingData {
   site_name: string;
@@ -58,7 +58,7 @@ export const useBranding = (): UseBrandingResult => {
   const fetchBranding = async () => {
     try {
       const { data, error: fetchError } = await supabase
-        .from("cms_branding")
+        .from("site_branding")
         .select("*")
         .single();
 
