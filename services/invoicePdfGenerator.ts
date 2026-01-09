@@ -7,7 +7,7 @@
  */
 
 import jsPDF from 'jspdf';
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 
 // Tipi
 interface InvoiceData {

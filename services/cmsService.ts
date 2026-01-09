@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 
 /**
  * CMS Service - Gestione Branding e Pagine CMS

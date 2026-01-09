@@ -5,7 +5,7 @@
  * Compatibile con Google Calendar, Apple Calendar, Outlook
  */
 
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 
 // =====================================================
 // TIPI

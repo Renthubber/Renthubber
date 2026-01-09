@@ -18,7 +18,7 @@ import {
   MOCK_REVIEWS,
   MOCK_DISPUTES,
 } from "../constants";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../services/supabaseClient";
 import { referralApi } from './referralApi';
 import { generateAndSaveInvoicePDF } from '../services/invoicePdfGenerator';
 import { calculateRenterFixedFee, calculateHubberFixedFee } from '../utils/feeUtils';
@@ -775,7 +775,12 @@ const mapDbBookingToAppBooking = (row: any) => {
     listingPrice,
     priceUnit,
     cancellationPolicy,
-  };
+    listingCategory: undefined,
+    hubberName: undefined,
+    hubberAvatar: undefined,
+    hasReviewedByHubber: undefined,
+    hasReviewedByRenter: undefined,
+  } as any;
 };
 
 /* ------------------------------------------------------
@@ -1277,13 +1282,13 @@ export const api = {
         .from('listings')
         .select('*')
         .eq('owner_id', userId)
-        .order('created_at', { descending: true });
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('❌ Errore listings.getByUserId:', error);
         throw error;
       }
-      
+
       return data || [];
     } catch (err) {
       console.error('❌ Errore listings.getByUserId:', err);
@@ -4143,8 +4148,10 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
             startDate: row.start_date,
             endDate: row.end_date,
             totalPrice: row.amount_total || row.total_price || 0,
+            totalAmountCents: toCents(row.amount_total || row.total_price || 0), // ✅ Aggiunto
             hubberNetAmount: row.hubber_net_amount || 0,
             status: row.status || 'pending',
+            paymentStatus: row.payment_status || 'pending', // ✅ Aggiunto
             commission: row.platform_fee || 0,
             createdAt: row.created_at,
           };
@@ -6701,7 +6708,7 @@ Il team Renthubber esaminerà la controversia entro 48 ore lavorative.`;
     sendSupportMessage: async (params: {
       ticketId: string;
       senderId: string;
-      senderType: "support" | "admin";
+      senderType: "support" | "admin" | "user";
       text: string;
       isInternal?: boolean;
       attachment_url?: string;

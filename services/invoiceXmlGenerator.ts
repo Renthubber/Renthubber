@@ -6,7 +6,7 @@
  * per l'invio al Sistema di Interscambio (SDI) italiano
  */
 
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 
 // =====================================================
 // TIPI E INTERFACCE
