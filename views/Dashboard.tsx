@@ -303,10 +303,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [renterPayments, setRenterPayments] = useState<any[]>([]);
   const [hubberPayments, setHubberPayments] = useState<any[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
+  const [pendingReviewsCount, setPendingReviewsCount] = useState(0);
   
  const [activeTab, setActiveTab] = useState<
   'overview' | 'payments' | 'security' | 'profile' | 'bookings' | 'hubber_bookings' | 'calendar' | 'favorites' | 'reviews'
 >('overview');
+
+// Funzione per caricare conteggio recensioni
+const loadPendingReviewsCount = async () => {
+  try {
+    const { data: bookings, error } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq(activeMode === 'hubber' ? 'hubber_id' : 'renter_id', user.id)
+      .eq('status', 'completed');
+
+    if (error) throw error;
+
+    let count = 0;
+    for (const booking of bookings || []) {
+      const alreadyReviewed = await api.reviews.existsForBooking(booking.id, user.id);
+      if (!alreadyReviewed) count++;
+    }
+
+    setPendingReviewsCount(count);
+  } catch (err) {
+    console.error('Errore caricamento conteggio recensioni:', err);
+  }
+};
 
   // Avatar & input ref per upload immagine
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
@@ -903,6 +927,51 @@ const [hubberListings, setHubberListings] = useState<Listing[]>([]);
     setNextUpcomingBooking(null);
     setLoadingNextBooking(false);
   }, [user.id, activeMode]);
+
+  // --- REALTIME: Ascolta cambiamenti bookings e reviews ---
+useEffect(() => {
+  const channel = supabase
+    .channel('dashboard-realtime')
+    .on(
+      'postgres_changes',
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'bookings',
+        filter: activeMode === 'hubber' ? `hubber_id=eq.${user.id}` : `renter_id=eq.${user.id}`
+      },
+      () => {
+        console.log('📡 Booking aggiornato, ricarico conteggio recensioni...');
+        loadPendingReviewsCount();
+      }
+    )
+    .on(
+      'postgres_changes',
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'reviews'
+      },
+      () => {
+        console.log('📡 Review aggiornata, ricarico...');
+        loadPendingReviewsCount();
+      }
+    )
+    .subscribe((status) => {
+  console.log('🔌 Realtime Dashboard status:', status);
+});
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [user.id, activeMode]);
+
+// Carica conteggio iniziale recensioni
+useEffect(() => {
+  if (user.id) {
+    loadPendingReviewsCount();
+  }
+}, [user.id, activeMode]);
 
   useEffect(() => {
     const loadNextUpcomingBooking = async () => {
@@ -5537,15 +5606,20 @@ const renderHubberCalendar = () => {
           Sicurezza & Verifica
           </button>
           <button
-          onClick={() => setActiveTab('reviews')}
-          className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
-            activeTab === 'reviews'
-              ? 'bg-gray-100 text-gray-900 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Recensioni
-        </button>
+  onClick={() => setActiveTab('reviews')}
+  className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center relative ${
+    activeTab === 'reviews'
+      ? 'bg-gray-100 text-gray-900 shadow-sm'
+      : 'text-gray-500 hover:text-gray-700'
+  }`}
+>
+  <span>Recensioni</span>
+  {pendingReviewsCount > 0 && (
+    <span className="absolute -top-1 -right-1 bg-[#0D414B] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+      {pendingReviewsCount}
+    </span>
+  )}
+</button>
       </div>
 
       {activeTab === 'overview' && renderHubberOverview()}
@@ -5555,14 +5629,17 @@ const renderHubberCalendar = () => {
       {activeTab === 'security' && renderSecurity()}
       {activeTab === 'profile' && renderProfile()}
       {activeTab === 'reviews' && (
-        <DashboardReviewsSection
-          userId={user.id}
-          userType={activeMode}
-          onViewProfile={(profile) => {
-            console.log('View profile:', profile);
-          }}
-        />
-      )}
+  <DashboardReviewsSection
+    userId={user.id}
+    userType={activeMode}
+    onViewProfile={(profile) => {
+      console.log('View profile:', profile);
+    }}
+    onPendingCountChange={(count) => {
+      setPendingReviewsCount(count);
+    }}
+  />
+)}
    </div>
   );
 
@@ -6403,15 +6480,19 @@ const renderRenterPayments = () => {
     Preferiti
   </button>
   <button
-    onClick={() => setActiveTab('reviews')}
-    className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center ${
-      activeTab === 'reviews'
-        ? 'bg-gray-100 text-gray-900 shadow-sm'
-        : 'text-gray-500 hover:text-gray-700'
-    }`}
-  >
-    Recensioni
-  </button>
+  onClick={() => setActiveTab('reviews')}
+  className={`px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-center relative ${
+    activeTab === 'reviews'
+      ? 'bg-gray-100 text-gray-900 shadow-sm'
+      : 'text-gray-500 hover:text-gray-700'
+  }`}
+>
+  <span>Recensioni</span>
+  {/* Badge con numero recensioni da lasciare - DA IMPLEMENTARE IL CONTEGGIO */}
+  <span className="absolute -top-1 -right-1 bg-[#0D414B] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+    3
+  </span>
+</button>
 </div>
 
      {activeTab === 'security' && renderSecurity()}
@@ -6430,14 +6511,17 @@ const renderRenterPayments = () => {
         />
       )}
       {activeTab === 'reviews' && (
-        <DashboardReviewsSection
-          userId={user.id}
-          userType={activeMode}
-          onViewProfile={(profile) => {
-            console.log('View profile:', profile);
-          }}
-        />
-      )}
+  <DashboardReviewsSection
+    userId={user.id}
+    userType={activeMode}
+    onViewProfile={(profile) => {
+      console.log('View profile:', profile);
+    }}
+    onPendingCountChange={(count) => {
+      setPendingReviewsCount(count);
+    }}
+  />
+)}
 
       {activeTab === 'overview' && (
         <>
