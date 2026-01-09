@@ -29,7 +29,7 @@ import {
 } from 'recharts';
 import { api } from '../services/api';
 import { referralApi } from '../services/referralApi';
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 import { StripeStatusBanner } from '../components/StripeStatusBanner'; 
 import { PayoutRequestButton } from '../components/PayoutRequestButton'; 
 
@@ -1058,10 +1058,6 @@ export const Wallet: React.FC<WalletProps> = ({
                 stripePayoutsEnabled={(currentUser as any).stripe_payouts_enabled}
                 iban={effectiveIban}
                 onConfigureIban={() => setShowBankModal(true)}
-                onSuccess={() => {
-                  loadWalletData();
-                  alert('✅ Richiesta inviata con successo!');
-                }}
               />
               <button
                 onClick={() => setShowBankModal(true)}

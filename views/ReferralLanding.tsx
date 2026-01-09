@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Gift, CheckCircle, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 
 interface ReferrerInfo {
   name: string;

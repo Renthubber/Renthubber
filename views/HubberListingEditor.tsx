@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { searchItalianCities, CitySuggestion } from '../services/geocodingService';
 import { processImageSingle } from '../utils/imageProcessing';
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 import { CityAutocomplete } from '../components/CityAutocomplete';
 
 interface HubberListingEditorProps {
@@ -94,7 +94,7 @@ if (!formData.images || formData.images.length === 0) {
         title: dataToSave.title,
         description: dataToSave.description,
         category: dataToSave.category,
-        sub_category: dataToSave.subcategory,
+        sub_category: dataToSave.subCategory,
         price: dataToSave.price,
         price_unit: dataToSave.priceUnit,
         deposit: dataToSave.deposit,

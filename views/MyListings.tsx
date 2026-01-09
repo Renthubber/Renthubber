@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Listing, User } from '../types';
 import { Plus, Edit, Trash2, Eye, Star, Package, ExternalLink, PauseCircle, Play, X } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 import { api } from '../services/api';
 
 interface MyListingsProps {

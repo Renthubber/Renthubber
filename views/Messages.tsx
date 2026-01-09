@@ -4,7 +4,7 @@ import { api } from "../services/api";
 import { User, Dispute } from "../types";
 import { useRealtimeMessages } from "../hooks/useRealtimeMessages";
 import { useSearchParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../services/supabaseClient';
 import { OnlineIndicator } from '../components/OnlineIndicator';
 import { getAvatarUrl } from '../utils/avatarUtils';
 
@@ -19,11 +19,12 @@ type ChatMessage = {
   from: "me" | "contact" | "system";
   text?: string;
   imageUrl?: string;
-  attachments?: string; // ← AGGIUNTO (JSON string)
+  attachments?: string;
   time: string;
   isSystemMessage?: boolean;
   isAdminMessage?: boolean;
   senderName?: string;
+  senderType?: 'user' | 'support' | 'admin'; // ✅ AGGIUNTO
 };
 
 // ✅ TIPO CONVERSAZIONE REALE
@@ -325,7 +326,7 @@ export const Messages: React.FC<MessagesProps> = ({
       }
 
       try {
-        const { supabase } = await import('../lib/supabase');
+        const { supabase } = await import('../services/supabaseClient');
         const { data: booking } = await supabase
           .from('bookings')
           .select('status, completed_at, cancelled_at')
@@ -899,7 +900,7 @@ const contactAvatar = getAvatarUrl(contactData);
     if (activeContact.isRealConversation) {
       const loadConversationMessages = async () => {
         try {
-          const msgs = await api.messages.getMessagesForConversation(activeChatId, currentUser?.id);
+          const msgs = await api.messages.getMessagesForConversation(activeChatId);
           
           const conversationMessages = msgs.map((m: any) => {
   const isFromMe = m.fromUserId === currentUser?.id;
@@ -1277,7 +1278,7 @@ const handleSend = async () => {
 
     // 2) Carica immagine su Supabase Storage e salva messaggio
     try {
-      const { supabase } = await import('../lib/supabase');
+      const { supabase } = await import('../services/supabaseClient');
       
       // Crea nome file unico
       const fileExt = file.name.split('.').pop();
@@ -1530,7 +1531,7 @@ const handleSend = async () => {
 
       // 2) Salva messaggio PRIVATO della contestazione nel database
       try {
-        const { supabase } = await import('../lib/supabase');
+        const { supabase } = await import('../services/supabaseClient');
         const msgId = `msg-dispute-${Date.now()}`;
         const messageText = "Contestazione aperta per questa prenotazione. Il team di supporto di Renthubber valuterà la situazione e proverà a trovare una soluzione tra le parti.";
         
@@ -1711,7 +1712,7 @@ const steps = [
                 // 🔔 Segna conversazione come letta nel DB
                 if (contact.isRealConversation && currentUser) {
                   try {
-                    const { supabase } = await import('../lib/supabase');
+                    const { supabase } = await import('../services/supabaseClient');
                     const field = currentUser.role === 'renter' || !currentUser.roles?.includes('hubber')
                       ? 'unread_for_renter'
                       : 'unread_for_hubber';

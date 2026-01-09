@@ -27,7 +27,7 @@ import { CityAutocomplete } from '../components/CityAutocomplete';
 import { ListingMapStatic } from '../components/ListingMap';
 import { CitySuggestion } from '../services/geocodingService';
 import { processImageSingle } from '../utils/imageProcessing';
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 
 // --- WIZARD STEPS CONSTANTS ---
 const STEPS = [

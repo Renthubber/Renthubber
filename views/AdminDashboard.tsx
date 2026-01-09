@@ -38,7 +38,7 @@ import {
 } from 'recharts';
 
 import { api } from '../services/api';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../services/supabaseClient';
 import { ReferralSettings } from "../components/admin/ReferralSettings";
 import { downloadInvoicePDF } from '../services/invoicePdfGenerator';
 import { AdminEmailSection } from './AdminEmailSection';
@@ -133,7 +133,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<
-  'overview' | 'users' | 'listings' | 'bookings' | 'messages' | 'support' | 'finance' | 'invoices' | 'cms' | 'disputes' | 'reviews' | 'email' | 'config' | 'referral'
+  'overview' | 'users' | 'listings' | 'bookings' | 'messages' | 'support' | 'finance' | 'invoices' | 'cms' | 'disputes' | 'reviews' | 'email' | 'announcements' | 'config' | 'referral'
 >('overview');
   // Sotto-tab per Finanza & Wallet
 const [financeSubTab, setFinanceSubTab] = useState <
@@ -345,7 +345,7 @@ useEffect(() => {
   if (activeTab === 'disputes') {
     const loadDisputes = async () => {
       try {
-        const { data, error } = await (await import('../lib/supabase')).supabase
+        const { data, error } = await (await import('../services/supabaseClient')).supabase
           .from('disputes')
           .select('*')
           .order('created_at', { ascending: false });
@@ -1060,7 +1060,7 @@ const handleTicketAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElemen
     
     // ✨ RICARICA DISPUTE quando il ticket cambia stato
     if (newStatus === 'resolved' || newStatus === 'closed') {
-      const { data: disputes } = await (await import('../lib/supabase')).supabase
+      const { data: disputes } = await (await import('../services/supabaseClient')).supabase
         .from('disputes')
         .select('*')
         .order('created_at', { ascending: false });
@@ -1751,16 +1751,17 @@ const handleSavePage = async () => {
     setIsUserSaving(true);
     try {
       const newSuspendedState = !selectedUserForEdit.isSuspended;
+      const newStatus: "active" | "suspended" = newSuspendedState ? 'suspended' : 'active';
       
       await api.admin.updateUser(selectedUserForEdit.id, {
         isSuspended: newSuspendedState,
-        status: newSuspendedState ? 'suspended' : 'active',
+        status: newStatus, // ✅ USA newStatus
       });
       
       const updatedUser = {
         ...selectedUserForEdit,
         isSuspended: newSuspendedState,
-        status: newSuspendedState ? 'suspended' : 'active',
+        status: newStatus, // ✅ USA newStatus
       };
       
       setLocalUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
@@ -2197,10 +2198,11 @@ const handleSavePage = async () => {
                           {user.name}
                         </p>
                         {user.verificationStatus === 'verified' && (
-                          <CheckCircle2
-                            className="w-3 h-3 text-green-500"
-                            title="Utente Verificato"
+                       <div title="Utente Verificato">
+                       <CheckCircle2
+                        className="w-3 h-3 text-green-500"
                           />
+                          </div>
                         )}
                         {user.isSuperHubber && (
                           <span className="ml-1 px-1.5 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-bold rounded-full">
@@ -8082,7 +8084,7 @@ const renderDisputes = () => (
         await markAsViewed('dispute', disputeId);
         
         // Verifica se esiste già un ticket per questa disputa
-        const { data: existingTicket } = await (await import('../lib/supabase')).supabase
+        const { data: existingTicket } = await (await import('../services/supabaseClient')).supabase
           .from('support_tickets')
           .select('id')
           .eq('related_dispute_id', disputeId)
@@ -8105,7 +8107,7 @@ const renderDisputes = () => (
         
         // Aspetta che i ticket si carichino e seleziona quello giusto
         setTimeout(async () => {
-          const { data: tickets } = await (await import('../lib/supabase')).supabase
+          const { data: tickets } = await (await import('../services/supabaseClient')).supabase
             .from('support_tickets')
             .select(`
               *,
@@ -8652,6 +8654,15 @@ const renderReviews = () => {
       </div>
     </div>
   );
+
+  const renderCMS = () => {
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h2 className="text-2xl font-bold mb-4">Gestione CMS</h2>
+      <p className="text-gray-600">Sezione in costruzione...</p>
+    </div>
+  );
+};
 
   return (
     <div className="min-h-screen bg-gray-100 flex font-sans">

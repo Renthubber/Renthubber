@@ -37,7 +37,7 @@ import {
 } from 'recharts';
 import { MOCK_REQUESTS } from '../constants';
 import { api } from '../services/api';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../services/supabaseClient';
 import { AirbnbCalendar } from '../components/AirbnbCalendar';
 import { WriteReviewModal } from '../components/WriteReviewModal';
 import { HubberCalendar } from '../components/hubber/HubberCalendar';
@@ -902,7 +902,7 @@ const [hubberListings, setHubberListings] = useState<Listing[]>([]);
       if (activeMode !== 'hubber' || !user.id) return;
 
       try {
-        const { supabase } = await import('../lib/supabase');
+        const { supabase } = await import('../services/supabaseClient');
         const { data, error } = await supabase
           .from('users')
           .select('hubber_balance')
@@ -928,7 +928,7 @@ const [hubberListings, setHubberListings] = useState<Listing[]>([]);
     setLoadingNextBooking(false);
   }, [user.id, activeMode]);
 
- // --- REALTIME: Canali separati per evitare limiti ---
+// --- REALTIME: Canali separati per evitare limiti ---
 useEffect(() => {
   // CANALE 1: Bookings & Reviews
   const channel1 = supabase
@@ -942,11 +942,7 @@ useEffect(() => {
         filter: activeMode === 'hubber' ? `hubber_id=eq.${user.id}` : `renter_id=eq.${user.id}`
       },
       () => {
-        console.log('📡 Booking aggiornato');
         loadPendingReviewsCount();
-        if (activeMode === 'hubber') {
-          loadHubberStats();
-        }
       }
     )
     .on(
@@ -957,13 +953,10 @@ useEffect(() => {
         table: 'reviews'
       },
       () => {
-        console.log('📡 Review aggiornata');
         loadPendingReviewsCount();
       }
     )
-    .subscribe((status) => {
-      console.log('🔌 Channel 1 (Bookings/Reviews):', status);
-    });
+    .subscribe();
 
   // CANALE 2: Finanze
   const channel2 = supabase
@@ -977,7 +970,7 @@ useEffect(() => {
         filter: `user_id=eq.${user.id}`
       },
       () => {
-        console.log('📡 Payment aggiornato');
+        // Payment aggiornato - nessuna azione per ora
       }
     )
     .on(
@@ -989,42 +982,10 @@ useEffect(() => {
         filter: `user_id=eq.${user.id}`
       },
       () => {
-        console.log('📡 Invoice aggiornata');
+        // Invoice aggiornata - nessuna azione per ora
       }
     )
-    .on(
-      'postgres_changes',
-      { 
-        event: '*', 
-        schema: 'public', 
-        table: 'wallets',
-        filter: `user_id=eq.${user.id}`
-      },
-      () => {
-        console.log('📡 Wallet aggiornato');
-        if (activeMode === 'hubber') {
-          loadHubberBalance();
-        }
-      }
-    )
-    .on(
-      'postgres_changes',
-      { 
-        event: '*', 
-        schema: 'public', 
-        table: 'wallet_transactions',
-        filter: `user_id=eq.${user.id}`
-      },
-      () => {
-        console.log('📡 Transazione wallet');
-        if (activeMode === 'hubber') {
-          loadHubberBalance();
-        }
-      }
-    )
-    .subscribe((status) => {
-      console.log('🔌 Channel 2 (Finances):', status);
-    });
+    .subscribe();
 
   // CANALE 3: Listings & Altro
   const channel3 = supabase
@@ -1036,8 +997,8 @@ useEffect(() => {
         schema: 'public', 
         table: 'calendar_blocks'
       },
-      (payload) => {
-        console.log('📡 Calendar block aggiornato', payload);
+      () => {
+        // Calendar block aggiornato - il calendario si aggiorna già automaticamente
       }
     )
     .on(
@@ -1049,7 +1010,7 @@ useEffect(() => {
         filter: `user_id=eq.${user.id}`
       },
       () => {
-        console.log('📡 Favorito aggiornato');
+        // Favorito aggiornato - nessuna azione per ora
       }
     )
     .on(
@@ -1060,7 +1021,7 @@ useEffect(() => {
         table: 'disputes'
       },
       () => {
-        console.log('📡 Dispute aggiornata');
+        // Dispute aggiornata - nessuna azione per ora
       }
     )
     .on(
@@ -1072,12 +1033,10 @@ useEffect(() => {
         filter: `user_id=eq.${user.id}`
       },
       () => {
-        console.log('📡 Refund aggiornato');
+        // Refund aggiornato - nessuna azione per ora
       }
     )
-    .subscribe((status) => {
-      console.log('🔌 Channel 3 (Misc):', status);
-    });
+    .subscribe();
 
   return () => {
     supabase.removeChannel(channel1);
@@ -3173,13 +3132,13 @@ const handleChangePassword = async (e: React.FormEvent) => {
         {/* Earnings Chart */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
           <h3 className="font-bold text-gray-900 mb-6">Andamento Guadagni</h3>
-          <div className="h-72">
+          <div className="h-72" style={{ minHeight: '288px' }}>
             {hubberStats.isLoading ? (
               <div className="h-full flex items-center justify-center">
                 <div className="animate-spin w-8 h-8 border-2 border-brand border-t-transparent rounded-full"></div>
               </div>
             ) : chartData.length > 0 && chartData.some(d => d.value > 0) ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minHeight={288} aspect={2}>
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">

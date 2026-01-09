@@ -24,7 +24,7 @@ import { api } from "../services/api";
 import { calendarBlocksApi } from '../services/calendarBlocksApi';
 import { BookingPaymentModal } from "../components/BookingPaymentModal";
 import { referralApi } from "../services/referralApi";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../services/supabaseClient";
 import { useNavigate } from 'react-router-dom';
 import { calculateHubberFixedFee, calculateRenterFixedFee } from '../utils/feeUtils';
 import { getAvatarUrl } from '../utils/avatarUtils';

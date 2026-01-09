@@ -6,7 +6,7 @@ import {
   RefreshCw, Filter, Download, Upload, Copy, MoreVertical
 } from 'lucide-react';
 import { api } from '../services/api';
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 
 interface AdminEmailSectionProps {
   allUsers: any[];
