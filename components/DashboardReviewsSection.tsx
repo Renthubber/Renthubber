@@ -9,6 +9,7 @@ interface DashboardReviewsSectionProps {
   userId: string;
   userType: 'renter' | 'hubber';
   onViewProfile?: (user: { id: string; name: string; avatar?: string }) => void;
+onPendingCountChange?: (count: number) => void;
 }
 
 type TabType = 'pending' | 'received' | 'given';
@@ -43,6 +44,7 @@ export const DashboardReviewsSection: React.FC<DashboardReviewsSectionProps> = (
   userId,
   userType,
   onViewProfile,
+  onPendingCountChange,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('pending');
   const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([]);
@@ -57,6 +59,13 @@ const [selectedBooking, setSelectedBooking] = useState<PendingReview | null>(nul
   useEffect(() => {
     loadReviews();
   }, [userId, userType, activeTab]);
+
+  // Comunica il conteggio al Dashboard
+useEffect(() => {
+  if (onPendingCountChange) {
+    onPendingCountChange(pendingReviews.length);
+  }
+}, [pendingReviews, onPendingCountChange]);
 
   const loadReviews = async () => {
     setLoading(true);
@@ -104,10 +113,6 @@ const [selectedBooking, setSelectedBooking] = useState<PendingReview | null>(nul
       const otherUserName = otherUser?.public_name || 
         [otherUser?.first_name, otherUser?.last_name].filter(Boolean).join(' ') || 
         'Utente';
-
-     console.log('🔍 DEBUG otherUser:', otherUser);
-console.log('🔍 DEBUG otherUserName:', otherUserName);
-console.log('🔍 DEBUG otherUserAvatar:', getAvatarUrl(otherUser));
 
       pending.push({
         bookingId: booking.id,

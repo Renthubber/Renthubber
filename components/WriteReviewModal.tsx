@@ -99,6 +99,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
   
   // Stato form
   const [overallRating, setOverallRating] = useState(0);
+  const [initialRating, setInitialRating] = useState(0);
   const [ratingAsDescribed, setRatingAsDescribed] = useState(0);
   const [ratingCommunication, setRatingCommunication] = useState(0);
   const [ratingPunctuality, setRatingPunctuality] = useState(0);
@@ -528,7 +529,25 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
             <div className="flex gap-3">
               {step < 4 ? (
                 <button
-                  onClick={() => setStep(step + 1)}
+                onClick={() => {
+  // Salva il rating iniziale quando esci dallo Step 1
+  if (step === 1) {
+    setInitialRating(overallRating);
+  }
+  
+  // Calcola la media pesata quando esci dallo Step 2
+  if (step === 2) {
+    const ratings = isRenterReview
+      ? [ratingAsDescribed, ratingCommunication, ratingPunctuality, ratingValue]
+      : [ratingCommunication, ratingRulesRespect, ratingPunctuality, ratingItemCare];
+    
+    // Formula: 40% step 1 (RATING INIZIALE) + 15% per ogni categoria
+    const finalRating = (initialRating * 0.4) + (ratings[0] * 0.15) + (ratings[1] * 0.15) + (ratings[2] * 0.15) + (ratings[3] * 0.15);
+    setOverallRating(Math.round(finalRating * 10) / 10);
+  }
+  
+  setStep(step + 1);
+}}
                   disabled={!canProceed()}
                   className={`flex-1 py-3 rounded-xl font-semibold flex items-center justify-center transition-colors ${
                     canProceed()
