@@ -97,6 +97,7 @@ export interface User {
   hubberSince?: string;
   status?: "active" | "suspended" | "pending_verification";
   isSuspended?: boolean;
+  created_at?: string;
   
   // ✅ Commissione personalizzata per singolo utente
   customFeePercentage?: number;
@@ -645,6 +646,7 @@ export interface Dispute {
   // Stato e gestione
   status: DisputeStatus;
   resolutionNotes?: string | null;
+   adminNote?: string;
 
   // Tracking temporale
   createdAt: string;             // ISO

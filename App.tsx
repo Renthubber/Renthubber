@@ -583,7 +583,7 @@ const handleRenterClick = async (renter: User) => {
           } />
           
           <Route path="/forgot-password" element={
-            <ForgotPassword onBack={() => navigate('/')} />
+            <ForgotPassword onBackToLogin={() => navigate('/')} />
           } />
           
           <Route path="/reset-password" element={
