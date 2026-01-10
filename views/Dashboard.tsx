@@ -339,40 +339,43 @@ const loadPendingReviewsCount = async () => {
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   // Dati profilo "visibili" (UI)
-  const [profileData, setProfileData] = useState(() => {
-    const firstName =
-      (user as any).firstName ||
-      (user.name ? user.name.split(' ')[0] : '') ||
-      '';
-    const lastName =
-      (user as any).lastName ||
-      (user.name ? user.name.split(' ').slice(1).join(' ') : '') ||
-      '';
-    return {
-      firstName,
-      lastName,
-      email: user.email || '',
-      phoneNumber: user.phoneNumber || '',
-      userType:
-        ((user as any).userType as UserTypeOption | undefined) || 'privato',
-      dateOfBirth: (user as any).dateOfBirth || '',
-      bio: (user as any).bio || '',
-    };
-  });
+const [profileData, setProfileData] = useState(() => {
+  const firstName =
+    (user as any).firstName ||
+    (user.name ? user.name.split(' ')[0] : '') ||
+    '';
+  const lastName =
+    (user as any).lastName ||
+    (user.name ? user.name.split(' ').slice(1).join(' ') : '') ||
+    '';
+  return {
+    firstName,
+    lastName,
+    email: user.email || '',
+    phoneNumber: user.phoneNumber || '',
+    phoneVerified: (user as any).phoneVerified || false,
+    userType:
+      ((user as any).userType as UserTypeOption | undefined) || 'privato',
+    dateOfBirth: (user as any).dateOfBirth || '',
+    bio: (user as any).bio || '',
+  };
+});
+
 // ✅ Sincronizza profileData quando user cambia
   useEffect(() => {
     console.log("🔍 Dashboard - user.userType:", (user as any).userType);
     console.log("🔍 Dashboard - user completo:", user);
     
-    setProfileData({
-      firstName: (user as any).firstName || (user.name ? user.name.split(' ')[0] : '') || '',
-      lastName: (user as any).lastName || (user.name ? user.name.split(' ').slice(1).join(' ') : '') || '',
-      email: user.email || '',
-      phoneNumber: user.phoneNumber || '',
-      userType: ((user as any).userType as UserTypeOption | undefined) || 'privato',
-      dateOfBirth: (user as any).dateOfBirth || '',
-      bio: (user as any).bio || '',
-    });
+   setProfileData({
+  firstName: (user as any).firstName || (user.name ? user.name.split(' ')[0] : '') || '',
+  lastName: (user as any).lastName || (user.name ? user.name.split(' ').slice(1).join(' ') : '') || '',
+  email: user.email || '',
+  phoneNumber: user.phoneNumber || '',
+  phoneVerified: (user as any).phoneVerified || false,
+  userType: ((user as any).userType as UserTypeOption | undefined) || 'privato',
+  dateOfBirth: (user as any).dateOfBirth || '',
+  bio: (user as any).bio || '',
+});
   }, [user]);
   // Preferenze account (solo UI per ora)
   const [preferences, setPreferences] = useState<{
@@ -692,6 +695,7 @@ const [hubberListings, setHubberListings] = useState<Listing[]>([]);
       lastName,
       email: user.email || '',
       phoneNumber: user.phoneNumber || '',
+      phoneVerified: (user as any).phoneVerified || false,
       userType:
         ((user as any).userType as UserTypeOption | undefined) || 'privato',
       dateOfBirth: (user as any).dateOfBirth || '',
@@ -2129,30 +2133,42 @@ const handleIdFileChange =
       return;
     }
 
+    // Assicurati che inizi con +39
+    const formattedPhone = cleanPhone.startsWith('+') ? cleanPhone : '+39' + cleanPhone.replace(/^0/, '');
+
     setIsSendingOtp(true);
     setPhoneError(null);
 
     try {
-      // Simula invio OTP (in produzione: chiamata API reale)
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      // Chiama la funzione Supabase per inviare OTP via WhatsApp
+      const { data, error } = await supabase.functions.invoke('whatsapp-verification', {
+        body: {
+          action: 'send',
+          phoneNumber: formattedPhone,
+          userId: user.id
+        }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Errore invio codice');
+
       // Salva il numero di telefono nel profilo
       if (onUpdateProfile) {
         await onUpdateProfile({
-          phoneNumber: cleanPhone,
+          phoneNumber: formattedPhone,
           resetPhoneVerification: false,
         });
       }
 
       // Aggiorna profileData locale
-      setProfileData(prev => ({ ...prev, phoneNumber: cleanPhone }));
-      setOtpSentTo(cleanPhone);
+      setProfileData(prev => ({ ...prev, phoneNumber: formattedPhone }));
+      setOtpSentTo(formattedPhone);
       setPhoneStep('otp');
       
-      console.log('📱 OTP inviato a:', cleanPhone);
-    } catch (err) {
+      console.log('📱 Codice WhatsApp inviato a:', formattedPhone);
+    } catch (err: any) {
       console.error('Errore invio OTP:', err);
-      setPhoneError('Errore nell\'invio del codice. Riprova.');
+      setPhoneError(err.message || 'Errore nell\'invio del codice. Riprova.');
     } finally {
       setIsSendingOtp(false);
     }
@@ -2168,40 +2184,52 @@ const handleIdFileChange =
     setPhoneError(null);
 
     try {
-      // Simula verifica OTP (in produzione: chiamata API reale)
-      // Per demo: accetta qualsiasi codice di 6 cifre
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Chiama la funzione Supabase per verificare il codice
+      const { data, error } = await supabase.functions.invoke('whatsapp-verification', {
+        body: {
+          action: 'verify',
+          phoneNumber: otpSentTo,
+          code: otpCode,
+          userId: user.id
+        }
+      });
 
-      // Aggiorna stato verifica nel database
-      if (onUpdateProfile) {
-        await onUpdateProfile({
-          phoneVerified: true,
-        });
+      if (error) throw error;
+      if (!data.success) {
+        // Mostra tentativi rimasti se disponibili
+        if (data.attemptsLeft !== undefined) {
+          throw new Error(`${data.error} (${data.attemptsLeft} tentativi rimasti)`);
+        }
+        throw new Error(data.error || 'Codice non valido');
       }
 
-      // Aggiorna anche su Supabase
-      await supabase
-        .from('users')
-        .update({ 
-          phone_number: otpSentTo,
-          phone_verified: true 
-        })
-        .eq('id', user.id);
+      // Aggiorna stato verifica nel database locale
+if (onUpdateProfile) {
+  await onUpdateProfile({
+    phoneVerified: true,
+  });
+}
 
-      setPhoneStep('success');
-      
-      console.log('✅ Telefono verificato:', otpSentTo);
+// Aggiorna lo stato locale per riflettere immediatamente la verifica
+setProfileData(prev => ({ 
+  ...prev, 
+  phoneVerified: true,
+  phoneNumber: otpSentTo 
+}));
 
-      // Chiudi modale dopo 2 secondi
-      setTimeout(() => {
-        closePhoneModal();
-        // Forza refresh della pagina per vedere lo stato aggiornato
-        window.location.reload();
-      }, 2000);
+setPhoneStep('success');
 
-    } catch (err) {
+console.log('✅ Telefono verificato:', otpSentTo);
+
+// Chiudi modale dopo 2 secondi SENZA ricaricare la pagina
+setTimeout(() => {
+  closePhoneModal();
+  setPhoneStep('input');
+}, 2000);
+
+    } catch (err: any) {
       console.error('Errore verifica OTP:', err);
-      setPhoneError('Codice non valido. Riprova.');
+      setPhoneError(err.message || 'Codice non valido. Riprova.');
     } finally {
       setIsVerifyingOtp(false);
     }
@@ -2232,6 +2260,7 @@ const handleIdFileChange =
   };
 
   const handleSendEmailOtp = async () => {
+
     // Valida email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailInput || !emailRegex.test(emailInput)) {
@@ -7554,7 +7583,7 @@ const renderRenterPayments = () => {
                   Verifica numero di telefono
                 </h2>
                 <p className="text-sm text-gray-500">
-                  Inserisci il tuo numero di telefono per ricevere un codice di verifica via SMS.
+                  Inserisci il tuo numero di telefono per ricevere un codice di verifica su Sms.
                 </p>
               </div>
 
@@ -7594,7 +7623,7 @@ const renderRenterPayments = () => {
                     Invio in corso...
                   </span>
                 ) : (
-                  'Invia codice SMS'
+                  'Invia codice Sms'
                 )}
               </button>
             </>
@@ -7924,28 +7953,42 @@ const renderRenterPayments = () => {
                 Se cambi email, dovrai completare nuovamente la verifica.
               </p>
             </div>
-
-            {/* Telefono */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
-                Numero di telefono
-              </label>
-              <input
-                type="tel"
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand"
-                value={editProfileForm.phoneNumber}
-                onChange={(e) =>
-                  setEditProfileForm((prev) => ({
-                    ...prev,
-                    phoneNumber: e.target.value,
-                  }))
-                }
-                placeholder="+39 ..."
-              />
-              <p className="text-[11px] text-gray-400 mt-1">
-                Se cambi numero, la verifica del telefono verrà ripetuta.
-              </p>
-            </div>
+{/* Telefono */}
+<div>
+  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+    Numero di telefono
+  </label>
+  <div className="relative">
+    <input
+      type="tel"
+      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand bg-gray-50 cursor-not-allowed"
+      value={profileData.phoneNumber || ''}
+      readOnly
+      placeholder="Nessun numero verificato"
+    />
+    {!profileData.phoneVerified && (
+      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-700">
+          📱 Per aggiungere o modificare il numero di telefono, vai nella sezione{' '}
+          <button
+            onClick={() => setActiveTab('security')}
+            className="font-semibold underline hover:text-blue-800"
+          >
+            Sicurezza e Verifica
+          </button>
+        </p>
+      </div>
+    )}
+     {profileData.phoneVerified && profileData.phoneNumber && (
+      <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+        </svg>
+        Numero verificato
+      </div>
+    )}
+  </div>
+</div>
 
 {/* Bio / Presentazione */}
             <div>
