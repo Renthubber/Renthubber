@@ -198,10 +198,11 @@ export const removeCalendarBlock = async (
  * Ottiene l'URL di export iCal per un hubber
  */
 export const getICalExportUrl = async (
-  userId: string
+  userId: string,
+  listingId: string
 ): Promise<{ url: string; token: string } | null> => {
   try {
-    return await icalService.getOrCreateExportUrl(userId);
+    return await icalService.getOrCreateExportUrl(userId, listingId);
   } catch (err) {
     console.error('Errore getICalExportUrl:', err);
     return null;
@@ -212,10 +213,11 @@ export const getICalExportUrl = async (
  * Rigenera l'URL di export iCal (invalida il precedente)
  */
 export const regenerateICalExportUrl = async (
-  userId: string
+  userId: string,
+  listingId: string
 ): Promise<{ url: string; token: string } | null> => {
   try {
-    return await icalService.regenerateExportToken(userId);
+    return await icalService.regenerateExportToken(userId, listingId);
   } catch (err) {
     console.error('Errore regenerateICalExportUrl:', err);
     return null;

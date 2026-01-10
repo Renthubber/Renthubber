@@ -31,6 +31,31 @@ export function getSuperHubberRequirements() {
   return { ...SUPERHUBBER_REQUIREMENTS };
 }
 
+/**
+ * Calcola la prossima data di controllo trimestrale SuperHubber
+ * @returns Data del prossimo controllo (1 Gen, 1 Apr, 1 Lug, 1 Ott)
+ */
+export function getNextSuperHubberCheckDate(): Date {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-11
+  
+  // Date trimestrali: 1 Gen (0), 1 Apr (3), 1 Lug (6), 1 Ott (9)
+  const quarterlyMonths = [0, 3, 6, 9];
+  
+  // Trova il prossimo mese trimestrale
+  let nextMonth = quarterlyMonths.find(m => m > month);
+  let nextYear = year;
+  
+  if (!nextMonth && nextMonth !== 0) {
+    // Se siamo oltre ottobre, vai al 1 gennaio dell'anno prossimo
+    nextMonth = 0;
+    nextYear = year + 1;
+  }
+  
+  return new Date(nextYear, nextMonth, 1, 0, 0, 0, 0);
+}
+
 // ========================================
 // GESTIONE CONTROLLI TRIMESTRALI
 // ========================================
@@ -61,8 +86,7 @@ function getNextQuarterlyDate(fromDate: Date): Date {
 
 /**
  * Verifica se è il momento di controllare il badge SuperHubber
- * Controllo trimestrale: solo se sono passati 90 giorni dall'ultimo controllo
- * e siamo in una data trimestrale (1 Gen, 1 Apr, 1 Lug, 1 Ott)
+ * Controllo trimestrale: 1 Gen, 1 Apr, 1 Lug, 1 Ott
  */
 function shouldCheckSuperHubberStatus(lastCheckDate: string | null): boolean {
   if (!lastCheckDate) return true; // Prima volta, controlla sempre
@@ -75,6 +99,45 @@ function shouldCheckSuperHubberStatus(lastCheckDate: string | null): boolean {
   
   // Controlla se siamo oltre la data trimestrale
   return now >= nextQuarterlyCheck;
+}
+
+/**
+ * Verifica se un SuperHubber deve perdere il badge per calo qualità
+ * Controllo ogni 15 giorni: 3+ recensioni ≤3 stelle negli ultimi 15gg E rating <4.7
+ */
+async function shouldRemoveSuperHubberForQualityDrop(userId: string): Promise<boolean> {
+  try {
+    const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+    
+    // 1. Conta recensioni negative recenti (≤3 stelle)
+    const { count: negativeReviews } = await supabase
+      .from('reviews')
+      .select('*', { count: 'exact', head: true })
+      .eq('reviewee_id', userId)
+      .eq('status', 'approved')
+      .lte('rating', 3)
+      .gte('created_at', fifteenDaysAgo.toISOString());
+    
+    // 2. Leggi rating attuale e status SuperHubber
+    const { data: userData } = await supabase
+      .from('users')
+      .select('rating, is_super_hubber')
+      .eq('id', userId)
+      .single();
+    
+    if (!userData) return false;
+    
+    // 3. Verifica condizioni per rimozione
+    const hasThreeNegativeReviews = (negativeReviews || 0) >= 3;
+    const ratingBelowThreshold = (userData.rating || 0) < 4.7;
+    const isSuperHubber = userData.is_super_hubber || false;
+    
+    return isSuperHubber && hasThreeNegativeReviews && ratingBelowThreshold;
+    
+  } catch (error) {
+    console.error('❌ Errore shouldRemoveSuperHubberForQualityDrop:', error);
+    return false;
+  }
 }
 
 // ========================================
@@ -227,7 +290,24 @@ export async function checkAndUpdateSuperHubberStatus(userId: string): Promise<{
       throw userError;
     }
 
-    // 2. Verifica se è il momento di controllare (trimestrale)
+    // 2. PRIMA: Verifica se deve perdere il badge per calo qualità (ogni 15gg)
+    if (await shouldRemoveSuperHubberForQualityDrop(userId)) {
+      console.log(`⚠️ Rimozione badge SuperHubber per calo qualità: ${userId}`);
+      await supabase.from('users').update({ 
+        is_super_hubber: false,
+        superhubber_last_check: new Date().toISOString()
+      }).eq('id', userId);
+      
+      return {
+        isSuperHubber: false,
+        meetsRequirements: false,
+        failedCriteria: ['Calo qualità: 3+ recensioni negative in 15gg e rating <4.7'],
+        success: true,
+        checked: true
+      };
+    }
+
+    // 3. POI: Verifica se è il momento di controllare (trimestrale)
     if (!shouldCheckSuperHubberStatus(userData.superhubber_last_check)) {
       const nextCheck = getNextQuarterlyDate(new Date(userData.superhubber_last_check!));
       console.log(`⏭️ Controllo SuperHubber saltato per ${userId} - prossimo: ${nextCheck.toLocaleDateString('it-IT')}`);
@@ -242,14 +322,14 @@ export async function checkAndUpdateSuperHubberStatus(userId: string): Promise<{
 
     console.log(`🔍 Eseguo controllo trimestrale SuperHubber per ${userId}`);
 
-    // 3. Aggiorna tutte le metriche
+    // 4. Aggiorna tutte le metriche
     const metrics = await updateHubberMetrics(userId);
     
     if (!metrics.success) {
       throw new Error('Impossibile aggiornare metriche');
     }
 
-    // 4. Verifica ogni criterio
+    // 5. Verifica ogni criterio
     const failedCriteria: string[] = [];
     
     if (metrics.completedBookings90d < SUPERHUBBER_REQUIREMENTS.minCompletedBookings90d) {
@@ -276,11 +356,11 @@ export async function checkAndUpdateSuperHubberStatus(userId: string): Promise<{
       failedCriteria.push(`Annunci attivi: ${metrics.activeListingsCount}/${SUPERHUBBER_REQUIREMENTS.minActiveListings}`);
     }
 
-    // 5. Determina se soddisfa TUTTI i requisiti
+    // 6. Determina se soddisfa TUTTI i requisiti
     const meetsRequirements = failedCriteria.length === 0;
     const currentStatus = userData.is_super_hubber || false;
 
-    // 6. Aggiorna badge E data ultimo controllo
+    // 7. Aggiorna badge E data ultimo controllo
     const { error: updateError } = await supabase
       .from('users')
       .update({ 
@@ -299,7 +379,7 @@ export async function checkAndUpdateSuperHubberStatus(userId: string): Promise<{
     } else {
       console.log(`✅ Status SuperHubber invariato (${currentStatus}) per hubber ${userId}`);
     }
-    
+
     return {
       isSuperHubber: meetsRequirements,
       meetsRequirements,

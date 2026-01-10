@@ -6339,7 +6339,7 @@ issued_at: new Date().toISOString()
 
       if (error) {
         console.error("Errore stats conversazioni:", error);
-        return { total: 0, open: 0, closed: 0, flagged: 0, priority: 0 };
+        return { total: 0, open: 0, closed: 0, flagged: 0, priority: 0, resolved: 0 };
       }
 
       const stats = {
