@@ -102,9 +102,9 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
       </div>
 
       {reviews.length > 0 ? (
-        <div className="relative px-16">
+        <div className="relative px-4 sm:px-16">
           {showLeft && (
-            <button onClick={() => scroll('left')} className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 bg-white border-2 border-gray-200 rounded-full p-2 shadow-lg hover:bg-gray-50">
+           <button onClick={() => scroll('left')} className="hidden sm:block absolute -left-4 top-1/2 -translate-y-1/2 z-10 bg-white border-2 border-gray-200 rounded-full p-2 shadow-lg hover:bg-gray-50">
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
@@ -119,7 +119,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
             const reviewerAvatar = getAvatarUrl(reviewer);
              
               return (
-                <div key={review.id} className="flex-shrink-0 w-[calc(50%-8px)] snap-start">
+                <div key={review.id} className="flex-shrink-0 w-72 sm:w-[calc(50%-8px)] snap-start bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
                   <div 
                     className={`flex items-center mb-3 ${onRenterClick && reviewerId ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
                     onClick={async () => {
@@ -170,7 +170,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
                       />
                     ))}
                   </div>
-                  <p className="text-gray-600 text-sm leading-relaxed line-clamp-4">
+                  <p className="text-gray-600 text-sm leading-relaxed line-clamp-4 break-words">
                     {review.comment || 'Nessun commento'}
                   </p>
                 </div>
@@ -178,7 +178,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
             })}
           </div>
           {showRight && (
-            <button onClick={() => scroll('right')} className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 bg-white border-2 border-gray-200 rounded-full p-2 shadow-lg hover:bg-gray-50">
+            <button onClick={() => scroll('right')} className="hidden sm:block absolute -right-4 top-1/2 -translate-y-1/2 z-10 bg-white border-2 border-gray-200 rounded-full p-2 shadow-lg hover:bg-gray-50">
               <ChevronRight className="w-5 h-5" />
             </button>
           )}
