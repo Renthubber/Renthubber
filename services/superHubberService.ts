@@ -16,8 +16,8 @@ import { supabase } from './supabaseClient';
  * Tutti i criteri devono essere soddisfatti
  */
 export const SUPERHUBBER_REQUIREMENTS = {
-  minCompletedBookings90d: 5,      // Minimo 5 noleggi completati negli ultimi 90gg
-  minRating: 4.5,                   // Rating medio minimo 4.5/5
+  minCompletedBookings90d: 15,      // Minimo 15 noleggi completati ogni trimestre
+  minRating: 4.8,                   // Rating medio minimo 4.8/5
   maxCancellationRate: 5.0,         // Massimo 5% di cancellazioni
   minReviews: 5,                    // Minimo 5 recensioni per rating affidabile
   requireDocumentVerified: true,    // Documento identità verificato obbligatorio
@@ -29,6 +29,52 @@ export const SUPERHUBBER_REQUIREMENTS = {
  */
 export function getSuperHubberRequirements() {
   return { ...SUPERHUBBER_REQUIREMENTS };
+}
+
+// ========================================
+// GESTIONE CONTROLLI TRIMESTRALI
+// ========================================
+
+/**
+ * Calcola la prossima data di controllo trimestrale
+ * Date trimestrali: 1 Gennaio, 1 Aprile, 1 Luglio, 1 Ottobre
+ */
+function getNextQuarterlyDate(fromDate: Date): Date {
+  const year = fromDate.getFullYear();
+  const month = fromDate.getMonth(); // 0-11
+  
+  // Date trimestrali: 1 Gen (0), 1 Apr (3), 1 Lug (6), 1 Ott (9)
+  const quarterlyMonths = [0, 3, 6, 9];
+  
+  // Trova il prossimo mese trimestrale
+  let nextMonth = quarterlyMonths.find(m => m > month);
+  let nextYear = year;
+  
+  if (!nextMonth && nextMonth !== 0) {
+    // Se siamo oltre ottobre, vai al 1 gennaio dell'anno prossimo
+    nextMonth = 0;
+    nextYear = year + 1;
+  }
+  
+  return new Date(nextYear, nextMonth, 1, 0, 0, 0, 0);
+}
+
+/**
+ * Verifica se è il momento di controllare il badge SuperHubber
+ * Controllo trimestrale: solo se sono passati 90 giorni dall'ultimo controllo
+ * e siamo in una data trimestrale (1 Gen, 1 Apr, 1 Lug, 1 Ott)
+ */
+function shouldCheckSuperHubberStatus(lastCheckDate: string | null): boolean {
+  if (!lastCheckDate) return true; // Prima volta, controlla sempre
+  
+  const last = new Date(lastCheckDate);
+  const now = new Date();
+  
+  // Calcola la prossima data trimestrale dopo l'ultimo controllo
+  const nextQuarterlyCheck = getNextQuarterlyDate(last);
+  
+  // Controlla se siamo oltre la data trimestrale
+  return now >= nextQuarterlyCheck;
 }
 
 // ========================================
@@ -166,19 +212,13 @@ export async function checkAndUpdateSuperHubberStatus(userId: string): Promise<{
   meetsRequirements: boolean;
   failedCriteria: string[];
   success: boolean;
+  checked: boolean;
 }> {
   try {
-    // 1. Prima aggiorna tutte le metriche
-    const metrics = await updateHubberMetrics(userId);
-    
-    if (!metrics.success) {
-      throw new Error('Impossibile aggiornare metriche');
-    }
-
-    // 2. Leggi i dati aggiornati dell'utente
+    // 1. Leggi i dati dell'utente e l'ultima data di controllo
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('id_document_verified, is_super_hubber')
+      .select('id_document_verified, is_super_hubber, superhubber_last_check')
       .eq('id', userId)
       .single();
 
@@ -187,7 +227,29 @@ export async function checkAndUpdateSuperHubberStatus(userId: string): Promise<{
       throw userError;
     }
 
-    // 3. Verifica ogni criterio
+    // 2. Verifica se è il momento di controllare (trimestrale)
+    if (!shouldCheckSuperHubberStatus(userData.superhubber_last_check)) {
+      const nextCheck = getNextQuarterlyDate(new Date(userData.superhubber_last_check!));
+      console.log(`⏭️ Controllo SuperHubber saltato per ${userId} - prossimo: ${nextCheck.toLocaleDateString('it-IT')}`);
+      return {
+        isSuperHubber: userData.is_super_hubber || false,
+        meetsRequirements: userData.is_super_hubber || false,
+        failedCriteria: [],
+        success: true,
+        checked: false
+      };
+    }
+
+    console.log(`🔍 Eseguo controllo trimestrale SuperHubber per ${userId}`);
+
+    // 3. Aggiorna tutte le metriche
+    const metrics = await updateHubberMetrics(userId);
+    
+    if (!metrics.success) {
+      throw new Error('Impossibile aggiornare metriche');
+    }
+
+    // 4. Verifica ogni criterio
     const failedCriteria: string[] = [];
     
     if (metrics.completedBookings90d < SUPERHUBBER_REQUIREMENTS.minCompletedBookings90d) {
@@ -214,32 +276,36 @@ export async function checkAndUpdateSuperHubberStatus(userId: string): Promise<{
       failedCriteria.push(`Annunci attivi: ${metrics.activeListingsCount}/${SUPERHUBBER_REQUIREMENTS.minActiveListings}`);
     }
 
-    // 4. Determina se soddisfa TUTTI i requisiti
+    // 5. Determina se soddisfa TUTTI i requisiti
     const meetsRequirements = failedCriteria.length === 0;
     const currentStatus = userData.is_super_hubber || false;
 
-    // 5. Aggiorna badge solo se cambia lo status
+    // 6. Aggiorna badge E data ultimo controllo
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ 
+        is_super_hubber: meetsRequirements,
+        superhubber_last_check: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('❌ Errore aggiornamento badge SuperHubber:', updateError);
+      throw updateError;
+    }
+
     if (meetsRequirements !== currentStatus) {
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ is_super_hubber: meetsRequirements })
-        .eq('id', userId);
-
-      if (updateError) {
-        console.error('❌ Errore aggiornamento badge SuperHubber:', updateError);
-        throw updateError;
-      }
-
       console.log(`🌟 Badge SuperHubber ${meetsRequirements ? 'ASSEGNATO' : 'RIMOSSO'} per hubber ${userId}`);
     } else {
       console.log(`✅ Status SuperHubber invariato (${currentStatus}) per hubber ${userId}`);
     }
-
+    
     return {
       isSuperHubber: meetsRequirements,
       meetsRequirements,
       failedCriteria,
-      success: true
+      success: true,
+      checked: true
     };
 
   } catch (error) {
@@ -248,7 +314,8 @@ export async function checkAndUpdateSuperHubberStatus(userId: string): Promise<{
       isSuperHubber: false,
       meetsRequirements: false,
       failedCriteria: ['Errore sistema'],
-      success: false
+      success: false,
+      checked: false
     };
   }
 }

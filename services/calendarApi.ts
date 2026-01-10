@@ -5,7 +5,7 @@
  * per gestione calendario e sincronizzazione iCal
  */
 
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 import { icalService, ImportedCalendar, CalendarBlock } from './ical';
 
 // =====================================================
