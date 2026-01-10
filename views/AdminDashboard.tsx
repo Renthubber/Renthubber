@@ -6,7 +6,7 @@ import {
   LogOut, Download, KeyRound, Trash2, FileCheck, Landmark, CheckCircle2,
   CalendarCheck, ShoppingBag, Plus, Eye, EyeOff, MapPin, Clock, Tag,
   MessageSquare, Send, AlertCircle, Headphones, UserCheck, Lock, CreditCard, Percent, Wallet,
-  ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Gift, Star, Mail,Megaphone,
+  ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Gift, Star, Mail, Megaphone, Calendar,
 } from 'lucide-react';
 
 import { 
@@ -56,6 +56,7 @@ import * as financeSettingsService from '../services/financeSettingsService';
 import { OnlineIndicator } from '../components/OnlineIndicator';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import { AdminDisputesPage } from './AdminDisputesPage';
+
 
 // Funzione per formattare data in italiano
 const formatDateIT = (isoDate: string | null | undefined): string => {
@@ -1995,7 +1996,7 @@ const handleSavePage = async () => {
       </div>
 
       {/* SECONDA RIGA KPI - Fatturato e stats aggiuntive */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard 
           title="Fatturato (Commissioni)" 
           value={`€ ${totalRevenue.toFixed(2)}`} 
@@ -2011,13 +2012,52 @@ const handleSavePage = async () => {
           color="bg-purple-500" 
         />
         <KpiCard 
-          title="Tasso Completamento" 
-          value={totalBookings > 0 ? `${Math.round((completedBookings / totalBookings) * 100)}%` : "N/A"} 
-          subtext={totalBookings > 0 ? `${completedBookings}/${totalBookings} prenotazioni` : "Nessuna prenotazione"}
-          icon={TrendingUp} 
-          color="bg-indigo-500" 
-        />
-      </div>
+  title="Tasso Completamento" 
+  value={totalBookings > 0 ? `${Math.round((completedBookings / totalBookings) * 100)}%` : "N/A"} 
+  subtext={totalBookings > 0 ? `${completedBookings}/${totalBookings} prenotazioni` : "Nessuna prenotazione"}
+  icon={TrendingUp} 
+  color="bg-indigo-500" 
+/>
+
+<KpiCard 
+  title="Prossimo Controllo SuperHubber" 
+  value={(() => {
+    const nextCheck = (() => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const quarterlyMonths = [0, 3, 6, 9];
+      let nextMonth = quarterlyMonths.find(m => m > month);
+      let nextYear = year;
+      if (!nextMonth && nextMonth !== 0) {
+        nextMonth = 0;
+        nextYear = year + 1;
+      }
+      return new Date(nextYear, nextMonth, 1, 0, 0, 0, 0);
+    })();
+    const daysUntil = Math.ceil((nextCheck.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    return `${daysUntil} giorni`;
+  })()} 
+  subtext={(() => {
+    const nextCheck = (() => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const quarterlyMonths = [0, 3, 6, 9];
+      let nextMonth = quarterlyMonths.find(m => m > month);
+      let nextYear = year;
+      if (!nextMonth && nextMonth !== 0) {
+        nextMonth = 0;
+        nextYear = year + 1;
+      }
+      return new Date(nextYear, nextMonth, 1, 0, 0, 0, 0);
+    })();
+    return nextCheck.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+  })()}
+  icon={Calendar} 
+  color="bg-purple-500" 
+/>
+</div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
@@ -8655,14 +8695,8 @@ const renderReviews = () => {
     </div>
   );
 
-  const renderCMS = () => {
-  return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-4">Gestione CMS</h2>
-      <p className="text-gray-600">Sezione in costruzione...</p>
-    </div>
-  );
-};
+  // ✅ NUOVO
+const renderCMS = () => <AdminCMSBranding />;
 
   return (
     <div className="min-h-screen bg-gray-100 flex font-sans">
