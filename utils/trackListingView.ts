@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from "../services/supabaseClient";
 
 export async function trackListingView(listingId: string): Promise<void> {
   try {
