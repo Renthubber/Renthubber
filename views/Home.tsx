@@ -77,9 +77,13 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, bookings =
   const [searchDateStart, setSearchDateStart] = useState<Date | undefined>(undefined);
   const [searchDateEnd, setSearchDateEnd] = useState<Date | undefined>(undefined);
   
-  // Dropdown state
-  const [activeDropdown, setActiveDropdown] = useState<'search' | 'where' | 'dates' | null>(null);
-  const searchBarRef = useRef<HTMLDivElement>(null);
+ // Dropdown state
+const [activeDropdown, setActiveDropdown] = useState<'search' | 'where' | 'dates' | null>(null);
+
+// Mobile search modal
+const [showMobileSearch, setShowMobileSearch] = useState(false);
+
+const searchBarRef = useRef<HTMLDivElement>(null);
   
   // AI suggestions
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
@@ -272,8 +276,24 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, bookings =
             Noleggia qualsiasi cosa, <br /> ovunque tu sia.
           </h1>
 
-          {/* ========== SEARCH BAR AIRBNB STYLE ========== */}
-          <div ref={searchBarRef} className="relative max-w-3xl mx-auto z-50">
+         {/* ========== SEARCH BAR COMPATTA MOBILE ========== */}
+<div 
+  className="md:hidden bg-white rounded-full shadow-xl px-4 py-3 flex items-center gap-3 cursor-pointer hover:shadow-2xl transition-shadow"
+  onClick={() => setShowMobileSearch(true)}
+>
+  <Search className="w-5 h-5 text-gray-500" />
+  <div className="flex-1">
+    <p className="text-sm font-medium text-gray-800">
+      {searchQuery || 'Cosa cerchi?'}
+    </p>
+    <p className="text-xs text-gray-400">
+      {searchCity || 'Ovunque'} • {searchDateStart ? formatDateRange() : 'Qualsiasi data'}
+    </p>
+  </div>
+</div>
+
+{/* ========== SEARCH BAR DESKTOP ========== */}
+<div ref={searchBarRef} className="relative max-w-3xl mx-auto z-50 hidden md:block">
             
             {/* Barra principale */}
             <div className={`bg-white rounded-2xl md:rounded-full shadow-2xl flex flex-col md:flex-row md:items-center transition-all ${activeDropdown ? 'shadow-3xl' : ''}`}>
@@ -485,6 +505,128 @@ export const Home: React.FC<HomeProps> = ({ onListingClick, listings, bookings =
               </div>
             )}
           </div>
+
+         {/* ========== MODALE RICERCA MOBILE ========== */}
+{showMobileSearch && (
+  <div className="fixed inset-0 bg-white z-[200] md:hidden overflow-y-auto">
+    <div className="p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <button 
+          onClick={() => setShowMobileSearch(false)}
+          className="p-2 hover:bg-gray-100 rounded-full"
+        >
+          <X className="w-6 h-6 text-gray-600" />
+        </button>
+        <h2 className="font-bold text-gray-900">Cerca</h2>
+        <button 
+          onClick={resetFilters}
+          className="text-sm text-brand font-medium"
+        >
+          Reset
+        </button>
+      </div>
+
+      {/* Cosa cerchi */}
+      <div className="mb-4">
+        <label className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2 block">
+          Cosa cerchi?
+        </label>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cerca o descrivi..."
+            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Dove */}
+      <div className="mb-4">
+        <label className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2 block">
+          Dove
+        </label>
+        <div className="relative">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            value={searchCity}
+            onChange={(e) => setSearchCity(e.target.value)}
+            placeholder="Ovunque"
+            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
+          />
+        </div>
+        {/* Suggerimenti città */}
+        {citySuggestions.length > 0 && (
+          <div className="mt-2 bg-white border border-gray-200 rounded-xl max-h-40 overflow-y-auto">
+            {citySuggestions.map((suggestion, idx) => (
+              <button
+                key={`mobile-${suggestion.city}-${idx}`}
+                onClick={() => {
+                  setSearchCity(suggestion.displayName);
+                  setSelectedCitySuggestion(suggestion);
+                  setCitySuggestions([]);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50"
+              >
+                <MapPin className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-800">{suggestion.city}</span>
+                {suggestion.province && (
+                  <span className="text-xs text-gray-500">({suggestion.province})</span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Date */}
+      <div className="mb-6">
+        <label className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2 block">
+          Date
+        </label>
+        <div 
+          onClick={() => setActiveDropdown(activeDropdown === 'dates' ? null : 'dates')}
+          className="flex items-center gap-3 px-4 py-3 border border-gray-200 rounded-xl cursor-pointer hover:border-brand"
+        >
+          <Calendar className="w-5 h-5 text-gray-400" />
+          <span className={`text-sm ${searchDateStart ? 'text-gray-800' : 'text-gray-400'}`}>
+            {formatDateRange()}
+          </span>
+        </div>
+        {activeDropdown === 'dates' && (
+          <div className="mt-3">
+            <AirbnbCalendar
+              selectedStart={searchDateStart}
+              selectedEnd={searchDateEnd}
+              onChange={(start, end) => {
+                handleDateChange(start, end);
+                if (start && end) setActiveDropdown(null);
+              }}
+              location={searchCity || 'la tua destinazione'}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Bottone Cerca */}
+      <button
+        onClick={() => {
+          setShowMobileSearch(false);
+          handleSearch();
+        }}
+        className="w-full py-4 rounded-xl font-bold text-gray-800 flex items-center justify-center gap-2"
+        style={{ backgroundColor: '#FFD93D' }}
+      >
+        <Search className="w-5 h-5" />
+        Cerca
+      </button>
+    </div>
+  </div>
+)}
 
         </div>
       </div>

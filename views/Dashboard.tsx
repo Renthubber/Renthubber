@@ -400,11 +400,13 @@ const [profileData, setProfileData] = useState(() => {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Stato per upload documento fronte/retro (solo UI)
-  const [idFrontFileName, setIdFrontFileName] = useState<string | null>(null);
-  const [idBackFileName, setIdBackFileName] = useState<string | null>(null);
+const [idFrontFileName, setIdFrontFileName] = useState<string | null>(null);
+const [idBackFileName, setIdBackFileName] = useState<string | null>(null);
 
-  const [isUploadingFront, setIsUploadingFront] = useState(false);
-  const [isUploadingBack, setIsUploadingBack] = useState(false);
+const [isUploadingFront, setIsUploadingFront] = useState(false);
+const [isUploadingBack, setIsUploadingBack] = useState(false);
+
+const [isEditingDocument, setIsEditingDocument] = useState(false);
 
   // FILTRI PRENOTAZIONI HUBBER
   const [hubberBookingFilter, setHubberBookingFilter] =
@@ -2506,21 +2508,21 @@ const handleChangePassword = async (e: React.FormEvent) => {
   const renderSecurity = () => (
     <div className="space-y-8 animate-in fade-in duration-300">
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <h3 className="font-bold text-gray-900 mb-2 flex items-center">
+        <h3 className="font-bold text-gray-900 mb-2 flex items-center justify-center md:justify-start">
           <ShieldCheck className="w-6 h-6 text-brand mr-2" /> Stato Verifiche
           Account
         </h3>
-        <p className="text-gray-500 text-sm mb-6">
+        <p className="text-gray-500 text-sm mb-6 text-center md:text-left">
           Per garantire la sicurezza della piattaforma, completiamo diverse
           verifiche.
         </p>
 
         <div className="space-y-4">
           {/* EMAIL */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
-            <div className="flex items-center">
+          <div className="flex flex-col items-center md:flex-row md:items-center md:justify-between gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="flex flex-col items-center md:flex-row md:items-center">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 md:mb-0 md:mr-3 ${
                   user.emailVerified
                     ? 'bg-green-100 text-green-600'
                     : 'bg-gray-200 text-gray-500'
@@ -2532,12 +2534,12 @@ const handleChangePassword = async (e: React.FormEvent) => {
                   <Lock className="w-4 h-4" />
                 )}
               </div>
-              <div>
+              <div className="text-center md:text-left">
                 <p className="font-bold text-gray-900">Indirizzo Email</p>
                 <p className="text-xs text-gray-500">{profileData.email}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 ml-11 md:ml-0">
+            <div className="flex items-center gap-2">
               <button
                 onClick={openEmailModal}
                 className="text-xs font-semibold text-brand hover:text-brand-dark transition-colors px-3 py-1.5 rounded-lg hover:bg-brand/5"
@@ -2557,10 +2559,10 @@ const handleChangePassword = async (e: React.FormEvent) => {
           </div>
 
           {/* TELEFONO */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
-            <div className="flex items-center">
+          <div className="flex flex-col items-center md:flex-row md:items-center md:justify-between gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="flex flex-col items-center md:flex-row md:items-center">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 md:mb-0 md:mr-3 ${
                   user.phoneVerified
                     ? 'bg-green-100 text-green-600'
                     : 'bg-gray-200 text-gray-500'
@@ -2572,14 +2574,14 @@ const handleChangePassword = async (e: React.FormEvent) => {
                   <Lock className="w-4 h-4" />
                 )}
               </div>
-              <div>
+              <div className="text-center md:text-left">
                 <p className="font-bold text-gray-900">Numero di Telefono</p>
                 <p className="text-xs text-gray-500">
                   {profileData.phoneNumber || 'Non inserito'}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 ml-11 md:ml-0">
+            <div className="flex items-center gap-2">
               <button
                 onClick={openPhoneModal}
                 className="text-xs font-semibold text-brand hover:text-brand-dark transition-colors px-3 py-1.5 rounded-lg hover:bg-brand/5"
@@ -2600,10 +2602,10 @@ const handleChangePassword = async (e: React.FormEvent) => {
 
           {/* DOCUMENTO IDENTITÀ */}
           <div className="flex flex-col gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <div className="flex items-center">
+            <div className="flex flex-col items-center md:flex-row md:items-center md:justify-between gap-3">
+              <div className="flex flex-col items-center md:flex-row md:items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 md:mb-0 md:mr-3 ${
                     user.idDocumentVerified
                       ? 'bg-green-100 text-green-600'
                       : 'bg-gray-200 text-gray-500'
@@ -2615,7 +2617,7 @@ const handleChangePassword = async (e: React.FormEvent) => {
                     <Lock className="w-4 h-4" />
                   )}
                 </div>
-                <div>
+                <div className="text-center md:text-left">
                   <p className="font-bold text-gray-900">
                     Documento d&apos;Identità
                   </p>
@@ -2624,16 +2626,14 @@ const handleChangePassword = async (e: React.FormEvent) => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 ml-11 md:ml-0">
+              <div className="flex items-center gap-2">
                 {user.idDocumentVerified && (
                   <button
-                    onClick={() => {
-                      setIdFrontFileName(null);
-                      setIdBackFileName(null);
-                      if (onUpdateProfile) {
-                        onUpdateProfile({ resetIdDocumentVerification: true });
-                      }
-                    }}
+                  onClick={() => {
+                   setIsEditingDocument(true);
+                 setIdFrontFileName(null);
+               setIdBackFileName(null);
+                  }}
                     className="text-xs font-semibold text-brand hover:text-brand-dark transition-colors px-3 py-1.5 rounded-lg hover:bg-brand/5"
                   >
                     Modifica
@@ -2652,7 +2652,7 @@ const handleChangePassword = async (e: React.FormEvent) => {
             </div>
 
             {/* Caricamento fronte/retro - mostra sempre se non verificato, o dopo click su Modifica */}
-{(!user.idDocumentVerified || idFrontFileName !== null || idBackFileName !== null) && (
+{(!user.idDocumentVerified || isEditingDocument) && (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     {/* Fronte */}
     <label className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors flex flex-col items-center justify-center ${
@@ -2741,7 +2741,7 @@ const handleChangePassword = async (e: React.FormEvent) => {
               </p>
             )}
 
-            <p className="text-[11px] text-gray-400">
+            <p className="text-[11px] text-gray-400 text-center">
               Dopo aver caricato il documento, il team Renthubber effettuerà una
               verifica manuale. In caso di modifica del documento è necessario
               rifare la verifica.
@@ -2749,6 +2749,90 @@ const handleChangePassword = async (e: React.FormEvent) => {
           </div>
         </div>
       </div>
+
+    {/* Caricamento fronte/retro - mostra sempre se non verificato, o dopo click su Modifica */}
+{(!user.idDocumentVerified || idFrontFileName !== null || idBackFileName !== null) && (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {/* Fronte */}
+    <label className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors flex flex-col items-center justify-center ${
+      isUploadingFront 
+        ? 'border-brand bg-brand/5 cursor-not-allowed' 
+        : 'border-gray-300 hover:bg-gray-100 cursor-pointer'
+    }`}>
+      {isUploadingFront ? (
+        <>
+          <svg className="animate-spin w-8 h-8 text-brand mb-2" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="text-brand font-medium text-sm">Caricamento in corso...</p>
+        </>
+      ) : (
+        <>
+          <Upload className="w-8 h-8 text-gray-400 mb-2" />
+          <p className="text-gray-600 font-medium text-sm">
+            Carica fronte documento
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            PDF, JPG o PNG (Max 5MB)
+          </p>
+          {idFrontFileName && (
+            <p className="mt-2 text-xs text-green-600 truncate max-w-full flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> {idFrontFileName}
+            </p>
+          )}
+        </>
+      )}
+      <input
+        type="file"
+        accept=".pdf,image/*"
+        className="hidden"
+        onChange={handleIdFileChange('front')}
+        disabled={isUploadingFront}
+      />
+    </label>
+
+    {/* Retro */}
+    <label className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors flex flex-col items-center justify-center ${
+      isUploadingBack 
+        ? 'border-brand bg-brand/5 cursor-not-allowed' 
+        : 'border-gray-300 hover:bg-gray-100 cursor-pointer'
+    }`}>
+      {isUploadingBack ? (
+        <>
+          <svg className="animate-spin w-8 h-8 text-brand mb-2" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="text-brand font-medium text-sm">Caricamento in corso...</p>
+        </>
+      ) : (
+        <>
+          <Upload className="w-8 h-8 text-gray-400 mb-2" />
+          <p className="text-gray-600 font-medium text-sm">
+            Carica retro documento
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            PDF, JPG o PNG (Max 5MB)
+          </p>
+          {idBackFileName && (
+            <p className="mt-2 text-xs text-green-600 truncate max-w-full flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> {idBackFileName}
+            </p>
+          )}
+        </>
+      )}
+      <input
+        type="file"
+        accept=".pdf,image/*"
+        className="hidden"
+        onChange={handleIdFileChange('back')}
+        disabled={isUploadingBack}
+      />
+    </label>
+  </div>
+)}
+            
 
       {/* 🔴 DANGER ZONE - Elimina Account */}
       <div className="bg-white rounded-2xl border-2 border-red-200 shadow-sm p-6">
@@ -2830,16 +2914,16 @@ const handleChangePassword = async (e: React.FormEvent) => {
 
         {/* INFO PROFILO */}
         <div className="flex-1 text-center md:text-left">
-          <div className="flex flex-wrap items-center gap-2 mb-2 justify-center md:justify-start">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center md:text-left">
-              {profileData.firstName || profileData.lastName
-                ? `${profileData.firstName} ${profileData.lastName}`.trim()
-                : 'Nuovo utente Renthubber'}
-            </h2>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center md:text-left mb-2">
+            {profileData.firstName || profileData.lastName
+              ? `${profileData.firstName} ${profileData.lastName}`.trim()
+              : 'Nuovo utente Renthubber'}
+          </h2>
 
+          <div className="flex flex-wrap items-center gap-2 mb-2 justify-center md:justify-start">
             {user.isSuperHubber && (
               <span className="px-2 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-700">
-                Super Hubber
+                SuperHubber
               </span>
             )}
 
@@ -3167,8 +3251,8 @@ const handleChangePassword = async (e: React.FormEvent) => {
                 <div className="animate-spin w-8 h-8 border-2 border-brand border-t-transparent rounded-full"></div>
               </div>
             ) : chartData.length > 0 && chartData.some(d => d.value > 0) ? (
-              <ResponsiveContainer width="100%" height="100%" minHeight={288} aspect={2}>
-                <AreaChart data={chartData}>
+              <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#0D414B" stopOpacity={0.3} />
