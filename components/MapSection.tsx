@@ -145,14 +145,16 @@ export const MapSection: React.FC<MapSectionProps> = ({
     };
   }, [mapCoordinates, category, isLoading]);
 
-  return (
-    <div className="py-8 border-b border-gray-100">
-      <h3 className="text-xl font-bold text-gray-900 mb-2">Dove ti troverai</h3>
-      <p className="text-gray-500 mb-6 text-sm flex items-center">
+ return (
+  <div className="py-8 border-b border-gray-100">
+    <h3 className="text-xl font-bold text-gray-900 mb-2">Dove ti troverai</h3>
+    <div className="text-gray-500 mb-6 text-sm">
+      <div className="flex items-center">
         <MapPin className="w-4 h-4 mr-1" />
         {location || "Posizione non specificata"}
-        <span className="text-gray-400 ml-1">(La posizione esatta verrà fornita dopo la prenotazione)</span>
-      </p>
+      </div>
+      <p className="text-gray-400 mt-1">(La posizione esatta verrà fornita dopo la prenotazione)</p>
+    </div>
       
       {/* Mappa Leaflet */}
       <div className="w-full h-80 bg-gray-100 rounded-2xl relative overflow-hidden border border-gray-200">

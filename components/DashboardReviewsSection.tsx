@@ -56,6 +56,21 @@ export const DashboardReviewsSection: React.FC<DashboardReviewsSectionProps> = (
 const [showReviewModal, setShowReviewModal] = useState(false);
 const [selectedBooking, setSelectedBooking] = useState<PendingReview | null>(null);
 
+// Funzione per calcolare tempo rimanente per recensione
+const getTimeRemaining = (endDate: string) => {
+  const completed = new Date(endDate);
+  const deadline = new Date(completed.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const timeLeft = deadline.getTime() - now.getTime();
+  
+  if (timeLeft <= 0) return null;
+  
+  const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  
+  return { days, hours };
+};
+
   useEffect(() => {
     loadReviews();
   }, [userId, userType, activeTab]);
@@ -107,6 +122,11 @@ useEffect(() => {
       // Verifica se ha già recensito
       const alreadyReviewed = await api.reviews.existsForBooking(booking.id, userId);
       if (alreadyReviewed) continue;
+
+      // Verifica se è scaduto il tempo (7 giorni)
+      const endDate = new Date(booking.end_date);
+      const deadline = new Date(endDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+      if (new Date() > deadline) continue;
 
       // Prendi i dati dell'altra persona
       const otherUser = userType === 'hubber' ? booking.renter : booking.hubber;
@@ -195,10 +215,25 @@ useEffect(() => {
                 <h3 className="font-semibold text-gray-900 mb-1">
                   {pending.listingTitle}
                 </h3>
-                <p className="text-sm text-gray-500">
-                  Prenotazione terminata il{' '}
-                  {new Date(pending.endDate).toLocaleDateString('it-IT')}
-                </p>
+               <p className="text-sm text-gray-500">
+  Prenotazione terminata il{' '}
+  {new Date(pending.endDate).toLocaleDateString('it-IT')}
+</p>
+{(() => {
+  const timeLeft = getTimeRemaining(pending.endDate);
+  if (!timeLeft) return null;
+  return (
+    <p className={`text-xs mt-1 flex items-center gap-1 ${
+      timeLeft.days <= 1 ? 'text-red-500' : 'text-amber-600'
+    }`}>
+      <Clock className="w-3 h-3" />
+      {timeLeft.days > 0 
+        ? `${timeLeft.days}g ${timeLeft.hours}h rimanenti`
+        : `${timeLeft.hours}h rimanenti`
+      }
+    </p>
+  );
+})()}
               </div>
             </div>
 
