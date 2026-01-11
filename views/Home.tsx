@@ -99,15 +99,18 @@ const searchBarRef = useRef<HTMLDivElement>(null);
   const [filterPriceMax, setFilterPriceMax] = useState<number | ''>('');
 
   // ========== CLICK OUTSIDE HANDLER ==========
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchBarRef.current && !searchBarRef.current.contains(event.target as Node)) {
-        setActiveDropdown(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+useEffect(() => {
+  const handleClickOutside = (event: MouseEvent) => {
+    // Non chiudere se il modale mobile è aperto
+    if (showMobileSearch) return;
+    
+    if (searchBarRef.current && !searchBarRef.current.contains(event.target as Node)) {
+      setActiveDropdown(null);
+    }
+  };
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, [showMobileSearch]);
 
   // ========== AI SEARCH HANDLER ==========
   useEffect(() => {
@@ -508,8 +511,8 @@ const searchBarRef = useRef<HTMLDivElement>(null);
 
          {/* ========== MODALE RICERCA MOBILE ========== */}
 {showMobileSearch && (
-  <div className="fixed inset-0 bg-white z-[200] md:hidden overflow-y-auto">
-    <div className="p-4">
+  <div className="fixed inset-0 bg-white z-[200] md:hidden overflow-y-auto pt-16">
+    <div className="p-4" onClick={(e) => e.stopPropagation()}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <button 
@@ -527,22 +530,39 @@ const searchBarRef = useRef<HTMLDivElement>(null);
         </button>
       </div>
 
-      {/* Cosa cerchi */}
-      <div className="mb-4">
-        <label className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2 block">
-          Cosa cerchi?
-        </label>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cerca o descrivi..."
-            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
-          />
-        </div>
+     {/* Cosa cerchi */}
+<div className="mb-4">
+  <label className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2 block">
+    Cosa cerchi?
+  </label>
+  <div className="relative">
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+    <input
+      type="text"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      placeholder="Cerca o descrivi..."
+      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand focus:border-transparent outline-none text-gray-800"
+    />
+  </div>
+  {/* Suggerimenti AI */}
+  {aiSuggestions.length > 0 && (
+    <div className="mt-3">
+      <p className="text-xs font-semibold text-gray-600 mb-2">Potrebbe interessarti:</p>
+      <div className="flex flex-wrap gap-2">
+        {aiSuggestions.map((suggestion, idx) => (
+          <button
+            key={idx}
+            onClick={() => setSearchQuery(suggestion)}
+            className="px-3 py-1.5 text-xs font-medium bg-brand/10 text-brand rounded-full hover:bg-brand/20 transition-colors"
+          >
+            {suggestion}
+          </button>
+        ))}
       </div>
+    </div>
+  )}
+</div>
 
       {/* Dove */}
       <div className="mb-4">
@@ -584,33 +604,33 @@ const searchBarRef = useRef<HTMLDivElement>(null);
       </div>
 
       {/* Date */}
-      <div className="mb-6">
-        <label className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2 block">
-          Date
-        </label>
-        <div 
-          onClick={() => setActiveDropdown(activeDropdown === 'dates' ? null : 'dates')}
-          className="flex items-center gap-3 px-4 py-3 border border-gray-200 rounded-xl cursor-pointer hover:border-brand"
-        >
-          <Calendar className="w-5 h-5 text-gray-400" />
-          <span className={`text-sm ${searchDateStart ? 'text-gray-800' : 'text-gray-400'}`}>
-            {formatDateRange()}
-          </span>
-        </div>
-        {activeDropdown === 'dates' && (
-          <div className="mt-3">
-            <AirbnbCalendar
-              selectedStart={searchDateStart}
-              selectedEnd={searchDateEnd}
-              onChange={(start, end) => {
-                handleDateChange(start, end);
-                if (start && end) setActiveDropdown(null);
-              }}
-              location={searchCity || 'la tua destinazione'}
-            />
-          </div>
-        )}
-      </div>
+<div className="mb-6">
+  <label className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2 block">
+    Date
+  </label>
+  <div 
+    onClick={() => setActiveDropdown(activeDropdown === 'dates' ? null : 'dates')}
+    className="flex items-center gap-3 px-4 py-3 border border-gray-200 rounded-xl cursor-pointer hover:border-brand"
+  >
+    <Calendar className="w-5 h-5 text-gray-400" />
+    <span className={`text-sm ${searchDateStart ? 'text-gray-800' : 'text-gray-400'}`}>
+      {formatDateRange()}
+    </span>
+  </div>
+  {activeDropdown === 'dates' && (
+    <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+      <AirbnbCalendar
+        selectedStart={searchDateStart}
+        selectedEnd={searchDateEnd}
+        onChange={(start, end) => {
+          handleDateChange(start, end);
+          if (start && end) setActiveDropdown(null);
+        }}
+        location={searchCity || 'la tua destinazione'}
+      />
+    </div>
+  )}
+</div>
 
       {/* Bottone Cerca */}
       <button
