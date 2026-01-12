@@ -594,28 +594,28 @@ const handleRenterClick = async (renter: User) => {
           <Route path="/invito/:code" element={<ReferralLanding />} />
 
           {/* DASHBOARD & USER VIEWS */}
-          <Route path="/dashboard" element={
-            currentUser ? (
-              <Dashboard
-                user={currentUser}
-                activeMode={activeMode}
-                onManageListings={() => navigate('/my-listings')}
-                onBecomeHubber={() => navigate('/become-hubber')}
-                onNavigateToWallet={() => navigate('/wallet')}
-                onViewListing={(listing) => {
-                  setSelectedListing(listing);
-                  navigate(`/listing/${listing.id}`);
-                }}
-                onUpdateProfile={async (updated) => {
-                  // Qui dovresti implementare l'aggiornamento del profilo
-              
-                }}
-                onViewRenterProfile={handleRenterClick}
-              />
-            ) : (
-              <Navigate to="/" />
-            )
-          } />
+<Route path="/dashboard/*" element={
+  currentUser ? (
+    <Dashboard
+      user={currentUser}
+      activeMode={activeMode}
+      onManageListings={() => navigate('/my-listings')}
+      onBecomeHubber={() => navigate('/become-hubber')}
+      onNavigateToWallet={() => navigate('/wallet')}
+      onViewListing={(listing) => {
+        setSelectedListing(listing);
+        navigate(`/listing/${listing.id}`);
+      }}
+      onUpdateProfile={async (updated) => {
+        // Qui dovresti implementare l'aggiornamento del profilo
+      }}
+      onViewRenterProfile={handleRenterClick}
+      onChangeMode={setActiveMode} // 👈 AGGIUNGI QUESTA RIGA
+    />
+  ) : (
+    <Navigate to="/" />
+  )
+} />
 
           <Route path="/admin" element={
             currentUser?.role === 'admin' ? (
