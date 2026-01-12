@@ -81,8 +81,8 @@ export const InstallPrompt: React.FC<InstallPromptProps> = ({ onClose }) => {
         {/* Logo */}
         <div className="flex-shrink-0">
           <img 
-            src="/R-logo" 
-            alt="RentHubber" 
+            src="/R-logo.png" 
+            alt="Renthubber" 
             className="w-12 h-12 rounded-xl shadow-lg"
           />
         </div>
