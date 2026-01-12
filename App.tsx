@@ -600,6 +600,7 @@ const handleRenterClick = async (renter: User) => {
       user={currentUser}
       activeMode={activeMode}
       onManageListings={() => navigate('/my-listings')}
+      onBackToHome={() => navigate('/')}
       onBecomeHubber={() => navigate('/become-hubber')}
       onNavigateToWallet={() => navigate('/wallet')}
       onViewListing={(listing) => {
