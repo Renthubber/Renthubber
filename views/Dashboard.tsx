@@ -106,6 +106,7 @@ interface DashboardProps {
   user: User;
   activeMode: ActiveMode;
   onManageListings: () => void;
+  onBackToHome?: () => void;
   onBecomeHubber?: () => void;  // ✅ AGGIUNTO: callback per aprire wizard "Diventa Hubber"
   onNavigateToWallet?: () => void;  // ✅ NUOVO: callback per navigare al wallet
   onViewListing?: (listing: any) => void; // ✅ NUOVO: per aprire dettaglio annuncio
@@ -141,6 +142,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   user,
   activeMode,
   onManageListings,
+  onBackToHome,
   onBecomeHubber,  // ✅ AGGIUNTO
   onNavigateToWallet,  // ✅ NUOVO
   onViewListing, // ✅ NUOVO
@@ -2722,8 +2724,8 @@ const renderHubberCalendar = () => {
               onViewListing(listing);
             }
           }}
-          onExploreClick={onManageListings}
-        />
+         onExploreClick={onBackToHome}
+         />
       )}
       {activeTab === 'reviews' && (
   <DashboardReviewsSection
