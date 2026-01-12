@@ -30,8 +30,7 @@ import { Annunci } from "./views/Annunci";
 import { AnnouncementPopup } from './components/AnnouncementPopup';
 import { useUserPresence } from './hooks/useUserPresence';
 import { useRealtimeMessages } from './hooks/useRealtimeMessages';
-
-
+import { InstallPrompt } from './components/InstallPrompt';
 
 // === PAGINE FOOTER ===
 import { ChiSiamoPage } from "./pages/ChiSiamoPage";
@@ -838,6 +837,8 @@ const handleRenterClick = async (renter: User) => {
   />
 )}
 
+{/* 📱 PWA INSTALL BANNER */}
+    <InstallPrompt />
 
     </BrandingProvider> 
   );
