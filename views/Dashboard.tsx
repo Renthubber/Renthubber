@@ -26,6 +26,8 @@ import {
   ArrowRight,
   Loader2,
   Trash2,
+  Wallet,
+  CreditCard,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -377,6 +379,8 @@ const [profileData, setProfileData] = useState(() => {
   const [showPaymentForModify, setShowPaymentForModify] = useState(false);
   const modifyCalendarRef = useRef<HTMLDivElement>(null);
   const [modifyDisabledDates, setModifyDisabledDates] = useState<Date[]>([]);
+  const [modifyPaymentMethod, setModifyPaymentMethod] = useState<'wallet' | 'card' | null>(null);
+  const [renterWalletBalance, setRenterWalletBalance] = useState(0);
 
   // DETTAGLIO PRENOTAZIONE RENTER
   const [selectedRenterBooking, setSelectedRenterBooking] = useState<BookingRequest | null>(null);
@@ -1489,12 +1493,27 @@ const handleRemoveCalendar = async (calendarId: string): Promise<void> => {
         });
         
         setModifyDisabledDates(allDisabledDates);
-        console.log("📅 Date disabilitate per modifica:", allDisabledDates.length);
       }
     } catch (err) {
       console.error("Errore caricamento date prenotate:", err);
     }
     
+     // Carica saldo wallet renter
+    try {
+      const { data: wallet, error } = await supabase
+        .from('wallets')
+        .select('balance_cents')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!error && wallet) {
+        setRenterWalletBalance((wallet.balance_cents || 0) / 100);
+      }
+    } catch (err) {
+      console.error('Errore caricamento saldo wallet:', err);
+      setRenterWalletBalance(0);
+    }
+
     setModifyModalOpen(true);
   };
 
@@ -1582,10 +1601,23 @@ const handleRemoveCalendar = async (calendarId: string): Promise<void> => {
   const handleModifyBooking = async () => {
     if (!bookingToModify || !newStartDate) return;
 
-    // Se deve pagare di più, mostra conferma prima di procedere
+    // FASE 1: Se deve pagare di più e non ha scelto metodo, mostra selettore
     if (priceDifference > 0 && !showPaymentForModify) {
       setShowPaymentForModify(true);
       return;
+    }
+
+    // FASE 2: Validazione se deve pagare
+    if (priceDifference > 0 && showPaymentForModify) {
+      if (!modifyPaymentMethod) {
+        setModifyError('Seleziona un metodo di pagamento');
+        return;
+      }
+
+      if (modifyPaymentMethod === 'wallet' && renterWalletBalance < priceDifference) {
+        setModifyError(`Saldo wallet insufficiente. Disponibile: €${renterWalletBalance.toFixed(2)}, Richiesto: €${priceDifference.toFixed(2)}`);
+        return;
+      }
     }
 
     setIsModifying(true);
@@ -1596,12 +1628,25 @@ const handleRemoveCalendar = async (calendarId: string): Promise<void> => {
       const endDateToUse = newEndDate || newStartDate;
 
       if ((api as any).bookings?.modify) {
-        const result = await (api as any).bookings.modify({
-          bookingId: bookingToModify.id,
-          renterId: user.id,
-          newStartDate: newStartDate.toISOString(),
-          newEndDate: endDateToUse.toISOString(),
-        });
+  // Chiama la nuova Netlify Function
+  const response = await fetch('/.netlify/functions/modify-booking-payment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      bookingId: bookingToModify.id,
+      renterId: user.id,
+      newStartDate: newStartDate.toISOString(),
+      newEndDate: endDateToUse.toISOString(),
+      paymentMethod: priceDifference > 0 ? modifyPaymentMethod : undefined,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Errore durante la modifica');
+  }
+
+  const result = await response.json();
 
         if (result.error) {
           setModifyError(result.error);
@@ -3136,8 +3181,8 @@ const renderHubberCalendar = () => {
     };
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-4">
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl p-6 relative mx-4 my-auto max-h-[95vh] overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 backdrop-blur-sm overflow-y-auto pt-16 pb-8">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 relative mx-4 my-8">
           <button
             onClick={closeModifyModal}
             disabled={isModifying}
@@ -3233,6 +3278,103 @@ const renderHubberCalendar = () => {
             )}
           </div>
 
+             {/* Selettore metodo di pagamento */}
+{showPaymentForModify && priceDifference > 0 && (
+  <div className="mb-6">
+    <h3 className="text-sm font-semibold text-gray-700 mb-3">
+      Scegli il metodo di pagamento
+    </h3>
+    
+    <div className="space-y-3">
+      {/* Opzione Wallet */}
+      <div
+        onClick={() => setModifyPaymentMethod('wallet')}
+        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+          modifyPaymentMethod === 'wallet'
+            ? 'border-blue-500 bg-blue-50'
+            : 'border-gray-200 hover:border-gray-300'
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+              modifyPaymentMethod === 'wallet'
+                ? 'border-blue-500'
+                : 'border-gray-300'
+            }`}>
+              {modifyPaymentMethod === 'wallet' && (
+                <div className="w-3 h-3 rounded-full bg-blue-500" />
+              )}
+            </div>
+            <div>
+              <p className="font-bold text-gray-900 text-sm">
+                Wallet Renthubber
+              </p>
+              <p className="text-xs text-gray-500">
+                Saldo disponibile: €{renterWalletBalance.toFixed(2)}
+              </p>
+            </div>
+          </div>
+          <Wallet className="w-5 h-5 text-gray-400" />
+        </div>
+        {modifyPaymentMethod === 'wallet' && (
+          <div className="mt-3 pt-3 border-t border-blue-200">
+            <p className="text-xs text-gray-600">
+              Il pagamento verrà addebitato immediatamente dal tuo wallet.
+            </p>
+            {renterWalletBalance < priceDifference && (
+              <p className="text-xs text-red-600 mt-1 font-medium">
+                ⚠️ Saldo insufficiente. Ricarica il wallet o scegli la carta.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Opzione Carta */}
+      <div
+        onClick={() => setModifyPaymentMethod('card')}
+        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+          modifyPaymentMethod === 'card'
+            ? 'border-blue-500 bg-blue-50'
+            : 'border-gray-200 hover:border-gray-300'
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+              modifyPaymentMethod === 'card'
+                ? 'border-blue-500'
+                : 'border-gray-300'
+            }`}>
+              {modifyPaymentMethod === 'card' && (
+                <div className="w-3 h-3 rounded-full bg-blue-500" />
+              )}
+            </div>
+            <div>
+              <p className="font-bold text-gray-900 text-sm">
+                Carta di credito/debito
+              </p>
+              <p className="text-xs text-gray-500">
+                Pagamento sicuro tramite Stripe
+              </p>
+            </div>
+          </div>
+          <CreditCard className="w-5 h-5 text-gray-400" />
+        </div>
+        {modifyPaymentMethod === 'card' && (
+          <div className="mt-3 pt-3 border-t border-blue-200">
+            <p className="text-xs text-gray-600">
+              Verrai reindirizzato a Stripe per completare il pagamento in modo sicuro.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+
+
           {/* Riepilogo differenza prezzo */}
           {newStartDate && (
             <div className={`rounded-xl p-4 mb-6 ${
@@ -3288,26 +3430,44 @@ const renderHubberCalendar = () => {
           {!modifySuccess && (
             <div className="flex gap-3">
               <button
-                onClick={closeModifyModal}
+                onClick={() => {
+                  if (showPaymentForModify) {
+                    // Torna alla selezione date
+                    setShowPaymentForModify(false);
+                    setModifyPaymentMethod(null);
+                    setModifyError(null);
+                  } else {
+                    closeModifyModal();
+                  }
+                }}
                 disabled={isModifying}
                 className="flex-1 py-3 rounded-xl border border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-50 disabled:opacity-50 transition-colors"
               >
-                Annulla
+                {showPaymentForModify ? 'Indietro' : 'Annulla'}
               </button>
               <button
                 onClick={handleModifyBooking}
-                disabled={isModifying || !newStartDate}
+                disabled={
+                  isModifying || 
+                  !newStartDate || 
+                  (showPaymentForModify && !modifyPaymentMethod) ||
+                  (modifyPaymentMethod === 'wallet' && renterWalletBalance < priceDifference)
+                }
                 className={`flex-1 py-3 rounded-xl font-bold text-sm disabled:opacity-50 transition-colors ${
-                  priceDifference > 0
-                    ? 'bg-orange-500 hover:bg-orange-600 text-white'
-                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                  showPaymentForModify
+                    ? 'bg-green-500 hover:bg-green-600 text-white'
+                    : priceDifference > 0
+                      ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                      : 'bg-blue-500 hover:bg-blue-600 text-white'
                 }`}
               >
                 {isModifying 
                   ? 'Elaborazione...' 
-                  : priceDifference > 0 
-                    ? `Procedi al pagamento (€${priceDifference.toFixed(2)})`
-                    : 'Conferma modifica'}
+                  : showPaymentForModify
+                    ? `Conferma pagamento (€${priceDifference.toFixed(2)})`
+                    : priceDifference > 0 
+                      ? `Procedi al pagamento (€${priceDifference.toFixed(2)})`
+                      : 'Conferma modifica'}
               </button>
             </div>
           )}

@@ -7,6 +7,8 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { OnlineIndicator } from '../components/OnlineIndicator';
 import { getAvatarUrl } from '../utils/avatarUtils';
+import { BookingDetailDrawer } from './BookingDetailDrawer';
+import { CancelBookingModal, ModifyDatesModal } from './BookingModals';
 
 
 interface MessagesProps {
@@ -305,7 +307,7 @@ export const Messages: React.FC<MessagesProps> = ({
   
   const supportContact = {
     id: "support",
-    name: "Supporto RentHubber",
+    name: "Supporto Renthubber",
     avatar: "https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/avatars/avatars/avatar__Renthubber.png",
     isSupport: true,
     lastMessage: "Come possiamo aiutarti?",
@@ -369,7 +371,13 @@ export const Messages: React.FC<MessagesProps> = ({
   }, [activeContact?.bookingId, activeChatId]);
 
   const [messageInput, setMessageInput] = useState("");
-  const [showMobileList, setShowMobileList] = useState(true); // Default: mostra lista // Mobile: mostra lista o chat
+  const [showMobileList, setShowMobileList] = useState(true);
+  const [showBookingDrawer, setShowBookingDrawer] = useState(false);
+  const [drawerBookingData, setDrawerBookingData] = useState<any>(null);
+  const [loadingBookingDetail, setLoadingBookingDetail] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showModifyModal, setShowModifyModal] = useState(false);
+  const [selectedBookingForAction, setSelectedBookingForAction] = useState<any>(null);
 
 
   // ✅ FORMATTA DATE STILE AIRBNB
@@ -1056,6 +1064,15 @@ useEffect(() => {
   try {
     const newConvId = `conv-listing-${Date.now()}`;
     const now = new Date().toISOString();
+
+      // ✅ CARICA IL TITOLO DELL'ANNUNCIO
+    const { data: listing } = await supabase
+      .from('listings')
+      .select('title')
+      .eq('id', listingId)
+      .single();
+    
+    const listingTitle = listing?.title || 'questo annuncio';
     
     // Crea la conversazione
     const { error } = await supabase.from('conversations').insert({
@@ -1066,7 +1083,7 @@ useEffect(() => {
       booking_id: null,
       is_support: false,
       status: 'open',
-      last_message_preview: 'Richiesta di informazioni',
+      last_message_preview: `Richiesta di informazioni per l'annuncio ${listingTitle}`,
       last_message_at: now,
       created_at: now,
       updated_at: now,
@@ -1082,7 +1099,7 @@ useEffect(() => {
         conversation_id: newConvId,
         from_user_id: currentUser.id,
         to_user_id: hubberId,
-        text: 'Richiesta di informazioni su questo annuncio',
+        text: `Richiesta di informazioni per l'annuncio ${listingTitle}`,
         created_at: now,
         read: false,
         is_system_message: true,
@@ -1207,6 +1224,44 @@ const handleSend = async () => {
       console.error("Errore durante l'invio del messaggio (UI locale):", err);
     }
   };
+
+ const loadBookingDetailForChat = async (bookingId: string) => {
+  if (!bookingId) return;
+  
+  setLoadingBookingDetail(true);
+  try {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select(`
+        *,
+        listing:listings(title, images, price, price_per_hour, price_unit, cancellation_policy),
+        renter:users!bookings_renter_id_fkey(id, name, avatar_url),
+        hubber:users!bookings_hubber_id_fkey(id, name, avatar_url) 
+      `)
+      .eq('id', bookingId)
+      .single();
+
+    if (error) throw error;
+
+    setDrawerBookingData({
+      ...data,
+      listingTitle: data.listing?.title,
+      listingImages: data.listing?.images,
+      price_per_day: data.listing?.price,    
+      price_per_hour: data.listing?.price_hour,
+      cancellation_policy: data.listing?.cancellation_policy,
+      renterName: data.renter?.name,
+      renterAvatar: data.renter?.avatar_url,
+      hubberName: data.hubber?.name,
+      hubberAvatar: data.hubber?.avatar_url,
+    });
+    setShowBookingDrawer(true);
+  } catch (error) {
+    console.error('Errore caricamento dettagli prenotazione:', error);
+  } finally {
+    setLoadingBookingDetail(false);
+  }
+};
 
   // ← AGGIUNGI QUI
   const handleSupportImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2305,18 +2360,36 @@ const steps = [
           </div>
           
           {/* Menu azioni chat */}
-          <div className="relative flex items-center space-x-4 text-gray-500">
-            <button
-              type="button"
-              onClick={() => {
-                setShowPhoneInfo((prev) => !prev);
-                setShowMenu(false);
-                setShowDisputeModal(false);
-              }}
-              className="relative"
-            >
-              <Phone className="w-5 h-5 cursor-pointer hover:text-brand" />
-            </button>
+<div className="relative flex items-center space-x-4 text-gray-500">
+  
+  {/* ⬇️⬇️⬇️ AGGIUNGI QUI ⬇️⬇️⬇️ */}
+  {/* Mostra dettagli prenotazione (solo se la chat ha un booking) */}
+  {activeContact?.bookingId && (
+    <button
+      onClick={() => loadBookingDetailForChat(activeContact.bookingId)}
+      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+      title="Dettagli prenotazione"
+    >
+      {loadingBookingDetail ? (
+        <div className="w-5 h-5 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+      ) : (
+        <ChevronDown className="w-5 h-5 text-gray-600" />
+      )}
+    </button>
+  )}
+
+  <button
+    type="button"
+    onClick={() => {
+      setShowPhoneInfo((prev) => !prev);
+      setShowMenu(false);
+      setShowDisputeModal(false);
+    }}
+    className="relative"
+  >
+    <Phone className="w-5 h-5 cursor-pointer hover:text-brand" />
+  </button>
+
 
             {showPhoneInfo && (
               <div className="absolute right-10 top-7 bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 z-20 min-w-[200px]">
@@ -2851,6 +2924,122 @@ const steps = [
         )}
           </div>
         )}
+        {/* Drawer dettagli prenotazione */}
+<BookingDetailDrawer
+  isOpen={showBookingDrawer}
+  onClose={() => setShowBookingDrawer(false)}
+  booking={drawerBookingData}
+  currentUserRole={currentUser?.id === drawerBookingData?.renter_id ? 'renter' : 'hubber'}
+  onCancelBooking={(booking) => {
+    setSelectedBookingForAction(booking);
+    setShowCancelModal(true);
+  }}
+  onModifyDates={(booking) => {
+    setSelectedBookingForAction(booking);
+    setShowModifyModal(true);
+  }}
+  renderBookingStatusBadge={(status) => {
+    const statusConfig: Record<string, { label: string; className: string }> = {
+      pending: { label: 'In attesa', className: 'bg-yellow-100 text-yellow-800' },
+      accepted: { label: 'Accettata', className: 'bg-green-100 text-green-800' },
+      confirmed: { label: 'Confermata', className: 'bg-blue-100 text-blue-800' },
+      completed: { label: 'Completata', className: 'bg-purple-100 text-purple-800' },
+      cancelled: { label: 'Cancellata', className: 'bg-red-100 text-red-800' },
+      rejected: { label: 'Rifiutata', className: 'bg-gray-100 text-gray-800' },
+    };
+    
+    const config = statusConfig[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
+    
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.className}`}>
+        {config.label}
+      </span>
+    );
+  }}
+/>
+
+{/* Modal cancellazione prenotazione */}
+<CancelBookingModal
+  isOpen={showCancelModal}
+  onClose={() => setShowCancelModal(false)}
+  booking={selectedBookingForAction}
+  currentUserRole={currentUser?.id === selectedBookingForAction?.renter_id ? 'renter' : 'hubber'}
+  onConfirm={async (bookingId) => {
+    try {
+      const isHubber = currentUser?.id === selectedBookingForAction?.hubber_id;
+      
+      let result;
+      if (isHubber) {
+        result = await (api as any).bookings.cancelByHubber(
+          bookingId,
+          currentUser.id,
+          'Cancellazione dalla chat'
+        );
+      } else {
+        result = await (api as any).bookings.cancel(
+          bookingId,
+          currentUser.id,
+          'wallet'
+        );
+      }
+      
+      if (result.error) {
+        alert('Errore: ' + result.error);
+        return;
+      }
+      
+      alert('Prenotazione cancellata con successo!');
+      setShowCancelModal(false);
+      setShowBookingDrawer(false);
+      
+      await loadRealConversations();
+      return;
+    } catch (error) {
+      console.error('Errore cancellazione:', error);
+      alert('Errore durante la cancellazione');
+      return;
+    }
+  }}
+/>
+
+{/* Modal modifica date */}
+<ModifyDatesModal
+  isOpen={showModifyModal}
+  onClose={() => setShowModifyModal(false)}
+  booking={selectedBookingForAction}
+  onConfirm={async (bookingId, newStartDate, newEndDate) => {
+  try {
+    const result = await (api as any).bookings.modify({
+      bookingId: bookingId,
+      renterId: currentUser.id,
+      newStartDate: newStartDate,
+      newEndDate: newEndDate,
+    });
+
+    if (result.error) {
+      alert('Errore: ' + result.error);
+      return;
+    }
+
+    let successMsg = 'Prenotazione modificata con successo!';
+    if (result.refundedWallet && result.refundedWallet > 0) {
+      successMsg += ` €${result.refundedWallet.toFixed(2)} rimborsati sul wallet.`;
+    }
+    if (result.chargedExtra && result.chargedExtra > 0) {
+      successMsg += ` €${result.chargedExtra.toFixed(2)} addebitati.`;
+    }
+
+    alert(successMsg);
+    setShowModifyModal(false);
+    setShowBookingDrawer(false);
+    await loadRealConversations();
+  } catch (error) {
+    console.error('Errore modifica date:', error);
+    alert('Errore durante la modifica');
+  }
+  }}
+/>
+
       </div>
     </div>
   );
