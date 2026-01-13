@@ -1,5 +1,6 @@
 import { Handler } from '@netlify/functions';
 import Stripe from 'stripe';
+import { calculateRenterFixedFee } from '../../utils/feeUtils';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-11-17.clover',
@@ -165,13 +166,18 @@ export const handler: Handler = async (event, context) => {
     const newBasePrice = newDays * listingPrice;
     const basePriceDiff = newBasePrice - originalBasePrice;
 
-    // Calcola commissioni 10% (fee fissa NON si tocca)
-    const originalCommission = (originalBasePrice * 10) / 100;
-    const newCommission = (newBasePrice * 10) / 100;
-    const commissionDiff = newCommission - originalCommission;
+   // Calcola commissioni 10%
+const originalCommission = (originalBasePrice * 10) / 100;
+const newCommission = (newBasePrice * 10) / 100;
+const commissionDiff = newCommission - originalCommission;
 
-    // Differenza totale = prezzo base + commissione
-    const priceDifference = basePriceDiff + commissionDiff;
+// Calcola fee fissa (sul NUOVO totale, non sulla differenza!)
+const originalFixedFee = calculateRenterFixedFee(originalBasePrice);
+const newFixedFee = calculateRenterFixedFee(newBasePrice);
+const fixedFeeDiff = newFixedFee - originalFixedFee;
+
+// Differenza totale = prezzo base + commissione + fee fissa
+const priceDifference = basePriceDiff + commissionDiff + fixedFeeDiff;
 
     console.log('💰 Price calculation:', {
       originalDays,
