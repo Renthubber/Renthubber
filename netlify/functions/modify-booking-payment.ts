@@ -176,13 +176,6 @@ const originalFixedFee = calculateRenterFixedFee(originalBasePrice);
 const newFixedFee = calculateRenterFixedFee(newBasePrice);
 const fixedFeeDiff = newFixedFee - originalFixedFee;
 
-// 🔍 DEBUG
-console.log('💰 Fixed fee calculation:', {
-  originalFixedFee: originalFixedFee.toFixed(2),
-  newFixedFee: newFixedFee.toFixed(2),
-  fixedFeeDiff: fixedFeeDiff.toFixed(2),
-});
-    
 // Differenza totale = prezzo base + commissione + fee fissa
 const priceDifference = basePriceDiff + commissionDiff + fixedFeeDiff;
 
@@ -458,28 +451,44 @@ const priceDifference = basePriceDiff + commissionDiff + fixedFeeDiff;
 
       console.log('✅ Wallet debited');
 
-      // Crea transazione wallet renter (debito)
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/wallet_transactions`,
-        {
-          method: 'POST',
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: renterId,
-            amount_cents: -Math.round(priceDifference * 100),
-            type: 'debit',
-            source: 'booking_modification_charge',
-            wallet_type: 'renter',
-            description: `Supplemento modifica #${bookingId.slice(0, 8).toUpperCase()} (${listing.title})`,
-            related_booking_id: bookingId,
-            created_at: new Date().toISOString(),
-          }),
-        }
-      );
+      console.log('📝 Creating renter transaction:', {
+  renterId,
+  priceDifference,
+  amount_cents: -Math.round(priceDifference * 100),
+});
+
+// Crea transazione wallet renter (debito)
+const txResponse = await fetch(
+  `${SUPABASE_URL}/rest/v1/wallet_transactions`,
+  {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      user_id: renterId,
+      amount_cents: -Math.round(priceDifference * 100),
+      type: 'debit',
+      source: 'booking_modification_charge',
+      wallet_type: 'renter',
+      description: `Supplemento modifica #${bookingId.slice(0, 8).toUpperCase()} (${listing.title})`,
+      related_booking_id: bookingId,
+      created_at: new Date().toISOString(),
+    }),
+  }
+);
+
+console.log('📝 Transaction response:', {
+  status: txResponse.status,
+  ok: txResponse.ok,
+});
+
+if (!txResponse.ok) {
+  const errorText = await txResponse.text();
+  console.error('❌ Transaction failed:', errorText);
+}
 
       // Accredita all'hubber
       const hubberWalletResponse = await fetch(
@@ -639,5 +648,4 @@ const priceDifference = basePriceDiff + commissionDiff + fixedFeeDiff;
       }),
     };
   }
-
 };
