@@ -1053,49 +1053,56 @@ useEffect(() => {
   if (!listingId || !hubberId || !currentUser) return;
   
   const openListingChat = async () => {
-    try {
-      // Cerca conversazione esistente per questo listing (senza booking)
-      const { data: existingConv } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('listing_id', listingId)
-        .is('booking_id', null)
-        .or(`and(renter_id.eq.${currentUser.id},hubber_id.eq.${hubberId}),and(renter_id.eq.${hubberId},hubber_id.eq.${currentUser.id})`)
-        .maybeSingle();
-      
-      if (existingConv) {
-        setActiveChatId(existingConv.id);
-        setShowMobileList(false);
-      } else {
-        const newConvId = `conv-listing-${Date.now()}`;
-        const { error } = await supabase.from('conversations').insert({
-          id: newConvId,
-          renter_id: currentUser.id,
-          hubber_id: hubberId,
-          listing_id: listingId,
-          booking_id: null,
-          is_support: false,
-          status: 'open',
-          last_message_preview: 'Nuova conversazione',
-          last_message_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+  try {
+    const newConvId = `conv-listing-${Date.now()}`;
+    const now = new Date().toISOString();
+    
+    // Crea la conversazione
+    const { error } = await supabase.from('conversations').insert({
+      id: newConvId,
+      renter_id: currentUser.id,
+      hubber_id: hubberId,
+      listing_id: listingId,
+      booking_id: null,
+      is_support: false,
+      status: 'open',
+      last_message_preview: 'Richiesta di informazioni',
+      last_message_at: now,
+      created_at: now,
+      updated_at: now,
+      unread_for_renter: true,
+      unread_for_hubber: true,
+    });
 
-        if (!error) {
-          await loadRealConversations();
-          setActiveChatId(newConvId);
-          setShowMobileList(false);
-        }
-      }
+    if (!error) {
+      // Crea il messaggio iniziale
+      const msgId = `msg-${Date.now()}`;
+      await supabase.from('messages').insert({
+        id: msgId,
+        conversation_id: newConvId,
+        from_user_id: currentUser.id,
+        to_user_id: hubberId,
+        text: 'Richiesta di informazioni su questo annuncio',
+        created_at: now,
+        read: false,
+        is_system_message: true,
+        has_confirmed_booking: false,
+        is_support: false,
+        is_admin_message: false,
+      });
       
-      setSearchParams({});
-    } catch (err) {
-      console.error('Errore apertura chat listing:', err);
+      await loadRealConversations();
+      setActiveChatId(newConvId);
+      setShowMobileList(false);
     }
-  };
-  
-  openListingChat();
+    
+    setSearchParams({});
+  } catch (err) {
+    console.error('❌ Errore apertura chat listing:', err);
+  }
+};
+
+openListingChat();
 }, [searchParams, currentUser?.id]);
 
 // ← AGGIUNGI QUI
@@ -1149,15 +1156,15 @@ const handleSend = async () => {
         
         return;
       }
-
-      
             // ✅ Se è conversazione reale, salva su Supabase
             if (activeContact?.isRealConversation && currentUser) {
+
                 try {
                     const result = await api.messages.sendMessage({
             fromUserId: currentUser.id,
             toUserId: activeContact.contactId,
             text: safeText,
+            activeConversationId: activeContact.id,
             listingId: activeContact.listingId,
             bookingId: activeContact.bookingId, // ✅ AGGIUNGO bookingId!
             hasConfirmedBooking: isBookingConfirmed, // ✅ Usa valore dinamico
