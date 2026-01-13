@@ -6100,38 +6100,51 @@ issued_at: new Date().toISOString()
     },
 
     // Invia messaggio (user normale)
-    sendMessage: async (params: {
-      fromUserId: string;
-      toUserId: string;
-      text: string;
-      listingId?: string;
-      bookingId?: string;
-      isSupport?: boolean;
-      hasConfirmedBooking?: boolean;
-    }) => {
-      const { fromUserId, toUserId, text, listingId, bookingId, isSupport, hasConfirmedBooking } = params;
+sendMessage: async (params: {
+  fromUserId: string;
+  toUserId: string;
+  text: string;
+  activeConversationId?: string;
+  listingId?: string;
+  bookingId?: string;
+  isSupport?: boolean;
+  hasConfirmedBooking?: boolean;
+}) => {
+  const { fromUserId, toUserId, text, activeConversationId, listingId, bookingId, isSupport, hasConfirmedBooking } = params;
 
-      // Rileva contenuti vietati
-      const { hasForbidden, reasons } = api.messages.detectForbiddenContent(text);
-      const { cleaned, blockedContacts } = api.messages.sanitizeContent(text, !!hasConfirmedBooking);
+  // Rileva contenuti vietati
+  const { hasForbidden, reasons } = api.messages.detectForbiddenContent(text);
+  const { cleaned, blockedContacts } = api.messages.sanitizeContent(text, !!hasConfirmedBooking);
 
-      const now = new Date().toISOString();
+  const now = new Date().toISOString();
 
-      // Cerca conversazione esistente
-      let query = supabase
-        .from("conversations")
-        .select("id")
-        .eq("is_support", !!isSupport)
-        .or(`and(renter_id.eq.${fromUserId},hubber_id.eq.${toUserId}),and(renter_id.eq.${toUserId},hubber_id.eq.${fromUserId})`);
-      
-      // ✅ Se c'è bookingId, cerca per quello specifico
-      if (bookingId) {
-        query = query.eq("booking_id", bookingId);
-      }
-      
-      const { data: existingConv } = await query.maybeSingle();
+  // ✅ USA activeConversationId se passato, altrimenti cerca
+  let conversationId = activeConversationId;
 
-      let conversationId = existingConv?.id;
+
+  if (!conversationId) {
+    
+    // Cerca conversazione esistente
+    let query = supabase
+      .from("conversations")
+      .select("id")
+      .eq("is_support", !!isSupport)
+      .or(`and(renter_id.eq.${fromUserId},hubber_id.eq.${toUserId}),and(renter_id.eq.${toUserId},hubber_id.eq.${fromUserId})`);
+    
+    // ✅ Se c'è bookingId, cerca per quello specifico
+    if (bookingId) {
+      query = query.eq("booking_id", bookingId);
+    } else if (listingId) {
+      // ✅ Se NON c'è bookingId ma c'è listingId, cerca conversazione per quel listing senza booking
+      query = query.eq("listing_id", listingId).is("booking_id", null);
+    }
+
+    const { data: existingConv } = await query.maybeSingle();
+    conversationId = existingConv?.id;
+  
+  } else {
+  
+  }
 
       if (!conversationId) {
         // Crea nuova conversazione
