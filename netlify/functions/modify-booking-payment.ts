@@ -176,6 +176,13 @@ const originalFixedFee = calculateRenterFixedFee(originalBasePrice);
 const newFixedFee = calculateRenterFixedFee(newBasePrice);
 const fixedFeeDiff = newFixedFee - originalFixedFee;
 
+// 🔍 DEBUG
+console.log('💰 Fixed fee calculation:', {
+  originalFixedFee: originalFixedFee.toFixed(2),
+  newFixedFee: newFixedFee.toFixed(2),
+  fixedFeeDiff: fixedFeeDiff.toFixed(2),
+});
+    
 // Differenza totale = prezzo base + commissione + fee fissa
 const priceDifference = basePriceDiff + commissionDiff + fixedFeeDiff;
 
@@ -632,4 +639,5 @@ const priceDifference = basePriceDiff + commissionDiff + fixedFeeDiff;
       }),
     };
   }
+
 };
