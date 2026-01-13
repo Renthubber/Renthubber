@@ -1580,13 +1580,18 @@ const handleRemoveCalendar = async (calendarId: string): Promise<void> => {
         const newBasePrice = newDays * listingPrice;
         const basePriceDiff = newBasePrice - originalBasePrice;
 
-        // Calcola commissioni 10% (fee fissa NON si tocca)
-        const originalCommission = (originalBasePrice * 10) / 100;
-        const newCommission = (newBasePrice * 10) / 100;
-        const commissionDiff = newCommission - originalCommission;
+        // Calcola commissioni 10%
+const originalCommission = (originalBasePrice * 10) / 100;
+const newCommission = (newBasePrice * 10) / 100;
+const commissionDiff = newCommission - originalCommission;
 
-        // Differenza totale = prezzo base + commissione (NO fee fissa)
-        const totalDiff = basePriceDiff + commissionDiff;
+// Calcola fee fissa
+const originalFixedFee = calculateRenterFixedFee(originalBasePrice);
+const newFixedFee = calculateRenterFixedFee(newBasePrice);
+const fixedFeeDiff = newFixedFee - originalFixedFee;
+
+// Differenza totale = prezzo base + commissione + fee fissa
+const totalDiff = basePriceDiff + commissionDiff + fixedFeeDiff;
         
         setPriceDifference(totalDiff);
       } catch (err) {
