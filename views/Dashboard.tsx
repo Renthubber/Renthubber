@@ -3495,13 +3495,18 @@ const renderHubberCalendar = () => {
     );
   };
 
-  // --- MODALE STRIPE PAGAMENTO MODIFICA ---
-  const renderModifyStripeModal = () => {
-    if (!modifyStripeClientSecret || !bookingToModify) return null;
+// --- MODALE STRIPE PAGAMENTO MODIFICA ---
+const renderModifyStripeModal = () => {
+  if (!modifyStripeClientSecret || !bookingToModify) return null;
 
-    return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative mx-4">
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div 
+        className="bg-white rounded-2xl shadow-xl w-full max-w-md relative mx-4 flex flex-col"
+        style={{ maxHeight: 'calc(100vh - 140px)' }}
+      >
+        {/* Header fisso */}
+        <div className="p-6 border-b border-gray-200 relative flex-shrink-0">
           <button
             onClick={() => {
               setModifyStripeClientSecret(null);
@@ -3513,40 +3518,45 @@ const renderHubberCalendar = () => {
             <X className="w-5 h-5 text-gray-500" />
           </button>
 
-          <h2 className="text-xl font-bold text-gray-900 mb-4 text-center">
+          <h2 className="text-xl font-bold text-gray-900 text-center">
             Completa il pagamento
           </h2>
 
-          <p className="text-sm text-gray-600 mb-6 text-center">
+          <p className="text-sm text-gray-600 mt-2 text-center">
             Supplemento da pagare: <span className="font-bold text-lg">€{priceDifference.toFixed(2)}</span>
           </p>
+        </div>
 
+        {/* Contenuto scrollabile */}
+        <div className="p-6 overflow-y-auto flex-1">
           <Elements 
-  stripe={stripePromise}
-  options={{ clientSecret: modifyStripeClientSecret }}
->
-  <ModifyStripeForm
-    clientSecret={modifyStripeClientSecret}
-    bookingId={bookingToModify.id}
-    amount={priceDifference}
-    onSuccess={() => {
-      setModifyStripeClientSecret(null);
-      setModifySuccess('Prenotazione modificata e pagamento completato!');
-      setTimeout(() => {
-        closeModifyModal();
-        window.location.reload();
-      }, 2000);
-    }}
-    onError={(error) => {
-      setModifyError(error);
-      setModifyStripeClientSecret(null);
-    }}
-  />
-</Elements>
+            stripe={stripePromise}
+            options={{ clientSecret: modifyStripeClientSecret }}
+          >
+            <ModifyStripeForm
+              clientSecret={modifyStripeClientSecret}
+              bookingId={bookingToModify.id}
+              amount={priceDifference}
+              onSuccess={() => {
+                setModifyStripeClientSecret(null);
+                setModifySuccess('Prenotazione modificata e pagamento completato!');
+                setTimeout(() => {
+                  closeModifyModal();
+                  window.location.reload();
+                }, 2000);
+              }}
+              onError={(error) => {
+                setModifyError(error);
+                setModifyStripeClientSecret(null);
+              }}
+            />
+          </Elements>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
+
 
   // --- MODALE VERIFICA TELEFONO ---
   const renderPhoneVerificationModal = () => {
