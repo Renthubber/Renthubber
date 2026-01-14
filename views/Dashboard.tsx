@@ -3203,7 +3203,7 @@ const renderModifyBookingModal = () => {
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
     <div 
       className="bg-white rounded-2xl shadow-xl w-full max-w-3xl relative mx-4 mb-20 md:mb-0 flex flex-col"
-      style={{ maxHeight: 'calc(100vh - 180px)' }}
+      style={{ maxHeight: 'calc(100vh - 100px)' }}
     >
         {/* Header fisso */}
         <div className="p-6 pb-4 md:pb-6 border-b border-gray-200 relative flex-shrink-0">
