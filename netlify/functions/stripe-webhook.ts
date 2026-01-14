@@ -28,7 +28,7 @@ export const handler: Handler = async (event, context) => {
       body: JSON.stringify({ error: 'Server configuration error - Missing STRIPE_SECRET_KEY' }),
     };
   }
-  
+
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: '2025-11-17.clover',
 });
@@ -396,33 +396,54 @@ async function handleBookingModification(
     newTotal,
   });
 
-  // Aggiorna il booking
-  const updateResponse = await fetch(
-    `${SUPABASE_URL}/rest/v1/bookings?id=eq.${bookingId}`,
-    {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        start_date: newStartDate,
-        end_date: newEndDate,
-        amount_total: newTotal,
-        card_paid_cents: `card_paid_cents + ${Math.round(priceDifference * 100)}`,
-        updated_at: new Date().toISOString(),
-      }),
-    }
-  );
-
-  if (!updateResponse.ok) {
-    const error = await updateResponse.text();
-    console.error('❌ Failed to update booking:', error);
-    throw new Error('Failed to update booking');
+ // Prima carica il booking per prendere card_paid_cents attuale
+const getBookingResponse = await fetch(
+  `${SUPABASE_URL}/rest/v1/bookings?id=eq.${bookingId}&select=card_paid_cents`,
+  {
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
   }
+);
 
-  console.log('✅ Booking updated successfully');
+const bookings = await getBookingResponse.json();
+const currentCardPaid = bookings[0]?.card_paid_cents || 0;
+const newCardPaid = currentCardPaid + Math.round(priceDifference * 100);
+
+console.log('💳 Card payment update:', {
+  currentCardPaid,
+  supplement: Math.round(priceDifference * 100),
+  newCardPaid,
+});
+
+// Poi aggiorna il booking
+const updateResponse = await fetch(
+  `${SUPABASE_URL}/rest/v1/bookings?id=eq.${bookingId}`,
+  {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      start_date: newStartDate,
+      end_date: newEndDate,
+      amount_total: newTotal,
+      card_paid_cents: newCardPaid,
+      updated_at: new Date().toISOString(),
+    }),
+  }
+);
+
+if (!updateResponse.ok) {
+  const error = await updateResponse.text();
+  console.error('❌ Failed to update booking:', error);
+  throw new Error('Failed to update booking');
+}
+
+console.log('✅ Booking updated successfully');
 
   // Crea transazione wallet per tracking
   try {
