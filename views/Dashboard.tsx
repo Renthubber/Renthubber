@@ -3291,7 +3291,7 @@ const renderModifyBookingModal = () => {
 {modifyCalendarOpen && (
   <div 
     ref={modifyCalendarRef}
-    className="border border-gray-200 rounded-xl bg-white overflow-hidden flex justify-center max-h-[320px] md:max-h-none overflow-y-auto"
+    className="border border-gray-200 rounded-xl bg-white overflow-hidden flex justify-center max-h-[600px] md:max-h-none overflow-y-auto"
   >
     <AirbnbCalendar
       selectedStart={newStartDate}
