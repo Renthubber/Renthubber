@@ -3187,21 +3187,26 @@ const renderHubberCalendar = () => {
   };
 
   // --- MODALE MODIFICA PRENOTAZIONE ---
-  const renderModifyBookingModal = () => {
-    if (!modifyModalOpen || !bookingToModify) return null;
+const renderModifyBookingModal = () => {
+  if (!modifyModalOpen || !bookingToModify) return null;
 
-    const formatDateDisplay = (date: Date | undefined) => {
-      if (!date) return "Seleziona data";
-      return date.toLocaleDateString("it-IT", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
-    };
+  const formatDateDisplay = (date: Date | undefined) => {
+    if (!date) return "Seleziona data";
+    return date.toLocaleDateString("it-IT", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
-    return (
-      <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 backdrop-blur-sm overflow-y-auto pt-16 pb-8">
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 relative mx-4 my-8">
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div 
+        className="bg-white rounded-2xl shadow-xl w-full max-w-3xl relative mx-4 flex flex-col"
+        style={{ maxHeight: 'calc(100vh - 140px)' }}
+      >
+        {/* Header fisso */}
+        <div className="p-6 border-b border-gray-200 relative flex-shrink-0">
           <button
             onClick={closeModifyModal}
             disabled={isModifying}
@@ -3210,7 +3215,7 @@ const renderHubberCalendar = () => {
             <X className="w-5 h-5 text-gray-500" />
           </button>
 
-          <div className="text-center mb-6">
+          <div className="text-center">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Edit3 className="w-8 h-8 text-blue-500" />
             </div>
@@ -3221,7 +3226,10 @@ const renderHubberCalendar = () => {
               Modifica le date della tua prenotazione
             </p>
           </div>
+        </div>
 
+        {/* Contenuto scrollabile */}
+        <div className="p-6 overflow-y-auto flex-1">
           {/* Dettagli prenotazione attuale */}
           <div className="bg-gray-50 rounded-xl p-4 mb-6">
             <div className="flex items-start gap-3">
@@ -3492,6 +3500,7 @@ const renderHubberCalendar = () => {
           )}
         </div>
       </div>
+    </div>
     );
   };
 
