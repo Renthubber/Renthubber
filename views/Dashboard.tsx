@@ -3206,7 +3206,7 @@ const renderModifyBookingModal = () => {
       style={{ maxHeight: 'calc(100vh - 180px)' }}
     >
         {/* Header fisso */}
-        <div className="p-6 border-b border-gray-200 relative flex-shrink-0">
+        <div className="p-6 pb-4 md:pb-6 border-b border-gray-200 relative flex-shrink-0">
           <button
             onClick={closeModifyModal}
             disabled={isModifying}
@@ -3229,7 +3229,7 @@ const renderModifyBookingModal = () => {
         </div>
 
         {/* Contenuto scrollabile */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-6 pt-4 md:pt-6 overflow-y-auto flex-1">
           {/* Dettagli prenotazione attuale */}
           <div className="bg-gray-50 rounded-xl p-4 mb-6">
             <div className="flex items-start gap-3">
@@ -3288,21 +3288,21 @@ const renderModifyBookingModal = () => {
             </div>
 
             {/* Calendario inline */}
-            {modifyCalendarOpen && (
-              <div 
-                ref={modifyCalendarRef}
-                className="border border-gray-200 rounded-xl bg-white overflow-hidden flex justify-center"
-              >
-                <AirbnbCalendar
-                  selectedStart={newStartDate}
-                  selectedEnd={newEndDate}
-                  onChange={handleModifyCalendarChange}
-                  disabledDates={modifyDisabledDates}
-                  location=""
-                  onClose={() => setModifyCalendarOpen(false)}
-                />
-              </div>
-            )}
+{modifyCalendarOpen && (
+  <div 
+    ref={modifyCalendarRef}
+    className="border border-gray-200 rounded-xl bg-white overflow-hidden flex justify-center max-h-[400px] md:max-h-none overflow-y-auto"
+  >
+    <AirbnbCalendar
+      selectedStart={newStartDate}
+      selectedEnd={newEndDate}
+      onChange={handleModifyCalendarChange}
+      disabledDates={modifyDisabledDates}
+      location=""
+      onClose={() => setModifyCalendarOpen(false)}
+    />
+  </div>
+)}
           </div>
 
              {/* Selettore metodo di pagamento */}
