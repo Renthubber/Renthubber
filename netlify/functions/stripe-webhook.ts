@@ -28,10 +28,10 @@ export const handler: Handler = async (event, context) => {
       body: JSON.stringify({ error: 'Server configuration error - Missing STRIPE_SECRET_KEY' }),
     };
   }
-
-  const stripe = new Stripe(STRIPE_SECRET_KEY, {
-    apiVersion: '2024-11-20.acacia',
-  });
+  
+const stripe = new Stripe(STRIPE_SECRET_KEY, {
+  apiVersion: '2025-11-17.clover',
+});
 
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -141,6 +141,12 @@ async function handlePaymentIntentSucceeded(
   console.log('✅ Payment succeeded:', paymentIntent.id);
 
   const metadata = paymentIntent.metadata;
+
+   // ✅ GESTIONE MODIFICA PRENOTAZIONE
+  if (metadata.type === 'booking_modification') {
+    await handleBookingModification(paymentIntent, SUPABASE_URL, SUPABASE_ANON_KEY);
+    return;
+  }
 
   // Estrai dati dalla metadata
   const listingId = metadata.renthubber_listing_id;
@@ -359,4 +365,92 @@ async function handleAccountUpdated(
   );
 
   console.log('✅ User account status updated');
+}
+
+/**
+ * Gestisce pagamento modifica prenotazione
+ */
+async function handleBookingModification(
+  paymentIntent: Stripe.PaymentIntent,
+  SUPABASE_URL: string,
+  SUPABASE_ANON_KEY: string
+) {
+  console.log('🔄 Handling booking modification payment');
+
+  const metadata = paymentIntent.metadata;
+  const bookingId = metadata.booking_id;
+  const newStartDate = metadata.new_start_date;
+  const newEndDate = metadata.new_end_date;
+  const priceDifference = parseFloat(metadata.price_difference || '0');
+  const newTotal = parseFloat(metadata.new_total || '0');
+
+  if (!bookingId) {
+    console.error('❌ Missing booking_id in metadata');
+    return;
+  }
+
+  console.log('📝 Updating booking:', {
+    bookingId,
+    newStartDate,
+    newEndDate,
+    newTotal,
+  });
+
+  // Aggiorna il booking
+  const updateResponse = await fetch(
+    `${SUPABASE_URL}/rest/v1/bookings?id=eq.${bookingId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        start_date: newStartDate,
+        end_date: newEndDate,
+        amount_total: newTotal,
+        card_paid_cents: `card_paid_cents + ${Math.round(priceDifference * 100)}`,
+        updated_at: new Date().toISOString(),
+      }),
+    }
+  );
+
+  if (!updateResponse.ok) {
+    const error = await updateResponse.text();
+    console.error('❌ Failed to update booking:', error);
+    throw new Error('Failed to update booking');
+  }
+
+  console.log('✅ Booking updated successfully');
+
+  // Crea transazione wallet per tracking
+  try {
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/wallet_transactions`,
+      {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: metadata.renter_id,
+          amount_cents: -Math.round(priceDifference * 100),
+          type: 'debit',
+          source: 'booking_modification_charge',
+          wallet_type: 'renter',
+          description: `Supplemento modifica prenotazione #${bookingId.slice(0, 8).toUpperCase()}`,
+          related_booking_id: bookingId,
+          created_at: new Date().toISOString(),
+        }),
+      }
+    );
+    console.log('✅ Transaction record created');
+  } catch (err) {
+    console.error('⚠️ Transaction record failed:', err);
+  }
+
+  console.log('🎉 Booking modification completed');
 }
