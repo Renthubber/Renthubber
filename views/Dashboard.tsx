@@ -3200,7 +3200,7 @@ const renderModifyBookingModal = () => {
   };
 
   return (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div className="fixed inset-0 z-[9999] flex items-start justify-center bg-black/60 backdrop-blur-sm pt-20 pb-8 overflow-y-auto">
     <div 
       className="bg-white rounded-2xl shadow-xl w-full max-w-3xl relative mx-4 mb-20 md:mb-0 flex flex-col"
       style={{ maxHeight: 'calc(100vh - 100px)' }}
