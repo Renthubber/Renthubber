@@ -41,8 +41,11 @@ import {
 import { MOCK_REQUESTS } from '../constants';
 import { api } from '../services/api';
 import { supabase } from '../services/supabaseClient';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { AirbnbCalendar } from '../components/AirbnbCalendar';
 import { WriteReviewModal } from '../components/WriteReviewModal';
+import { ModifyStripeForm } from '../components/ModifyStripeForm';
 import { HubberCalendar } from '../components/hubber/HubberCalendar';
 import { ICalManager } from '../components/hubber/ICalManager';
 import { BillingDataSection } from '../components/BillingDataSection';
@@ -58,6 +61,8 @@ import { PagamentiFattureHubber } from '../components/dashboard/hubber/Pagamenti
 import { PrenotazioniRenter } from '../components/dashboard/renter/PrenotazioniRenter';
 import { PanoramicaRenter } from '../components/dashboard/renter/PanoramicaRenter';
 import { PagamentiFattureRenter } from '../components/dashboard/renter/PagamentiFattureRenter';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
 // Mock Data for Charts (rimane fittizio per ora)
 type UserTypeOption =
@@ -381,6 +386,7 @@ const [profileData, setProfileData] = useState(() => {
   const [modifyDisabledDates, setModifyDisabledDates] = useState<Date[]>([]);
   const [modifyPaymentMethod, setModifyPaymentMethod] = useState<'wallet' | 'card' | null>(null);
   const [renterWalletBalance, setRenterWalletBalance] = useState(0);
+  const [modifyStripeClientSecret, setModifyStripeClientSecret] = useState<string | null>(null);
 
   // DETTAGLIO PRENOTAZIONE RENTER
   const [selectedRenterBooking, setSelectedRenterBooking] = useState<BookingRequest | null>(null);
@@ -1652,6 +1658,14 @@ const totalDiff = basePriceDiff + commissionDiff + fixedFeeDiff;
   }
 
   const result = await response.json();
+
+// Se richiede pagamento con carta
+if (result.requiresPayment && result.clientSecret) {
+  console.log('💳 Apertura pagamento Stripe per modifica');
+  setModifyStripeClientSecret(result.clientSecret);
+  setIsModifying(false);
+  return;
+}
 
         if (result.error) {
           setModifyError(result.error);
@@ -3187,7 +3201,7 @@ const renderHubberCalendar = () => {
 
     return (
       <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 backdrop-blur-sm overflow-y-auto pt-16 pb-8">
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 relative mx-4 my-8">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 relative mx-4 my-8">
           <button
             onClick={closeModifyModal}
             disabled={isModifying}
@@ -3476,6 +3490,56 @@ const renderHubberCalendar = () => {
               </button>
             </div>
           )}
+        </div>
+      </div>
+    );
+  };
+
+  // --- MODALE STRIPE PAGAMENTO MODIFICA ---
+  const renderModifyStripeModal = () => {
+    if (!modifyStripeClientSecret || !bookingToModify) return null;
+
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative mx-4">
+          <button
+            onClick={() => {
+              setModifyStripeClientSecret(null);
+              setShowPaymentForModify(false);
+              setModifyPaymentMethod(null);
+            }}
+            className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+
+          <h2 className="text-xl font-bold text-gray-900 mb-4 text-center">
+            Completa il pagamento
+          </h2>
+
+          <p className="text-sm text-gray-600 mb-6 text-center">
+            Supplemento da pagare: <span className="font-bold text-lg">€{priceDifference.toFixed(2)}</span>
+          </p>
+
+          <Elements stripe={stripePromise}>
+            <ModifyStripeForm
+              clientSecret={modifyStripeClientSecret}
+              bookingId={bookingToModify.id}
+              amount={priceDifference}
+              onSuccess={() => {
+                setModifyStripeClientSecret(null);
+                setModifySuccess('Prenotazione modificata e pagamento completato!');
+                setTimeout(() => {
+                  closeModifyModal();
+                  window.location.reload();
+                }, 2000);
+              }}
+              onError={(error) => {
+                setModifyError(error);
+                setModifyStripeClientSecret(null);
+              }}
+            />
+          </Elements>
         </div>
       </div>
     );
@@ -4294,6 +4358,7 @@ const renderHubberCalendar = () => {
       {renderProfileModal()}
       {renderCancelBookingModal()}
       {renderModifyBookingModal()}
+      {renderModifyStripeModal()}
       {renderHubberCancelModal()}
       {renderPhoneVerificationModal()}
       {renderEmailVerificationModal()}
