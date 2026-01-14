@@ -3521,25 +3521,28 @@ const renderHubberCalendar = () => {
             Supplemento da pagare: <span className="font-bold text-lg">€{priceDifference.toFixed(2)}</span>
           </p>
 
-          <Elements stripe={stripePromise}>
-            <ModifyStripeForm
-              clientSecret={modifyStripeClientSecret}
-              bookingId={bookingToModify.id}
-              amount={priceDifference}
-              onSuccess={() => {
-                setModifyStripeClientSecret(null);
-                setModifySuccess('Prenotazione modificata e pagamento completato!');
-                setTimeout(() => {
-                  closeModifyModal();
-                  window.location.reload();
-                }, 2000);
-              }}
-              onError={(error) => {
-                setModifyError(error);
-                setModifyStripeClientSecret(null);
-              }}
-            />
-          </Elements>
+          <Elements 
+  stripe={stripePromise}
+  options={{ clientSecret: modifyStripeClientSecret }}
+>
+  <ModifyStripeForm
+    clientSecret={modifyStripeClientSecret}
+    bookingId={bookingToModify.id}
+    amount={priceDifference}
+    onSuccess={() => {
+      setModifyStripeClientSecret(null);
+      setModifySuccess('Prenotazione modificata e pagamento completato!');
+      setTimeout(() => {
+        closeModifyModal();
+        window.location.reload();
+      }, 2000);
+    }}
+    onError={(error) => {
+      setModifyError(error);
+      setModifyStripeClientSecret(null);
+    }}
+  />
+</Elements>
         </div>
       </div>
     );
