@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Send, MoreVertical, Phone, Image as ImageIcon, Loader2, Archive, Trash2, RotateCcw, ChevronDown, Paperclip, FileText } from "lucide-react";
+import { Send, MoreVertical, Phone, Image as ImageIcon, Loader2, Archive, Trash2, RotateCcw, ChevronDown, Paperclip, FileText, X, Edit3, Wallet, CreditCard } from "lucide-react";
 import { api } from "../services/api";
 import { User, Dispute } from "../types";
 import { useRealtimeMessages } from "../hooks/useRealtimeMessages";
@@ -8,7 +8,8 @@ import { supabase } from '../services/supabaseClient';
 import { OnlineIndicator } from '../components/OnlineIndicator';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import { BookingDetailDrawer } from './BookingDetailDrawer';
-import { CancelBookingModal, ModifyDatesModal } from './BookingModals';
+import { CancelBookingModal } from './BookingModals';
+import { BookingModifyModal } from '../components/BookingModifyModal';
 
 
 interface MessagesProps {
@@ -3003,40 +3004,18 @@ const steps = [
 />
 
 {/* Modal modifica date */}
-<ModifyDatesModal
+<BookingModifyModal
   isOpen={showModifyModal}
-  onClose={() => setShowModifyModal(false)}
   booking={selectedBookingForAction}
-  onConfirm={async (bookingId, newStartDate, newEndDate) => {
-  try {
-    const result = await (api as any).bookings.modify({
-      bookingId: bookingId,
-      renterId: currentUser.id,
-      newStartDate: newStartDate,
-      newEndDate: newEndDate,
-    });
-
-    if (result.error) {
-      alert('Errore: ' + result.error);
-      return;
-    }
-
-    let successMsg = 'Prenotazione modificata con successo!';
-    if (result.refundedWallet && result.refundedWallet > 0) {
-      successMsg += ` €${result.refundedWallet.toFixed(2)} rimborsati sul wallet.`;
-    }
-    if (result.chargedExtra && result.chargedExtra > 0) {
-      successMsg += ` €${result.chargedExtra.toFixed(2)} addebitati.`;
-    }
-
-    alert(successMsg);
+  currentUser={currentUser}
+  onClose={() => {
+    setShowModifyModal(false);
+    setSelectedBookingForAction(null);
+  }}
+  onSuccess={async () => {
     setShowModifyModal(false);
     setShowBookingDrawer(false);
     await loadRealConversations();
-  } catch (error) {
-    console.error('Errore modifica date:', error);
-    alert('Errore durante la modifica');
-  }
   }}
 />
 
