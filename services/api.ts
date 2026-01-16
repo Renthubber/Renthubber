@@ -2327,7 +2327,7 @@ if (cardPaidOriginal > 0) {
                 amount_cents: earningsCents,
                 balance_after_cents: newBalanceCents,
                 type: 'credit',
-                source: 'booking_cancellation_fee',
+                source: 'booking_payout',
                 wallet_type: 'hubber',
                 description: `Compenso per cancellazione prenotazione #${bookingId.substring(0, 8).toUpperCase()} (${booking.listing?.title || 'Noleggio'}) - ${100 - refundPercentage}% trattenuto`,
                 related_booking_id: bookingId,
