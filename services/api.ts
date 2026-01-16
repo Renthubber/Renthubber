@@ -2295,6 +2295,49 @@ if (cardPaidOriginal > 0) {
 }
 }
 
+    // 8. 💰 Compensa l'Hubber per la quota non rimborsata
+        if (refundPercentage < 100) {
+          const hubberNetAmount = Number(booking.hubber_net_amount) || 0;
+          
+          // Calcola il compenso proporzionale all'Hubber
+          const hubberEarnings = (hubberNetAmount * (100 - refundPercentage)) / 100;
+          
+          if (hubberEarnings > 0) {
+            // Leggi il wallet dell'Hubber
+            const { data: hubberWallet } = await supabase
+              .from("wallets")
+              .select("balance_cents")
+              .eq("user_id", booking.hubber_id)
+              .single();
+
+            if (hubberWallet) {
+              const currentBalanceCents = hubberWallet.balance_cents || 0;
+              const earningsCents = Math.round(hubberEarnings * 100);
+              const newBalanceCents = currentBalanceCents + earningsCents;
+
+              // Aggiorna il wallet dell'Hubber
+              await supabase
+                .from("wallets")
+                .update({ balance_cents: newBalanceCents })
+                .eq("user_id", booking.hubber_id);
+
+              // Crea la transazione wallet per l'Hubber
+              await supabase.from("wallet_transactions").insert({
+                user_id: booking.hubber_id,
+                amount_cents: earningsCents,
+                balance_after_cents: newBalanceCents,
+                type: 'credit',
+                source: 'booking_cancellation_fee',
+                wallet_type: 'hubber',
+                description: `Compenso per cancellazione prenotazione #${bookingId.substring(0, 8).toUpperCase()} (${booking.listing?.title || 'Noleggio'}) - ${100 - refundPercentage}% trattenuto`,
+                related_booking_id: bookingId,
+              });
+
+              console.log(`✅ Hubber compensato: €${hubberEarnings.toFixed(2)} accreditati sul wallet`);
+            }
+          }
+        }
+    
         console.log("✅ Prenotazione cancellata:", {
           policy,
           refundPercentage,
