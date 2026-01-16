@@ -473,5 +473,39 @@ console.log('✅ Booking updated successfully');
     console.error('⚠️ Transaction record failed:', err);
   }
 
-  console.log('🎉 Booking modification completed');
+  // 💬 Invia messaggio di sistema nella conversazione
+try {
+  const conversationId = `conv-booking-${bookingId}`;
+  const listingTitle = metadata.listing_title || 'l\'annuncio';
+  const newDatesFormatted = `${new Date(newStartDate).toLocaleDateString('it-IT')} - ${new Date(newEndDate).toLocaleDateString('it-IT')}`;
+  
+  const systemMessage = `📅 Le date della prenotazione per "${listingTitle}" sono state modificate.\n\nNuove date: ${newDatesFormatted}\nSupplemento pagato con carta: €${priceDifference.toFixed(2)}`;
+
+  await fetch(
+    `${SUPABASE_URL}/rest/v1/messages`,
+    {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: `msg-modify-${bookingId}-${Date.now()}`,
+        conversation_id: conversationId,
+        from_user_id: 'system',
+        to_user_id: metadata.hubber_id,
+        text: systemMessage,
+        is_system_message: true,
+        created_at: new Date().toISOString(),
+      }),
+    }
+  );
+
+  console.log('✅ System message sent');
+} catch (err) {
+  console.error('⚠️ System message failed:', err);
+}
+
+console.log('🎉 Booking modification completed');
 }
