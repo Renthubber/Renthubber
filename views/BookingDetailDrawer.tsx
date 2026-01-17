@@ -241,23 +241,27 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
               </div>
 
               {/* Indirizzo di ritiro */}
-              {booking.pickup_address && (
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    INDIRIZZO DI RITIRO
-                  </p>
-                  <p className="text-sm text-gray-900 mb-1">{booking.pickup_address}</p>
-                  <p className="text-sm text-gray-600 mb-3">{booking.pickup_city || ''}</p>
-                  <button
-                    onClick={openGoogleMaps}
-                    className="w-full bg-gray-800 hover:bg-gray-900 text-white py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <MapPin className="w-4 h-4" />
-                    Apri in Google Maps
-                  </button>
-                </div>
-              )}
+{booking.listing?.pickup_address && (
+  <div className="bg-gray-50 rounded-xl p-3">
+    <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+      <MapPin className="w-3 h-3" />
+      INDIRIZZO DI RITIRO
+    </p>
+    <p className="text-sm text-gray-900 mb-1">{booking.listing.pickup_address}</p>
+    <p className="text-sm text-gray-600 mb-3">{booking.listing.pickup_city || ''}</p>
+    <button
+      onClick={() => {
+        if (booking.listing?.pickup_address) {
+          window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.listing.pickup_address)}`, '_blank');
+        }
+      }}
+      className="w-full bg-gray-800 hover:bg-gray-900 text-white py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+    >
+      <MapPin className="w-4 h-4" />
+      Apri in Google Maps
+    </button>
+  </div>
+)}
 {/* Riepilogo Costi */}
 <div className="bg-white border border-gray-200 rounded-xl p-3">
   <p className="text-xs text-gray-500 mb-3">RIEPILOGO COSTI</p>
@@ -279,13 +283,13 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
         <>
           {/* Commissione 10% */}
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Commissione di servizio (10% IVA inclusa)</span>
+            <span className="text-gray-600">Commissione di servizio 10% (IVA inclusa)</span>
             <span className="font-medium">€{variableFee.toFixed(2)}</span>
           </div>
           
           {/* Fee fissa */}
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Fee fissa piattaforma</span>
+            <span className="text-gray-600">Fee fissa piattaforma (IVA inclusa)</span>
             <span className="font-medium">€{fixedFee.toFixed(2)}</span>
           </div>
         </>
@@ -312,13 +316,45 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
 )}
 
               {/* Metodo di Pagamento */}
-              <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-xs text-gray-500 mb-2">METODO DI PAGAMENTO</p>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-900">{booking.payment_method || 'Wallet'}</span>
-                  <span className="font-semibold">€{booking.totalPrice?.toFixed(2) || booking.amount_total?.toFixed(2) || '0.00'}</span>
-                </div>
-              </div>
+<div className="bg-gray-50 rounded-xl p-3">
+  <p className="text-xs text-gray-500 mb-2">METODO DI PAGAMENTO</p>
+  <div className="space-y-1">
+    {/* Se ha usato wallet */}
+    {booking.wallet_used_cents > 0 && (
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-900">Wallet RentHubber</span>
+        <span className="font-medium">€{(booking.wallet_used_cents / 100).toFixed(2)}</span>
+      </div>
+    )}
+    
+    {/* Se ha usato carta */}
+    {booking.card_paid_cents > 0 && (
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-900">Carta di credito</span>
+        <span className="font-medium">€{(booking.card_paid_cents / 100).toFixed(2)}</span>
+      </div>
+    )}
+    
+    {/* Totale (se ha usato entrambi) */}
+    {booking.wallet_used_cents > 0 && booking.card_paid_cents > 0 && (
+      <>
+        <div className="h-px bg-gray-300 my-1" />
+        <div className="flex justify-between">
+          <span className="font-semibold text-gray-900">Totale pagato</span>
+          <span className="font-bold">€{booking.totalPrice?.toFixed(2) || booking.amount_total?.toFixed(2) || '0.00'}</span>
+        </div>
+      </>
+    )}
+    
+    {/* Se ha usato solo uno dei due, mostra solo quello */}
+    {(booking.wallet_used_cents > 0) !== (booking.card_paid_cents > 0) && (
+      <div className="flex justify-between mt-1">
+        <span className="font-semibold text-gray-900">Totale</span>
+        <span className="font-bold">€{booking.totalPrice?.toFixed(2) || booking.amount_total?.toFixed(2) || '0.00'}</span>
+      </div>
+    )}
+  </div>
+</div>
 
               {/* Politica di Cancellazione Dinamica */}
               {booking.status !== 'cancelled' && booking.status !== 'completed' && (
