@@ -59,46 +59,55 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
     const hoursUntilStart = msUntilStart / (1000 * 60 * 60);
     const daysUntilStart = msUntilStart / (1000 * 60 * 60 * 24);
     
-    // Calcola countdown
-    const days = Math.floor(msUntilStart / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((msUntilStart % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((msUntilStart % (1000 * 60 * 60)) / (1000 * 60));
-    
     const totalAmount = booking.totalPrice || booking.amount_total || 0;
     const policy = booking.listing?.cancellation_policy || booking.cancellation_policy || 'flexible';
     
     let percentage = 0;
     let policyThreshold = '';
+    let msUntilRefundDeadline = 0; // Tempo fino alla scadenza del rimborso
     
     switch (policy) {
       case 'flexible':
         if (hoursUntilStart >= 24) {
           percentage = 100;
           policyThreshold = '24 ore';
+          // Deadline = 24h prima dell'inizio
+          msUntilRefundDeadline = msUntilStart - (24 * 60 * 60 * 1000);
         }
         break;
       case 'moderate':
         if (daysUntilStart >= 5) {
           percentage = 50;
           policyThreshold = '5 giorni';
+          // Deadline = 5 giorni prima dell'inizio
+          msUntilRefundDeadline = msUntilStart - (5 * 24 * 60 * 60 * 1000);
         }
         break;
       case 'strict':
         if (daysUntilStart >= 7) {
           percentage = 50;
           policyThreshold = '7 giorni';
+          // Deadline = 7 giorni prima dell'inizio
+          msUntilRefundDeadline = msUntilStart - (7 * 24 * 60 * 60 * 1000);
         }
         break;
       case 'non_refundable':
         percentage = 0;
         policyThreshold = 'mai';
+        msUntilRefundDeadline = 0;
         break;
       default:
         if (hoursUntilStart >= 24) {
           percentage = 100;
           policyThreshold = '24 ore';
+          msUntilRefundDeadline = msUntilStart - (24 * 60 * 60 * 1000);
         }
     }
+    
+    // Calcola countdown fino alla deadline del rimborso (non fino all'inizio!)
+    const days = Math.max(0, Math.floor(msUntilRefundDeadline / (1000 * 60 * 60 * 24)));
+    const hours = Math.max(0, Math.floor((msUntilRefundDeadline % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
+    const minutes = Math.max(0, Math.floor((msUntilRefundDeadline % (1000 * 60 * 60)) / (1000 * 60)));
     
     return {
       percentage,
@@ -107,11 +116,12 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
         days,
         hours,
         minutes,
-        total: msUntilStart
+        total: msUntilRefundDeadline
       },
       policy,
       policyThreshold,
-      canCancel: msUntilStart > 0
+      canCancel: msUntilStart > 0,
+      isRefundable: msUntilRefundDeadline > 0 // Nuovo: true se puoi ancora ricevere rimborso
     };
   };
 
@@ -325,25 +335,42 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
                         {/* Countdown */}
                         {refund.canCancel ? (
                           <>
-                            <p className="text-sm font-semibold text-gray-900 mb-1">
-                              {refund.countdown.days > 0 && `${refund.countdown.days}g `}
-                              {refund.countdown.hours}h {refund.countdown.minutes}m
-                              <span className="text-xs text-gray-600 ml-2">all'inizio</span>
-                            </p>
-                            
-                            {/* Rimborso attuale */}
-                            <p className="text-lg font-bold text-gray-900">
-                              Rimborso: {refund.percentage}% 
-                              <span className="text-base font-normal text-gray-700 ml-2">
-                                (€{refund.amount.toFixed(2)})
-                              </span>
-                            </p>
-                            
-                            {/* Avviso soglia critica */}
-                            {refund.percentage > 0 && (
-                              <p className="text-xs text-gray-600 mt-1">
-                                ⚠️ Cancella prima di {refund.policyThreshold} dall'inizio
-                              </p>
+                            {refund.isRefundable ? (
+                              <>
+                                <p className="text-sm font-semibold text-gray-900 mb-1">
+                                  {refund.countdown.days > 0 && `${refund.countdown.days}g `}
+                                  {refund.countdown.hours}h {refund.countdown.minutes}m
+                                  <span className="text-xs text-gray-600 ml-2">per ricevere {refund.percentage}% rimborso</span>
+                                </p>
+                                
+                                {/* Rimborso attuale */}
+                                <p className="text-lg font-bold text-gray-900">
+                                  Rimborso: {refund.percentage}% 
+                                  <span className="text-base font-normal text-gray-700 ml-2">
+                                    (€{refund.amount.toFixed(2)})
+                                  </span>
+                                </p>
+                                
+                                {/* Avviso soglia critica */}
+                                <p className="text-xs text-gray-600 mt-1">
+                                  ⚠️ Dopo questa scadenza: nessun rimborso
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-sm font-semibold text-orange-700 mb-1">
+                                  ⏰ Scadenza rimborso superata
+                                </p>
+                                <p className="text-base text-gray-900">
+                                  Rimborso: 0% 
+                                  <span className="text-sm text-gray-600 ml-2">
+                                    (Nessun rimborso disponibile)
+                                  </span>
+                                </p>
+                                <p className="text-xs text-gray-600 mt-1">
+                                  Puoi ancora cancellare ma senza rimborso
+                                </p>
+                              </>
                             )}
                           </>
                         ) : (
