@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, MapPin, Copy, Calendar, User } from 'lucide-react';
+import { X, MapPin, Copy, Calendar, User, Clock } from 'lucide-react';
 import { calculateHubberFee, calculateRenterFee } from '../utils/feeUtils';
 
 interface BookingDetailDrawerProps {
@@ -51,21 +51,91 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
     }
   };
 
-  // Calcolo rimborso per policy di cancellazione
+  // Calcolo rimborso dinamico per policy di cancellazione
   const calculateRefund = () => {
     const now = new Date();
     const startDate = new Date(booking.start_date || booking.startDate);
-    const hoursUntilStart = (startDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const msUntilStart = startDate.getTime() - now.getTime();
+    const hoursUntilStart = msUntilStart / (1000 * 60 * 60);
+    const daysUntilStart = msUntilStart / (1000 * 60 * 60 * 24);
     
-    if (hoursUntilStart >= 24) {
-      return { percentage: 100, amount: booking.totalPrice || booking.amount_total };
-    } else if (hoursUntilStart > 0) {
-      return { percentage: 0, amount: 0 };
+    // Calcola countdown
+    const days = Math.floor(msUntilStart / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((msUntilStart % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((msUntilStart % (1000 * 60 * 60)) / (1000 * 60));
+    
+    const totalAmount = booking.totalPrice || booking.amount_total || 0;
+    const policy = booking.listing?.cancellation_policy || booking.cancellation_policy || 'flexible';
+    
+    let percentage = 0;
+    let policyThreshold = '';
+    
+    switch (policy) {
+      case 'flexible':
+        if (hoursUntilStart >= 24) {
+          percentage = 100;
+          policyThreshold = '24 ore';
+        }
+        break;
+      case 'moderate':
+        if (daysUntilStart >= 5) {
+          percentage = 50;
+          policyThreshold = '5 giorni';
+        }
+        break;
+      case 'strict':
+        if (daysUntilStart >= 7) {
+          percentage = 50;
+          policyThreshold = '7 giorni';
+        }
+        break;
+      case 'non_refundable':
+        percentage = 0;
+        policyThreshold = 'mai';
+        break;
+      default:
+        if (hoursUntilStart >= 24) {
+          percentage = 100;
+          policyThreshold = '24 ore';
+        }
     }
-    return { percentage: 0, amount: 0 };
+    
+    return {
+      percentage,
+      amount: (totalAmount * percentage) / 100,
+      countdown: {
+        days,
+        hours,
+        minutes,
+        total: msUntilStart
+      },
+      policy,
+      policyThreshold,
+      canCancel: msUntilStart > 0
+    };
   };
 
   const refund = calculateRefund();
+
+  // Helper per mostrare politica di cancellazione
+  const getPolicyDisplay = () => {
+    const policy = refund.policy;
+    
+    switch (policy) {
+      case 'flexible':
+        return { name: 'Flessibile', color: 'green', icon: '🟢' };
+      case 'moderate':
+        return { name: 'Moderata', color: 'yellow', icon: '🟡' };
+      case 'strict':
+        return { name: 'Rigida', color: 'orange', icon: '🟠' };
+      case 'non_refundable':
+        return { name: 'Non rimborsabile', color: 'red', icon: '🔴' };
+      default:
+        return { name: 'Flessibile', color: 'green', icon: '🟢' };
+    }
+  };
+
+  const policyDisplay = getPolicyDisplay();
 
   return (
     <>
@@ -230,24 +300,96 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
                 </div>
               </div>
 
-              {/* Politica di Cancellazione */}
-              <div className="bg-white border border-gray-200 rounded-xl p-3">
-                <p className="text-xs text-gray-500 mb-2">POLITICA DI CANCELLAZIONE</p>
-                <p className="text-sm font-semibold text-green-600 mb-1">Flessibile</p>
-                <p className="text-sm text-gray-600 mb-3">Rimborso 100% fino a 24h prima</p>
-                
-                {booking.status !== 'cancelled' && booking.status !== 'completed' && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <p className="text-xs text-gray-600 mb-1">Se cancelli ora:</p>
-                    <p className="text-sm text-green-700 font-medium">
-                      Rimborso completo (più di 24h prima)
-                    </p>
-                    <p className="text-lg font-bold text-green-700 mt-1">
-                      Rimborso: €{refund.amount.toFixed(2)}
-                    </p>
+              {/* Politica di Cancellazione Dinamica */}
+              {booking.status !== 'cancelled' && booking.status !== 'completed' && (
+                <div className="bg-white border border-gray-200 rounded-xl p-4">
+                  <h3 className="font-medium text-gray-900 mb-3">Politica di Cancellazione</h3>
+                  
+                  {/* Box Countdown + Rimborso */}
+                  <div className={`
+                    ${policyDisplay.color === 'green' ? 'bg-green-50 border-green-200' : ''}
+                    ${policyDisplay.color === 'yellow' ? 'bg-yellow-50 border-yellow-200' : ''}
+                    ${policyDisplay.color === 'orange' ? 'bg-orange-50 border-orange-200' : ''}
+                    ${policyDisplay.color === 'red' ? 'bg-red-50 border-red-200' : ''}
+                    border rounded-lg p-4 mb-3
+                  `}>
+                    <div className="flex items-start gap-3">
+                      <Clock className={`
+                        ${policyDisplay.color === 'green' ? 'text-green-600' : ''}
+                        ${policyDisplay.color === 'yellow' ? 'text-yellow-600' : ''}
+                        ${policyDisplay.color === 'orange' ? 'text-orange-600' : ''}
+                        ${policyDisplay.color === 'red' ? 'text-red-600' : ''}
+                        w-5 h-5 flex-shrink-0 mt-0.5
+                      `} />
+                      <div className="flex-1">
+                        {/* Countdown */}
+                        {refund.canCancel ? (
+                          <>
+                            <p className="text-sm font-semibold text-gray-900 mb-1">
+                              {refund.countdown.days > 0 && `${refund.countdown.days}g `}
+                              {refund.countdown.hours}h {refund.countdown.minutes}m
+                              <span className="text-xs text-gray-600 ml-2">all'inizio</span>
+                            </p>
+                            
+                            {/* Rimborso attuale */}
+                            <p className="text-lg font-bold text-gray-900">
+                              Rimborso: {refund.percentage}% 
+                              <span className="text-base font-normal text-gray-700 ml-2">
+                                (€{refund.amount.toFixed(2)})
+                              </span>
+                            </p>
+                            
+                            {/* Avviso soglia critica */}
+                            {refund.percentage > 0 && (
+                              <p className="text-xs text-gray-600 mt-1">
+                                ⚠️ Cancella prima di {refund.policyThreshold} dall'inizio
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-sm text-red-600 font-medium">
+                            ❌ Prenotazione già iniziata - Cancellazione non disponibile
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  {/* Dettagli Policy */}
+                  <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                    <p className="text-sm font-medium text-gray-900 mb-2">
+                      {policyDisplay.icon} Policy: {policyDisplay.name}
+                    </p>
+                    
+                    <div className="text-xs text-gray-600 space-y-1">
+                      {refund.policy === 'flexible' && (
+                        <>
+                          <p>• ≥24h prima dell'inizio: <strong>rimborso 100%</strong></p>
+                          <p>• &lt;24h prima: <strong>nessun rimborso</strong></p>
+                        </>
+                      )}
+                      
+                      {refund.policy === 'moderate' && (
+                        <>
+                          <p>• ≥5 giorni prima: <strong>rimborso 50%</strong></p>
+                          <p>• &lt;5 giorni prima: <strong>nessun rimborso</strong></p>
+                        </>
+                      )}
+                      
+                      {refund.policy === 'strict' && (
+                        <>
+                          <p>• ≥7 giorni prima: <strong>rimborso 50%</strong></p>
+                          <p>• &lt;7 giorni prima: <strong>nessun rimborso</strong></p>
+                        </>
+                      )}
+                      
+                      {refund.policy === 'non_refundable' && (
+                        <p className="text-red-600 font-medium">• Prenotazione non rimborsabile</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Bottoni Azioni */}
               {booking.status !== 'cancelled' && booking.status !== 'completed' && (
@@ -261,12 +403,27 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
                       Modifica date
                     </button>
                   )}
-                  {onCancelBooking && (
+                  {onCancelBooking && refund.canCancel && (
                     <button
                       onClick={() => onCancelBooking(booking)}
-                      className="w-full bg-white border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white py-3 px-4 rounded-lg font-semibold transition-colors"
+                      disabled={!refund.canCancel}
+                      className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${
+                        refund.percentage === 0 
+                          ? 'bg-white border-2 border-gray-400 text-gray-600 hover:bg-gray-50' 
+                          : 'bg-white border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       Cancella prenotazione
+                      {refund.percentage > 0 && (
+                        <span className="block text-sm mt-1">
+                          (Riceverai €{refund.amount.toFixed(2)})
+                        </span>
+                      )}
+                      {refund.percentage === 0 && (
+                        <span className="block text-xs mt-1">
+                          (Nessun rimborso)
+                        </span>
+                      )}
                     </button>
                   )}
                 </div>
