@@ -270,18 +270,28 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
         €{((booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1)).toFixed(2)}
       </span>
     </div>
-    {booking.platform_fee > 0 && (
-      <div className="flex justify-between text-sm">
-        <span className="text-gray-600">Commissione di servizio (10% IVA inclusa)</span>
-        <span className="font-medium">€{booking.platform_fee?.toFixed(2) || '0.00'}</span>
-      </div>
-    )}
-    {booking.cleaning_fee > 0 && (
-      <div className="flex justify-between text-sm">
-        <span className="text-gray-600">Fee fissa piattaforma</span>
-        <span className="font-medium">€{booking.cleaning_fee?.toFixed(2) || '0.00'}</span>
-      </div>
-    )}
+    
+    {(() => {
+      const baseAmount = (booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1);
+      const { variableFee, fixedFee, totalFee } = calculateRenterFee(baseAmount);
+      
+      return (
+        <>
+          {/* Commissione 10% */}
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Commissione di servizio (10% IVA inclusa)</span>
+            <span className="font-medium">€{variableFee.toFixed(2)}</span>
+          </div>
+          
+          {/* Fee fissa */}
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Fee fissa piattaforma</span>
+            <span className="font-medium">€{fixedFee.toFixed(2)}</span>
+          </div>
+        </>
+      );
+    })()}
+    
     <div className="h-px bg-gray-300 my-2" />
     <div className="flex justify-between">
       <span className="font-bold text-gray-900">Totale pagato</span>
@@ -385,28 +395,28 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
                   {/* Dettagli Policy */}
                   <div className="bg-gray-50 rounded-lg p-3 mb-3">
                     <p className="text-sm font-medium text-gray-900 mb-2">
-                      {policyDisplay.icon} Policy: {policyDisplay.name}
+                      {policyDisplay.icon} Politica di cancellazione: {policyDisplay.name}
                     </p>
                     
                     <div className="text-xs text-gray-600 space-y-1">
                       {refund.policy === 'flexible' && (
                         <>
-                          <p>• ≥24h prima dell'inizio: <strong>rimborso 100%</strong></p>
-                          <p>• &lt;24h prima: <strong>nessun rimborso</strong></p>
+                          <p>• Più di 24h dall'inizio: <strong>rimborso 100%</strong></p>
+                          <p>• Meno di 24h dall'inizio: <strong>nessun rimborso</strong></p>
                         </>
                       )}
                       
                       {refund.policy === 'moderate' && (
                         <>
-                          <p>• ≥5 giorni prima: <strong>rimborso 50%</strong></p>
-                          <p>• &lt;5 giorni prima: <strong>nessun rimborso</strong></p>
+                          <p>• Più di 5 giorni dall'inizio: <strong>rimborso 50%</strong></p>
+                          <p>• Meno di 5 giorni dall'inizio: <strong>nessun rimborso</strong></p>
                         </>
                       )}
                       
                       {refund.policy === 'strict' && (
                         <>
-                          <p>• ≥7 giorni prima: <strong>rimborso 50%</strong></p>
-                          <p>• &lt;7 giorni prima: <strong>nessun rimborso</strong></p>
+                          <p>• Più di 7 giorni dall'inizio: <strong>rimborso 50%</strong></p>
+                          <p>• Meno di 7 giorni dall'inizio: <strong>nessun rimborso</strong></p>
                         </>
                       )}
                       
