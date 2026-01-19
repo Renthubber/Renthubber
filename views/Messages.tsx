@@ -371,10 +371,24 @@ export const Messages: React.FC<MessagesProps> = ({
     checkBookingStatus();
   }, [activeContact?.bookingId, activeChatId]);
 
+  // Aggiorna drawer quando cambi chat (se è aperto)
+useEffect(() => {
+  if (showBookingDrawer && activeContact?.bookingId) {
+    // Se il drawer è aperto e la chat ha una prenotazione, ricaricala
+    loadBookingDetailForChat(activeContact.bookingId);
+  } else if (showBookingDrawer && !activeContact?.bookingId) {
+    // Se il drawer è aperto ma la nuova chat non ha prenotazione, chiudilo
+    setShowBookingDrawer(false);
+    setBookingDetailData(null);
+    setDrawerBookingData(null);
+  }
+}, [activeChatId, activeContact?.bookingId]);
+
   const [messageInput, setMessageInput] = useState("");
   const [showMobileList, setShowMobileList] = useState(true);
   const [showBookingDrawer, setShowBookingDrawer] = useState(false);
   const [drawerBookingData, setDrawerBookingData] = useState<any>(null);
+  const [bookingDetailData, setBookingDetailData] = useState<any>(null);
   const [loadingBookingDetail, setLoadingBookingDetail] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showModifyModal, setShowModifyModal] = useState(false);
@@ -1206,36 +1220,30 @@ const handleSend = async () => {
           return c;
         });
         localStorage.setItem("conversations", JSON.stringify(convs));
-
-        // Aggiorna UI
-        setContacts(prev => prev.map(c => {
-          if (c.id === activeChatId) {
-            return { ...c, lastMessage: safeText.slice(0, 80), lastMessageTime: "Ora" };
-          }
-          return c;
-        }));
-      }
-
+      }  // ← Chiude il secondo if
+      
       if (blockedContacts) {
         console.warn("Contatti bloccati nel messaggio, testo ripulito.");
       }
-
+      
       setMessageInput("");
     } catch (err) {
-      console.error("Errore durante l'invio del messaggio (UI locale):", err);
+      console.error("Errore durante l'invio del messaggio:", err);
     }
-  };
+  };  // ← Chiude handleSend
 
- const loadBookingDetailForChat = async (bookingId: string) => {
-  if (!bookingId) return;
+  const loadBookingDetailForChat = async (bookingId: string) => {
+    if (!bookingId) return;
   
   setLoadingBookingDetail(true);
+  setBookingDetailData(null); // Reset dati precedenti
+  
   try {
     const { data, error } = await supabase
       .from('bookings')
       .select(`
         *,
-        listing:listings(title, images, price, price_per_hour, price_unit, cancellation_policy),
+        listing:listings(title, images, price, price_per_hour, price_unit, cancellation_policy, pickup_address, pickup_city, pickup_instructions),
         renter:users!bookings_renter_id_fkey(id, name, avatar_url),
         hubber:users!bookings_hubber_id_fkey(id, name, avatar_url) 
       `)
@@ -1244,18 +1252,65 @@ const handleSend = async () => {
 
     if (error) throw error;
 
+    // Prepara i dati per il drawer (stesso formato di prima)
     setDrawerBookingData({
       ...data,
       listingTitle: data.listing?.title,
       listingImages: data.listing?.images,
       price_per_day: data.listing?.price,    
-      price_per_hour: data.listing?.price_hour,
+      price_per_hour: data.listing?.price_per_hour,
       cancellation_policy: data.listing?.cancellation_policy,
       renterName: data.renter?.name,
       renterAvatar: data.renter?.avatar_url,
       hubberName: data.hubber?.name,
       hubberAvatar: data.hubber?.avatar_url,
     });
+
+    // Calcola i dettagli aggiuntivi (indirizzo, pagamento, ecc.)
+    const listingPrice = data.listing?.price || 0;
+    const priceUnit = data.listing?.price_unit || 'giorno';
+    const cancellationPolicy = data.listing?.cancellation_policy || 'flexible';
+
+    // Calcola giorni
+    let days = 1;
+    if (data.start_date && data.end_date) {
+      const start = new Date(data.start_date);
+      const end = new Date(data.end_date);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      days = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
+    }
+
+    // Calcola costi
+    const basePrice = days * listingPrice;
+    const cleaningFee = data.cleaning_fee || 0;
+    const renterTotalPaid = data.amount_total || 0;
+    
+    // Recupera wallet e carta
+    const walletUsedCents = data.wallet_used_cents || 0;
+    const walletUsed = walletUsedCents / 100;
+    const cardPaid = Math.max(renterTotalPaid - walletUsed, 0);
+
+    // Indirizzo di ritiro
+    const pickupAddress = data.listing?.pickup_address || '';
+    const pickupCity = data.listing?.pickup_city || '';
+    const pickupInstructions = data.listing?.pickup_instructions || '';
+
+    // Popola bookingDetailData
+    setBookingDetailData({
+      listingPrice,
+      priceUnit,
+      days,
+      basePrice,
+      cleaningFee,
+      total: renterTotalPaid,
+      walletUsed,
+      cardPaid,
+      cancellationPolicy,
+      pickupAddress,
+      pickupCity,
+      pickupInstructions,
+    });
+
     setShowBookingDrawer(true);
   } catch (error) {
     console.error('Errore caricamento dettagli prenotazione:', error);
@@ -2930,6 +2985,7 @@ const steps = [
   isOpen={showBookingDrawer}
   onClose={() => setShowBookingDrawer(false)}
   booking={drawerBookingData}
+  bookingDetailData={bookingDetailData}
   currentUserRole={currentUser?.id === drawerBookingData?.renter_id ? 'renter' : 'hubber'}
   onCancelBooking={(booking) => {
     setSelectedBookingForAction(booking);
