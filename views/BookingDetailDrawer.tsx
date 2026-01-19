@@ -6,6 +6,7 @@ interface BookingDetailDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   booking: any;
+  bookingDetailData?: any;
   currentUserRole: 'renter' | 'hubber';
   renderBookingStatusBadge: (status: string) => React.ReactElement;
   onCancelBooking?: (booking: any) => void;
@@ -16,6 +17,7 @@ export const BookingDetailDrawer: React.FC<BookingDetailDrawerProps> = ({
   isOpen,
   onClose,
   booking,
+  bookingDetailData,
   currentUserRole,
   renderBookingStatusBadge,
   onCancelBooking,
@@ -246,25 +248,25 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
               </div>
 
               {/* Indirizzo di ritiro */}
-{booking.pickupAddress && (
+{bookingDetailData?.pickupAddress && (
   <div className="bg-gray-50 rounded-xl p-3">
     <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
       <MapPin className="w-3 h-3" />
       INDIRIZZO DI RITIRO
     </p>
-    <p className="text-sm text-gray-900 mb-1">{booking.pickupAddress}</p>
-    {booking.pickupCity && (
-      <p className="text-sm text-gray-600 mb-1">{booking.pickupCity}</p>
+    <p className="text-sm text-gray-900 mb-1">{bookingDetailData.pickupAddress}</p>
+    {bookingDetailData.pickupCity && (
+      <p className="text-sm text-gray-600 mb-1">{bookingDetailData.pickupCity}</p>
     )}
-    {booking.pickupInstructions && (
+    {bookingDetailData.pickupInstructions && (
       <p className="text-xs text-gray-500 mb-3 italic">
-        "{booking.pickupInstructions}"
+        "{bookingDetailData.pickupInstructions}"
       </p>
     )}
     <button
       onClick={() => {
         const address = encodeURIComponent(
-          `${booking.pickupAddress}, ${booking.pickupCity || ''}`
+          `${bookingDetailData.pickupAddress}, ${bookingDetailData.pickupCity || ''}`
         );
         window.open(
           `https://www.google.com/maps/search/?api=1&query=${address}`,
@@ -278,6 +280,7 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
     </button>
   </div>
 )}
+
 {/* Riepilogo Costi */}
 <div className="bg-white border border-gray-200 rounded-xl p-3">
   <p className="text-xs text-gray-500 mb-3">RIEPILOGO COSTI</p>
@@ -331,33 +334,33 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
   </div>
 )}
 
-              {/* Metodo di Pagamento */}
+             {/* Metodo di Pagamento */}
 <div className="bg-gray-50 rounded-xl p-3">
   <p className="text-xs text-gray-500 mb-2">METODO DI PAGAMENTO</p>
   <div className="space-y-1">
     {/* Se ha usato wallet */}
-    {booking.walletUsed > 0 && (
+    {bookingDetailData?.walletUsed > 0 && (
       <div className="flex justify-between text-sm">
         <span className="text-gray-900">Wallet RentHubber</span>
-        <span className="font-medium">€{booking.walletUsed.toFixed(2)}</span>
+        <span className="font-medium">€{bookingDetailData.walletUsed.toFixed(2)}</span>
       </div>
     )}
     
     {/* Se ha usato carta */}
-    {booking.cardPaid > 0 && (
+    {bookingDetailData?.cardPaid > 0 && (
       <div className="flex justify-between text-sm">
         <span className="text-gray-900">Carta di credito</span>
-        <span className="font-medium">€{booking.cardPaid.toFixed(2)}</span>
+        <span className="font-medium">€{bookingDetailData.cardPaid.toFixed(2)}</span>
       </div>
     )}
     
     {/* Totale (se ha usato entrambi) */}
-    {booking.walletUsed > 0 && booking.cardPaid > 0 && (
+    {bookingDetailData?.walletUsed > 0 && bookingDetailData?.cardPaid > 0 && (
       <>
         <div className="h-px bg-gray-300 my-1" />
         <div className="flex justify-between">
           <span className="font-semibold text-gray-900">Totale pagato</span>
-          <span className="font-bold">€{booking.totalPrice?.toFixed(2) || booking.amount_total?.toFixed(2) || '0.00'}</span>
+          <span className="font-bold">€{bookingDetailData.total?.toFixed(2) || '0.00'}</span>
         </div>
       </>
     )}
