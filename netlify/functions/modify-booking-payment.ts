@@ -147,8 +147,8 @@ export const handler: Handler = async (event, context) => {
     let originalDays = Math.max(Math.ceil(originalDiffTime / (1000 * 60 * 60 * 24)), 1);
 
     // Calcola giorni NUOVI
-    const newStart = new Date(newStartDate + 'T00:00:00');
-    const newEnd = new Date(newEndDate + 'T00:00:00');
+    const newStart = new Date(newStartDate + 'T12:00:00Z'); // ← Mezzogiorno UTC
+    const newEnd = new Date(newEndDate + 'T12:00:00Z');     // ← Mezzogiorno UTC
     const newDiffTime = Math.abs(newEnd.getTime() - newStart.getTime());
     let newDays = Math.max(Math.ceil(newDiffTime / (1000 * 60 * 60 * 24)), 1);
 
