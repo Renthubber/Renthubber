@@ -248,7 +248,7 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
               </div>
 
               {/* Indirizzo di ritiro */}
-{bookingDetailData?.pickupAddress && (
+{bookingDetailData?.pickupAddress && booking.status !== 'completed' && booking.status !== 'cancelled' && (
   <div className="bg-gray-50 rounded-xl p-3">
     <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
       <MapPin className="w-3 h-3" />
