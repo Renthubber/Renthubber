@@ -204,8 +204,8 @@ useEffect(() => {
         body: JSON.stringify({
           bookingId: booking.id,
           renterId: currentUser.id,
-          newStartDate: newStartDate.toISOString(),
-          newEndDate: endDateToUse.toISOString(),
+          newStartDate: newStartDate.toISOString().split('T')[0],
+          newEndDate: endDateToUse.toISOString().split('T')[0],
           paymentMethod: priceDifference > 0 ? modifyPaymentMethod : undefined,
         }),
       });
