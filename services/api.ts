@@ -2303,29 +2303,28 @@ if (cardPaidOriginal > 0) {
           const hubberEarnings = (hubberNetAmount * (100 - refundPercentage)) / 100;
           
           if (hubberEarnings > 0) {
-            // Leggi il wallet dell'Hubber
-            const { data: hubberWallet } = await supabase
-              .from("wallets")
-              .select("balance_cents")
-              .eq("user_id", booking.hubber_id)
+           // Leggi il saldo Hubber
+            const { data: hubberUser } = await supabase
+              .from("users")
+              .select("hubber_balance")
+              .eq("id", booking.hubber_id)
               .single();
 
-            if (hubberWallet) {
-              const currentBalanceCents = hubberWallet.balance_cents || 0;
-              const earningsCents = Math.round(hubberEarnings * 100);
-              const newBalanceCents = currentBalanceCents + earningsCents;
+            if (hubberUser) {
+              const currentBalance = Number(hubberUser.hubber_balance) || 0;
+              const newBalance = currentBalance + hubberEarnings;
 
-              // Aggiorna il wallet dell'Hubber
+              // Aggiorna il saldo Hubber
               await supabase
-                .from("wallets")
-                .update({ balance_cents: newBalanceCents })
-                .eq("user_id", booking.hubber_id);
+                .from("users")
+                .update({ hubber_balance: newBalance })
+                .eq("id", booking.hubber_id);
 
               // Crea la transazione wallet per l'Hubber
               await supabase.from("wallet_transactions").insert({
                 user_id: booking.hubber_id,
-                amount_cents: earningsCents,
-                balance_after_cents: newBalanceCents,
+                amount_cents: Math.round(hubberEarnings * 100),
+                balance_after_cents: Math.round(newBalance * 100),
                 type: 'credit',
                 source: 'booking_payout',
                 wallet_type: 'hubber',
