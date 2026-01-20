@@ -204,8 +204,8 @@ useEffect(() => {
         body: JSON.stringify({
           bookingId: booking.id,
           renterId: currentUser.id,
-          newStartDate: newStartDate.toISOString().split('T')[0],
-          newEndDate: endDateToUse.toISOString().split('T')[0],
+          newStartDate: `${newStartDate.getFullYear()}-${String(newStartDate.getMonth() + 1).padStart(2, '0')}-${String(newStartDate.getDate()).padStart(2, '0')}`,
+          newEndDate: `${endDateToUse.getFullYear()}-${String(endDateToUse.getMonth() + 1).padStart(2, '0')}-${String(endDateToUse.getDate()).padStart(2, '0')}`,
           ...(priceDifference > 0 ? { paymentMethod: modifyPaymentMethod } : {}),
         }),
       });
