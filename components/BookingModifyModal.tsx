@@ -153,13 +153,13 @@ useEffect(() => {
   }, [booking, newStartDate, newEndDate]);
 
   const handleModifyCalendarChange = (start: Date | undefined, end: Date | undefined) => {
-    setNewStartDate(start);
-    setNewEndDate(end);
-    
-    if (start && end) {
-      setModifyCalendarOpen(false);
-    }
-  };
+  setNewStartDate(start);
+  setNewEndDate(end);
+  
+  if (start && end) {
+    setModifyCalendarOpen(false);
+  }
+};
 
   const handleModifyBooking = async () => {
     if (!booking || !newStartDate) {
