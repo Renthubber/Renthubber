@@ -206,7 +206,7 @@ useEffect(() => {
           renterId: currentUser.id,
           newStartDate: newStartDate.toISOString().split('T')[0],
           newEndDate: endDateToUse.toISOString().split('T')[0],
-          paymentMethod: priceDifference > 0 ? modifyPaymentMethod : undefined,
+          ...(priceDifference > 0 ? { paymentMethod: modifyPaymentMethod } : {}),
         }),
       });
 
