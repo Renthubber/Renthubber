@@ -1,13 +1,17 @@
 import { Handler } from '@netlify/functions';
 import Stripe from 'stripe';
 import { calculateRenterFixedFee } from '../../utils/feeUtils';
+import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-11-17.clover',
 });
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || '';
+const SUPABASE_URL = process.env.SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 interface ModifyBookingRequest {
   bookingId: string;
@@ -378,15 +382,48 @@ const priceDifference = basePriceDiff + commissionDiff + fixedFeeDiff;
     // ========================================
     console.log('💳 Supplement scenario:', priceDifference.toFixed(2));
 
-    if (!paymentMethod) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ 
-          error: 'Payment method required for supplement' 
-        }),
-      };
-    }
+    // Se priceDifference è realmente > 0, richiedi paymentMethod
+if (priceDifference > 0.01) {  // Margine di tolleranza per arrotondamenti
+  if (!paymentMethod) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Payment method required for supplement' 
+      }),
+    };
+  }
+} else {
+  console.log('⚠️ Nessun supplemento reale da pagare, salto logica pagamento');
+  
+  // Aggiorna solo le date senza pagamento
+  const { error: updateError } = await supabase
+    .from('bookings')
+    .update({
+      start_date: newStartDate,
+      end_date: newEndDate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', bookingId);
+
+  if (updateError) {
+    console.error('❌ Error updating booking:', updateError);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'Failed to update booking dates' }),
+    };
+  }
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({
+      success: true,
+      message: 'Booking dates updated successfully (no payment required)',
+    }),
+  };
+}
 
     // PAGAMENTO CON WALLET
     if (paymentMethod === 'wallet') {
