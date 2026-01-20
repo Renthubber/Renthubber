@@ -7,12 +7,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-11-17.clover',
 });
 
-const SUPABASE_URL = process.env.SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
 interface ModifyBookingRequest {
   bookingId: string;
   renterId: string;
@@ -45,6 +39,13 @@ export const handler: Handler = async (event, context) => {
   }
 
   try {
+    // Crea client Supabase
+    const SUPABASE_URL = process.env.SUPABASE_URL!;
+    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!;
+    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
+    
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    
     const body: ModifyBookingRequest = JSON.parse(event.body || '{}');
     
     const {
