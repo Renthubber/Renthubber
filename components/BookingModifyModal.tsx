@@ -192,23 +192,30 @@ useEffect(() => {
     setIsModifying(true);
     setModifyError(null);
 
-    try {
-      const endDateToUse = newEndDate || newStartDate;
-      if (!endDateToUse) {
-        throw new Error('Date non valide');
-      }
+   try {
+  const endDateToUse = newEndDate || newStartDate;
+  if (!endDateToUse) {
+    throw new Error('Date non valide');
+  }
 
-      const response = await fetch('/.netlify/functions/modify-booking-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bookingId: booking.id,
-          renterId: currentUser.id,
-          newStartDate: `${newStartDate.getFullYear()}-${String(newStartDate.getMonth() + 1).padStart(2, '0')}-${String(newStartDate.getDate()).padStart(2, '0')}`,
-          newEndDate: `${endDateToUse.getFullYear()}-${String(endDateToUse.getMonth() + 1).padStart(2, '0')}-${String(endDateToUse.getDate()).padStart(2, '0')}`,
-          ...(priceDifference > 0 ? { paymentMethod: modifyPaymentMethod } : {}),
-        }),
-      });
+  console.log('📤 DATE PRIMA DI INVIARE:', {
+    newStartDate: newStartDate,
+    endDateToUse: endDateToUse,
+    startFormatted: `${newStartDate.getFullYear()}-${String(newStartDate.getMonth() + 1).padStart(2, '0')}-${String(newStartDate.getDate()).padStart(2, '0')}`,
+    endFormatted: `${endDateToUse.getFullYear()}-${String(endDateToUse.getMonth() + 1).padStart(2, '0')}-${String(endDateToUse.getDate()).padStart(2, '0')}`,
+  });
+
+  const response = await fetch('/.netlify/functions/modify-booking-payment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      bookingId: booking.id,
+      renterId: currentUser.id,
+      newStartDate: `${newStartDate.getFullYear()}-${String(newStartDate.getMonth() + 1).padStart(2, '0')}-${String(newStartDate.getDate()).padStart(2, '0')}`,
+      newEndDate: `${endDateToUse.getFullYear()}-${String(endDateToUse.getMonth() + 1).padStart(2, '0')}-${String(endDateToUse.getDate()).padStart(2, '0')}`,
+      ...(priceDifference > 0 ? { paymentMethod: modifyPaymentMethod } : {}),
+    }),
+  });
 
       if (!response.ok) {
         const error = await response.json();
