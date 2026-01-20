@@ -38,33 +38,39 @@ export const handler: Handler = async (event, context) => {
     };
   }
 
-  try {
-    // Crea client Supabase
-    const SUPABASE_URL = process.env.VITE_SUPABASE_URL!;
-    const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY!;
-    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
-    
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-    
-    const body: ModifyBookingRequest = JSON.parse(event.body || '{}');
-    
-    const {
-      bookingId,
-      renterId,
-      newStartDate,
-      newEndDate,
-      paymentMethod,
-      useWallet = false,
-      walletAmountToUse = 0,
-    } = body;
+ try {
+  // Crea client Supabase
+  const SUPABASE_URL = process.env.VITE_SUPABASE_URL!;
+  const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY!;
+  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
+  
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  
+  // ✅ LOG QUI (PRIMA del parse!)
+  console.log('🔍 Environment check:', {
+    hasUrl: !!SUPABASE_URL,
+    hasService: !!SUPABASE_SERVICE_KEY,
+  });
+  
+  const body: ModifyBookingRequest = JSON.parse(event.body || '{}');
+  
+  const {
+    bookingId,
+    renterId,
+    newStartDate,
+    newEndDate,
+    paymentMethod,
+    useWallet = false,
+    walletAmountToUse = 0,
+  } = body;
 
-    console.log('🔄 Modify Booking Request:', {
-      bookingId,
-      renterId,
-      newStartDate,
-      newEndDate,
-      paymentMethod,
-    });
+  console.log('🔄 Modify Booking Request:', {
+    bookingId,
+    renterId,
+    newStartDate,
+    newEndDate,
+    paymentMethod,
+  });
 
     // ========================================
     // 1. VALIDAZIONE INPUT
