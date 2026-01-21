@@ -1487,12 +1487,19 @@ if (endStr) {
           const end = new Date(b.endDate);
           
           // Escludi le date della prenotazione corrente (che l'utente sta modificando)
-          if (currentBookingStart && currentBookingEnd) {
-            const isCurrentBooking = 
-              start.getTime() === currentBookingStart.getTime() &&
-              end.getTime() === currentBookingEnd.getTime();
-            if (isCurrentBooking) return;
-          }
+if (currentBookingStart && currentBookingEnd) {
+  const isSameStart = 
+    start.getFullYear() === currentBookingStart.getFullYear() &&
+    start.getMonth() === currentBookingStart.getMonth() &&
+    start.getDate() === currentBookingStart.getDate();
+  
+  const isSameEnd = 
+    end.getFullYear() === currentBookingEnd.getFullYear() &&
+    end.getMonth() === currentBookingEnd.getMonth() &&
+    end.getDate() === currentBookingEnd.getDate();
+  
+  if (isSameStart && isSameEnd) return;
+}
           
           // Aggiungi tutte le date tra start e end
           const current = new Date(start);
