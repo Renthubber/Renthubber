@@ -1458,13 +1458,15 @@ const handleRemoveCalendar = async (calendarId: string): Promise<void> => {
         const endStr = (rawBooking as any).end_date || (rawBooking as any).endDate;
         
         if (startStr) {
-          currentBookingStart = new Date(startStr);
-          setNewStartDate(currentBookingStart);
-        }
-        if (endStr) {
-          currentBookingEnd = new Date(endStr);
-          setNewEndDate(currentBookingEnd);
-        }
+  // Forza UTC a mezzogiorno per evitare problemi timezone
+  currentBookingStart = new Date(startStr + 'T12:00:00Z');
+  setNewStartDate(currentBookingStart);
+}
+if (endStr) {
+  // Forza UTC a mezzogiorno per evitare problemi timezone
+  currentBookingEnd = new Date(endStr + 'T12:00:00Z');
+  setNewEndDate(currentBookingEnd);
+}
       }
     } catch (e) {
       console.warn("Impossibile parsare date prenotazione:", e);
