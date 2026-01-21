@@ -153,9 +153,13 @@ useEffect(() => {
   }, [booking, newStartDate, newEndDate]);
 
   const handleModifyCalendarChange = (start: Date | undefined, end: Date | undefined) => {
+  console.log('🔵 CALENDARIO - Date ricevute:', { start, end });
+  
   // Forza le date a mezzogiorno UTC per evitare problemi di timezone
   const fixedStart = start ? new Date(Date.UTC(start.getFullYear(), start.getMonth(), start.getDate(), 12, 0, 0)) : undefined;
   const fixedEnd = end ? new Date(Date.UTC(end.getFullYear(), end.getMonth(), end.getDate(), 12, 0, 0)) : undefined;
+  
+  console.log('🟢 CALENDARIO - Date fixate:', { fixedStart, fixedEnd });
   
   setNewStartDate(fixedStart);
   setNewEndDate(fixedEnd);
