@@ -153,10 +153,14 @@ useEffect(() => {
   }, [booking, newStartDate, newEndDate]);
 
   const handleModifyCalendarChange = (start: Date | undefined, end: Date | undefined) => {
-  setNewStartDate(start);
-  setNewEndDate(end);
+  // Forza le date a mezzogiorno UTC per evitare problemi di timezone
+  const fixedStart = start ? new Date(Date.UTC(start.getFullYear(), start.getMonth(), start.getDate(), 12, 0, 0)) : undefined;
+  const fixedEnd = end ? new Date(Date.UTC(end.getFullYear(), end.getMonth(), end.getDate(), 12, 0, 0)) : undefined;
   
-  if (start && end) {
+  setNewStartDate(fixedStart);
+  setNewEndDate(fixedEnd);
+  
+  if (fixedStart && fixedEnd) {
     setModifyCalendarOpen(false);
   }
 };
