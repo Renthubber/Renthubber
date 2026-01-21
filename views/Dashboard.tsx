@@ -1475,45 +1475,55 @@ if (endStr) {
     }
 
     // Carica le date già prenotate per questo annuncio (escludendo la prenotazione corrente)
-    try {
-      const listingId = (booking as any).listingId || (booking as any).listing_id;
-      if (listingId && (api as any).bookings?.getByListingId) {
-        const bookings = await (api as any).bookings.getByListingId(listingId);
+try {
+  const listingId = (booking as any).listingId || (booking as any).listing_id;
+  if (listingId && (api as any).bookings?.getByListingId) {
+    const bookings = await (api as any).bookings.getByListingId(listingId);
+    
+    console.log('🟡 Prenotazioni caricate:', bookings.length);
+    
+    const allDisabledDates: Date[] = [];
+    
+    bookings.forEach((b: { startDate: string; endDate: string }) => {
+      const start = new Date(b.startDate);
+      const end = new Date(b.endDate);
+      
+      console.log('🔵 Controllo prenotazione:', { start, end });
+      
+      // Escludi le date della prenotazione corrente (che l'utente sta modificando)
+      if (currentBookingStart && currentBookingEnd) {
+        const isSameStart = 
+          start.getFullYear() === currentBookingStart.getFullYear() &&
+          start.getMonth() === currentBookingStart.getMonth() &&
+          start.getDate() === currentBookingStart.getDate();
         
-        const allDisabledDates: Date[] = [];
+        const isSameEnd = 
+          end.getFullYear() === currentBookingEnd.getFullYear() &&
+          end.getMonth() === currentBookingEnd.getMonth() &&
+          end.getDate() === currentBookingEnd.getDate();
         
-        bookings.forEach((b: { startDate: string; endDate: string }) => {
-          const start = new Date(b.startDate);
-          const end = new Date(b.endDate);
-          
-          // Escludi le date della prenotazione corrente (che l'utente sta modificando)
-if (currentBookingStart && currentBookingEnd) {
-  const isSameStart = 
-    start.getFullYear() === currentBookingStart.getFullYear() &&
-    start.getMonth() === currentBookingStart.getMonth() &&
-    start.getDate() === currentBookingStart.getDate();
-  
-  const isSameEnd = 
-    end.getFullYear() === currentBookingEnd.getFullYear() &&
-    end.getMonth() === currentBookingEnd.getMonth() &&
-    end.getDate() === currentBookingEnd.getDate();
-  
-  if (isSameStart && isSameEnd) return;
-}
-          
-          // Aggiungi tutte le date tra start e end
-          const current = new Date(start);
-          while (current <= end) {
-            allDisabledDates.push(new Date(current));
-            current.setDate(current.getDate() + 1);
-          }
-        });
-        
-        setModifyDisabledDates(allDisabledDates);
+        if (isSameStart && isSameEnd) {
+          console.log('✅ Escludo (è la prenotazione corrente)');
+          return;
+        }
       }
-    } catch (err) {
-      console.error("Errore caricamento date prenotate:", err);
-    }
+      
+      console.log('❌ Aggiungo come disabilitata');
+      
+      // Aggiungi tutte le date tra start e end
+      const current = new Date(start);
+      while (current <= end) {
+        allDisabledDates.push(new Date(current));
+        current.setDate(current.getDate() + 1);
+      }
+    });
+    
+    console.log('🟢 Date disabilitate totali:', allDisabledDates.length);
+    setModifyDisabledDates(allDisabledDates);
+  }
+} catch (err) {
+  console.error("Errore caricamento date prenotate:", err);
+}
     
      // Carica saldo wallet renter
     try {
