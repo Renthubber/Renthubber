@@ -1644,17 +1644,17 @@ const totalDiff = basePriceDiff + commissionDiff + fixedFeeDiff;
 
       if ((api as any).bookings?.modify) {
   // Chiama la nuova Netlify Function
-  const response = await fetch('/.netlify/functions/modify-booking-payment', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      bookingId: bookingToModify.id,
-      renterId: user.id,
-      newStartDate: newStartDate.toISOString(),
-      newEndDate: endDateToUse.toISOString(),
-      paymentMethod: priceDifference > 0 ? modifyPaymentMethod : undefined,
-    }),
-  });
+const response = await fetch('/.netlify/functions/modify-booking-payment', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    bookingId: bookingToModify.id,
+    renterId: user.id,
+    newStartDate: `${newStartDate.getFullYear()}-${String(newStartDate.getMonth() + 1).padStart(2, '0')}-${String(newStartDate.getDate()).padStart(2, '0')}`,
+    newEndDate: `${endDateToUse.getFullYear()}-${String(endDateToUse.getMonth() + 1).padStart(2, '0')}-${String(endDateToUse.getDate()).padStart(2, '0')}`,
+    paymentMethod: priceDifference > 0 ? modifyPaymentMethod : undefined,
+  }),
+});
 
   if (!response.ok) {
     const error = await response.json();
