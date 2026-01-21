@@ -1460,11 +1460,13 @@ const handleRemoveCalendar = async (calendarId: string): Promise<void> => {
         if (startStr) {
   // Forza UTC a mezzogiorno per evitare problemi timezone
   currentBookingStart = new Date(startStr + 'T12:00:00Z');
+  console.log('🔴 DASHBOARD - Data caricata:', { startStr, currentBookingStart });
   setNewStartDate(currentBookingStart);
 }
 if (endStr) {
   // Forza UTC a mezzogiorno per evitare problemi timezone
   currentBookingEnd = new Date(endStr + 'T12:00:00Z');
+  console.log('🔴 DASHBOARD - Data caricata:', { endStr, currentBookingEnd });
   setNewEndDate(currentBookingEnd);
 }
       }
