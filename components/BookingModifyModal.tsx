@@ -99,6 +99,8 @@ useEffect(() => {
         .eq('status', 'confirmed')
         .neq('id', booking.id);
 
+        console.log('🟡 BOOKINGMODIFYMODAL - Prenotazioni caricate:', bookings?.length);
+
       if (!bookings) return;
 
       // Converti in array di Date
