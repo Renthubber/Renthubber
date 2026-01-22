@@ -1500,27 +1500,48 @@ try {
     
     if (!filteredBookings || filteredBookings.length === 0) {
       setModifyDisabledDates([]);
-      return;
     }
     
     const allDisabledDates: Date[] = [];
     
     filteredBookings.forEach((b: { start_date: string; end_date: string }) => {
-      const start = new Date(b.start_date);
-      const end = new Date(b.end_date);
-      
-      console.log('🔵 Controllo prenotazione:', { start, end });
-      
-      // Aggiungi tutte le date tra start e end
-      const current = new Date(start);
-      while (current <= end) {
-        allDisabledDates.push(new Date(current));
-        current.setDate(current.getDate() + 1);
-      }
-    });
+  const start = new Date(b.start_date);
+  const end = new Date(b.end_date);
+  
+  console.log('🔵 Controllo prenotazione:', { start, end });
+  
+  // Aggiungi tutte le date tra start e end
+  const current = new Date(start);
+  while (current <= end) {
+    allDisabledDates.push(new Date(current));
+    current.setDate(current.getDate() + 1);
+  }
+});
+
+// ✅ AGGIUNGI QUESTO BLOCCO QUI
+// Carica anche i blocchi del calendario
+const { data: blocks } = await supabase
+  .from('calendar_blocks')
+  .select('start_date, end_date')
+  .eq('listing_id', listingId);
+
+console.log('🟠 Blocchi calendario caricati:', blocks?.length);
+
+if (blocks) {
+  blocks.forEach((block: { start_date: string; end_date: string }) => {
+    const start = new Date(block.start_date);
+    const end = new Date(block.end_date);
     
-    console.log('🟢 Date disabilitate totali:', allDisabledDates.length);
-    setModifyDisabledDates(allDisabledDates);
+    const current = new Date(start);
+    while (current <= end) {
+      allDisabledDates.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+  });
+}
+
+console.log('🟢 Date disabilitate totali:', allDisabledDates.length);
+setModifyDisabledDates(allDisabledDates);
   }
 } catch (err) {
   console.error("Errore caricamento date prenotate:", err);
