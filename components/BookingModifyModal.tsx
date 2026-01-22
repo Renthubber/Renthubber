@@ -104,17 +104,36 @@ useEffect(() => {
       if (!bookings) return;
 
       // Converti in array di Date
-      const disabled: Date[] = [];
-      bookings.forEach((b: any) => {
-        const start = new Date(b.start_date);
-        const end = new Date(b.end_date);
-        
-        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-          disabled.push(new Date(d));
-        }
-      });
+const disabled: Date[] = [];
+bookings.forEach((b: any) => {
+  const start = new Date(b.start_date);
+  const end = new Date(b.end_date);
+  
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    disabled.push(new Date(d));
+  }
+});
 
-      setModifyDisabledDates(disabled);
+// Carica anche i blocchi del calendario
+const { data: blocks } = await supabase
+  .from('calendar_blocks')
+  .select('start_date, end_date')
+  .eq('listing_id', listingId);
+
+console.log('🟠 BOOKINGMODIFYMODAL - Blocchi calendario:', blocks?.length);
+
+if (blocks) {
+  blocks.forEach((block: any) => {
+    const start = new Date(block.start_date);
+    const end = new Date(block.end_date);
+    
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      disabled.push(new Date(d));
+    }
+  });
+}
+
+setModifyDisabledDates(disabled);
     } catch (err) {
       console.error('Errore caricamento date occupate:', err);
     }
