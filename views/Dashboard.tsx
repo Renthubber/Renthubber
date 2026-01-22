@@ -1474,7 +1474,7 @@ if (endStr) {
       console.warn("Impossibile parsare date prenotazione:", e);
     }
 
-   // Carica le date già prenotate per questo annuncio (escludendo la prenotazione corrente)
+  // Carica le date già prenotate per questo annuncio (escludendo la prenotazione corrente)
 try {
   const listingId = (booking as any).listingId || (booking as any).listing_id;
   if (listingId) {
@@ -1483,21 +1483,29 @@ try {
     
     const { data: bookings } = await supabase
       .from('bookings')
-      .select('start_date, end_date')
+      .select('start_date, end_date, id')
       .eq('listing_id', listingId)
-      .eq('status', 'confirmed')
-      .neq('id', booking.id);
+      .eq('status', 'confirmed');
     
-    console.log('🟡 Prenotazioni caricate:', bookings?.length);
+    console.log('🟡 TUTTE le prenotazioni (senza filtro):', bookings?.length);
+    console.log('🔵 Prenotazione corrente ID:', booking.id);
+    console.log('🔵 Listing ID:', listingId);
+    if (bookings) {
+      bookings.forEach(b => console.log('📋 Prenotazione trovata:', b));
+    }
     
-    if (!bookings) {
+    // Filtra manualmente
+    const filteredBookings = bookings?.filter(b => b.id !== booking.id) || [];
+    console.log('🟡 Prenotazioni dopo filtro:', filteredBookings.length);
+    
+    if (!filteredBookings || filteredBookings.length === 0) {
       setModifyDisabledDates([]);
       return;
     }
     
     const allDisabledDates: Date[] = [];
     
-    bookings.forEach((b: { start_date: string; end_date: string }) => {
+    filteredBookings.forEach((b: { start_date: string; end_date: string }) => {
       const start = new Date(b.start_date);
       const end = new Date(b.end_date);
       
