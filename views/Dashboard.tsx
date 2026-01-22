@@ -1474,56 +1474,42 @@ if (endStr) {
       console.warn("Impossibile parsare date prenotazione:", e);
     }
 
-    // Carica le date già prenotate per questo annuncio (escludendo la prenotazione corrente)
+   // Carica le date già prenotate per questo annuncio (escludendo la prenotazione corrente)
 try {
   const listingId = (booking as any).listingId || (booking as any).listing_id;
-  if (listingId && (api as any).bookings?.getByListingId) {
-    const bookings = await (api as any).bookings.getByListingId(listingId);
+  if (listingId) {
+    // Usa Supabase direttamente come nel BookingModifyModal
+    const { supabase } = await import('../services/supabaseClient');
     
-    console.log('🟡 Prenotazioni caricate:', bookings.length);
+    const { data: bookings } = await supabase
+      .from('bookings')
+      .select('start_date, end_date')
+      .eq('listing_id', listingId)
+      .eq('status', 'confirmed')
+      .neq('id', booking.id);
+    
+    console.log('🟡 Prenotazioni caricate:', bookings?.length);
+    
+    if (!bookings) {
+      setModifyDisabledDates([]);
+      return;
+    }
     
     const allDisabledDates: Date[] = [];
     
-    bookings.forEach((b: { startDate: string; endDate: string }) => {
-  // Normalizza a mezzanotte per confronto
-  const start = new Date(b.startDate + 'T00:00:00');
-  const end = new Date(b.endDate + 'T00:00:00');
-  
-  console.log('🔵 Controllo prenotazione:', { start, end });
-  
-  // Escludi le date della prenotazione corrente (che l'utente sta modificando)
-  if (currentBookingStart && currentBookingEnd) {
-    // Normalizza anche currentBooking per confronto
-    const currentStart = new Date(currentBookingStart);
-    currentStart.setHours(0, 0, 0, 0);
-    const currentEnd = new Date(currentBookingEnd);
-    currentEnd.setHours(0, 0, 0, 0);
-    
-    const isSameStart = 
-      start.getFullYear() === currentStart.getFullYear() &&
-      start.getMonth() === currentStart.getMonth() &&
-      start.getDate() === currentStart.getDate();
-    
-    const isSameEnd = 
-      end.getFullYear() === currentEnd.getFullYear() &&
-      end.getMonth() === currentEnd.getMonth() &&
-      end.getDate() === currentEnd.getDate();
-    
-    if (isSameStart && isSameEnd) {
-      console.log('✅ Escludo (è la prenotazione corrente)');
-      return;
-    }
-  }
-  
-  console.log('❌ Aggiungo come disabilitata');
-  
-  // Aggiungi tutte le date tra start e end
-  const current = new Date(start);
-  while (current <= end) {
-    allDisabledDates.push(new Date(current));
-    current.setDate(current.getDate() + 1);
-  }
-});
+    bookings.forEach((b: { start_date: string; end_date: string }) => {
+      const start = new Date(b.start_date);
+      const end = new Date(b.end_date);
+      
+      console.log('🔵 Controllo prenotazione:', { start, end });
+      
+      // Aggiungi tutte le date tra start e end
+      const current = new Date(start);
+      while (current <= end) {
+        allDisabledDates.push(new Date(current));
+        current.setDate(current.getDate() + 1);
+      }
+    });
     
     console.log('🟢 Date disabilitate totali:', allDisabledDates.length);
     setModifyDisabledDates(allDisabledDates);
