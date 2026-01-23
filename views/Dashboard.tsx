@@ -288,8 +288,6 @@ const [profileData, setProfileData] = useState(() => {
 
 // ✅ Sincronizza profileData quando user cambia
   useEffect(() => {
-    console.log("🔍 Dashboard - user.userType:", (user as any).userType);
-    console.log("🔍 Dashboard - user completo:", user);
     
    setProfileData({
   firstName: (user as any).firstName || (user.name ? user.name.split(' ')[0] : '') || '',
@@ -735,12 +733,8 @@ const [hubberListings, setHubberListings] = useState<Listing[]>([]);
   // ✅ CARICA STATISTICHE HUBBER
   useEffect(() => {
     const loadHubberStats = async () => {
-      console.log('🔄 loadHubberStats chiamata - activeMode:', activeMode, 'user.id:', user.id);
-      console.log('📦 hubberBookings.length:', hubberBookings.length);
-      console.log('📦 hubberBookings:', hubberBookings);
       
       if (activeMode !== 'hubber' || !user.id) {
-        console.log('❌ loadHubberStats saltata - activeMode:', activeMode, 'user.id:', user.id);
         return;
       }
 
@@ -772,8 +766,6 @@ const [hubberListings, setHubberListings] = useState<Listing[]>([]);
           })
           .reduce((sum, b) => sum + (b.netEarnings || b.totalPrice || 0), 0);
 
-        console.log('💰 monthlyEarnings calcolato:', monthlyEarnings);
-
         // Storico guadagni ultimi 4 mesi
         const earningsHistory: { name: string; value: number }[] = [];
         const monthNames = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
@@ -794,8 +786,6 @@ const [hubberListings, setHubberListings] = useState<Listing[]>([]);
             value: Math.round(monthEarnings * 100) / 100,
           });
         }
-
-        console.log('📊 earningsHistory:', earningsHistory);
 
         // Aggiorna lo state
         setHubberStats({
@@ -836,7 +826,7 @@ const [hubberListings, setHubberListings] = useState<Listing[]>([]);
 
         if (!error && data) {
           setRealHubberBalance(data.hubber_balance || 0);
-          console.log('💰 Saldo hubber caricato:', data.hubber_balance);
+          
         }
       } catch (err) {
         console.error('Errore caricamento saldo hubber:', err);
@@ -1105,7 +1095,7 @@ useEffect(() => {
       }));
       
       setRecentlyViewed(formatted);
-      console.log('✅ Caricati annunci visti di recente:', formatted.length);
+      
     } catch (err) {
       console.error('Errore caricamento annunci visti:', err);
       setRecentlyViewed([]);
@@ -1132,7 +1122,7 @@ useEffect(() => {
       const invoiceType = activeMode === 'hubber' ? 'hubber' : 'renter';
       const invoices = await api.admin.getInvoicesForUser(user.id, invoiceType);
       setUserInvoices(invoices);
-      console.log("📄 Fatture caricate per", invoiceType, ":", invoices.length);
+      
     } catch (err) {
       console.error("Errore caricamento fatture:", err);
       setUserInvoices([]);
@@ -1220,7 +1210,7 @@ const handleRequestAction = (id: string, action: 'accepted' | 'rejected') => {
         )
       );
     }
-    console.log('✅ Recensione inviata con successo');
+   
     closeReviewModal();
   };
 
@@ -1460,13 +1450,11 @@ const handleRemoveCalendar = async (calendarId: string): Promise<void> => {
         if (startStr) {
   // Forza UTC a mezzogiorno per evitare problemi timezone
   currentBookingStart = new Date(startStr + 'T12:00:00Z');
-  console.log('🔴 DASHBOARD - Data caricata:', { startStr, currentBookingStart });
   setNewStartDate(currentBookingStart);
 }
 if (endStr) {
   // Forza UTC a mezzogiorno per evitare problemi timezone
   currentBookingEnd = new Date(endStr + 'T12:00:00Z');
-  console.log('🔴 DASHBOARD - Data caricata:', { endStr, currentBookingEnd });
   setNewEndDate(currentBookingEnd);
 }
       }
@@ -1486,17 +1474,12 @@ try {
       .select('start_date, end_date, id')
       .eq('listing_id', listingId)
       .eq('status', 'confirmed');
-    
-    console.log('🟡 TUTTE le prenotazioni (senza filtro):', bookings?.length);
-    console.log('🔵 Prenotazione corrente ID:', booking.id);
-    console.log('🔵 Listing ID:', listingId);
+  
     if (bookings) {
-      bookings.forEach(b => console.log('📋 Prenotazione trovata:', b));
     }
     
     // Filtra manualmente
     const filteredBookings = bookings?.filter(b => b.id !== booking.id) || [];
-    console.log('🟡 Prenotazioni dopo filtro:', filteredBookings.length);
     
     if (!filteredBookings || filteredBookings.length === 0) {
       setModifyDisabledDates([]);
@@ -1508,7 +1491,6 @@ try {
   const start = new Date(b.start_date);
   const end = new Date(b.end_date);
   
-  console.log('🔵 Controllo prenotazione:', { start, end });
   
   // Aggiungi tutte le date tra start e end
   const current = new Date(start);
@@ -1525,7 +1507,6 @@ const { data: blocks } = await supabase
   .select('start_date, end_date')
   .eq('listing_id', listingId);
 
-console.log('🟠 Blocchi calendario caricati:', blocks?.length);
 
 if (blocks) {
   blocks.forEach((block: { start_date: string; end_date: string }) => {
@@ -1540,7 +1521,6 @@ if (blocks) {
   });
 }
 
-console.log('🟢 Date disabilitate totali:', allDisabledDates.length);
 setModifyDisabledDates(allDisabledDates);
   }
 } catch (err) {
@@ -1704,7 +1684,6 @@ const response = await fetch('/.netlify/functions/modify-booking-payment', {
 
 // Se richiede pagamento con carta
 if (result.requiresPayment && result.clientSecret) {
-  console.log('💳 Apertura pagamento Stripe per modifica');
   setModifyStripeClientSecret(result.clientSecret);
   setIsModifying(false);
   return;
@@ -1969,7 +1948,6 @@ const handleAvatarChange: React.ChangeEventHandler<HTMLInputElement> = async (
 
     // 4. Aggiorna l'anteprima con l'URL definitivo
     setAvatarPreview(publicUrl);
-    console.log('✅ Avatar aggiornato con successo:', publicUrl);
 
   } catch (err) {
     console.error('Errore durante upload avatar:', err);
@@ -2008,9 +1986,7 @@ const handleProfileSave = async (e: React.FormEvent) => {
       
     if (error) {
       console.error('❌ Errore UPDATE users:', error);
-    } else {
-      console.log('✅ Profilo salvato su Supabase! Bio:', editProfileForm.bio);
-    }
+    } else
 
     if (onUpdateProfile) {
       await onUpdateProfile({
@@ -2090,7 +2066,6 @@ const handleProfileSave = async (e: React.FormEvent) => {
       setOtpSentTo(formattedPhone);
       setPhoneStep('otp');
       
-      console.log('📱 Codice WhatsApp inviato a:', formattedPhone);
     } catch (err: any) {
       console.error('Errore invio OTP:', err);
       setPhoneError(err.message || 'Errore nell\'invio del codice. Riprova.');
@@ -2143,8 +2118,6 @@ setProfileData(prev => ({
 }));
 
 setPhoneStep('success');
-
-console.log('✅ Telefono verificato:', otpSentTo);
 
 // Chiudi modale dopo 2 secondi SENZA ricaricare la pagina
 setTimeout(() => {
@@ -2213,7 +2186,6 @@ setTimeout(() => {
       setEmailOtpSentTo(emailInput);
       setEmailStep('otp');
       
-      console.log('📧 OTP inviato a:', emailInput);
     } catch (err) {
       console.error('Errore invio OTP email:', err);
       setEmailError('Errore nell\'invio del codice. Riprova.');
@@ -2252,8 +2224,6 @@ setTimeout(() => {
         .eq('id', user.id);
 
       setEmailStep('success');
-      
-      console.log('✅ Email verificata:', emailOtpSentTo);
 
       // Chiudi modale dopo 2 secondi
       setTimeout(() => {
@@ -2499,7 +2469,6 @@ const renderSecurityNew = () => (
         setExpandedHubberInvoicesMonths(newExpanded);
       }}
       onDownloadInvoice={(invoiceId) => {
-        console.log('Download invoice:', invoiceId);
       }}
       getTransactionNumber={getTransactionNumber}
       onViewRenterProfile={onViewRenterProfile}
@@ -2699,7 +2668,6 @@ const renderHubberCalendar = () => {
     userId={user.id}
     userType={activeMode}
     onViewProfile={(profile) => {
-      console.log('View profile:', profile);
     }}
     onPendingCountChange={(count) => {
       setPendingReviewsCount(count);
@@ -2839,7 +2807,6 @@ const renderHubberCalendar = () => {
     userId={user.id}
     userType={activeMode}
     onViewProfile={(profile) => {
-      console.log('View profile:', profile);
     }}
     onPendingCountChange={(count) => {
       setPendingReviewsCount(count);
