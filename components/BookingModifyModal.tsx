@@ -99,8 +99,6 @@ useEffect(() => {
         .eq('status', 'confirmed')
         .neq('id', booking.id);
 
-        console.log('🟡 BOOKINGMODIFYMODAL - Prenotazioni caricate:', bookings?.length);
-
       if (!bookings) return;
 
       // Converti in array di Date
@@ -226,13 +224,6 @@ setModifyDisabledDates(disabled);
   if (!endDateToUse) {
     throw new Error('Date non valide');
   }
-
-  console.log('📤 DATE PRIMA DI INVIARE:', {
-    newStartDate: newStartDate,
-    endDateToUse: endDateToUse,
-    startFormatted: `${newStartDate.getFullYear()}-${String(newStartDate.getMonth() + 1).padStart(2, '0')}-${String(newStartDate.getDate()).padStart(2, '0')}`,
-    endFormatted: `${endDateToUse.getFullYear()}-${String(endDateToUse.getMonth() + 1).padStart(2, '0')}-${String(endDateToUse.getDate()).padStart(2, '0')}`,
-  });
 
   const response = await fetch('/.netlify/functions/modify-booking-payment', {
     method: 'POST',
