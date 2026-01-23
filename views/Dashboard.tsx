@@ -394,6 +394,8 @@ const [profileData, setProfileData] = useState(() => {
   // ✅ NUOVO: filtri temporali pagamenti renter
   const [renterPaymentsTimeFilter, setRenterPaymentsTimeFilter] = useState<'current' | 'historical'>('current');
   const [expandedRenterPaymentsMonths, setExpandedRenterPaymentsMonths] = useState<Set<string>>(new Set());
+  const [renterInvoicesTimeFilter, setRenterInvoicesTimeFilter] = useState<'current' | 'historical'>('current');
+  const [expandedRenterInvoicesMonths, setExpandedRenterInvoicesMonths] = useState<Set<string>>(new Set());
   const [bookingDetailData, setBookingDetailData] = useState<{
     listingPrice: number;
     priceUnit: string;
@@ -2695,6 +2697,19 @@ const renderHubberCalendar = () => {
       setExpandedRenterPaymentsMonths(newExpanded);
     }}
     getTransactionNumber={getTransactionNumber}
+    renterInvoicesTimeFilter={renterInvoicesTimeFilter}
+    expandedRenterInvoicesMonths={expandedRenterInvoicesMonths}
+    onInvoicesTimeFilterChange={setRenterInvoicesTimeFilter}
+    onToggleInvoiceMonth={(monthKey) => {
+      const newExpanded = new Set(expandedRenterInvoicesMonths);
+      if (newExpanded.has(monthKey)) {
+        newExpanded.delete(monthKey);
+      } else {
+        newExpanded.add(monthKey);
+      }
+      setExpandedRenterInvoicesMonths(newExpanded);
+    }}
+    loadingInvoices={loadingInvoices}
   />
 );
 
