@@ -5156,9 +5156,41 @@ getAllRefunds: async () => {
         default_vat_rate: 22
       };
       
-      const prefix = invoiceData.invoiceType === 'renter' ? s.renter_series_prefix : s.hubber_series_prefix;
-      const nextNum = invoiceData.invoiceType === 'renter' ? s.renter_next_number : s.hubber_next_number;
-      const invoiceNumber = `${prefix}-${s.current_year}-${String(nextNum).padStart(4, '0')}`;
+    const prefix = invoiceData.invoiceType === 'renter' ? s.renter_series_prefix : s.hubber_series_prefix;
+const currentYear = new Date().getFullYear();
+
+// ✅ RESET contatori se è cambiato l'anno
+let nextNum: number;
+const updateField = invoiceData.invoiceType === 'renter' ? 'renter_next_number' : 'hubber_next_number';
+
+if (currentYear !== s.current_year) {
+  console.log(`🔄 Nuovo anno rilevato: ${currentYear}. Reset contatori fatture.`);
+  nextNum = 1;
+  
+  // Reset anno e entrambi i contatori atomicamente
+  await supabase
+    .from('invoice_settings')
+    .update({ 
+      current_year: currentYear,
+      renter_next_number: invoiceData.invoiceType === 'renter' ? 2 : 1,
+      hubber_next_number: invoiceData.invoiceType === 'hubber' ? 2 : 1
+    })
+    .eq('id', s.id);
+  
+  s.current_year = currentYear;
+} else {
+  // Incrementa atomicamente il contatore
+  const { data: updated } = await supabase
+    .from('invoice_settings')
+    .update({ [updateField]: s[updateField] + 1 })
+    .eq('id', s.id)
+    .select()
+    .single();
+  
+  nextNum = s[updateField]; // Usa il valore PRIMA dell'incremento
+}
+
+const invoiceNumber = `${prefix}-${currentYear}-${String(nextNum).padStart(4, '0')}`;
       
       const vatRate = invoiceData.vatRate || s.default_vat_rate || 22;
       const vatAmount = (invoiceData.subtotal * vatRate) / 100;
@@ -5201,13 +5233,6 @@ issued_at: new Date().toISOString()
         console.error('Errore creazione fattura:', error);
         throw error;
       }
-      
-      // Aggiorna contatore
-      const updateField = invoiceData.invoiceType === 'renter' ? 'renter_next_number' : 'hubber_next_number';
-      await supabase
-        .from('invoice_settings')
-        .update({ [updateField]: nextNum + 1 })
-        .eq('id', s.id);
       
       return data;
     },
