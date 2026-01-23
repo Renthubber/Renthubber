@@ -859,25 +859,26 @@ const toggleInvoiceMonth = (monthKey: string) => {
   </div>
 
   <div className="overflow-x-auto">
-    <table className="w-full">
-      <thead className="bg-gray-50 border-b border-gray-200">
+    <table className="w-full text-left text-sm text-gray-600">
+      <thead className="bg-gray-50 text-gray-900 font-semibold border-b border-gray-100">
         <tr>
-          <th className="p-4 text-left text-xs font-bold text-gray-600 uppercase">Data</th>
-          <th className="p-4 text-left text-xs font-bold text-gray-600 uppercase">N° Fattura</th>
-          <th className="p-4 text-left text-xs font-bold text-gray-600 uppercase">Periodo</th>
-          <th className="p-4 text-left text-xs font-bold text-gray-600 uppercase">Importo</th>
-          <th className="p-4 text-left text-xs font-bold text-gray-600 uppercase">Stato</th>
-          <th className="p-4 text-right text-xs font-bold text-gray-600 uppercase">Download</th>
+          <th className="p-4">Data</th>
+          <th className="p-4">N° Fattura</th>
+          <th className="p-4">Descrizione</th>
+          <th className="p-4">Importo</th>
+          <th className="p-4">Stato</th>
+          <th className="p-4 text-right">Download</th>
         </tr>
       </thead>
       <tbody>
         {(() => {
-          const monthNames = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+          const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+                             'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
           
           if (renterInvoicesTimeFilter === 'current') {
             return filteredInvoices.map((inv) => (
               <tr key={inv.id} className="border-b border-gray-50 hover:bg-gray-50">
-                <td className="p-4 text-xs">
+                <td className="p-4 text-xs whitespace-nowrap">
                   {new Date(inv.created_at).toLocaleDateString('it-IT', {
                     day: '2-digit',
                     month: 'short',
@@ -888,10 +889,14 @@ const toggleInvoiceMonth = (monthKey: string) => {
                   {inv.invoice_number}
                 </td>
                 <td className="p-4">
-                  {inv.period_start && inv.period_end 
-                    ? `${new Date(inv.period_start).toLocaleDateString('it-IT')} - ${new Date(inv.period_end).toLocaleDateString('it-IT')}`
-                    : inv.description?.slice(0, 40) || '—'
-                  }
+                  <div>
+                    <p className="font-medium text-gray-900">{inv.listing_title || 'Commissione servizio'}</p>
+                    {inv.period_start && inv.period_end && (
+                      <p className="text-xs text-gray-500">
+                        {new Date(inv.period_start).toLocaleDateString('it-IT')} - {new Date(inv.period_end).toLocaleDateString('it-IT')}
+                      </p>
+                    )}
+                  </div>
                 </td>
                 <td className="p-4 font-bold">
                   €{Number(inv.total || 0).toFixed(2)}
@@ -899,7 +904,7 @@ const toggleInvoiceMonth = (monthKey: string) => {
                 <td className="p-4">
                   <span className={`flex items-center text-xs font-bold uppercase ${
                     inv.status === 'paid' ? 'text-green-600' :
-                    inv.status === 'issued' ? 'text-blue-600' :
+                    inv.status === 'issued' ? 'text-green-600' :
                     inv.status === 'sent' ? 'text-yellow-600' :
                     'text-gray-500'
                   }`}>
@@ -931,7 +936,15 @@ const toggleInvoiceMonth = (monthKey: string) => {
             // Raggruppa per anno e mese
             return Object.keys(groupedInvoicesByYear).sort().reverse().map((year) => (
               <React.Fragment key={year}>
-                {Object.keys(groupedInvoicesByYear[year]).map((monthKey) => {
+                <tr className="bg-gray-100 border-b-2 border-gray-300">
+                  <td colSpan={6} className="p-4">
+                    <span className="text-base font-bold text-gray-900">
+                      📆 {year}
+                    </span>
+                  </td>
+                </tr>
+                
+                {Object.keys(groupedInvoicesByYear[year]).sort().reverse().map((monthKey) => {
                   const monthInvoices = groupedInvoicesByYear[year][monthKey];
                   const [, month] = monthKey.split('-');
                   const monthName = monthNames[parseInt(month) - 1];
@@ -940,14 +953,14 @@ const toggleInvoiceMonth = (monthKey: string) => {
                   return (
                     <React.Fragment key={monthKey}>
                       <tr 
-                        className="bg-gray-50 border-b-2 border-gray-200 hover:bg-gray-100 cursor-pointer"
+                        className="bg-gray-50 border-b border-gray-200 hover:bg-gray-100 cursor-pointer"
                         onClick={() => toggleInvoiceMonth(monthKey)}
                       >
                         <td colSpan={6} className="p-3">
                           <div className="flex items-center justify-between">
                             <div>
                               <span className="text-sm font-bold text-gray-800">
-                                {isExpanded ? '▼' : '▶'} {monthName} {year}
+                                {isExpanded ? '▼' : '▶'} {monthName}
                               </span>
                               <span className="ml-2 text-xs text-gray-500">
                                 ({monthInvoices.length} fatture)
@@ -966,7 +979,7 @@ const toggleInvoiceMonth = (monthKey: string) => {
                           onClick={(e) => e.stopPropagation()}
                           className="border-b border-gray-50 hover:bg-gray-50"
                         >
-                          <td className="p-4 text-xs">
+                          <td className="p-4 text-xs whitespace-nowrap">
                             {new Date(inv.created_at).toLocaleDateString('it-IT', {
                               day: '2-digit',
                               month: 'short',
@@ -977,10 +990,14 @@ const toggleInvoiceMonth = (monthKey: string) => {
                             {inv.invoice_number}
                           </td>
                           <td className="p-4">
-                            {inv.period_start && inv.period_end 
-                              ? `${new Date(inv.period_start).toLocaleDateString('it-IT')} - ${new Date(inv.period_end).toLocaleDateString('it-IT')}`
-                              : inv.description?.slice(0, 40) || '—'
-                            }
+                            <div>
+                              <p className="font-medium text-gray-900">{inv.listing_title || 'Commissione servizio'}</p>
+                              {inv.period_start && inv.period_end && (
+                                <p className="text-xs text-gray-500">
+                                  {new Date(inv.period_start).toLocaleDateString('it-IT')} - {new Date(inv.period_end).toLocaleDateString('it-IT')}
+                                </p>
+                              )}
+                            </div>
                           </td>
                           <td className="p-4 font-bold">
                             €{Number(inv.total || 0).toFixed(2)}
@@ -988,7 +1005,7 @@ const toggleInvoiceMonth = (monthKey: string) => {
                           <td className="p-4">
                             <span className={`flex items-center text-xs font-bold uppercase ${
                               inv.status === 'paid' ? 'text-green-600' :
-                              inv.status === 'issued' ? 'text-blue-600' :
+                              inv.status === 'issued' ? 'text-green-600' :
                               inv.status === 'sent' ? 'text-yellow-600' :
                               'text-gray-500'
                             }`}>
@@ -1057,7 +1074,7 @@ const toggleInvoiceMonth = (monthKey: string) => {
                       onClick={(e) => e.stopPropagation()}
                       className="border-b border-gray-50 hover:bg-gray-50"
                     >
-                      <td className="p-4 text-xs">
+                      <td className="p-4 text-xs whitespace-nowrap">
                         {new Date(inv.created_at).toLocaleDateString('it-IT', {
                           day: '2-digit',
                           month: 'short',
@@ -1068,10 +1085,14 @@ const toggleInvoiceMonth = (monthKey: string) => {
                         {inv.invoice_number}
                       </td>
                       <td className="p-4">
-                        {inv.period_start && inv.period_end 
-                          ? `${new Date(inv.period_start).toLocaleDateString('it-IT')} - ${new Date(inv.period_end).toLocaleDateString('it-IT')}`
-                          : inv.description?.slice(0, 40) || '—'
-                        }
+                        <div>
+                          <p className="font-medium text-gray-900">{inv.listing_title || 'Commissione servizio'}</p>
+                          {inv.period_start && inv.period_end && (
+                            <p className="text-xs text-gray-500">
+                              {new Date(inv.period_start).toLocaleDateString('it-IT')} - {new Date(inv.period_end).toLocaleDateString('it-IT')}
+                            </p>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4 font-bold">
                         €{Number(inv.total || 0).toFixed(2)}
@@ -1079,7 +1100,7 @@ const toggleInvoiceMonth = (monthKey: string) => {
                       <td className="p-4">
                         <span className={`flex items-center text-xs font-bold uppercase ${
                           inv.status === 'paid' ? 'text-green-600' :
-                          inv.status === 'issued' ? 'text-blue-600' :
+                          inv.status === 'issued' ? 'text-green-600' :
                           inv.status === 'sent' ? 'text-yellow-600' :
                           'text-gray-500'
                         }`}>
