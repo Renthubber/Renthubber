@@ -3904,7 +3904,8 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
     const actualHubberCommissionPct = isSuperHubber ? superHubberCommissionPct : hubberCommissionPct;
 
     // ✅ PREZZO BASE = prezzo del listing (CORRETTO)
-    const prezzoBase = Number(booking.listing?.price) || 0;
+    // Calcola il prezzo base dall'amount_total togliendo le commissioni del renter
+    const prezzoBase = Number(booking.amount_total) - Number(booking.service_fee || 0);
     const hubberNet = Number(booking.hubber_net_amount) || 0;
 
     console.log("🧾 Calcoli:", { prezzoBase, hubberNet, isSuperHubber, actualHubberCommissionPct });
