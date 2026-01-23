@@ -12,6 +12,11 @@ interface PagamentiFattureRenterProps {
   onToggleMonth: (monthKey: string) => void;
   getTransactionNumber: (bookingId: string, isHubber: boolean) => string;
   userInvoices: any[];
+  renterInvoicesTimeFilter: TimeFilter;
+  expandedRenterInvoicesMonths: Set<string>;
+  onInvoicesTimeFilterChange: (filter: TimeFilter) => void;
+  onToggleInvoiceMonth: (monthKey: string) => void;
+  loadingInvoices: boolean;
 }
 
 export const PagamentiFattureRenter: React.FC<PagamentiFattureRenterProps> = ({
@@ -23,9 +28,14 @@ export const PagamentiFattureRenter: React.FC<PagamentiFattureRenterProps> = ({
   onTimeFilterChange,
   onToggleMonth,
   getTransactionNumber,
+  renterInvoicesTimeFilter,
+  expandedRenterInvoicesMonths,
+  onInvoicesTimeFilterChange,
+  onToggleInvoiceMonth,
+  loadingInvoices,
 }) => {
-  
-    const today = new Date();
+
+      const today = new Date();
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
       
@@ -91,6 +101,53 @@ const togglePaymentMonth = (monthKey: string) => {
   onToggleMonth(monthKey);
 };
     
+     // ✅ FILTRO FATTURE PER MESE CORRENTE O STORICO
+let filteredInvoices = userInvoices.filter(inv => inv.invoice_type === 'renter');
+if (renterInvoicesTimeFilter === 'current') {
+  filteredInvoices = filteredInvoices.filter(inv => {
+    const invoiceDate = new Date(inv.created_at);
+    return invoiceDate.getMonth() === currentMonth && invoiceDate.getFullYear() === currentYear;
+  });
+}
+
+// ✅ RAGGRUPPA FATTURE PER ANNO/MESE SE "STORICO"
+const groupedInvoices: Record<string, typeof filteredInvoices> = {};
+const groupedInvoicesByYear: Record<string, Record<string, typeof filteredInvoices>> = {};
+
+if (renterInvoicesTimeFilter === 'historical') {
+  filteredInvoices.forEach(inv => {
+    const invoiceDate = new Date(inv.created_at);
+    const year = invoiceDate.getFullYear();
+    const monthKey = `${year}-${String(invoiceDate.getMonth() + 1).padStart(2, '0')}`;
+    
+    if (!groupedInvoices[monthKey]) {
+      groupedInvoices[monthKey] = [];
+    }
+    groupedInvoices[monthKey].push(inv);
+    
+    if (!groupedInvoicesByYear[year]) {
+      groupedInvoicesByYear[year] = {};
+    }
+    if (!groupedInvoicesByYear[year][monthKey]) {
+      groupedInvoicesByYear[year][monthKey] = [];
+    }
+    groupedInvoicesByYear[year][monthKey].push(inv);
+  });
+  
+  const sortedKeys = Object.keys(groupedInvoices).sort().reverse();
+  const sortedGrouped: Record<string, typeof filteredInvoices> = {};
+  sortedKeys.forEach(key => {
+    sortedGrouped[key] = groupedInvoices[key];
+  });
+  Object.assign(groupedInvoices, sortedGrouped);
+}
+
+const hasMultipleInvoiceYears = Object.keys(groupedInvoicesByYear).length > 1;
+
+const toggleInvoiceMonth = (monthKey: string) => {
+  onToggleInvoiceMonth(monthKey);
+};
+
       return (
         <div className="space-y-8 animate-in fade-in duration-300">
 
@@ -761,7 +818,313 @@ const togglePaymentMonth = (monthKey: string) => {
               </table>
             </div>
           </div>
-    
+          
+          {/* ✅ SEZIONE FATTURE COMMISSIONI RENTHUBBER */}
+<div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+  <div className="p-6 border-b border-gray-100">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+      <div>
+        <h3 className="font-bold text-gray-900 flex items-center">
+          <FileText className="w-5 h-5 mr-2 text-brand" /> Fatture Commissioni RentHubber
+        </h3>
+        <p className="text-gray-500 text-sm mt-1">
+          Fatture relative alle commissioni di servizio applicate da RentHubber.
+        </p>
+      </div>
+      
+      {/* Toggle temporale */}
+      <div className="inline-flex bg-white rounded-xl border border-gray-200 p-1 text-xs justify-center sm:justify-start">
+        <button
+          onClick={() => onInvoicesTimeFilterChange('current')}
+          className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+            renterInvoicesTimeFilter === 'current'
+              ? 'bg-brand text-white shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          🔵 Mese corrente
+        </button>
+        <button
+          onClick={() => onInvoicesTimeFilterChange('historical')}
+          className={`px-4 py-1.5 rounded-lg font-medium transition-all ${
+            renterInvoicesTimeFilter === 'historical'
+              ? 'bg-brand text-white shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          📅 Storico
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div className="overflow-x-auto">
+    <table className="w-full">
+      <thead className="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th className="p-4 text-left text-xs font-bold text-gray-600 uppercase">Data</th>
+          <th className="p-4 text-left text-xs font-bold text-gray-600 uppercase">N° Fattura</th>
+          <th className="p-4 text-left text-xs font-bold text-gray-600 uppercase">Periodo</th>
+          <th className="p-4 text-left text-xs font-bold text-gray-600 uppercase">Importo</th>
+          <th className="p-4 text-left text-xs font-bold text-gray-600 uppercase">Stato</th>
+          <th className="p-4 text-right text-xs font-bold text-gray-600 uppercase">Download</th>
+        </tr>
+      </thead>
+      <tbody>
+        {(() => {
+          const monthNames = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+          
+          if (renterInvoicesTimeFilter === 'current') {
+            return filteredInvoices.map((inv) => (
+              <tr key={inv.id} className="border-b border-gray-50 hover:bg-gray-50">
+                <td className="p-4 text-xs">
+                  {new Date(inv.created_at).toLocaleDateString('it-IT', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                  })}
+                </td>
+                <td className="p-4 font-mono font-medium text-gray-900">
+                  {inv.invoice_number}
+                </td>
+                <td className="p-4">
+                  {inv.period_start && inv.period_end 
+                    ? `${new Date(inv.period_start).toLocaleDateString('it-IT')} - ${new Date(inv.period_end).toLocaleDateString('it-IT')}`
+                    : inv.description?.slice(0, 40) || '—'
+                  }
+                </td>
+                <td className="p-4 font-bold">
+                  €{Number(inv.total || 0).toFixed(2)}
+                </td>
+                <td className="p-4">
+                  <span className={`flex items-center text-xs font-bold uppercase ${
+                    inv.status === 'paid' ? 'text-green-600' :
+                    inv.status === 'issued' ? 'text-blue-600' :
+                    inv.status === 'sent' ? 'text-yellow-600' :
+                    'text-gray-500'
+                  }`}>
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    {inv.status === 'paid' ? 'Pagata' :
+                     inv.status === 'issued' ? 'Emessa' :
+                     inv.status === 'sent' ? 'Inviata' :
+                     inv.status === 'draft' ? 'Bozza' : inv.status}
+                  </span>
+                </td>
+                <td className="p-4 text-right">
+                  <button
+                    className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
+                    title="Scarica PDF"
+                    onClick={() => {
+                      if (inv.pdf_url) {
+                        window.open(inv.pdf_url, '_blank');
+                      } else {
+                        alert(`PDF non disponibile per ${inv.invoice_number}`);
+                      }
+                    }}
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+            ));
+          } else if (hasMultipleInvoiceYears) {
+            // Raggruppa per anno e mese
+            return Object.keys(groupedInvoicesByYear).sort().reverse().map((year) => (
+              <React.Fragment key={year}>
+                {Object.keys(groupedInvoicesByYear[year]).map((monthKey) => {
+                  const monthInvoices = groupedInvoicesByYear[year][monthKey];
+                  const [, month] = monthKey.split('-');
+                  const monthName = monthNames[parseInt(month) - 1];
+                  const isExpanded = expandedRenterInvoicesMonths.has(monthKey);
+                  
+                  return (
+                    <React.Fragment key={monthKey}>
+                      <tr 
+                        className="bg-gray-50 border-b-2 border-gray-200 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => toggleInvoiceMonth(monthKey)}
+                      >
+                        <td colSpan={6} className="p-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-sm font-bold text-gray-800">
+                                {isExpanded ? '▼' : '▶'} {monthName} {year}
+                              </span>
+                              <span className="ml-2 text-xs text-gray-500">
+                                ({monthInvoices.length} fatture)
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-400">
+                              {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                      
+                      {isExpanded && monthInvoices.map((inv) => (
+                        <tr
+                          key={inv.id}
+                          onClick={(e) => e.stopPropagation()}
+                          className="border-b border-gray-50 hover:bg-gray-50"
+                        >
+                          <td className="p-4 text-xs">
+                            {new Date(inv.created_at).toLocaleDateString('it-IT', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </td>
+                          <td className="p-4 font-mono font-medium text-gray-900">
+                            {inv.invoice_number}
+                          </td>
+                          <td className="p-4">
+                            {inv.period_start && inv.period_end 
+                              ? `${new Date(inv.period_start).toLocaleDateString('it-IT')} - ${new Date(inv.period_end).toLocaleDateString('it-IT')}`
+                              : inv.description?.slice(0, 40) || '—'
+                            }
+                          </td>
+                          <td className="p-4 font-bold">
+                            €{Number(inv.total || 0).toFixed(2)}
+                          </td>
+                          <td className="p-4">
+                            <span className={`flex items-center text-xs font-bold uppercase ${
+                              inv.status === 'paid' ? 'text-green-600' :
+                              inv.status === 'issued' ? 'text-blue-600' :
+                              inv.status === 'sent' ? 'text-yellow-600' :
+                              'text-gray-500'
+                            }`}>
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              {inv.status === 'paid' ? 'Pagata' :
+                               inv.status === 'issued' ? 'Emessa' :
+                               inv.status === 'sent' ? 'Inviata' :
+                               inv.status === 'draft' ? 'Bozza' : inv.status}
+                            </span>
+                          </td>
+                          <td className="p-4 text-right">
+                            <button
+                              className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
+                              title="Scarica PDF"
+                              onClick={() => {
+                                if (inv.pdf_url) {
+                                  window.open(inv.pdf_url, '_blank');
+                                } else {
+                                  alert(`PDF non disponibile per ${inv.invoice_number}`);
+                                }
+                              }}
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
+              </React.Fragment>
+            ));
+          } else {
+            return Object.keys(groupedInvoices).map((monthKey) => {
+              const monthInvoices = groupedInvoices[monthKey];
+              const [year, month] = monthKey.split('-');
+              const monthName = monthNames[parseInt(month) - 1];
+              const isExpanded = expandedRenterInvoicesMonths.has(monthKey);
+              
+              return (
+                <React.Fragment key={monthKey}>
+                  <tr 
+                    className="bg-gray-50 border-b-2 border-gray-200 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => toggleInvoiceMonth(monthKey)}
+                  >
+                    <td colSpan={6} className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-sm font-bold text-gray-800">
+                            {isExpanded ? '▼' : '▶'} {monthName} {year}
+                          </span>
+                          <span className="ml-2 text-xs text-gray-500">
+                            ({monthInvoices.length} fatture)
+                          </span>
+                        </div>
+                        <span className="text-xs text-gray-400">
+                          {isExpanded ? 'Clicca per chiudere' : 'Clicca per aprire'}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  
+                  {isExpanded && monthInvoices.map((inv) => (
+                    <tr
+                      key={inv.id}
+                      onClick={(e) => e.stopPropagation()}
+                      className="border-b border-gray-50 hover:bg-gray-50"
+                    >
+                      <td className="p-4 text-xs">
+                        {new Date(inv.created_at).toLocaleDateString('it-IT', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </td>
+                      <td className="p-4 font-mono font-medium text-gray-900">
+                        {inv.invoice_number}
+                      </td>
+                      <td className="p-4">
+                        {inv.period_start && inv.period_end 
+                          ? `${new Date(inv.period_start).toLocaleDateString('it-IT')} - ${new Date(inv.period_end).toLocaleDateString('it-IT')}`
+                          : inv.description?.slice(0, 40) || '—'
+                        }
+                      </td>
+                      <td className="p-4 font-bold">
+                        €{Number(inv.total || 0).toFixed(2)}
+                      </td>
+                      <td className="p-4">
+                        <span className={`flex items-center text-xs font-bold uppercase ${
+                          inv.status === 'paid' ? 'text-green-600' :
+                          inv.status === 'issued' ? 'text-blue-600' :
+                          inv.status === 'sent' ? 'text-yellow-600' :
+                          'text-gray-500'
+                        }`}>
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          {inv.status === 'paid' ? 'Pagata' :
+                           inv.status === 'issued' ? 'Emessa' :
+                           inv.status === 'sent' ? 'Inviata' :
+                           inv.status === 'draft' ? 'Bozza' : inv.status}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <button
+                          className="text-brand hover:bg-brand/10 p-2 rounded-lg transition-colors"
+                          title="Scarica PDF"
+                          onClick={() => {
+                            if (inv.pdf_url) {
+                              window.open(inv.pdf_url, '_blank');
+                            } else {
+                              alert(`PDF non disponibile per ${inv.invoice_number}`);
+                            }
+                          }}
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </React.Fragment>
+              );
+            });
+          }
+        })()}
+
+        {filteredInvoices.length === 0 && (
+          <tr>
+            <td colSpan={6} className="p-8 text-center text-gray-400">
+              {loadingInvoices ? 'Caricamento fatture...' : 'Nessuna fattura disponibile.'}
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
+
           {/* Info box */}
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
             <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
