@@ -107,9 +107,9 @@ bookings.forEach((b: any) => {
   const start = new Date(b.start_date);
   const end = new Date(b.end_date);
   
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    disabled.push(new Date(d));
-  }
+ for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+  disabled.push(new Date(d));
+}
 });
 
 // Carica anche i blocchi del calendario
@@ -125,9 +125,9 @@ if (blocks) {
     const start = new Date(block.start_date);
     const end = new Date(block.end_date);
     
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      disabled.push(new Date(d));
-    }
+    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+  disabled.push(new Date(d));
+}
   });
 }
 
