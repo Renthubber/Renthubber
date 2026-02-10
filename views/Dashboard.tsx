@@ -1496,7 +1496,7 @@ try {
   
   // Aggiungi tutte le date tra start e end
   const current = new Date(start);
-  while (current <= end) {
+  while (current < end) {
     allDisabledDates.push(new Date(current));
     current.setDate(current.getDate() + 1);
   }
@@ -1516,7 +1516,7 @@ if (blocks) {
     const end = new Date(block.end_date);
     
     const current = new Date(start);
-    while (current <= end) {
+    while (current < end) {
       allDisabledDates.push(new Date(current));
       current.setDate(current.getDate() + 1);
     }

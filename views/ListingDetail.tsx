@@ -335,7 +335,7 @@ useEffect(() => {
         
         // Aggiungi tutte le date tra start e end (incluse)
         const current = new Date(start);
-        while (current <= end) {
+        while (current < end) {
           allBookedDates.push(new Date(current));
           current.setDate(current.getDate() + 1);
         }
@@ -366,7 +366,7 @@ useEffect(() => {
         
         // Aggiungi tutte le date tra start e end (incluse)
         const current = new Date(start);
-        while (current <= end) {
+        while (current < end) {
           allBlockedDates.push(new Date(current));
           current.setDate(current.getDate() + 1);
         }
