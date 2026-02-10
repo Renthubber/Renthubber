@@ -41,7 +41,6 @@ export const handler: Handler = async (event, context) => {
  try {
   // Crea client Supabase
   const SUPABASE_URL = process.env.VITE_SUPABASE_URL!;
-  const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY!;
   const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
   
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -90,8 +89,8 @@ export const handler: Handler = async (event, context) => {
       `${SUPABASE_URL}/rest/v1/bookings?id=eq.${bookingId}&renter_id=eq.${renterId}&select=*,listings(price,price_unit,title,host_id)`,
       {
         headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey': SUPABASE_SERVICE_KEY,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
         },
       }
     );
@@ -217,8 +216,8 @@ const priceDifference = basePriceDiff + commissionDiff + fixedFeeDiff;
         {
           method: 'PATCH',
           headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -282,8 +281,8 @@ const priceDifference = basePriceDiff + commissionDiff + fixedFeeDiff;
           {
             method: 'PATCH',
             headers: {
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -303,8 +302,8 @@ const priceDifference = basePriceDiff + commissionDiff + fixedFeeDiff;
           {
             method: 'POST',
             headers: {
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -349,8 +348,8 @@ const priceDifference = basePriceDiff + commissionDiff + fixedFeeDiff;
         {
           method: 'PATCH',
           headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -441,8 +440,8 @@ if (priceDifference > 0.01) {  // Margine di tolleranza per arrotondamenti
         `${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${renterId}`,
         {
           headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
           },
         }
       );
@@ -478,8 +477,8 @@ if (priceDifference > 0.01) {  // Margine di tolleranza per arrotondamenti
         {
           method: 'PATCH',
           headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -507,8 +506,8 @@ const txResponse = await fetch(
   {
     method: 'POST',
     headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -539,8 +538,8 @@ if (!txResponse.ok) {
         `${SUPABASE_URL}/rest/v1/wallets?user_id=eq.${listing.host_id}`,
         {
           headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
           },
         }
       );
@@ -556,8 +555,8 @@ if (!txResponse.ok) {
           {
             method: 'PATCH',
             headers: {
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -573,8 +572,8 @@ if (!txResponse.ok) {
           {
             method: 'POST',
             headers: {
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -599,8 +598,8 @@ if (!txResponse.ok) {
         {
           method: 'PATCH',
           headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -631,8 +630,8 @@ try {
     {
       method: 'POST',
       headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
         'Content-Type': 'application/json',
         'Prefer': 'return=representation',
       },
