@@ -78,7 +78,14 @@ const getTimeRemaining = (endDate: string) => {
   // Comunica il conteggio al Dashboard
 useEffect(() => {
   if (onPendingCountChange) {
-    onPendingCountChange(pendingReviews.length);
+    // Conta solo quelle NON scadute
+    const validCount = pendingReviews.filter(review => {
+      const endDate = new Date(review.endDate);
+      const deadline = new Date(endDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+      return new Date() <= deadline;
+    }).length;
+    
+    onPendingCountChange(validCount);
   }
 }, [pendingReviews, onPendingCountChange]);
 
@@ -112,20 +119,25 @@ useEffect(() => {
       `)
       .eq(userType === 'hubber' ? 'hubber_id' : 'renter_id', userId)
       .eq('status', 'completed')
+      .not('completed_at', 'is', null)
       .order('end_date', { ascending: false });
 
     if (error) throw error;
+    console.log('📊 Bookings completati caricati:', bookings?.length);
 
     const pending: PendingReview[] = [];
 
     for (const booking of bookings || []) {
+      console.log('🔍 Controllo booking:', booking.id, 'end_date:', booking.end_date);
       // Verifica se ha già recensito
       const alreadyReviewed = await api.reviews.existsForBooking(booking.id, userId);
+      console.log('📝 Already reviewed?', alreadyReviewed);
       if (alreadyReviewed) continue;
 
       // Verifica se è scaduto il tempo (7 giorni)
       const endDate = new Date(booking.end_date);
       const deadline = new Date(endDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+      console.log('⏰ Deadline:', deadline, 'Now:', new Date(), 'Scaduto?', new Date() > deadline);
       if (new Date() > deadline) continue;
 
       // Prendi i dati dell'altra persona
