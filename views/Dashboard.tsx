@@ -239,18 +239,27 @@ const loadPendingReviewsCount = async () => {
   try {
     const { data: bookings, error } = await supabase
       .from('bookings')
-      .select('id')
+      .select('id, end_date')  // ✅ Aggiungi end_date
       .eq(activeMode === 'hubber' ? 'hubber_id' : 'renter_id', user.id)
-      .eq('status', 'completed');
+      .eq('status', 'completed')
+      .not('completed_at', 'is', null);  // ✅ Aggiungi questo
 
     if (error) throw error;
 
     let count = 0;
     for (const booking of bookings || []) {
       const alreadyReviewed = await api.reviews.existsForBooking(booking.id, user.id);
-      if (!alreadyReviewed) count++;
+      if (alreadyReviewed) continue;
+
+      // ✅ CONTROLLO SCADENZA
+      const endDate = new Date(booking.end_date);
+      const deadline = new Date(endDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+      if (new Date() > deadline) continue;
+
+      count++;
     }
 
+     console.log('🔢 Count finale recensioni valide:', count);
     setPendingReviewsCount(count);
   } catch (err) {
     console.error('Errore caricamento conteggio recensioni:', err);
@@ -1031,24 +1040,33 @@ useEffect(() => {
             console.warn('Errore caricamento indirizzo listing:', e);
           }
 
-          // Carica nome hubber
-          let hubberName = 'Hubber';
-          try {
-            const hubberId = (next as any).hostId || (next as any).hubber_id;
-            if (hubberId) {
-              const { data: hubber } = await supabase
-                .from('users')
-                .select('first_name, last_name')
-                .eq('id', hubberId)
-                .single();
-              
-              if (hubber) {
-                hubberName = `${hubber.first_name || ''} ${(hubber.last_name || '').charAt(0)}.`.trim();
-              }
-            }
-          } catch (e) {
-            console.warn('Errore caricamento nome hubber:', e);
-          }
+          // Carica nome hubber (usa dati già presenti nel booking)
+let hubberName = 'Hubber';
+const hubberData = (next as any).hubber;
+if (hubberData) {
+  const firstName = hubberData.first_name || '';
+  const lastName = hubberData.last_name || '';
+  hubberName = `${firstName} ${lastName.charAt(0)}.`.trim();
+} else {
+  // Fallback: prova a caricare se mancano i dati
+  console.warn('⚠️ Dati hubber mancanti nel booking, usando fallback');
+  const hubberId = (next as any).hostId || (next as any).hubber_id;
+  if (hubberId) {
+    try {
+      const { data: hubber } = await supabase
+        .from('users')
+        .select('first_name, last_name')
+        .eq('id', hubberId)
+        .single();
+      
+      if (hubber) {
+        hubberName = `${hubber.first_name || ''} ${(hubber.last_name || '').charAt(0)}.`.trim();
+      }
+    } catch (e) {
+      console.warn('Errore caricamento nome hubber:', e);
+    }
+  }
+}
 
           setNextUpcomingBooking({
             id: next.id,
@@ -2796,9 +2814,11 @@ const renderHubberCalendar = () => {
 >
   <span>Recensioni</span>
   {/* Badge con numero recensioni da lasciare - DA IMPLEMENTARE IL CONTEGGIO */}
+  {pendingReviewsCount > 0 && (
   <span className="absolute -top-1 -right-1 bg-[#0D414B] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-    3
+    {pendingReviewsCount}
   </span>
+)}
 </button>
 </div>
 
