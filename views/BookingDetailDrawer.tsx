@@ -294,8 +294,21 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
       </span>
     </div>
     
+    {booking.cleaning_fee > 0 && (
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-600">Costo pulizia</span>
+        <span className="font-medium">€{booking.cleaning_fee.toFixed(2)}</span>
+      </div>
+    )}
+    {booking.deposit > 0 && (
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-600">Deposito cauzionale</span>
+        <span className="font-medium">€{booking.deposit.toFixed(2)}</span>
+      </div>
+    )}
+    
     {(() => {
-      const baseAmount = (booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1);
+      const baseAmount = (booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1) + (booking.cleaning_fee || 0);
       const { variableFee, fixedFee, totalFee } = calculateRenterFee(baseAmount);
       
       return (
