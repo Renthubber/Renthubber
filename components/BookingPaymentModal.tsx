@@ -431,14 +431,18 @@ const actualWalletUsable = useMemo(() => {
       if (paymentIntent?.status === "succeeded") {
        
         
-        // ✅ POLLING: Aspetta che il webhook crei la prenotazione (max 10 tentativi)
+        // ✅ POLLING: Aspetta che il webhook crei la prenotazione
+        // Attesa iniziale per dare tempo a Stripe di inviare il webhook
+        console.log("⏳ Attendo che il webhook elabori il pagamento...");
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
         let booking = null;
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = 15;
         
         while (attempts < maxAttempts && !booking) {
           attempts++;
-         
+          console.log(`🔄 Tentativo ${attempts}/${maxAttempts} - Cerco prenotazione...`);
           
           const { data, error } = await supabase
             .from("bookings")
