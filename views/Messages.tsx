@@ -51,25 +51,61 @@ const hasRealAvatarUrl = (avatarUrl: string | null | undefined): boolean => {
 };
 // --- UTIL PER BLOCCARE / RIPULIRE NUMERI DI TELEFONO "SPEZZETTATI" ---
 const maskObfuscatedPhones = (text: string): string => {
+  if (!text) return text;
   let result = text;
 
-  const spacedDigitsPattern = /(?:^|\D)((?:\d\s+){5,}\d)(?=\D|$)/g;
-  result = result.replace(spacedDigitsPattern, () => {
-    return " [numero nascosto] ";
+  // 1. Numeri standard (con +, spazi, trattini, punti, slash, parentesi)
+  result = result.replace(/(\+?\d[\d\s\-\.\/\(\)]{6,}\d)/g, '[contatto nascosto]');
+  
+  // 2. Numeri puntati: 3.2.8.1.2.3.4.5.6.7
+  result = result.replace(/(\d\.){4,}\d/g, '[contatto nascosto]');
+
+  // 3. Numeri con "o/O" al posto di 0: 328 o234567
+  result = result.replace(/\d[\d\s\-\.]*[oO][\d\s\-\.]*\d{3,}/g, '[contatto nascosto]');
+
+  // 4. Numeri scritti a lettere (italiano)
+  const digitWord = '(?:zero|uno|una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)';
+  const wordPattern = new RegExp(`(?:${digitWord}[\\s,\\-\\.]+){3,}${digitWord}`, 'gi');
+  result = result.replace(wordPattern, '[contatto nascosto]');
+
+  // 5. Mix lettere e cifre: "tre28 1234567", "3ventotto 12..."
+  const mixPattern = new RegExp(`(?:${digitWord}|\\d)[\\s]*(?:${digitWord}|\\d)[\\s\\-\\.]*(?:${digitWord}|\\d)[\\s\\-\\.]*(?:${digitWord}|\\d)[\\s\\-\\.]*(?:${digitWord}|\\d)[\\s\\-\\.]*(?:${digitWord}|\\d)+`, 'gi');
+  result = result.replace(mixPattern, '[contatto nascosto]');
+
+  // 6. Email offuscate: "nome chiocciola gmail punto com"
+  result = result.replace(/\S+\s*(?:chiocciola|chiocciolina|at)\s*\S+\s*(?:punto|dot)\s*\S+/gi, '[contatto nascosto]');
+
+  // 7. Social offuscati (con spazi, trattini, punti in mezzo)
+  const socialPatterns = [
+    /w\s*h\s*a\s*t\s*s?\s*a\s*p\s*p/gi,
+    /i\s*n\s*s\s*t\s*a\s*(?:g\s*r\s*a\s*m)?/gi,
+    /t\s*e\s*l\s*e\s*g\s*r\s*a\s*m/gi,
+    /f\s*a\s*c\s*e\s*b\s*o\s*o\s*k/gi,
+    /m\s*e\s*s\s*s\s*e\s*n\s*g\s*e\s*r/gi,
+    /t\s*i\s*k\s*t\s*o\s*k/gi,
+    /s\s*n\s*a\s*p\s*c\s*h\s*a\s*t/gi,
+    /s\s*i\s*g\s*n\s*a\s*l/gi,
+    /v\s*i\s*b\s*e\s*r/gi,
+    /s\s*k\s*y\s*p\s*e/gi,
+    /w\s*e\s*c\s*h\s*a\s*t/gi,
+  ];
+  socialPatterns.forEach(pattern => {
+    result = result.replace(pattern, '[contatto nascosto]');
   });
 
-  const digitWords =
-    "(zero|uno|una|due|tre|quattro|cinque|sei|sette|otto|nove)";
-  const spacedWordsPattern = new RegExp(
-    `(?:^|\\W)((?:${digitWords}\\s+){3,}${digitWords})(?=\\W|$)`,
-    "gi"
-  );
+  // 8. Handle social senza @: "cercami su ig come nomeutente"
+  result = result.replace(/(?:cercami|trovami|scrivimi|contattami|seguimi|aggiungimi)\s+(?:su|come|a)\s+(?:ig|insta|fb|tg|tt|snap|wa)\s*(?:come\s+)?\S+/gi, '[contatto nascosto]');
 
-  result = result.replace(spacedWordsPattern, () => {
-    return " [numero nascosto] ";
-  });
+  // 9. URL senza protocollo
+  result = result.replace(/(?:www\.)\S+\.\S+/gi, '[contatto nascosto]');
+  result = result.replace(/\S+\.(?:com|it|net|org|io|me|info|eu|co)\b/gi, '[contatto nascosto]');
 
   return result;
+};
+
+const displayMessageText = (text: string, allowContacts: boolean): string => {
+  if (allowContacts) return text;
+  return maskObfuscatedPhones(text);
 };
 
 // --- TIPI MOTIVI CONTESTAZIONE ---
@@ -1152,7 +1188,12 @@ const handleSend = async () => {
         isBookingConfirmed
       ) as any;
       
-            const rawText = cleaned || messageInput;
+      if (blockedContacts && !isBookingConfirmed) {
+        alert('Non è possibile condividere contatti personali senza una prenotazione confermata.');
+        return;
+      }
+      
+      const rawText = cleaned || messageInput;
       const safeText = maskObfuscatedPhones(rawText);
       
             const now = new Date();
@@ -2300,7 +2341,7 @@ const steps = [
                               : "bg-white border border-gray-200 rounded-bl-md"
                           }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                          <p className="text-sm whitespace-pre-wrap">{displayMessageText(message.text, isBookingConfirmed)}</p>
                           <p className={`text-xs mt-1 ${message.from === "me" ? "text-white/70" : "text-gray-400"}`}>
                             {message.time}
                           </p>
@@ -2540,7 +2581,7 @@ const steps = [
                     {msg.isAdminMessage && (
                       <p className="text-xs font-semibold text-brand mb-1">Supporto Renthubber</p>
                     )}
-                    <p className="text-sm text-gray-800">{msg.text}</p>
+                    <p className="text-sm text-gray-800">{displayMessageText(msg.text, isBookingConfirmed)}</p>
                     <span className="text-[10px] text-gray-400 block text-right mt-1">
                       {msg.time}
                     </span>
@@ -2563,7 +2604,7 @@ const steps = [
                   </div>
                 ) : (
                   <div className="bg-brand text-white rounded-2xl rounded-br-none px-4 py-2 shadow-md max-w-md">
-                    <p className="text-sm">{msg.text}</p>
+                    <p className="text-sm">{displayMessageText(msg.text, isBookingConfirmed)}</p>
                     <span className="text-[10px] text-white/80 block text-right mt-1">
                       {msg.time}
                     </span>
