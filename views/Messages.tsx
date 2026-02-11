@@ -100,6 +100,12 @@ const maskObfuscatedPhones = (text: string): string => {
   result = result.replace(/(?:www\.)\S+\.\S+/gi, '[contatto nascosto]');
   result = result.replace(/\S+\.(?:com|it|net|org|io|me|info|eu|co)\b/gi, '[contatto nascosto]');
 
+  // 10. Numeri con underscore o altri separatori
+  result = result.replace(/(\d[_|]{1}\d){4,}/g, '[contatto nascosto]');
+  
+  // 11. Sequenza di cifre separate da qualsiasi carattere non-lettera
+  result = result.replace(/\d[\s\-\.\/\\_\|,;:]{1,2}\d[\s\-\.\/\\_\|,;:]{1,2}\d[\s\-\.\/\\_\|,;:]{1,2}\d[\s\-\.\/\\_\|,;:]{1,2}\d[\s\-\.\/\\_\|,;:]{1,2}\d{1,5}/g, '[contatto nascosto]');
+
   return result;
 };
 
@@ -1196,7 +1202,7 @@ const handleSend = async () => {
       // Blocca sequenze di singoli numeri (dal 2° consecutivo)
       if (!isBookingConfirmed) {
         const trimmed = messageInput.trim().toLowerCase();
-        const singleDigit = /^\d{1,3}$/;
+        const singleDigit = /^\d{2,3}$/;
         const digitWords = /^(zero|uno|una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)$/;
         if (singleDigit.test(trimmed) || digitWords.test(trimmed)) {
           const lastMsg = chatMessages[chatMessages.length - 1];
