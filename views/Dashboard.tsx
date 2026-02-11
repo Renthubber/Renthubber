@@ -1040,33 +1040,7 @@ useEffect(() => {
             console.warn('Errore caricamento indirizzo listing:', e);
           }
 
-          // Carica nome hubber (usa dati già presenti nel booking)
-let hubberName = 'Hubber';
-const hubberData = (next as any).hubber;
-if (hubberData) {
-  const firstName = hubberData.first_name || '';
-  const lastName = hubberData.last_name || '';
-  hubberName = `${firstName} ${lastName.charAt(0)}.`.trim();
-} else {
-  // Fallback: prova a caricare se mancano i dati
-  console.warn('⚠️ Dati hubber mancanti nel booking, usando fallback');
-  const hubberId = (next as any).hostId || (next as any).hubber_id;
-  if (hubberId) {
-    try {
-      const { data: hubber } = await supabase
-        .from('users')
-        .select('first_name, last_name')
-        .eq('id', hubberId)
-        .single();
-      
-      if (hubber) {
-        hubberName = `${hubber.first_name || ''} ${(hubber.last_name || '').charAt(0)}.`.trim();
-      }
-    } catch (e) {
-      console.warn('Errore caricamento nome hubber:', e);
-    }
-  }
-}
+          const hubberName = (next as any).hubberName || 'Hubber';
 
           setNextUpcomingBooking({
             id: next.id,
