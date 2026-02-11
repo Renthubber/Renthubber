@@ -169,33 +169,27 @@ async function handlePaymentIntentSucceeded(
     return;
   }
 
-  // 1. Crea booking
+  // 1. ✅ Crea booking con function database
   const bookingResponse = await fetch(
-    `${SUPABASE_URL}/rest/v1/bookings`,
+    `${SUPABASE_URL}/rest/v1/rpc/create_booking_with_payment`,
     {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json',
-        'Prefer': 'return=representation',
       },
       body: JSON.stringify({
-        listing_id: listingId,
-        renter_id: renterId,
-        hubber_id: hubberId,
-        start_date: startDate,
-        end_date: endDate,
-        amount_total: totalAmount,
-        platform_fee: renterFee,
-        service_fee: hubberFee,
-        hubber_net_amount: basePrice + cleaningFee - hubberFee,
-        cleaning_fee: cleaningFee,
-        deposit: deposit,
-        wallet_used_cents: Math.round(walletUsed * 100),
-        status: 'confirmed',
-        stripe_payment_intent_id: paymentIntent.id,
-        created_at: new Date().toISOString(),
+        p_renter_id: renterId,
+        p_listing_id: listingId,
+        p_start_date: startDate,
+        p_end_date: endDate,
+        p_amount_total_cents: Math.round(totalAmount * 100),
+        p_platform_fee_cents: Math.round(renterFee * 100),
+        p_hubber_net_amount_cents: Math.round((basePrice + cleaningFee - hubberFee) * 100),
+        p_wallet_used_cents: Math.round(walletUsed * 100),
+        p_provider: 'stripe',
+        p_provider_payment_id: paymentIntent.id,
       }),
     }
   );
@@ -206,8 +200,7 @@ async function handlePaymentIntentSucceeded(
     throw new Error('Failed to create booking');
   }
 
-  const bookings = await bookingResponse.json();
-  const booking = bookings[0];
+  const booking = await bookingResponse.json();
 
   console.log('✅ Booking created:', booking.id);
 

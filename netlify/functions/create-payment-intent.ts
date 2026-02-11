@@ -194,18 +194,28 @@ export const handler: Handler = async (event, context) => {
 
       console.log('📝 Creating booking with data:', bookingData);
 
-      // Salva prenotazione direttamente
+      // ✅ Usa function database create_booking_with_payment
       const bookingResponse = await fetch(
-        `${SUPABASE_URL}/rest/v1/bookings`,
+        `${SUPABASE_URL}/rest/v1/rpc/create_booking_with_payment`,
         {
           method: 'POST',
           headers: {
             'apikey': SUPABASE_SERVICE_ROLE_KEY,
             'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
             'Content-Type': 'application/json',
-            'Prefer': 'return=representation',
           },
-          body: JSON.stringify(bookingData),
+          body: JSON.stringify({
+            p_renter_id: renterId,
+            p_listing_id: listingId,
+            p_start_date: startDate,
+            p_end_date: endDate,
+            p_amount_total_cents: Math.round(totalAmount * 100),
+            p_platform_fee_cents: Math.round(renterFee * 100),
+            p_hubber_net_amount_cents: Math.round((basePrice + cleaningFee - hubberFee) * 100),
+            p_wallet_used_cents: Math.round(walletUsedTotal * 100),
+            p_provider: 'wallet',
+            p_provider_payment_id: 'WALLET_PAYMENT',
+          }),
         }
       );
 
