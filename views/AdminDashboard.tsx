@@ -4170,7 +4170,11 @@ const renderFinanceTransactions = () => {
 
   // Calcola totali
   const totalAmount = filteredPayments.reduce((sum, p) => sum + Number(p.amount_total || 0), 0);
-  const totalFees = filteredPayments.reduce((sum, p) => sum + Number(p.platform_fee || 0), 0);
+  const totalFees = filteredPayments.reduce((sum, p) => {
+    const renterFee = Number(p.platform_fee || 0);
+    const hubberFee = Number(p.hubber_fee || 0);
+    return sum + renterFee + hubberFee;
+  }, 0);
   const totalHubberNet = filteredPayments.reduce((sum, p) => sum + Number(p.hubber_net_amount || 0), 0);
 
   const getStatusBadge = (status: string) => {
