@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, ChevronDown, ChevronUp, Package, Star, CheckCircle2 } from 'lucide-react';
+import { calculateHubberFixedFee } from '../../../utils/feeUtils';
 
 type HubberBookingFilter = 'all' | 'pending' | 'accepted' | 'completed' | 'cancelled' | 'rejected';
 type TimeFilter = 'current' | 'historical';
@@ -733,11 +734,10 @@ export const PrenotazioniRicevute: React.FC<PrenotazioniRicevuteProps> = ({
       
 {/* ✅ Commissione hubber (10%) */}
 {(() => {
-  const hubberFee = (selectedBooking as any).hubberTotalFee || 0;
   const cleaningFee = (selectedBooking as any).cleaningFee || 0;
-  const baseAmount = (selectedBooking as any).renterTotalPaid - (selectedBooking as any).renterTotalFee;  // ← RIMOSSO - cleaningFee
+  const baseAmount = (selectedBooking as any).renterTotalPaid - (selectedBooking as any).renterTotalFee;
   const variableCommission = baseAmount * 0.10;
-  const fixedFee = hubberFee - variableCommission;
+  const fixedFee = calculateHubberFixedFee(baseAmount + cleaningFee);
 
   return (
     <>
