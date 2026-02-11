@@ -1192,6 +1192,17 @@ const handleSend = async () => {
         alert('Non è possibile condividere contatti personali senza una prenotazione confermata.');
         return;
       }
+
+      // Blocca singole cifre o parole-numero senza prenotazione
+      if (!isBookingConfirmed) {
+        const trimmed = messageInput.trim().toLowerCase();
+        const singleDigit = /^\d{1,3}$/;
+        const digitWords = /^(zero|uno|una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)$/;
+        if (singleDigit.test(trimmed) || digitWords.test(trimmed)) {
+          alert('Non è possibile inviare numeri senza una prenotazione confermata.');
+          return;
+        }
+      }
       
       const rawText = cleaned || messageInput;
       const safeText = maskObfuscatedPhones(rawText);
