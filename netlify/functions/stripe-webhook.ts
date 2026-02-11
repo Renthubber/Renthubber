@@ -100,7 +100,7 @@ console.log('🎣 Webhook received:', stripeEvent.type);
     // Gestisci diversi tipi di eventi
     switch (stripeEvent.type) {
       case 'payment_intent.succeeded':
-        await handlePaymentIntentSucceeded(stripeEvent.data.object as Stripe.PaymentIntent, SUPABASE_URL, SUPABASE_ANON_KEY);
+        await handlePaymentIntentSucceeded(stripeEvent.data.object as Stripe.PaymentIntent, SUPABASE_URL, SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY);
         break;
 
       case 'payment_intent.payment_failed':
@@ -145,7 +145,7 @@ async function handlePaymentIntentSucceeded(
 
    // ✅ GESTIONE MODIFICA PRENOTAZIONE
   if (metadata.type === 'booking_modification') {
-    await handleBookingModification(paymentIntent, SUPABASE_URL, SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY);
+    await handleBookingModification(paymentIntent, SUPABASE_URL, SUPABASE_ANON_KEY);
     return;
   }
 
