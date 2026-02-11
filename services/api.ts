@@ -6122,7 +6122,6 @@ issued_at: new Date().toISOString()
       return { hasForbidden: reasons.length > 0, reasons };
     },
 
-    // Sanitizza contenuto (rimuovi contatti)
     sanitizeContent: (text: string, allowContacts: boolean) => {
       if (allowContacts) {
         return { ok: true, cleaned: text, blockedContacts: false };
@@ -6130,37 +6129,79 @@ issued_at: new Date().toISOString()
 
       const forbiddenWords = [
         "facebook", "instagram", "whatsapp", "telegram",
-        "tiktok", "snapchat", "messenger",
+        "tiktok", "snapchat", "messenger", "signal", "viber",
+        "skype", "wechat", "line", "discord",
+        "insta", "fb", "tg", "wa", "snap",
       ];
 
       const forbiddenPhrases = [
         "ti mando il numero", "ti do il numero", "ti scrivo il numero",
+        "ti lascio il numero", "ti passo il numero", "ecco il mio numero",
+        "il mio numero è", "il mio cell è", "il mio cellulare è",
+        "chiamami al", "scrivimi al", "contattami al",
         "ti scrivo su whatsapp", "ti scrivo su instagram", "ti scrivo su telegram",
         "ti cerco su whatsapp", "ti cerco su instagram", "ti cerco su telegram",
         "ti chiamo su whatsapp", "ti chiamo su instagram", "ti chiamo su telegram",
+        "scrivimi su", "cercami su", "trovami su", "contattami su", "seguimi su", "aggiungimi su",
+        "ti do la mail", "ti mando la mail", "la mia mail è", "la mia email è",
+        "scrivimi in privato", "ti scrivo in privato", "parliamo fuori",
       ];
 
-      const phoneRegex = /(\+?\d[\d\s\-]{6,}\d)/gi;
+      // Numeri telefono (standard, puntati, con slash/parentesi)
+      const phoneRegex = /(\+?\d[\d\s\-\.\/\(\)]{6,}\d)/gi;
+      const dottedPhoneRegex = /(\d\.){4,}\d/gi;
       const spacedPhoneRegex = /(\d{2}\s\d{2}\s\d{2}\s\d{2,})/gi;
+      
+      // Email standard e offuscata
       const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+      const emailObfuscatedRegex = /\S+\s*(?:chiocciola|chiocciolina|at)\s*\S+\s*(?:punto|dot)\s*\S+/gi;
+      
+      // URL e domini
       const urlRegex = /(https?:\/\/[^\s]+)/gi;
+      const wwwRegex = /(?:www\.)\S+\.\S+/gi;
+      const domainRegex = /\S+\.(?:com|it|net|org|io|me|info|eu|co)\b/gi;
+      
+      // Handle e social
       const handleRegex = /@[a-z0-9_.]{3,}/gi;
 
+      // Numeri scritti a lettere
+      const digitWord = '(?:zero|uno|una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)';
+      const wordPhoneRegex = new RegExp(`(?:${digitWord}[\\s,\\-\\.]+){3,}${digitWord}`, 'gi');
+
+      // Social offuscati con spazi
+      const socialObfuscated = [
+        /w\s*h\s*a\s*t\s*s?\s*a\s*p\s*p/gi,
+        /i\s*n\s*s\s*t\s*a\s*(?:g\s*r\s*a\s*m)?/gi,
+        /t\s*e\s*l\s*e\s*g\s*r\s*a\s*m/gi,
+        /f\s*a\s*c\s*e\s*b\s*o\s*o\s*k/gi,
+        /t\s*i\s*k\s*t\s*o\s*k/gi,
+        /s\s*n\s*a\s*p\s*c\s*h\s*a\s*t/gi,
+      ];
+
       let cleaned = text;
-      cleaned = cleaned.replace(phoneRegex, "***");
-      cleaned = cleaned.replace(spacedPhoneRegex, "***");
-      cleaned = cleaned.replace(emailRegex, "***");
-      cleaned = cleaned.replace(urlRegex, "***");
-      cleaned = cleaned.replace(handleRegex, "***");
+      cleaned = cleaned.replace(phoneRegex, '***');
+      cleaned = cleaned.replace(dottedPhoneRegex, '***');
+      cleaned = cleaned.replace(spacedPhoneRegex, '***');
+      cleaned = cleaned.replace(emailRegex, '***');
+      cleaned = cleaned.replace(emailObfuscatedRegex, '***');
+      cleaned = cleaned.replace(urlRegex, '***');
+      cleaned = cleaned.replace(wwwRegex, '***');
+      cleaned = cleaned.replace(domainRegex, '***');
+      cleaned = cleaned.replace(handleRegex, '***');
+      cleaned = cleaned.replace(wordPhoneRegex, '***');
+
+      socialObfuscated.forEach(pattern => {
+        cleaned = cleaned.replace(pattern, '***');
+      });
 
       forbiddenWords.forEach((word) => {
-        const regex = new RegExp(word, "gi");
-        cleaned = cleaned.replace(regex, "***");
+        const regex = new RegExp(`\\b${word}\\b`, 'gi');
+        cleaned = cleaned.replace(regex, '***');
       });
 
       forbiddenPhrases.forEach((phrase) => {
-        const regex = new RegExp(phrase, "gi");
-        cleaned = cleaned.replace(regex, "***");
+        const regex = new RegExp(phrase, 'gi');
+        cleaned = cleaned.replace(regex, '***');
       });
 
       const blocked = cleaned !== text;
