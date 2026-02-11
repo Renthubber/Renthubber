@@ -638,7 +638,7 @@ try {
       body: JSON.stringify({
         id: `msg-modify-${bookingId}-${Date.now()}`,
         conversation_id: conversationId,
-        from_user_id: 'system',
+        from_user_id: renterId,
         to_user_id: listing.host_id,
         text: systemMessage,
         is_system_message: true,
