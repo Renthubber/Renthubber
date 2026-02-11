@@ -190,6 +190,8 @@ async function handlePaymentIntentSucceeded(
         p_wallet_used_cents: Math.round(walletUsed * 100),
         p_provider: 'stripe',
         p_provider_payment_id: paymentIntent.id,
+        p_cleaning_fee_cents: Math.round(cleaningFee * 100),
+        p_deposit_cents: Math.round(deposit * 100),
       }),
     }
   );
