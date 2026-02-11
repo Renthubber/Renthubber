@@ -4571,8 +4571,12 @@ const renderFinanceTransactions = () => {
                     <span className="text-lg font-bold text-gray-900">€ {Number(selectedPayment.amount_total || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Commissione Piattaforma</span>
-                    <span className="text-sm font-medium text-brand">- € {Number(selectedPayment.platform_fee || 0).toFixed(2)}</span>
+                    <span className="text-sm text-gray-600">Commissione Renter</span>
+                    <span className="text-sm font-medium text-orange-600">- € {Number(selectedPayment.platform_fee || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Commissione Hubber</span>
+                    <span className="text-sm font-medium text-orange-600">- € {Number(selectedPayment.hubber_fee || 0).toFixed(2)}</span>
                   </div>
                   <hr className="border-gray-200" />
                   <div className="flex justify-between items-center">
