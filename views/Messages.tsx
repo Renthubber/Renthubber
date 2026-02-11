@@ -360,7 +360,7 @@ export const Messages: React.FC<MessagesProps> = ({
   useEffect(() => {
     const checkBookingStatus = async () => {
       if (!activeContact?.bookingId) {
-        setIsBookingConfirmed(true); // Chat normale o senza booking
+        setIsBookingConfirmed(false); // Chat normale o senza booking
         return;
       }
 
