@@ -334,6 +334,8 @@ export const Messages: React.FC<MessagesProps> = ({
 
   // 🔒 Controlla se i contatti possono essere condivisi
   const [isBookingConfirmed, setIsBookingConfirmed] = useState(true);
+  const recentNumberCount = React.useRef(0);
+  const recentNumberTimer = React.useRef<any>(null);
 
   // ✅ STATO PER LOADING CONVERSAZIONI REALI
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
@@ -1199,19 +1201,20 @@ const handleSend = async () => {
         return;
       }
 
-      // Blocca sequenze di singoli numeri (dal 2° consecutivo)
+     // Blocca singoli numeri (max 1 ogni 60 secondi senza prenotazione)
       if (!isBookingConfirmed) {
         const trimmed = messageInput.trim().toLowerCase();
-        const singleDigit = /^\d{2,3}$/;
+        const singleDigit = /^\d{1,3}$/;
         const digitWords = /^(zero|uno|una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)$/;
         if (singleDigit.test(trimmed) || digitWords.test(trimmed)) {
-          const lastMsg = chatMessages[chatMessages.length - 1];
-          if (lastMsg && lastMsg.from === 'me') {
-            const lastTrimmed = lastMsg.text.trim().toLowerCase();
-            if (singleDigit.test(lastTrimmed) || digitWords.test(lastTrimmed)) {
-              alert('Non è possibile inviare numeri senza una prenotazione confermata.');
-              return;
-            }
+          recentNumberCount.current += 1;
+          clearTimeout(recentNumberTimer.current);
+          recentNumberTimer.current = setTimeout(() => {
+            recentNumberCount.current = 0;
+          }, 60000);
+          if (recentNumberCount.current > 1) {
+            alert('Non è possibile inviare numeri senza una prenotazione confermata.');
+            return;
           }
         }
       }
