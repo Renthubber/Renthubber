@@ -1195,6 +1195,7 @@ const handleSend = async () => {
 
       // Blocca singole cifre o parole-numero senza prenotazione
       if (!isBookingConfirmed) {
+        console.log('🔒 isBookingConfirmed è FALSE, controllo messaggio:', messageInput.trim());
         const trimmed = messageInput.trim().toLowerCase();
         const singleDigit = /^\d{1,3}$/;
         const digitWords = /^(zero|uno|una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)$/;
