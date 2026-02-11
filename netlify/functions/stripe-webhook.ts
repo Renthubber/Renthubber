@@ -17,6 +17,7 @@ export const handler: Handler = async (event, context) => {
   const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
   const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
   const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || '';
+  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
   const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
   const STRIPE_WEBHOOK_SECRET_CONNECT = process.env.STRIPE_WEBHOOK_SECRET_CONNECT || '';
 
@@ -144,7 +145,7 @@ async function handlePaymentIntentSucceeded(
 
    // ✅ GESTIONE MODIFICA PRENOTAZIONE
   if (metadata.type === 'booking_modification') {
-    await handleBookingModification(paymentIntent, SUPABASE_URL, SUPABASE_ANON_KEY);
+    await handleBookingModification(paymentIntent, SUPABASE_URL, SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY);
     return;
   }
 
