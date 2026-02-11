@@ -444,17 +444,21 @@ const actualWalletUsable = useMemo(() => {
           attempts++;
           console.log(`🔄 Tentativo ${attempts}/${maxAttempts} - Cerco prenotazione...`);
           
-          const { data, error } = await supabase
-            .from("bookings")
-            .select("*")
-            .eq("stripe_payment_intent_id", paymentIntent.id)
-            .maybeSingle();
+          const piId = paymentIntent.id;
+console.log(`🔍 Cerco booking con stripe_payment_intent_id = "${piId}"`);
 
-          if (data) {
-            booking = data;
-            
-            break;
-          }
+const { data, error } = await supabase
+  .from("bookings")
+  .select("*")
+  .eq("stripe_payment_intent_id", piId)
+  .maybeSingle();
+
+console.log(`📊 Risultato:`, { data, error });
+
+if (data) {
+  booking = data;
+  break;
+}
           
           if (error) {
            
