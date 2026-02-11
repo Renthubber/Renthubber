@@ -4441,7 +4441,7 @@ const renderFinanceTransactions = () => {
                       </td>
                       <td className="p-4 text-right">
                         <span className="text-sm text-brand font-medium">
-                          € {Number(payment.platform_fee || 0).toFixed(2)}
+                          € {(Number(payment.platform_fee || 0) + Number(payment.hubber_fee || 0)).toFixed(2)}
                         </span>
                       </td>
                       <td className="p-4 text-right">
