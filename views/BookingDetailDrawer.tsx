@@ -642,12 +642,12 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
     )}
     <div className="flex justify-between text-sm text-red-600">
       <span>Commissione di servizio 10% (IVA inclusa)</span>
-      <span>-€{(((booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1)) * 0.1).toFixed(2)}</span>
+      <span>-€{(((booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1) + (booking.cleaning_fee || 0)) * 0.1).toFixed(2)}</span>
     </div>
     <div className="flex justify-between text-sm text-red-600">
       <span>Fee fissa piattaforma (IVA inclusa)</span>
       <span>-€{(() => {
-        const baseAmount = (booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1);
+        const baseAmount = (booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1) + (booking.cleaning_fee || 0);
         const { fixedFee } = calculateHubberFee(baseAmount);
         return fixedFee.toFixed(2);
       })()}</span>
@@ -657,7 +657,7 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
       <span className="font-bold text-gray-900">Totale (EUR)</span>
       <span className="font-bold text-lg text-green-600">
         €{(booking.hubber_net_amount || (() => {
-          const baseAmount = (booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1);
+          const baseAmount = (booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1)+ (booking.cleaning_fee || 0);
           const { totalFee } = calculateHubberFee(baseAmount);
           return baseAmount - totalFee;
         })()).toFixed(2)}
