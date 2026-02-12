@@ -378,6 +378,21 @@ const handlePaymentSuccess = async () => {
   }
 };
 
+ // Se annuncio sospeso e utente non è il proprietario → non disponibile
+  if (listing.status === 'suspended' && currentUser?.id !== listing.hostId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center p-8">
+          <p className="text-xl font-bold text-gray-700 mb-2">Annuncio non disponibile</p>
+          <p className="text-gray-500 mb-4">Questo annuncio è stato temporaneamente sospeso.</p>
+          <button onClick={onBack} className="px-6 py-2 bg-brand text-white rounded-xl">
+            Torna indietro
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header con back button */}
