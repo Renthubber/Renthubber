@@ -2456,7 +2456,13 @@ if (cardPaidOriginal > 0) {
 
         if (refundAmount > 0) {
           const walletUsedCents = booking.wallet_used_cents || 0;
-          const cardPaidCents = booking.card_paid_cents || 0;
+          let cardPaidCents = booking.card_paid_cents || 0;
+          
+          // Se card_paid_cents è 0 ma c'è un payment intent, tutto è stato pagato con carta
+          if (cardPaidCents === 0 && walletUsedCents === 0 && booking.stripe_payment_intent_id) {
+            cardPaidCents = Math.round(totalPaid * 100);
+          }
+          
           const walletUsedEur = walletUsedCents / 100;
           const cardPaidOriginal = cardPaidCents / 100;
 
