@@ -322,23 +322,75 @@ const priceDifference = basePriceDiff + commissionDiff + fixedFeeDiff;
         console.log('✅ Wallet refund completed');
       }
 
-      // Rimborso carta (via Stripe)
+      // Rimborso carta (via Stripe) - cascata su tutti i PaymentIntent
       let stripeRefundId = null;
-      if (cardRefund > 0 && booking.stripe_payment_intent_id) {
+      if (cardRefund > 0) {
         try {
-          const refund = await stripe.refunds.create({
-            payment_intent: booking.stripe_payment_intent_id,
-            amount: Math.round(cardRefund * 100),
-            metadata: {
-              booking_id: bookingId,
-              reason: 'booking_modification',
-            },
+          // Cerca tutti i PI collegati a questa prenotazione
+          const searchResults = await stripe.paymentIntents.search({
+            query: `metadata["booking_id"]:"${bookingId}" status:"succeeded"`,
           });
 
-          stripeRefundId = refund.id;
-          console.log('✅ Stripe refund created:', refund.id);
+          const allPIs = [...searchResults.data];
+
+          // Aggiungi PI originale se non trovato
+          if (booking.stripe_payment_intent_id) {
+            const hasOriginal = allPIs.some(pi => pi.id === booking.stripe_payment_intent_id);
+            if (!hasOriginal) {
+              try {
+                const originalPI = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
+                if (originalPI.status === 'succeeded') {
+                  allPIs.push(originalPI);
+                }
+              } catch (e) {
+                console.warn('⚠️ Could not retrieve original PI');
+              }
+            }
+          }
+
+          // Ordina dal più recente
+          allPIs.sort((a, b) => b.created - a.created);
+          console.log(`📋 Found ${allPIs.length} PaymentIntents for refund`);
+
+          let remainingRefund = Math.round(cardRefund * 100);
+
+          for (const pi of allPIs) {
+            if (remainingRefund <= 0) break;
+
+            const refundForThis = Math.min(remainingRefund, pi.amount);
+            try {
+              const refund = await stripe.refunds.create({
+                payment_intent: pi.id,
+                amount: refundForThis,
+                metadata: { booking_id: bookingId, reason: 'booking_modification' },
+              });
+
+              stripeRefundId = stripeRefundId || refund.id;
+              remainingRefund -= refundForThis;
+              console.log(`✅ Refund €${(refundForThis / 100).toFixed(2)} on PI ${pi.id}`);
+            } catch (refundError: any) {
+              console.warn(`⚠️ Refund failed on PI ${pi.id}: ${refundError.message}`);
+              if (refundError.code === 'amount_too_large') {
+                try {
+                  const fullRefund = await stripe.refunds.create({
+                    payment_intent: pi.id,
+                    metadata: { booking_id: bookingId, reason: 'booking_modification' },
+                  });
+                  stripeRefundId = stripeRefundId || fullRefund.id;
+                  remainingRefund -= fullRefund.amount;
+                  console.log(`✅ Full refund €${(fullRefund.amount / 100).toFixed(2)} on PI ${pi.id}`);
+                } catch (e: any) {
+                  console.warn(`⚠️ Full refund also failed: ${e.message}`);
+                }
+              }
+            }
+          }
+
+          if (remainingRefund > 0) {
+            console.warn(`⚠️ Could not refund €${(remainingRefund / 100).toFixed(2)} to card`);
+          }
         } catch (stripeError: any) {
-          console.error('⚠️ Stripe refund failed:', stripeError.message);
+          console.error('⚠️ Stripe refund cascade failed:', stripeError.message);
         }
       }
 
