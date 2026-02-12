@@ -3053,7 +3053,11 @@ const renderHubberCalendar = () => {
                         <p className={`font-bold ${refundMethod === 'card' ? 'text-brand' : 'text-gray-900'}`}>
                           €{refundPreview.amount.toFixed(2)}
                         </p>
-                        <p className="text-xs text-yellow-600 font-medium">5-10 giorni</p>
+                        <p className="text-xs text-yellow-600 font-medium">
+                          {hasMixPayment 
+                            ? `Wallet: istantaneo · Carta: 5-10 giorni`
+                            : '5-10 giorni'}
+                        </p>
                       </div>
                     </div>
                     {refundMethod === 'card' && (
