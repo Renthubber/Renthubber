@@ -1730,9 +1730,21 @@ if (result.requiresPayment && result.clientSecret) {
         );
 
         // Chiudi modale dopo 2.5 secondi
-        setTimeout(() => {
+        setTimeout(async () => {
           closeModifyModal();
-          window.location.reload();
+          // Ricarica solo le prenotazioni
+          try {
+            const dbBookings = await api.bookings.getForRenterFromDb(user.id);
+            if (dbBookings.length > 0) {
+              const mapped = dbBookings.map((b: any) => ({
+                ...mapDbBookingToUiBooking(b),
+                hasReviewed: b.hasReviewed || false,
+              }));
+              setRequests(mapped);
+            }
+          } catch (e) {
+            console.error('Errore ricaricamento prenotazioni:', e);
+          }
         }, 2500);
 
       } else {
@@ -3570,9 +3582,20 @@ const renderModifyStripeModal = () => {
               onSuccess={() => {
                 setModifyStripeClientSecret(null);
                 setModifySuccess('Prenotazione modificata e pagamento completato!');
-                setTimeout(() => {
+                setTimeout(async () => {
                   closeModifyModal();
-                  window.location.reload();
+                  try {
+                    const dbBookings = await api.bookings.getForRenterFromDb(user.id);
+                    if (dbBookings.length > 0) {
+                      const mapped = dbBookings.map((b: any) => ({
+                        ...mapDbBookingToUiBooking(b),
+                        hasReviewed: b.hasReviewed || false,
+                      }));
+                      setRequests(mapped);
+                    }
+                  } catch (e) {
+                    console.error('Errore ricaricamento prenotazioni:', e);
+                  }
                 }, 2000);
               }}
               onError={(error) => {
