@@ -422,6 +422,41 @@ const priceDifference = basePriceDiff + commissionDiff + fixedFeeDiff;
 
       console.log('✅ Booking updated with refund');
 
+      // 💬 Invia messaggio di sistema nella conversazione
+      try {
+        const conversationId = `conv-booking-${bookingId}`;
+        const newDatesFormatted = `${new Date(newStartDate).toLocaleDateString('it-IT')} - ${new Date(newEndDate).toLocaleDateString('it-IT')}`;
+        const refundMsg = cardRefund > 0 
+          ? `Rimborso di €${cardRefund.toFixed(2)} sulla carta entro 5-10 giorni lavorativi.`
+          : `Rimborso di €${walletRefund.toFixed(2)} accreditato sul wallet.`;
+        
+        const systemMessage = `Le date della prenotazione per "${listing.title}" sono state modificate.\n\nNuove date: ${newDatesFormatted}\n${refundMsg}`;
+
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/messages`,
+          {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              id: `msg-modify-${bookingId}-${Date.now()}`,
+              conversation_id: conversationId,
+              from_user_id: renterId,
+              to_user_id: listing.host_id,
+              text: systemMessage,
+              is_system_message: true,
+              created_at: new Date().toISOString(),
+            }),
+          }
+        );
+        console.log('✅ System message sent');
+      } catch (err) {
+        console.error('⚠️ Failed to send system message:', err);
+      }
+
       return {
         statusCode: 200,
         headers,
