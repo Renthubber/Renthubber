@@ -2261,6 +2261,7 @@ if (cardPaidOriginal > 0) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           paymentIntentId: booking.stripe_payment_intent_id,
+           bookingId: bookingId,
           amount: Math.round(cardRefunded * 100), // in centesimi
           reason: 'requested_by_customer',
           metadata: {
@@ -2529,6 +2530,7 @@ if (cardPaidOriginal > 0) {
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     paymentIntentId: booking.stripe_payment_intent_id,
+                    bookingId: bookingId,
                     amount: Math.round(cardRefunded * 100), // in centesimi
                     reason: 'requested_by_customer',
                     metadata: {
