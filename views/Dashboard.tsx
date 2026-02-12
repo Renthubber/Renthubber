@@ -1732,6 +1732,7 @@ if (result.requiresPayment && result.clientSecret) {
         // Chiudi modale dopo 2.5 secondi
         setTimeout(() => {
           closeModifyModal();
+          window.location.reload();
         }, 2500);
 
       } else {
