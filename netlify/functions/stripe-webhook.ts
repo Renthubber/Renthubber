@@ -441,34 +441,6 @@ if (!updateResponse.ok) {
 
 console.log('✅ Booking updated successfully');
 
-  // Crea transazione wallet per tracking
-  try {
-    await fetch(
-      `${SUPABASE_URL}/rest/v1/wallet_transactions`,
-      {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: metadata.renter_id,
-          amount_cents: -Math.round(priceDifference * 100),
-          type: 'debit',
-          source: 'booking_modification_charge',
-          wallet_type: 'renter',
-          description: `Supplemento modifica prenotazione #${bookingId.slice(0, 8).toUpperCase()}`,
-          related_booking_id: bookingId,
-          created_at: new Date().toISOString(),
-        }),
-      }
-    );
-    console.log('✅ Transaction record created');
-  } catch (err) {
-    console.error('⚠️ Transaction record failed:', err);
-  }
-
   // 💬 Invia messaggio di sistema nella conversazione
 try {
   const conversationId = `conv-booking-${bookingId}`;
