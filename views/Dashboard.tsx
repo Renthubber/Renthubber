@@ -1813,6 +1813,12 @@ if (result.requiresPayment && result.clientSecret) {
       // Calcola breakdown
       const basePrice = days * listingPrice;
       const cleaningFee = (booking as any).cleaningFee || 0;
+      console.log('🔍 BOOKING RAW:', { 
+        platformFee: (booking as any).platformFee, 
+        platform_fee: (booking as any).platform_fee,
+        amount_total: (booking as any).amount_total,
+        amountTotal: (booking as any).amountTotal
+      });
       // ✅ Carica override commissioni renter (se presente)
       const realPlatformFee = (booking as any).platformFee || (booking as any).platform_fee || 0;
       const commission = realPlatformFee > 0 ? realPlatformFee : ((basePrice + cleaningFee) * 10) / 100;
