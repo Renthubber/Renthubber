@@ -119,11 +119,11 @@ export const Wallet: React.FC<WalletProps> = ({
   useEffect(() => {
     const generateUniqueCode = async (): Promise<string> => {
       // Prima parola del nome, maiuscolo, solo lettere/numeri, max 10 caratteri
-      const rawName = (currentUser.name || 'USER')
-        .split(' ')[0]
-        .toUpperCase()
-        .replace(/[^A-Z0-9]/g, '')
-        .slice(0, 10) || 'USER';
+      const firstName = (currentUser.firstName || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 5);
+      const lastName = (currentUser.lastName || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 5);
+      const rawName = (firstName && lastName) 
+        ? `${firstName.slice(0, 4)}${lastName.slice(0, 2)}` 
+        : firstName || lastName || 'USER';
 
       // Genera 4 caratteri alfanumerici random
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // escludo 0, O, I, 1 per evitare confusione
