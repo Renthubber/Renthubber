@@ -1813,7 +1813,8 @@ if (result.requiresPayment && result.clientSecret) {
       const basePrice = days * listingPrice;
       const cleaningFee = (booking as any).cleaningFee || 0;
       // ✅ Carica override commissioni renter (se presente)
-      const commission = ((basePrice + cleaningFee) * 10) / 100;
+      const realPlatformFee = (booking as any).platformFee || (booking as any).platform_fee || 0;
+      const commission = realPlatformFee > 0 ? realPlatformFee : ((basePrice + cleaningFee) * 10) / 100;
       const fixedFee = calculateRenterFixedFee(basePrice + cleaningFee);
       const deposit = (booking as any).deposit || 0;
 
