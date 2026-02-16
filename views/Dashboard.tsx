@@ -414,6 +414,7 @@ const [profileData, setProfileData] = useState(() => {
     cleaningFee: number,
     commission: number;
     fixedFee: number;
+    renterFeePercent: number;
     total: number;
     walletUsed: number;
     cardPaid: number;
@@ -1858,6 +1859,8 @@ if (result.requiresPayment && result.clientSecret) {
           console.warn('Errore caricamento indirizzo listing:', e);
         }
       }
+      
+     console.log('🔍 RENTER FEE DEBUG:', { commission, fixedFee, variableCommission, renterFeePercent, basePrice, cleaningFee });
 
       setBookingDetailData({
         listingPrice,
