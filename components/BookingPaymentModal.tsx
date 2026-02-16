@@ -195,6 +195,24 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
   } | null>(null);
 
   const [feesLoaded, setFeesLoaded] = useState(false);
+  // ✅ Override commissioni personalizzate
+  const [hubberFeeOverride, setHubberFeeOverride] = useState<{
+    fees_disabled: boolean;
+    custom_hubber_fee: number | null;
+  } | null>(null);
+
+  useEffect(() => {
+    const loadHubberOverride = async () => {
+      if (!listing.hostId) return;
+      try {
+        const { data } = await supabase.rpc('get_active_fee_override', { p_user_id: listing.hostId });
+        if (data?.[0]) setHubberFeeOverride(data[0]);
+      } catch (err) {
+        console.error('Errore caricamento hubber fee override:', err);
+      }
+    };
+    loadHubberOverride();
+  }, [listing.hostId]);
 
   useEffect(() => {
     const loadFees = async () => {
@@ -259,7 +277,9 @@ const actualWalletUsable = useMemo(() => {
 
   const amounts = useMemo(() => {
     // Usa le fee dal database, con fallback a valori default
-    const hubberFeePercentage = platformFees?.hubberPercentage ?? 10;
+    const hubberFeePercentage = hubberFeeOverride?.fees_disabled 
+      ? 0 
+      : hubberFeeOverride?.custom_hubber_fee ?? platformFees?.hubberPercentage ?? 10;
 
     // ✅ TUTTI I CALCOLI IN EURO PRIMA, POI CONVERTI IN CENTESIMI
     
@@ -303,7 +323,7 @@ const actualWalletUsable = useMemo(() => {
       hubberNetCents,
       hubberTotalFeeCents,
     };
-  }, [totalAmountEur, rentalAmountEur, platformFeeEur, depositEur, actualWalletUsable, platformFees, cleaningFeeEur]);
+  }, [totalAmountEur, rentalAmountEur, platformFeeEur, depositEur, actualWalletUsable, platformFees, cleaningFeeEur, hubberFeeOverride]);
 
   if (!isOpen) return null;
 
