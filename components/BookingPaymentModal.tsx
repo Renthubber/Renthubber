@@ -200,15 +200,21 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
     fees_disabled: boolean;
     custom_hubber_fee: number | null;
   } | null>(null);
+  const [hubberOverrideLoaded, setHubberOverrideLoaded] = useState(false);
 
   useEffect(() => {
     const loadHubberOverride = async () => {
-      if (!listing.hostId) return;
+      if (!listing.hostId) {
+        setHubberOverrideLoaded(true);
+        return;
+      }
       try {
         const { data } = await supabase.rpc('get_active_fee_override', { p_user_id: listing.hostId });
         if (data?.[0]) setHubberFeeOverride(data[0]);
       } catch (err) {
         console.error('Errore caricamento hubber fee override:', err);
+      } finally {
+        setHubberOverrideLoaded(true);
       }
     };
     loadHubberOverride();
@@ -327,10 +333,10 @@ const actualWalletUsable = useMemo(() => {
 
   if (!isOpen) return null;
 
-  // 💳 PAGAMENTO STRIPE REALE
+ // 💳 PAGAMENTO STRIPE REALE
   const handleConfirm = async () => {
     // Aspetta che le fee siano caricate
-    if (!feesLoaded) {
+    if (!feesLoaded || !hubberOverrideLoaded) {
       setErrorMsg("Caricamento in corso, riprova tra un momento...");
       return;
     }
