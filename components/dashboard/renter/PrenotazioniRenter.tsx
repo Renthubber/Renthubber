@@ -652,7 +652,7 @@ export const PrenotazioniRenter: React.FC<PrenotazioniRenterProps> = ({
             )}
             <div className="flex justify-between">
               <span className="text-gray-600">
-                Commissione di servizio ({bookingDetailData.renterFeePercent ?? 10}% IVA inclusa)
+                Commissione di servizio (10% IVA inclusa)
               </span>
               <span className="font-medium text-gray-900">
                 €{bookingDetailData.commission.toFixed(2)}
