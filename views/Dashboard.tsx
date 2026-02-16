@@ -1815,7 +1815,11 @@ if (result.requiresPayment && result.clientSecret) {
       // ✅ Carica override commissioni renter (se presente)
       const realPlatformFee = (booking as any).platformFee || (booking as any).platform_fee || 0;
       const commission = realPlatformFee > 0 ? realPlatformFee : ((basePrice + cleaningFee) * 10) / 100;
-      const fixedFee = calculateRenterFixedFee(basePrice + cleaningFee);
+      const fixedFee = 0.50;
+      const variableCommission = Math.max(commission - fixedFee, 0);
+      const renterFeePercent = (basePrice + cleaningFee) > 0 
+        ? Math.round((variableCommission / (basePrice + cleaningFee)) * 100) 
+        : 10;
       const deposit = (booking as any).deposit || 0;
 
       // Usa il totale reale pagato dal renter (da Supabase)
@@ -1873,6 +1877,7 @@ if (result.requiresPayment && result.clientSecret) {
         pickupAddress,
         pickupCity,
         pickupInstructions,
+        renterFeePercent
       } as any);
     } catch (err) {
       console.error("Errore caricamento dettaglio prenotazione:", err);
