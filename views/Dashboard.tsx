@@ -1821,8 +1821,7 @@ if (result.requiresPayment && result.clientSecret) {
         amountTotal: (booking as any).amountTotal
       });
       // ✅ Carica override commissioni renter (se presente)
-      const realPlatformFee = (booking as any).platformFee || (booking as any).platform_fee || 0;
-      const commission = realPlatformFee > 0 ? realPlatformFee : ((basePrice + cleaningFee) * 10) / 100;
+      const commission = (booking as any).renterTotalFee || (booking as any).commission || (booking as any).platformFee || ((basePrice + cleaningFee) * 10) / 100;
       const fixedFee = 0.50;
       const variableCommission = Math.max(commission - fixedFee, 0);
       const renterFeePercent = (basePrice + cleaningFee) > 0 
