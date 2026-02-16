@@ -736,14 +736,20 @@ export const PrenotazioniRicevute: React.FC<PrenotazioniRicevuteProps> = ({
 {(() => {
   const cleaningFee = (selectedBooking as any).cleaningFee || 0;
   const baseAmount = (selectedBooking as any).renterTotalPaid - (selectedBooking as any).renterTotalFee;
-  const variableCommission = baseAmount * 0.10;
   const fixedFee = calculateHubberFixedFee(baseAmount + cleaningFee);
+  const realNetEarnings = (selectedBooking as any).netEarnings || (selectedBooking as any).hubber_net_amount || 0;
+  const variableCommission = realNetEarnings > 0 
+    ? Math.max((baseAmount + cleaningFee) - realNetEarnings - fixedFee, 0)
+    : baseAmount * 0.10;
+  const hubberFeePercent = (baseAmount + cleaningFee) > 0 
+    ? Math.round((variableCommission / (baseAmount + cleaningFee)) * 100) 
+    : 10;
 
   return (
     <>
       <div className="flex justify-between text-sm">
         <span className="text-gray-600">
-          Commissione di servizio (10% IVA inclusa)
+          Commissione di servizio ({hubberFeePercent}% IVA inclusa)
         </span>
         <span className="font-medium text-red-500">
           -€{variableCommission.toFixed(2)}
