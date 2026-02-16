@@ -29,6 +29,7 @@ import { useNavigate } from 'react-router-dom';
 import { calculateHubberFixedFee, calculateRenterFixedFee } from '../utils/feeUtils';
 import { getAvatarUrl } from '../utils/avatarUtils';
 
+
 interface ListingDetailProps {
   listing: Listing;
   currentUser: User | null;
@@ -65,6 +66,27 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
   const [generalBalance, setGeneralBalance] = useState(0);   // Wallet generale (100% utilizzo)
   const [referralBalance, setReferralBalance] = useState(0); // Credito Invita Amico (max 30% commissioni)
   const [refundBalance, setRefundBalance] = useState(0);     // Credito Rimborsi (100% flessibile)
+
+  // ✅ Override commissioni personalizzate
+  const [feeOverride, setFeeOverride] = useState<{
+    fees_disabled: boolean;
+    custom_renter_fee: number | null;
+    custom_hubber_fee: number | null;
+  } | null>(null);
+
+  // ✅ Carica override commissioni per utente corrente
+  useEffect(() => {
+    const loadFeeOverride = async () => {
+      if (!currentUser?.id) return;
+      try {
+        const { data } = await supabase.rpc('get_active_fee_override', { p_user_id: currentUser.id });
+        if (data?.[0]) setFeeOverride(data[0]);
+      } catch (err) {
+        console.error('Errore caricamento fee override:', err);
+      }
+    };
+    loadFeeOverride();
+  }, [currentUser?.id]);
 
   useEffect(() => {
     const loadFees = async () => {
@@ -255,9 +277,14 @@ const [bookedEndTimeSlots, setBookedEndTimeSlots] = useState<string[]>([]); // S
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [useWallet, setUseWallet] = useState(true);
 
-  // ✅ Fee dal DB Supabase o fallback da SystemConfig
-  const renterFeePercentage = platformFees?.renterPercentage ?? systemConfig?.fees?.platformPercentage ?? 10;
-  const hubberFeePercentage = platformFees?.hubberPercentage ?? 10;
+// ✅ Fee dal DB Supabase o fallback da SystemConfig
+  // Prima controlla override utente, poi fee standard
+ const renterFeePercentage = feeOverride?.fees_disabled 
+    ? 0 
+    : feeOverride?.custom_renter_fee ?? platformFees?.renterPercentage ?? systemConfig?.fees?.platformPercentage ?? 10;
+  const hubberFeePercentage = feeOverride?.fees_disabled 
+    ? 0 
+    : feeOverride?.custom_hubber_fee ?? platformFees?.hubberPercentage ?? 10;
   const superHubberFeePercentage = platformFees?.superHubberPercentage ?? 5;
 
   // ✅ Determina se l'hubber è SuperHubber (commissione ridotta)
@@ -1201,6 +1228,7 @@ useEffect(() => {
                         <span>€{Number(listing.cleaningFee).toFixed(2)}</span>
                       </div>
                     )}
+                    
                     {(() => {
   // Calcola commissione variabile e fee fissa separate
   const completeSubtotal = subtotal + (Number(listing.cleaningFee) || 0);
