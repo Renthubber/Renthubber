@@ -61,6 +61,7 @@ import { PagamentiFattureHubber } from '../components/dashboard/hubber/Pagamenti
 import { PrenotazioniRenter } from '../components/dashboard/renter/PrenotazioniRenter';
 import { PanoramicaRenter } from '../components/dashboard/renter/PanoramicaRenter';
 import { PagamentiFattureRenter } from '../components/dashboard/renter/PagamentiFattureRenter';
+import { FeeOverrideBanner } from '../components/FeeOverrideBanner';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
@@ -2581,6 +2582,9 @@ const renderHubberCalendar = () => {
           </button>
         </div>
       </div>
+     
+      {/* Banner promozione commissioni */}
+      <FeeOverrideBanner userId={user.id} />
 
       {/* Custom Tabs */}
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 bg-white p-3 rounded-xl border border-gray-200 mb-8 w-full sm:w-auto">
@@ -2728,6 +2732,9 @@ const renderHubberCalendar = () => {
         </h1>
         <p className="text-gray-500">Pronto per il tuo prossimo noleggio?</p>
       </div>
+     
+      {/* Banner promozione commissioni */}
+      <FeeOverrideBanner userId={user.id} />
 
       {/* Custom Tabs for Renter */}
 <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 bg-white p-3 rounded-xl border border-gray-200 mb-8 w-full sm:w-auto">
