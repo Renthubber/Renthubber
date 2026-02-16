@@ -239,7 +239,7 @@ export const handler: Handler = async (event, context) => {
       }
 
       console.log('✅ Booking created:', booking.id);
-
+        /*
       // Scala i crediti dal wallet
       const newGeneralBalanceCents = Math.round((generalBalance - generalBalanceToUse) * 100);
       const newRefundBalanceCents = Math.round((refundBalance - refundBalanceToUse) * 100);
@@ -275,7 +275,8 @@ export const handler: Handler = async (event, context) => {
       } else {
         console.log('✅ Wallet updated successfully');
       }
-
+       */
+      
       // Crea transazioni wallet per tracciabilità
       const transactions = [];
       
