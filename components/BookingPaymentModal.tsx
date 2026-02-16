@@ -396,9 +396,9 @@ const actualWalletUsable = useMemo(() => {
           cleaningFee: cleaningFeeEur,
           totalAmount: totalAmountEur,
           useWallet: actualWalletUsable > 0,
-          // ✅ Quando usa "Credito Rimborsi", scala da general + refund
-          generalBalanceToUse: walletType === 'refund' ? Math.min(generalBalance, actualWalletUsable) : 0,
-          refundBalanceToUse: walletType === 'refund' ? Math.min(refundBalance, Math.max(0, actualWalletUsable - generalBalance)) : 0,
+          // ✅ Quando usa "Credito Rimborsi", prima refund poi general
+          generalBalanceToUse: walletType === 'refund' ? Math.min(generalBalance, Math.max(0, actualWalletUsable - refundBalance)) : 0,
+          refundBalanceToUse: walletType === 'refund' ? Math.min(refundBalance, actualWalletUsable) : 0,
           referralBalanceToUse: walletType === 'referral' ? actualWalletUsable : 0,
         }),
       });
