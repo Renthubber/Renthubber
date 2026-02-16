@@ -5,6 +5,7 @@ import {
   KeyRound, Trash2, Save, FileCheck, FileText, Eye, Download, ImageIcon,
   AlertCircle, Landmark, TrendingUp, Star
 } from 'lucide-react';
+import { FeeOverridePanel } from './FeeOverridePanel';  
 
 interface EditUserForm {
   // Anagrafica
@@ -524,6 +525,14 @@ export const EditUserComplete: React.FC<EditUserCompleteProps> = ({
                   onChange={(e) => setFormData({ ...formData, custom_fee_percentage: e.target.value })}
                   placeholder="Lascia vuoto per fee standard"
                   className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+                />
+              </div>
+              
+              {/* Override Commissioni con limiti */}
+              <div className="border-t border-gray-200 pt-4 mt-4">
+                <FeeOverridePanel 
+                  userId={user.id} 
+                  userName={user.name || user.public_name || 'Utente'} 
                 />
               </div>
 
