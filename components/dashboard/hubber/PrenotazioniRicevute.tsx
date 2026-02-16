@@ -685,7 +685,7 @@ export const PrenotazioniRicevute: React.FC<PrenotazioniRicevuteProps> = ({
       {/* Commissione variabile */}
       <div className="flex justify-between text-sm">
         <span className="text-gray-400">
-          Commissione di servizio (10% iva inclusa)
+          Commissione di servizio ({(selectedBooking as any).renterFeePercent ?? 10}% iva inclusa)
         </span>
         <span className="font-medium text-gray-400">-€0.00</span>
       </div>
@@ -732,18 +732,23 @@ export const PrenotazioniRicevute: React.FC<PrenotazioniRicevuteProps> = ({
         </div>
       )}
       
-{/* ✅ Commissione hubber (10%) */}
+{/* ✅ Commissione hubber */}
 {(() => {
   const cleaningFee = (selectedBooking as any).cleaningFee || 0;
   const baseAmount = (selectedBooking as any).renterTotalPaid - (selectedBooking as any).renterTotalFee;
-  const variableCommission = baseAmount * 0.10;
+  const netEarnings = selectedBooking.netEarnings ?? (selectedBooking.totalPrice - (selectedBooking.commission || 0));
+  const totalHubberFee = (baseAmount + cleaningFee) - netEarnings;
   const fixedFee = calculateHubberFixedFee(baseAmount + cleaningFee);
+  const variableCommission = Math.max(totalHubberFee - fixedFee, 0);
+  const hubberFeePercent = (baseAmount + cleaningFee) > 0 
+    ? Math.round((variableCommission / (baseAmount + cleaningFee)) * 100) 
+    : 10;
 
   return (
     <>
       <div className="flex justify-between text-sm">
         <span className="text-gray-600">
-          Commissione di servizio (10% IVA inclusa)
+          Commissione di servizio ({hubberFeePercent}% IVA inclusa)
         </span>
         <span className="font-medium text-red-500">
           -€{variableCommission.toFixed(2)}
