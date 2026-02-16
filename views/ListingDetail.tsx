@@ -80,7 +80,8 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
       if (!currentUser?.id) return;
       try {
         const { data } = await supabase.rpc('get_active_fee_override', { p_user_id: currentUser.id });
-        if (data?.[0]) setFeeOverride(data[0]);
+        const override = Array.isArray(data) ? data[0] : data;
+        if (override?.custom_renter_fee !== undefined || override?.custom_hubber_fee !== undefined || override?.fees_disabled) setFeeOverride(override);
       } catch (err) {
         console.error('Errore caricamento fee override:', err);
       }
