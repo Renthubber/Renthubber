@@ -2584,7 +2584,7 @@ const renderHubberCalendar = () => {
       </div>
      
       {/* Banner promozione commissioni */}
-      <FeeOverrideBanner userId={user.id} />
+      <FeeOverrideBanner userId={user.id} mode="hubber" />
 
       {/* Custom Tabs */}
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 bg-white p-3 rounded-xl border border-gray-200 mb-8 w-full sm:w-auto">
@@ -2734,7 +2734,7 @@ const renderHubberCalendar = () => {
       </div>
      
       {/* Banner promozione commissioni */}
-      <FeeOverrideBanner userId={user.id} />
+      <FeeOverrideBanner userId={user.id} mode="renter" />
 
       {/* Custom Tabs for Renter */}
 <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 bg-white p-3 rounded-xl border border-gray-200 mb-8 w-full sm:w-auto">
