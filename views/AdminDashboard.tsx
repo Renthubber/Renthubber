@@ -3202,7 +3202,7 @@ const handleSavePage = async () => {
                                   {isRenter ? 'R' : 'H'}: {getUserName(isRenter ? selectedConversation.renter : selectedConversation.hubber)}
                                 </p>
                               )}
-                           <p className={`text-sm whitespace-pre ${isAdmin ? 'text-purple-900' : isRenter ? 'text-gray-900' : 'text-white'}`}>
+                           <p className={`text-sm whitespace-pre-wrap break-words ${isAdmin ? 'text-purple-900' : isRenter ? 'text-gray-900' : 'text-white'}`}>
                             {msg.text}
                               </p>
                               <div className="flex items-center justify-between mt-1">
