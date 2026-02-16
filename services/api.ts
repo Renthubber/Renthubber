@@ -6493,7 +6493,97 @@ sendMessage: async (params: {
 
       return count || 0;
     },
-  },
+
+ // ============================================
+    // FEE OVERRIDES - Commissioni Personalizzate
+    // ============================================
+
+    getFeeOverride: async (userId: string) => {
+      const { data, error } = await supabase
+        .rpc('get_active_fee_override', { p_user_id: userId });
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+
+    getFeeOverrideHistory: async (userId: string) => {
+      const { data, error } = await supabase
+        .from('user_fee_overrides')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+
+    getAllActiveFeeOverrides: async () => {
+      const { data, error } = await supabase
+        .from('user_fee_overrides')
+        .select('*, user:user_id(id, name, email, public_name, avatar_url)')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+
+    createFeeOverride: async (params: {
+      userId: string;
+      feesDisabled: boolean;
+      customRenterFee: number | null;
+      customHubberFee: number | null;
+      durationDays: number;
+      maxTransactionAmount: number | null;
+      reason: string;
+      notes?: string;
+    }) => {
+      const adminId = (await supabase.auth.getUser()).data.user?.id;
+
+      // Revoca eventuali override attivi precedenti
+      await supabase
+        .from('user_fee_overrides')
+        .update({ status: 'revoked', revoked_by: adminId, revoked_at: new Date().toISOString() })
+        .eq('user_id', params.userId)
+        .eq('status', 'active');
+
+      // Calcola scadenza
+      const validUntil = new Date();
+      validUntil.setDate(validUntil.getDate() + params.durationDays);
+
+      const { data, error } = await supabase
+        .from('user_fee_overrides')
+        .insert({
+          user_id: params.userId,
+          fees_disabled: params.feesDisabled,
+          custom_renter_fee: params.customRenterFee,
+          custom_hubber_fee: params.customHubberFee,
+          valid_from: new Date().toISOString(),
+          valid_until: validUntil.toISOString(),
+          duration_days: params.durationDays,
+          max_transaction_amount: params.maxTransactionAmount,
+          current_transaction_amount: 0,
+          status: 'active',
+          reason: params.reason,
+          notes: params.notes || '',
+          created_by: adminId,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+
+    revokeFeeOverride: async (overrideId: string) => {
+      const adminId = (await supabase.auth.getUser()).data.user?.id;
+      const { error } = await supabase
+        .from('user_fee_overrides')
+        .update({
+          status: 'revoked',
+          revoked_by: adminId,
+          revoked_at: new Date().toISOString()
+        })
+        .eq('id', overrideId);
+      if (error) throw error;
+    },
+     },
 
   /* =======================================================
      NOTIFICHE
