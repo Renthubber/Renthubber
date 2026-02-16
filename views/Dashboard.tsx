@@ -1790,7 +1790,6 @@ if (result.requiresPayment && result.clientSecret) {
   document.documentElement.style.scrollBehavior = 'auto';
   document.body.style.overflow = 'hidden';
     setLoadingBookingDetail(true);
-     console.log('🔍 BOOKING KEYS:', Object.keys(booking));
     setBookingDetailData(null);
 
     try {
@@ -1814,12 +1813,7 @@ if (result.requiresPayment && result.clientSecret) {
       // Calcola breakdown
       const basePrice = days * listingPrice;
       const cleaningFee = (booking as any).cleaningFee || 0;
-      console.log('🔍 BOOKING RAW:', { 
-        platformFee: (booking as any).platformFee, 
-        platform_fee: (booking as any).platform_fee,
-        amount_total: (booking as any).amount_total,
-        amountTotal: (booking as any).amountTotal
-      });
+    
       // ✅ Carica override commissioni renter (se presente)
       const totalFee = (booking as any).renterTotalFee || (booking as any).commission || (booking as any).platformFee || ((basePrice + cleaningFee) * 10) / 100;
       const fixedFee = 0.50;
@@ -1867,7 +1861,6 @@ if (result.requiresPayment && result.clientSecret) {
         }
       }
       
-     console.log('🔍 RENTER FEE DEBUG:', { commission, fixedFee, variableCommission, renterFeePercent, basePrice, cleaningFee });
 
       setBookingDetailData({
         listingPrice,
