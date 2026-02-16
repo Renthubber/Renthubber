@@ -1812,7 +1812,21 @@ if (result.requiresPayment && result.clientSecret) {
       // Calcola breakdown
       const basePrice = days * listingPrice;
       const cleaningFee = (booking as any).cleaningFee || 0;
-      const commission = ((basePrice + cleaningFee) * 10) / 100;
+      // ✅ Carica override commissioni renter (se presente)
+      let renterFeePercent = 10; // default
+      try {
+        const { data: overrideData } = await supabase.rpc('get_active_fee_override', { p_user_id: user.id });
+        if (overrideData?.[0]) {
+          if (overrideData[0].fees_disabled) {
+            renterFeePercent = 0;
+          } else if (overrideData[0].custom_renter_fee !== null) {
+            renterFeePercent = overrideData[0].custom_renter_fee;
+          }
+        }
+      } catch (e) {
+        console.warn('Errore caricamento fee override renter:', e);
+      }
+      const commission = ((basePrice + cleaningFee) * renterFeePercent) / 100;
       const fixedFee = calculateRenterFixedFee(basePrice + cleaningFee);
       const deposit = (booking as any).deposit || 0;
 
@@ -1871,6 +1885,7 @@ if (result.requiresPayment && result.clientSecret) {
         pickupAddress,
         pickupCity,
         pickupInstructions,
+        renterFeePercent,
       } as any);
     } catch (err) {
       console.error("Errore caricamento dettaglio prenotazione:", err);
