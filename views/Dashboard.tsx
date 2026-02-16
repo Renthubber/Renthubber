@@ -1790,6 +1790,7 @@ if (result.requiresPayment && result.clientSecret) {
   document.documentElement.style.scrollBehavior = 'auto';
   document.body.style.overflow = 'hidden';
     setLoadingBookingDetail(true);
+     console.log('🔍 BOOKING KEYS:', Object.keys(booking));
     setBookingDetailData(null);
 
     try {
