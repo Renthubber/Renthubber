@@ -204,14 +204,12 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
 
  useEffect(() => {
     const loadHubberOverride = async () => {
-      console.log('🔍 HUBBER OVERRIDE - listing.hostId:', listing.hostId);
       if (!listing.hostId) {
         setHubberOverrideLoaded(true);
         return;
       }
       try {
         const { data } = await supabase.rpc('get_active_fee_override', { p_user_id: listing.hostId });
-        console.log('🔍 HUBBER OVERRIDE - risultato:', data);
         const override = Array.isArray(data) ? data[0] : data;
         if (override?.custom_hubber_fee !== undefined || override?.fees_disabled) setHubberFeeOverride(override);
       } catch (err) {
