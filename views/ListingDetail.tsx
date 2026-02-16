@@ -718,8 +718,12 @@ useEffect(() => {
     // Poi usa il credito referral (max X% delle commissioni)
     const maxReferralUsable = (serviceFee * maxCreditUsagePercent) / 100;
     const referralUsed = Math.min(referralBalance, maxReferralUsable, remainingAfterRefund);
+    const remainingAfterReferral = remainingAfterRefund - referralUsed;
     
-    walletUsedEur = refundUsed + referralUsed;
+    // Infine usa il wallet generale (può coprire tutto)
+    const generalUsed = Math.min(generalBalance, remainingAfterReferral);
+    
+    walletUsedEur = refundUsed + referralUsed + generalUsed;
   }
   
   const remainingToPay = total - walletUsedEur;
@@ -1139,11 +1143,15 @@ useEffect(() => {
                   </label>
                   <div className="pl-6 space-y-1 text-xs text-gray-500">
                     <div className="flex justify-between">
-                      <span>💰 Credito Rimborsi:</span>
+                      <span>Credito Wallet:</span>
+                      <span>€{generalBalance.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Credito Rimborsi:</span>
                       <span>€{refundBalance.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>🎁 Credito Invita Amico:</span>
+                      <span>Credito Invita Amico:</span>
                       <span>€{referralBalance.toFixed(2)} <span className="text-gray-400">(max {maxCreditUsagePercent}% comm.)</span></span>
                     </div>
                   </div>
