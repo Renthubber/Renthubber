@@ -13,6 +13,7 @@ interface CollaboratorInfo {
   lastName: string;
   publicName: string;
   badge: string;
+  avatarUrl: string | null;
   isValid: boolean;
 }
 
@@ -44,13 +45,12 @@ export const CollaboratorReferralLanding: React.FC = () => {
     try {
       const { data, error: err } = await supabase
         .from('collaborators')
-        .select('first_name, last_name, badge, status')
+        .select('first_name, last_name, badge, status, avatar_url')
         .eq('referral_code', code.toUpperCase())
         .eq('status', 'approvato')
         .single();
 
       if (err || !data) {
-        // Fallback: potrebbe essere un codice referral utente normale
         const { data: userData } = await supabase
           .from('users')
           .select('id')
@@ -58,7 +58,6 @@ export const CollaboratorReferralLanding: React.FC = () => {
           .single();
         
         if (userData) {
-          // È un codice utente, redirect alla landing utente
           navigate(`/invite/${code.toUpperCase()}`, { replace: true });
           return;
         }
@@ -73,6 +72,7 @@ export const CollaboratorReferralLanding: React.FC = () => {
         lastName: data.last_name,
         publicName: `${data.first_name} ${data.last_name.charAt(0)}.`,
         badge: data.badge || 'none',
+        avatarUrl: data.avatar_url || null,
         isValid: true,
       });
       setLoading(false);
@@ -87,7 +87,6 @@ export const CollaboratorReferralLanding: React.FC = () => {
     navigate(`/signup?ref=${code?.toUpperCase()}`);
   };
 
-  // LOADING
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center">
@@ -99,7 +98,6 @@ export const CollaboratorReferralLanding: React.FC = () => {
     );
   }
 
-  // ERROR
   if (error || !collaborator) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50 flex items-center justify-center px-4">
@@ -118,13 +116,11 @@ export const CollaboratorReferralLanding: React.FC = () => {
     );
   }
 
-  // SUCCESS
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
       <div className="max-w-2xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
 
-          {/* Hero Banner */}
           <div className="relative bg-gradient-to-r from-brand to-emerald-600 p-8 sm:p-10 text-white text-center overflow-hidden">
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-4 left-8 text-6xl">🏠</div>
@@ -144,11 +140,14 @@ export const CollaboratorReferralLanding: React.FC = () => {
 
           <div className="p-8 sm:p-10">
 
-            {/* Collaborator Card */}
             <div className="flex items-center justify-center mb-8">
               <div className="bg-gradient-to-br from-brand/5 to-emerald-50 border-2 border-brand/20 rounded-2xl p-6 text-center w-full max-w-sm">
-                <div className="w-20 h-20 rounded-full bg-brand/10 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-3xl font-bold text-brand">{collaborator.firstName.charAt(0)}{collaborator.lastName.charAt(0)}</span>
+                <div className="w-20 h-20 rounded-full bg-brand/10 flex items-center justify-center mx-auto mb-3 overflow-hidden">
+                  {collaborator.avatarUrl ? (
+                    <img src={collaborator.avatarUrl} alt={collaborator.publicName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-3xl font-bold text-brand">{collaborator.firstName.charAt(0)}{collaborator.lastName.charAt(0)}</span>
+                  )}
                 </div>
                 <h2 className="text-xl font-bold text-gray-900">{collaborator.publicName}</h2>
                 <p className="text-sm text-gray-500 mt-1">Partner RentHubber {BADGE_EMOJI[collaborator.badge]}</p>
@@ -156,7 +155,6 @@ export const CollaboratorReferralLanding: React.FC = () => {
               </div>
             </div>
 
-            {/* Perché RentHubber */}
             <div className="mb-8">
               <h3 className="font-bold text-gray-900 text-lg mb-4 text-center">Perché RentHubber?</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -199,7 +197,6 @@ export const CollaboratorReferralLanding: React.FC = () => {
               </div>
             </div>
 
-            {/* Come funziona */}
             <div className="bg-gradient-to-br from-brand/5 to-emerald-50 rounded-2xl p-6 mb-8">
               <h3 className="font-bold text-gray-900 mb-4 text-center">Come funziona in 3 passi</h3>
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -223,7 +220,6 @@ export const CollaboratorReferralLanding: React.FC = () => {
               </div>
             </div>
 
-            {/* Referral Code */}
             <div className="bg-gray-50 rounded-xl p-4 mb-6 border-2 border-dashed border-brand/30">
               <div className="text-center">
                 <p className="text-sm text-gray-600 mb-1">Il tuo codice invito personale:</p>
@@ -231,7 +227,6 @@ export const CollaboratorReferralLanding: React.FC = () => {
               </div>
             </div>
 
-            {/* CTA */}
             <button onClick={handleRegister}
               className="w-full bg-gradient-to-r from-brand to-emerald-600 hover:from-brand-dark hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center group">
               <span className="mr-2 text-lg">Registrati Gratis</span>
@@ -244,7 +239,6 @@ export const CollaboratorReferralLanding: React.FC = () => {
           </div>
         </div>
 
-        {/* Trust Badges */}
         <div className="mt-8 grid grid-cols-3 gap-4 text-center">
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <p className="text-2xl font-bold text-brand">100%</p>
