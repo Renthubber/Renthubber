@@ -56,6 +56,7 @@ import * as financeSettingsService from '../services/financeSettingsService';
 import { OnlineIndicator } from '../components/OnlineIndicator';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import { AdminDisputesPage } from './AdminDisputesPage';
+import { AdminCollaboratori } from '../components/admin/AdminCollaboratori';
 
 
 // Funzione per formattare data in italiano
@@ -134,7 +135,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<
-  'overview' | 'users' | 'listings' | 'bookings' | 'messages' | 'support' | 'finance' | 'invoices' | 'cms' | 'disputes' | 'reviews' | 'email' | 'announcements' | 'config' | 'referral'
+  'overview' | 'users' | 'listings' | 'bookings' | 'messages' | 'support' | 'finance' | 'invoices' | 'cms' | 'disputes' | 'reviews' | 'email' | 'announcements' | 'config' | 'referral' | 'collaboratori'
 >('overview');
   // Sotto-tab per Finanza & Wallet
 const [financeSubTab, setFinanceSubTab] = useState <
@@ -8882,6 +8883,16 @@ const renderCMS = () => <AdminCMSBranding />;
             <Gift className="w-5 h-5 mr-3" /> Invita Amico
           </button>
           <button
+            onClick={() => setActiveTab('collaboratori')}
+            className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
+              activeTab === 'collaboratori'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+            }`}
+          >
+            <Users className="w-5 h-5 mr-3" /> Collaboratori
+          </button>
+          <button
             onClick={() => setActiveTab('config')}
             className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
               activeTab === 'config'
@@ -8950,6 +8961,7 @@ const renderCMS = () => <AdminCMSBranding />;
     {activeTab === 'email' && <AdminEmailSection allUsers={allUsers} currentUser={currentUser} />}
     {activeTab === 'announcements' && (<AdminAnnouncements currentUser={currentUser} />)}
     {activeTab === 'referral' && <ReferralSettings />}
+    {activeTab === 'collaboratori' && <AdminCollaboratori />}
     {activeTab === 'config' && renderConfig()}
   </div>
 </main>
