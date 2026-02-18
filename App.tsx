@@ -55,6 +55,14 @@ import { MappaSitoPage } from "./pages/MappaSitoPage";
 // === CONTEXT ===
 import { BrandingProvider } from "./context/BrandingProvider";
 
+// === COLLABORATORI ===
+import { CollaboratorAuthProvider } from './collaboratori/context/CollaboratorAuthContext';
+import { CollaboratorLogin } from './collaboratori/components/CollaboratorLogin';
+import { CollaboratorRegistration } from './collaboratori/components/CollaboratorRegistration';
+import { ProtectedCollaboratorRoute } from './collaboratori/components/ProtectedCollaboratorRoute';
+import { CollaboratorDashboard } from './collaboratori/components/CollaboratorDashboard';
+import { CollaboratorReferralLanding } from './collaboratori/components/CollaboratorReferralLanding';
+
 import {
   Listing,
   User,
@@ -476,14 +484,16 @@ const handleRenterClick = async (renter: User) => {
     <BrandingProvider>
     <div className="min-h-screen flex flex-col bg-gray-50">
       <ScrollToTop />
-      <Header
-        currentUser={currentUser}
-        activeMode={activeMode}
-        onSwitchMode={setActiveMode}
-        onLogout={handleLogout}
-        onPublish={() => setIsPublishModalOpen(true)}
-        unreadCount={unreadCount}
-      />
+      {!location.pathname.startsWith('/collaboratori') && (
+  <Header
+    currentUser={currentUser}
+    activeMode={activeMode}
+    onSwitchMode={setActiveMode}
+    onLogout={handleLogout}
+    onPublish={() => setIsPublishModalOpen(true)}
+    unreadCount={unreadCount}
+  />
+)}
 
       <main className="flex-1">
        <Routes>
@@ -591,6 +601,7 @@ const handleRenterClick = async (renter: User) => {
 
           {/* REFERRAL LANDING */}
           <Route path="/invito/:code" element={<ReferralLanding />} />
+          <Route path="/partner/:code" element={<CollaboratorReferralLanding />} />
 
           {/* DASHBOARD & USER VIEWS */}
 <Route path="/dashboard/*" element={
@@ -779,27 +790,51 @@ const handleRenterClick = async (renter: User) => {
     }}
   />
 } />
+ 
+{/* ============================================================ */}
+          {/* COLLABORATORI - Sezione completamente separata */}
+          {/* ============================================================ */}
+          <Route path="/collaboratori/login" element={
+            <CollaboratorAuthProvider>
+              <CollaboratorLogin />
+            </CollaboratorAuthProvider>
+          } />
+          <Route path="/collaboratori/registrazione" element={
+            <CollaboratorAuthProvider>
+              <CollaboratorRegistration />
+            </CollaboratorAuthProvider>
+          } />
+          <Route path="/collaboratori/dashboard" element={
+  <CollaboratorAuthProvider>
+    <ProtectedCollaboratorRoute>
+      <CollaboratorDashboard />
+    </ProtectedCollaboratorRoute>
+  </CollaboratorAuthProvider>
+} />
 
         </Routes>
       </main>
 
       {/* Bottom Navigation Bar - Solo Mobile */}
-      <BottomNavBar
-        currentUser={currentUser}
-        activeMode={activeMode}
-        onSwitchMode={setActiveMode}
-        onPublish={() => setIsPublishModalOpen(true)}
-        unreadCount={unreadCount}
-      />
+      {!location.pathname.startsWith('/collaboratori') && (
+  <BottomNavBar
+    currentUser={currentUser}
+    activeMode={activeMode}
+    onSwitchMode={setActiveMode}
+    onPublish={() => setIsPublishModalOpen(true)}
+    unreadCount={unreadCount}
+  />
+)}
 
       {/* Footer - Solo pagine pubbliche (NON dashboard) */}
-      {!location.pathname.startsWith('/dashboard') && 
+     {!location.pathname.startsWith('/dashboard') && 
        !location.pathname.startsWith('/messages') && 
        !location.pathname.startsWith('/wallet') && 
        !location.pathname.startsWith('/admin') && 
        !location.pathname.startsWith('/my-listings') && 
        !location.pathname.startsWith('/become-hubber') && 
-       !location.pathname.startsWith('/edit-listing') && (
+       !location.pathname.startsWith('/edit-listing') && 
+       !location.pathname.startsWith('/collaboratori') && (
         <Footer />
       )}
     </div>
@@ -812,7 +847,8 @@ const handleRenterClick = async (renter: User) => {
      !location.pathname.startsWith('/admin') && 
      !location.pathname.startsWith('/my-listings') && 
      !location.pathname.startsWith('/become-hubber') && 
-     !location.pathname.startsWith('/edit-listing') && (
+     !location.pathname.startsWith('/edit-listing') && 
+     !location.pathname.startsWith('/collaboratori') && (
       <CookieSettingsButton />
     )}
 

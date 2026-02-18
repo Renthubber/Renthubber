@@ -1,0 +1,1293 @@
+// ============================================================
+// RENTHUBBER - MODULO COLLABORATORI - Dashboard Completa
+// Path: collaboratori/components/CollaboratorDashboard.tsx
+// ============================================================
+
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  LayoutDashboard, Users, TrendingUp, MapPin, UserPlus, LogOut,
+  Plus, Search, Phone, Mail, Building, Link2, Copy, Check,
+  ChevronRight, Award, Euro, Target, BarChart3, Clock, CheckCircle,
+  XCircle, Loader2, Tag, CreditCard, Calendar, FileText, HelpCircle,
+  Shield, User, Share2, MessageSquare, Zap, RefreshCw,
+  ChevronDown, ChevronUp, Clipboard, Send, Info, AlertTriangle,
+  Wallet, Receipt, Star, Activity, Eye
+} from 'lucide-react';
+import {
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
+  CartesianGrid, Tooltip, BarChart, Bar, Legend
+} from 'recharts';
+import { useCollaboratorAuth } from '../context/CollaboratorAuthContext';
+import { supabase } from '../../services/supabaseClient';
+import {
+  CollaboratorLead, CollaboratorZone, CollaboratorCommission, CollaboratorKPI
+} from '../types/collaborator.types';
+
+type Tab = 'overview' | 'hubbers' | 'earnings' | 'invite' | 'performance' | 'payments' | 'support' | 'profile';
+
+const LEAD_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
+  contattato: { label: 'Contattato', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200', icon: <Phone className="w-3 h-3" /> },
+  interessato: { label: 'Interessato', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', icon: <Target className="w-3 h-3" /> },
+  registrato: { label: 'Registrato', color: 'text-purple-700', bg: 'bg-purple-50 border-purple-200', icon: <UserPlus className="w-3 h-3" /> },
+  attivo: { label: 'Attivo', color: 'text-green-700', bg: 'bg-green-50 border-green-200', icon: <CheckCircle className="w-3 h-3" /> },
+  perso: { label: 'Perso', color: 'text-red-700', bg: 'bg-red-50 border-red-200', icon: <XCircle className="w-3 h-3" /> },
+};
+
+const BADGE_CONFIG: Record<string, { label: string; emoji: string; next: string; target: number }> = {
+  none: { label: 'Starter', emoji: '🔰', next: 'Bronze', target: 10 },
+  bronze: { label: 'Bronze', emoji: '🥉', next: 'Silver', target: 25 },
+  silver: { label: 'Silver', emoji: '🥈', next: 'Gold', target: 50 },
+  gold: { label: 'Gold', emoji: '🥇', next: '', target: 0 },
+};
+
+const TABS: { id: Tab; label: string; icon: React.ReactNode; short: string }[] = [
+  { id: 'overview', label: 'Panoramica', icon: <LayoutDashboard className="w-4 h-4" />, short: 'Home' },
+  { id: 'hubbers', label: 'Hubber Portati', icon: <Users className="w-4 h-4" />, short: 'Hubber' },
+  { id: 'earnings', label: 'Guadagni', icon: <Euro className="w-4 h-4" />, short: 'Guadagni' },
+  { id: 'invite', label: 'Invita', icon: <Share2 className="w-4 h-4" />, short: 'Invita' },
+  { id: 'performance', label: 'Performance', icon: <Activity className="w-4 h-4" />, short: 'Stats' },
+  { id: 'payments', label: 'Pagamenti', icon: <Wallet className="w-4 h-4" />, short: 'Paga' },
+  { id: 'support', label: 'Supporto', icon: <HelpCircle className="w-4 h-4" />, short: 'Help' },
+  { id: 'profile', label: 'Profilo', icon: <User className="w-4 h-4" />, short: 'Profilo' },
+];
+
+const FAQ_DATA = [
+  { q: 'Come funziona il guadagno?', a: 'Guadagni un bonus per ogni Hubber che si registra e pubblica almeno un annuncio, più una commissione ricorrente sulle prenotazioni per i primi 12 mesi.' },
+  { q: 'Quando vengo pagato?', a: 'Pagamenti mensili. Commissioni maturate nel mese corrente pagate entro il 15 del mese successivo via bonifico.' },
+  { q: 'Come porto un nuovo Hubber?', a: 'Condividi il tuo link referral. Chi si registra tramite il tuo link viene associato al tuo account automaticamente.' },
+  { q: 'Posso operare in più zone?', a: 'Sì! Puoi richiedere nuove zone. L\'admin valuterà e approverà.' },
+  { q: 'Cosa significa zona esclusiva?', a: 'Sei l\'unico collaboratore in quell\'area. Riconoscimento per i più performanti.' },
+  { q: 'Se un Hubber smette di noleggiare?', a: 'Commissioni ricorrenti solo su prenotazioni effettive. Niente prenotazioni = niente commissioni.' },
+  { q: 'Come migliorare le performance?', a: 'Qualità > quantità. Un Hubber attivo con prenotazioni vale più di 10 inattivi.' },
+];
+
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
+export const CollaboratorDashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const { collaborator, logout, updateProfile } = useCollaboratorAuth();
+
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [leads, setLeads] = useState<CollaboratorLead[]>([]);
+  const [zones, setZones] = useState<CollaboratorZone[]>([]);
+  const [commissions, setCommissions] = useState<CollaboratorCommission[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [leadFilter, setLeadFilter] = useState('all');
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedScript, setCopiedScript] = useState(false);
+  const [showNewLeadForm, setShowNewLeadForm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [newLead, setNewLead] = useState({ contact_name: '', contact_email: '', contact_phone: '', business_name: '', category: '', notes: '', zone_id: '', lead_type: 'privato', fiscal_code: '', vat_number: '', pec: '', sdi_code: '' });
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ phone: '', tax_id: '', bio: '' });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState({ iban: '', intestatario: '' });
+  const [isEditingPayment, setIsEditingPayment] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // DATA LOADING
+  useEffect(() => {
+    if (collaborator) {
+      loadAllData();
+      setProfileForm({ phone: collaborator.phone || '', tax_id: collaborator.tax_id || '', bio: collaborator.bio || '' });
+    }
+  }, [collaborator]);
+
+  const loadAllData = async () => {
+    if (!collaborator) return;
+    setIsLoading(true);
+    try {
+      const [lr, zr, cr] = await Promise.all([
+        supabase.from('collaborator_leads').select('*').eq('collaborator_id', collaborator.id).order('created_at', { ascending: false }),
+        supabase.from('collaborator_zones').select('*').eq('collaborator_id', collaborator.id),
+        supabase.from('collaborator_commissions').select('*').eq('collaborator_id', collaborator.id).order('created_at', { ascending: false }),
+      ]);
+      setLeads(lr.data || []);
+      setZones(zr.data || []);
+      setCommissions(cr.data || []);
+    } catch (err) { console.error('Errore:', err); }
+    finally { setIsLoading(false); }
+  };
+
+  // COMPUTED
+  const referralLink = `${window.location.origin}/partner/${collaborator?.referral_code || ''}`;
+  const approvedZones = zones.filter(z => z.status === 'approvata');
+  const badge = BADGE_CONFIG[collaborator?.badge || 'none'];
+
+  const kpi: CollaboratorKPI = useMemo(() => {
+    const totalLeads = leads.length;
+    const activeHubbers = leads.filter(l => l.status === 'attivo').length;
+    const totalEarnings = commissions.reduce((s, c) => c.status !== 'annullata' ? s + Number(c.amount) : s, 0);
+    const pendingCommissions = commissions.filter(c => c.status === 'maturata').reduce((s, c) => s + Number(c.amount), 0);
+    const paidCommissions = commissions.filter(c => c.status === 'pagata').reduce((s, c) => s + Number(c.amount), 0);
+    const conversionRate = totalLeads > 0 ? (activeHubbers / totalLeads) * 100 : 0;
+    return { totalLeads, activeHubbers, totalEarnings, conversionRate, pendingCommissions, paidCommissions };
+  }, [leads, commissions]);
+
+  const monthlyEarnings = useMemo(() => {
+    const m = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+    return commissions.filter(c => c.status !== 'annullata' && c.created_at.startsWith(m)).reduce((s, c) => s + Number(c.amount), 0);
+  }, [commissions]);
+
+  const chartData = useMemo(() => {
+    const months: Record<string, { month: string; bonus: number; ricorrenti: number; milestone: number; totale: number }> = {};
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      months[key] = { month: d.toLocaleDateString('it-IT', { month: 'short' }), bonus: 0, ricorrenti: 0, milestone: 0, totale: 0 };
+    }
+    commissions.forEach(c => {
+      if (c.status === 'annullata') return;
+      const key = c.created_at.slice(0, 7);
+      if (months[key]) {
+        const a = Number(c.amount);
+        if (c.type === 'acquisition_bonus') months[key].bonus += a;
+        else if (c.type === 'recurring') months[key].ricorrenti += a;
+        else months[key].milestone += a;
+        months[key].totale += a;
+      }
+    });
+    return Object.values(months);
+  }, [commissions]);
+
+  const monthlyPerf = useMemo(() => {
+    const m = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+    return {
+      newLeads: leads.filter(l => l.created_at.startsWith(m)).length,
+      activated: leads.filter(l => l.activated_at && l.activated_at.startsWith(m)).length,
+      registered: leads.filter(l => l.registered_at && l.registered_at.startsWith(m)).length,
+    };
+  }, [leads]);
+
+  const filteredLeads = useMemo(() => {
+    let r = [...leads];
+    if (leadFilter !== 'all') r = r.filter(l => l.status === leadFilter);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      r = r.filter(l => l.contact_name.toLowerCase().includes(q) || l.business_name?.toLowerCase().includes(q) || l.contact_email?.toLowerCase().includes(q));
+    }
+    return r;
+  }, [leads, leadFilter, searchQuery]);
+
+  // ACTIONS
+  const copyText = async (text: string, type: 'link' | 'script') => {
+    try { await navigator.clipboard.writeText(text); } catch { /* */ }
+    if (type === 'link') { setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2000); }
+    else { setCopiedScript(true); setTimeout(() => setCopiedScript(false), 2000); }
+  };
+
+  const handleAddLead = async () => {
+    if (!collaborator || !newLead.contact_name || !newLead.zone_id) return;
+    setIsSaving(true);
+    try {
+      const { data, error } = await supabase.from('collaborator_leads').insert({
+        collaborator_id: collaborator.id, zone_id: newLead.zone_id,
+        contact_name: newLead.contact_name.trim(), contact_email: newLead.contact_email.trim() || null,
+        contact_phone: newLead.contact_phone.trim() || null, business_name: newLead.business_name.trim() || null,
+        category: newLead.category.trim() || null, notes: newLead.notes.trim() || null, lead_type: newLead.lead_type, status: 'contattato',
+      }).select('*').single();
+      if (error) throw error;
+      setLeads(prev => [data, ...prev]);
+      setNewLead({ contact_name: '', contact_email: '', contact_phone: '', business_name: '', category: '', notes: '', zone_id: '', lead_type: 'privato', fiscal_code: '', vat_number: '', pec: '', sdi_code: '' });
+      setShowNewLeadForm(false);
+    } catch (err) { console.error(err); alert('Errore inserimento.'); }
+    finally { setIsSaving(false); }
+  };
+
+  const handleUpdateLeadStatus = async (id: string, status: string) => {
+    const updates: any = { status };
+    if (status === 'registrato') updates.registered_at = new Date().toISOString();
+    if (status === 'attivo') updates.activated_at = new Date().toISOString();
+    const { error } = await supabase.from('collaborator_leads').update(updates).eq('id', id);
+    if (!error) setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+  };
+
+  const handleSaveProfile = async () => {
+    if (!collaborator) return;
+    setIsSavingProfile(true);
+    try {
+      await updateProfile({ phone: profileForm.phone || null, tax_id: profileForm.tax_id || null, bio: profileForm.bio || null } as any);
+      setIsEditingProfile(false);
+    } catch (err) { console.error(err); }
+    finally { setIsSavingProfile(false); }
+  };
+  
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!collaborator || !e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    if (file.size > 2 * 1024 * 1024) { alert('Immagine troppo grande (max 2MB)'); return; }
+    setIsUploadingAvatar(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `collaborators/${collaborator.id}/avatar.${ext}`;
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+      const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      await supabase.from('collaborators').update({ avatar_url: avatarUrl }).eq('id', collaborator.id);
+    } catch (err) { console.error(err); alert('Errore upload foto.'); }
+    finally { setIsUploadingAvatar(false); }
+  };
+
+  const handleLogout = () => { logout(); navigate('/collaboratori/login'); };
+  if (!collaborator) return null;
+
+  // RENDER SHELL
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <img src="/R-logo.png" alt="RentHubber" className="w-8 h-8" />
+            <div>
+              <h1 className="text-base sm:text-lg font-bold text-gray-900">Area Collaboratori</h1>
+              <p className="text-xs text-gray-500">{collaborator.first_name} {collaborator.last_name} · {badge.emoji} {badge.label}</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button onClick={() => copyText(referralLink, 'link')} className="hidden sm:flex items-center text-xs bg-brand/10 text-brand px-3 py-1.5 rounded-full font-medium hover:bg-brand/20">
+              <Link2 className="w-3 h-3 mr-1" />{copiedLink ? 'Copiato!' : collaborator.referral_code}
+            </button>
+            <button onClick={loadAllData} className="text-gray-400 hover:text-brand"><RefreshCw className="w-4 h-4" /></button>
+            <button onClick={handleLogout} className="text-gray-400 hover:text-red-500"><LogOut className="w-5 h-5" /></button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        <div className="flex space-x-1 bg-white rounded-xl p-1 border border-gray-200 mb-6 overflow-x-auto">
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              className={`flex items-center space-x-1.5 px-3 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${activeTab === t.id ? 'bg-brand text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}>
+              {t.icon}<span className="hidden sm:inline">{t.label}</span><span className="sm:hidden">{t.short}</span>
+            </button>
+          ))}
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-brand animate-spin" /></div>
+        ) : (
+          <>
+            {activeTab === 'overview' && renderOverview()}
+            {activeTab === 'hubbers' && renderHubbers()}
+            {activeTab === 'earnings' && renderEarnings()}
+            {activeTab === 'invite' && renderInvite()}
+            {activeTab === 'performance' && renderPerformance()}
+            {activeTab === 'payments' && renderPayments()}
+            {activeTab === 'support' && renderSupport()}
+            {activeTab === 'profile' && renderProfile()}
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  // ============================================================
+  // 1️⃣ PANORAMICA
+  // ============================================================
+  function renderOverview() {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-brand to-brand-dark rounded-2xl p-6 text-white">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold">Ciao {collaborator!.first_name}! 👋</h2>
+              <p className="text-white/80 text-sm mt-1">La tua situazione in tempo reale.</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 w-full sm:w-auto">
+              <p className="text-xs text-white/70 mb-1">Il tuo link personale</p>
+              <div className="flex items-center space-x-2">
+                <code className="text-xs bg-white/10 px-2 py-1 rounded font-mono truncate max-w-[200px] sm:max-w-[300px]">{referralLink}</code>
+                <button onClick={() => copyText(referralLink, 'link')} className="bg-white/20 hover:bg-white/30 p-1.5 rounded-lg flex-shrink-0">
+                  {copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          <KPICard icon={<Euro className="w-5 h-5" />} label="Guadagni Mese" value={`€${monthlyEarnings.toFixed(2)}`} color="brand" />
+          <KPICard icon={<TrendingUp className="w-5 h-5" />} label="Guadagni Totali" value={`€${kpi.totalEarnings.toFixed(2)}`} color="green" />
+          <KPICard icon={<Clock className="w-5 h-5" />} label="In Attesa" value={`€${kpi.pendingCommissions.toFixed(2)}`} color="amber" />
+          <KPICard icon={<Users className="w-5 h-5" />} label="Hubber Attivi" value={kpi.activeHubbers} color="blue" />
+          <KPICard icon={<Target className="w-5 h-5" />} label="Conversione" value={`${kpi.conversionRate.toFixed(0)}%`} color="purple" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <h3 className="font-bold text-gray-900 mb-4 flex items-center">
+              <BarChart3 className="w-5 h-5 mr-2 text-brand" /> Andamento Guadagni
+            </h3>
+            <div className="h-64" style={{ minHeight: '256px' }}>
+              {chartData.some(d => d.totale > 0) ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                    <YAxis axisLine={false} tickLine={false} tickFormatter={v => `€${v}`} tick={{ fontSize: 11 }} />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} formatter={(v: number) => [`€${Number(v).toFixed(2)}`]} />
+                    <Legend />
+                    <Bar dataKey="bonus" name="Bonus" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="ricorrenti" name="Ricorrenti" fill="#10B981" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="milestone" name="Milestone" fill="#F59E0B" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                  <BarChart3 className="w-12 h-12 mb-3 opacity-30" />
+                  <p className="text-sm">I guadagni appariranno qui</p>
+                  <button onClick={() => setActiveTab('invite')} className="mt-3 text-brand text-sm font-medium hover:underline">Inizia ad invitare →</button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+              <h3 className="font-bold text-gray-900 mb-3 text-sm">Azioni Rapide</h3>
+              <div className="space-y-2">
+                <button onClick={() => { setActiveTab('hubbers'); setShowNewLeadForm(true); }} className="w-full flex items-center justify-between p-3 rounded-xl bg-brand/5 hover:bg-brand/10 text-brand text-sm font-medium">
+                  <span className="flex items-center"><UserPlus className="w-4 h-4 mr-2" /> Aggiungi Hubber</span><ChevronRight className="w-4 h-4" />
+                </button>
+                <button onClick={() => copyText(referralLink, 'link')} className="w-full flex items-center justify-between p-3 rounded-xl bg-green-50 hover:bg-green-100 text-green-700 text-sm font-medium">
+                  <span className="flex items-center"><Link2 className="w-4 h-4 mr-2" /> Copia Link</span>{copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </button>
+                <button onClick={() => setActiveTab('invite')} className="w-full flex items-center justify-between p-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-sm font-medium">
+                  <span className="flex items-center"><FileText className="w-4 h-4 mr-2" /> Materiale</span><ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-gray-900 text-sm">Ultimi Hubber</h3>
+                <button onClick={() => setActiveTab('hubbers')} className="text-brand text-xs hover:underline">Tutti <ChevronRight className="w-3 h-3 inline" /></button>
+              </div>
+              {leads.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-4">Nessun hubber ancora</p>
+              ) : (
+                <div className="space-y-2">
+                  {leads.slice(0, 4).map(l => {
+                    const s = LEAD_STATUS_CONFIG[l.status];
+                    return (
+                      <div key={l.id} className="flex items-center justify-between py-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{l.contact_name}</p>
+                          <p className="text-xs text-gray-400">{l.business_name || '-'}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${s.bg} ${s.color} flex-shrink-0`}>{s.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {zones.length > 0 && (
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+            <h3 className="font-bold text-gray-900 mb-3 flex items-center text-sm"><MapPin className="w-4 h-4 mr-2 text-brand" /> Le tue Zone</h3>
+            <div className="flex flex-wrap gap-2">
+              {zones.map(z => (
+                <span key={z.id} className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${z.status === 'approvata' ? 'bg-green-50 border-green-200 text-green-700' : z.status === 'richiesta' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                  <MapPin className="w-3 h-3 mr-1" />{z.city || z.province || z.region}
+                  {z.is_exclusive && <Star className="w-3 h-3 ml-1 text-yellow-500" />}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Kit Promozionale */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-1 flex items-center">
+            <FileText className="w-5 h-5 mr-2 text-brand" /> Kit Promozionale
+          </h3>
+          <p className="text-xs text-gray-500 mb-5">Tutto il materiale per presentare RentHubber ai tuoi contatti.</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Presentazione PDF */}
+            <div className="border border-gray-200 rounded-xl p-4 hover:border-brand/30 hover:shadow-sm transition-all">
+              <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center mb-3">
+                <FileText className="w-5 h-5 text-red-500" />
+              </div>
+              <h4 className="font-semibold text-gray-900 text-sm mb-1">Presentazione PDF</h4>
+              <p className="text-xs text-gray-500 mb-3">Slide deck ufficiale da mostrare o inviare ai potenziali Hubber.</p>
+              <span className="inline-flex items-center text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                <Clock className="w-3 h-3 mr-1" /> In arrivo
+              </span>
+            </div>
+
+            {/* Video Presentazione */}
+            <div className="border border-gray-200 rounded-xl p-4 hover:border-brand/30 hover:shadow-sm transition-all">
+              <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center mb-3">
+                <Eye className="w-5 h-5 text-purple-500" />
+              </div>
+              <h4 className="font-semibold text-gray-900 text-sm mb-1">Video Presentazione</h4>
+              <p className="text-xs text-gray-500 mb-3">Video ufficiale che spiega cos'è RentHubber e come funziona.</p>
+              <span className="inline-flex items-center text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                <Clock className="w-3 h-3 mr-1" /> In arrivo
+              </span>
+            </div>
+
+            {/* Logo e Assets */}
+            <div className="border border-gray-200 rounded-xl p-4 hover:border-brand/30 hover:shadow-sm transition-all">
+              <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center mb-3">
+                <Award className="w-5 h-5 text-brand" />
+              </div>
+              <h4 className="font-semibold text-gray-900 text-sm mb-1">Logo & Assets</h4>
+              <p className="text-xs text-gray-500 mb-3">Logo RentHubber in vari formati per i tuoi materiali.</p>
+              <span className="inline-flex items-center text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                <Clock className="w-3 h-3 mr-1" /> In arrivo
+              </span>
+            </div>
+
+            {/* Volantino / Flyer */}
+            <div className="border border-gray-200 rounded-xl p-4 hover:border-brand/30 hover:shadow-sm transition-all">
+              <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center mb-3">
+                <Clipboard className="w-5 h-5 text-amber-500" />
+              </div>
+              <h4 className="font-semibold text-gray-900 text-sm mb-1">Volantino Stampabile</h4>
+              <p className="text-xs text-gray-500 mb-3">Flyer A5 pronto da stampare con il tuo codice referral.</p>
+              <span className="inline-flex items-center text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                <Clock className="w-3 h-3 mr-1" /> In arrivo
+              </span>
+            </div>
+
+            {/* QR Code Personale */}
+            <div className="border border-gray-200 rounded-xl p-4 hover:border-brand/30 hover:shadow-sm transition-all">
+              <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center mb-3">
+                <Share2 className="w-5 h-5 text-green-500" />
+              </div>
+              <h4 className="font-semibold text-gray-900 text-sm mb-1">QR Code Personale</h4>
+              <p className="text-xs text-gray-500 mb-3">QR code collegato al tuo link referral, da stampare o condividere.</p>
+              <span className="inline-flex items-center text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                <Clock className="w-3 h-3 mr-1" /> In arrivo
+              </span>
+            </div>
+
+            {/* Badge Collaboratore - questo è già pronto */}
+            <div className="border border-brand/30 rounded-xl p-4 bg-brand/5">
+              <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center mb-3">
+                <Award className="w-5 h-5 text-brand" />
+              </div>
+              <h4 className="font-semibold text-gray-900 text-sm mb-1">Badge Collaboratore</h4>
+              <p className="text-xs text-gray-500 mb-3">Il tuo tesserino ufficiale formato porta-badge.</p>
+              <button onClick={() => setActiveTab('profile')} className="inline-flex items-center text-xs text-brand font-medium hover:underline">
+                Vai al Profilo <ChevronRight className="w-3 h-3 ml-1" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    );
+  }
+
+  // ============================================================
+  // 2️⃣ HUBBER PORTATI
+  // ============================================================
+  function renderHubbers() {
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-initial">
+              <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+              <input type="text" placeholder="Cerca hubber..." className="pl-9 pr-4 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none w-full sm:w-64"
+                value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+            </div>
+            <select className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none" value={leadFilter} onChange={e => setLeadFilter(e.target.value)}>
+              <option value="all">Tutti ({leads.length})</option>
+              {Object.entries(LEAD_STATUS_CONFIG).map(([k, c]) => <option key={k} value={k}>{c.label} ({leads.filter(l => l.status === k).length})</option>)}
+            </select>
+          </div>
+          <button onClick={() => setShowNewLeadForm(true)} className="bg-brand hover:bg-brand-dark text-white font-medium px-4 py-2 rounded-lg text-sm flex items-center shadow-sm">
+            <Plus className="w-4 h-4 mr-1" /> Nuovo Hubber
+          </button>
+        </div>
+
+        {showNewLeadForm && (
+          <div className="bg-white p-6 rounded-2xl border-2 border-brand/20 shadow-sm">
+            <h3 className="font-bold text-gray-900 mb-4 flex items-center"><UserPlus className="w-5 h-5 mr-2 text-brand" /> Nuovo Hubber</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">Tipo *</label>
+                <select className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none" value={newLead.lead_type} onChange={e => setNewLead({ ...newLead, lead_type: e.target.value })}>
+                  <option value="privato">👤 Privato</option>
+                  <option value="ditta_individuale">🏪 Ditta Individuale</option>
+                  <option value="societa">🏢 Società</option>
+                  <option value="associazione">🤝 Associazione</option>
+                </select>
+              </div>
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">{newLead.lead_type === 'privato' || newLead.lead_type === 'ditta_individuale' ? 'Nome e Cognome *' : newLead.lead_type === 'associazione' ? 'Denominazione *' : 'Ragione Sociale *'}</label><input type="text" placeholder={newLead.lead_type === 'privato' || newLead.lead_type === 'ditta_individuale' ? 'Mario Rossi' : newLead.lead_type === 'associazione' ? 'Associazione XYZ' : 'Azienda S.r.l.'} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none" value={newLead.contact_name} onChange={e => setNewLead({ ...newLead, contact_name: e.target.value })} /></div>
+              {(newLead.lead_type !== 'privato') && <div><label className="block text-xs font-medium text-gray-600 mb-1">{newLead.lead_type === 'associazione' ? 'Referente' : 'Attività / Nome Commerciale'}</label><input type="text" placeholder={newLead.lead_type === 'associazione' ? 'Nome referente' : 'Nome attività'} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none" value={newLead.business_name} onChange={e => setNewLead({ ...newLead, business_name: e.target.value })} /></div>}
+              {newLead.lead_type === 'privato' && <div><label className="block text-xs font-medium text-gray-600 mb-1">Attività</label><input type="text" placeholder="Nome attività (opzionale)" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none" value={newLead.business_name} onChange={e => setNewLead({ ...newLead, business_name: e.target.value })} /></div>}
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">Email</label><input type="email" placeholder="email@example.com" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none" value={newLead.contact_email} onChange={e => setNewLead({ ...newLead, contact_email: e.target.value })} /></div>
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">Telefono</label><input type="tel" placeholder="+39 333 1234567" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none" value={newLead.contact_phone} onChange={e => setNewLead({ ...newLead, contact_phone: e.target.value })} /></div>
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">Codice Fiscale</label><input type="text" placeholder="RSSMRA85M01H501Z" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none uppercase" value={newLead.fiscal_code} onChange={e => setNewLead({ ...newLead, fiscal_code: e.target.value })} /></div>
+              {(newLead.lead_type === 'ditta_individuale' || newLead.lead_type === 'societa') && <div><label className="block text-xs font-medium text-gray-600 mb-1">Partita IVA *</label><input type="text" placeholder="IT12345678901" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none uppercase" value={newLead.vat_number} onChange={e => setNewLead({ ...newLead, vat_number: e.target.value })} /></div>}
+              {(newLead.lead_type !== 'privato') && <div><label className="block text-xs font-medium text-gray-600 mb-1">PEC</label><input type="email" placeholder="azienda@pec.it" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none" value={newLead.pec} onChange={e => setNewLead({ ...newLead, pec: e.target.value })} /></div>}
+              {(newLead.lead_type !== 'privato') && <div><label className="block text-xs font-medium text-gray-600 mb-1">Codice SDI</label><input type="text" placeholder="0000000" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none uppercase" maxLength={7} value={newLead.sdi_code} onChange={e => setNewLead({ ...newLead, sdi_code: e.target.value })} /></div>}
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">Categoria</label><input type="text" placeholder="Es. Noleggio bici..." className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none" value={newLead.category} onChange={e => setNewLead({ ...newLead, category: e.target.value })} /></div>
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">Zona *</label>
+                <select className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none" value={newLead.zone_id} onChange={e => setNewLead({ ...newLead, zone_id: e.target.value })}>
+                  <option value="">Seleziona...</option>
+                  {approvedZones.map(z => <option key={z.id} value={z.id}>{z.city || z.province || z.region}</option>)}
+                </select>
+              </div>
+              <div className="sm:col-span-2"><label className="block text-xs font-medium text-gray-600 mb-1">Note</label><textarea placeholder="Note..." className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none resize-none" rows={2} value={newLead.notes} onChange={e => setNewLead({ ...newLead, notes: e.target.value })} /></div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-4">
+              <button onClick={() => setShowNewLeadForm(false)} className="px-4 py-2 text-sm text-gray-600">Annulla</button>
+              <button onClick={handleAddLead} disabled={isSaving || !newLead.contact_name || !newLead.zone_id} className="bg-brand hover:bg-brand-dark text-white font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 flex items-center">
+                {isSaving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />} Salva
+              </button>
+            </div>
+          </div>
+        )}
+
+        {filteredLeads.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+            <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm">{searchQuery || leadFilter !== 'all' ? 'Nessun risultato' : 'Nessun hubber inserito'}</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredLeads.map(lead => {
+              const st = LEAD_STATUS_CONFIG[lead.status];
+              const zone = zones.find(z => z.id === lead.zone_id);
+              const lc = commissions.filter(c => c.lead_id === lead.id && c.status !== 'annullata');
+              const le = lc.reduce((s, c) => s + Number(c.amount), 0);
+              return (
+                <div key={lead.id} className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-sm transition-shadow">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h4 className="font-semibold text-gray-900 text-sm truncate">{lead.contact_name}</h4>
+                        <select value={lead.status} onChange={e => handleUpdateLeadStatus(lead.id, e.target.value)}
+                          className={`text-xs px-2 py-0.5 rounded-full border font-medium ${st.bg} ${st.color} outline-none cursor-pointer`}>
+                          {Object.entries(LEAD_STATUS_CONFIG).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+                        {lead.business_name && <span className="flex items-center"><Building className="w-3 h-3 mr-1" />{lead.business_name}</span>}
+                        {lead.contact_email && <span className="flex items-center"><Mail className="w-3 h-3 mr-1" />{lead.contact_email}</span>}
+                        {lead.contact_phone && <span className="flex items-center"><Phone className="w-3 h-3 mr-1" />{lead.contact_phone}</span>}
+                        {zone && <span className="flex items-center"><MapPin className="w-3 h-3 mr-1" />{zone.city || zone.province || zone.region}</span>}
+                        {lead.category && <span className="flex items-center"><Tag className="w-3 h-3 mr-1" />{lead.category}</span>}
+                      </div>
+                      {lead.notes && <p className="text-xs text-gray-400 mt-1 italic">"{lead.notes}"</p>}
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <p className="text-xs text-gray-400">{new Date(lead.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                      {le > 0 && <p className="text-xs font-semibold text-green-600">€{le.toFixed(2)}</p>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+  // ============================================================
+  // 3️⃣ GUADAGNI & COMMISSIONI
+  // ============================================================
+  function renderEarnings() {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-gray-500">Commissioni Maturate</p>
+              <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center"><Euro className="w-4 h-4 text-brand" /></div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">€{kpi.totalEarnings.toFixed(2)}</p>
+            <p className="text-xs text-gray-400 mt-1">Totale da sempre</p>
+          </div>
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-gray-500">In Attesa Pagamento</p>
+              <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center"><Clock className="w-4 h-4 text-amber-600" /></div>
+            </div>
+            <p className="text-3xl font-bold text-amber-600">€{kpi.pendingCommissions.toFixed(2)}</p>
+            <p className="text-xs text-gray-400 mt-1">Pagate entro il 15 del prossimo mese</p>
+          </div>
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-gray-500">Già Pagato</p>
+              <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center"><CheckCircle className="w-4 h-4 text-green-600" /></div>
+            </div>
+            <p className="text-3xl font-bold text-green-600">€{kpi.paidCommissions.toFixed(2)}</p>
+            <p className="text-xs text-gray-400 mt-1">Accreditato sul tuo conto</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-4">Guadagni Ultimi 6 Mesi</h3>
+          <div className="h-72" style={{ minHeight: '288px' }}>
+            {chartData.some(d => d.totale > 0) ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="cB" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} /><stop offset="95%" stopColor="#3B82F6" stopOpacity={0} /></linearGradient>
+                    <linearGradient id="cR" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10B981" stopOpacity={0.3} /><stop offset="95%" stopColor="#10B981" stopOpacity={0} /></linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} />
+                  <YAxis axisLine={false} tickLine={false} tickFormatter={v => `€${v}`} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} formatter={(v: number) => [`€${Number(v).toFixed(2)}`]} />
+                  <Legend />
+                  <Area type="monotone" dataKey="bonus" name="Bonus Acquisizione" stroke="#3B82F6" fill="url(#cB)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="ricorrenti" name="Ricorrenti" stroke="#10B981" fill="url(#cR)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="milestone" name="Milestone" stroke="#F59E0B" fill="transparent" strokeWidth={2} strokeDasharray="5 5" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                <TrendingUp className="w-12 h-12 mb-3 opacity-30" /><p className="text-sm">Nessun guadagno ancora</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="px-6 py-4 border-b border-gray-100"><h3 className="font-bold text-gray-900">Dettaglio Commissioni</h3></div>
+          {commissions.length === 0 ? (
+            <div className="p-8 text-center text-gray-400"><Receipt className="w-10 h-10 mx-auto mb-2 opacity-30" /><p className="text-sm">Le commissioni appariranno qui</p></div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {commissions.map(c => {
+                const lead = leads.find(l => l.id === c.lead_id);
+                return (
+                  <div key={c.id} className="px-6 py-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {c.type === 'acquisition_bonus' ? '🎯 Bonus Acquisizione' : c.type === 'recurring' ? '🔄 Ricorrente' : '🏆 Milestone'}
+                      </p>
+                      {lead && <p className="text-xs text-gray-500">Hubber: {lead.contact_name}</p>}
+                      <p className="text-xs text-gray-400">{new Date(c.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-gray-900">€{Number(c.amount).toFixed(2)}</p>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${c.status === 'pagata' ? 'bg-green-50 text-green-700' : c.status === 'maturata' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>
+                        {c.status === 'pagata' ? '✓ Pagata' : c.status === 'maturata' ? '⏳ In attesa' : '✗ Annullata'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
+          <h4 className="font-semibold text-blue-900 text-sm mb-2 flex items-center"><Info className="w-4 h-4 mr-2" /> Come funzionano i guadagni</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-blue-800">
+            <div className="bg-white/60 rounded-xl p-3"><p className="font-semibold mb-1">🎯 Bonus Acquisizione</p><p>Una tantum per Hubber registrato + 1 annuncio</p></div>
+            <div className="bg-white/60 rounded-xl p-3"><p className="font-semibold mb-1">🔄 Ricorrente</p><p>% sulle commissioni RH per 12 mesi</p></div>
+            <div className="bg-white/60 rounded-xl p-3"><p className="font-semibold mb-1">🏆 Milestone</p><p>Premi a 10, 25, 50 Hubber attivi</p></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // 4️⃣ STRUMENTI DI INVITO
+  // ============================================================
+  function renderInvite() {
+    const script = `Ciao! Ti scrivo perché conosco una piattaforma che potrebbe farti guadagnare: si chiama RentHubber.
+
+È un marketplace dove puoi mettere a noleggio oggetti, attrezzature, spazi — qualsiasi cosa tu abbia.
+
+La registrazione è gratuita:
+${referralLink}
+
+Se vuoi ne parliamo!`;
+    const wa = encodeURIComponent(`Ciao! Conosci RentHubber? Puoi mettere a noleggio le tue cose e guadagnare. Registrati qui: ${referralLink}`);
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-brand to-brand-dark rounded-2xl p-6 text-white">
+          <h3 className="font-bold text-lg mb-2">🔗 Il tuo Link Personale</h3>
+          <p className="text-white/80 text-sm mb-4">Ogni registrazione tramite questo link viene associata a te.</p>
+          <div className="flex items-center space-x-2 bg-white/10 rounded-xl p-3">
+            <code className="text-sm font-mono flex-1 truncate">{referralLink}</code>
+            <button onClick={() => copyText(referralLink, 'link')} className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium flex items-center flex-shrink-0">
+              {copiedLink ? <><Check className="w-4 h-4 mr-1" /> Copiato!</> : <><Copy className="w-4 h-4 mr-1" /> Copia</>}
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-4">
+            <a href={`https://wa.me/?text=${wa}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center"><Send className="w-4 h-4 mr-1" /> WhatsApp</a>
+            <a href={`mailto:?subject=Scopri RentHubber&body=${encodeURIComponent(script)}`} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center"><Mail className="w-4 h-4 mr-1" /> Email</a>
+            <button onClick={() => { if (navigator.share) navigator.share({ title: 'RentHubber', text: 'Scopri RentHubber!', url: referralLink }); else copyText(referralLink, 'link'); }} className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center"><Share2 className="w-4 h-4 mr-1" /> Condividi</button>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-2 flex items-center"><FileText className="w-5 h-5 mr-2 text-brand" /> Script di Presentazione</h3>
+          <p className="text-xs text-gray-500 mb-4">Copia e personalizza questo messaggio</p>
+          <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 whitespace-pre-line border border-gray-200">{script}</div>
+          <button onClick={() => copyText(script, 'script')} className="mt-3 bg-brand/10 hover:bg-brand/20 text-brand px-4 py-2 rounded-lg text-sm font-medium flex items-center">
+            {copiedScript ? <><Check className="w-4 h-4 mr-1" /> Copiato!</> : <><Clipboard className="w-4 h-4 mr-1" /> Copia Script</>}
+          </button>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center"><Zap className="w-5 h-5 mr-2 text-amber-500" /> Consigli per Convincere</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              ['Parla dei vantaggi concreti', '"Puoi guadagnare da cose che hai già"'],
+              ['Mostra esempi reali', '"C\'è chi noleggia il trapano, chi il garage"'],
+              ['Enfatizza la semplicità', '"Ti registri in 2 minuti e pubblichi"'],
+              ['Rassicura sulla sicurezza', '"Utenti verificati, pagamenti protetti"'],
+              ['Offri il tuo aiuto', '"Ti aiuto io col primo annuncio"'],
+              ['Usa la leva sociale', '"Ci sono già hubber nella tua zona"'],
+            ].map(([t, d], i) => (
+              <div key={i} className="p-3 bg-amber-50/50 rounded-xl border border-amber-100">
+                <p className="text-sm font-semibold text-gray-900">💡 {t}</p>
+                <p className="text-xs text-gray-600 mt-1 italic">{d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-brand/5 border border-brand/20 rounded-2xl p-5 text-center">
+          <p className="text-sm text-gray-600 mb-2">La frase che chiude il 70% delle obiezioni:</p>
+          <p className="text-lg font-bold text-brand">"Hai una dashboard dove vedi in tempo reale hubber, noleggi e guadagni. Tutto tracciato e automatico."</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // 5️⃣ PERFORMANCE
+  // ============================================================
+  function renderPerformance() {
+    const active = leads.filter(l => l.status === 'attivo').length;
+    const reg = leads.filter(l => ['registrato', 'attivo'].includes(l.status)).length;
+    const conv = leads.length > 0 ? (active / leads.length) * 100 : 0;
+
+    const light = (v: number, t: [number, number]) =>
+      v >= t[1] ? { c: 'bg-green-500', l: 'Ottimo', t: 'text-green-700' } :
+      v >= t[0] ? { c: 'bg-amber-500', l: 'Buono', t: 'text-amber-700' } :
+      { c: 'bg-red-500', l: 'Da migliorare', t: 'text-red-700' };
+
+    const cl = light(conv, [20, 40]);
+    const ml = light(monthlyPerf.activated, [2, 5]);
+    const ll = light(monthlyPerf.newLeads, [5, 10]);
+
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { title: 'Nuovi Lead (mese)', val: monthlyPerf.newLeads, sem: ll },
+            { title: 'Attivati (mese)', val: monthlyPerf.activated, sem: ml },
+            { title: 'Conversione', val: `${conv.toFixed(0)}%`, sem: cl },
+          ].map((item, i) => (
+            <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium text-gray-700">{item.title}</p>
+                <div className={`w-4 h-4 rounded-full ${item.sem.c}`}></div>
+              </div>
+              <p className="text-3xl font-bold text-gray-900">{item.val}</p>
+              <p className={`text-xs mt-1 font-medium ${item.sem.t}`}>{item.sem.l}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-4">Funnel di Conversione</h3>
+          <div className="space-y-3">
+            {[
+              { l: 'Contattati', n: leads.filter(x => x.status !== 'perso').length, c: 'bg-blue-500' },
+              { l: 'Interessati', n: leads.filter(x => ['interessato', 'registrato', 'attivo'].includes(x.status)).length, c: 'bg-amber-500' },
+              { l: 'Registrati', n: reg, c: 'bg-purple-500' },
+              { l: 'Attivi', n: active, c: 'bg-green-500' },
+            ].map((s, i) => {
+              const pct = leads.length > 0 ? (s.n / leads.length) * 100 : 0;
+              return (
+                <div key={i}>
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="text-gray-700 font-medium">{s.l}</span>
+                    <span className="text-gray-500">{s.n} ({pct.toFixed(0)}%)</span>
+                  </div>
+                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full ${s.c} rounded-full transition-all duration-500`} style={{ width: `${Math.max(pct, 2)}%` }}></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center"><Award className="w-5 h-5 mr-2 text-brand" /> Progressione Badge</h3>
+          <div className="flex items-center space-x-4 mb-4">
+            <span className="text-4xl">{badge.emoji}</span>
+            <div>
+              <p className="font-bold text-gray-900">{badge.label}</p>
+              {badge.next && <p className="text-sm text-gray-500">Prossimo: {badge.next} — mancano <strong>{Math.max(0, badge.target - active)}</strong> Hubber attivi</p>}
+            </div>
+          </div>
+          {badge.target > 0 && (
+            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${Math.min((active / badge.target) * 100, 100)}%` }}></div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // 6️⃣ PAGAMENTI
+  // ============================================================
+  function renderPayments() {
+    const paid = commissions.filter(c => c.status === 'pagata');
+    const pending = commissions.filter(c => c.status === 'maturata').reduce((s, c) => s + Number(c.amount), 0);
+    const nextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center"><CreditCard className="w-5 h-5 mr-2 text-brand" /> Prossimo Pagamento</h3>
+          {pending > 0 ? (
+            <div className="bg-brand/5 border border-brand/20 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div><p className="text-sm text-gray-600">Importo</p><p className="text-2xl font-bold text-brand">€{pending.toFixed(2)}</p></div>
+              <div className="sm:text-right"><p className="text-sm text-gray-600">Data prevista</p><p className="text-sm font-semibold text-gray-900">Entro il 15 {nextMonth}</p></div>
+            </div>
+          ) : (
+            <div className="text-center py-6 text-gray-400"><Wallet className="w-10 h-10 mx-auto mb-2 opacity-30" /><p className="text-sm">Nessun pagamento in attesa</p></div>
+          )}
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-gray-900 flex items-center"><CreditCard className="w-5 h-5 mr-2 text-brand" /> Metodo di Pagamento</h3>
+            <button onClick={() => setIsEditingPayment(!isEditingPayment)} className="text-brand text-sm hover:underline">{isEditingPayment ? 'Annulla' : 'Modifica'}</button>
+          </div>
+          {isEditingPayment ? (
+            <div className="space-y-3">
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">IBAN</label><input type="text" placeholder="IT60 X054 2811 1010 0000 0123 456" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none uppercase" value={paymentMethod.iban} onChange={e => setPaymentMethod({ ...paymentMethod, iban: e.target.value })} /></div>
+              <div><label className="block text-xs font-medium text-gray-600 mb-1">Intestatario</label><input type="text" placeholder="Nome e Cognome" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none" value={paymentMethod.intestatario} onChange={e => setPaymentMethod({ ...paymentMethod, intestatario: e.target.value })} /></div>
+              <button onClick={() => setIsEditingPayment(false)} className="bg-brand hover:bg-brand-dark text-white font-medium px-4 py-2 rounded-lg text-sm">Salva</button>
+            </div>
+          ) : paymentMethod.iban ? (
+            <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-sm text-gray-600">IBAN: <span className="font-mono font-medium text-gray-900">{paymentMethod.iban}</span></p>
+              <p className="text-sm text-gray-600 mt-1">Intestatario: <span className="font-medium text-gray-900">{paymentMethod.intestatario}</span></p>
+            </div>
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+              <AlertTriangle className="w-6 h-6 text-amber-600 mx-auto mb-2" />
+              <p className="text-sm text-amber-800 font-medium">Nessun metodo configurato</p>
+              <button onClick={() => setIsEditingPayment(true)} className="mt-2 text-brand text-sm font-medium hover:underline">+ Aggiungi IBAN</button>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="px-6 py-4 border-b border-gray-100"><h3 className="font-bold text-gray-900">Storico Pagamenti</h3></div>
+          {paid.length === 0 ? (
+            <div className="p-8 text-center text-gray-400"><Receipt className="w-10 h-10 mx-auto mb-2 opacity-30" /><p className="text-sm">Nessun pagamento ancora</p></div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {paid.map(c => (
+                <div key={c.id} className="px-6 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Pagamento commissione</p>
+                    <p className="text-xs text-gray-400">{c.paid_at ? new Date(c.paid_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</p>
+                  </div>
+                  <p className="text-sm font-bold text-green-600">€{Number(c.amount).toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  // ============================================================
+  // 7️⃣ SUPPORTO & REGOLE
+  // ============================================================
+  function renderSupport() {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="font-bold text-gray-900 flex items-center"><HelpCircle className="w-5 h-5 mr-2 text-brand" /> Domande Frequenti</h3>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {FAQ_DATA.map((f, i) => (
+              <div key={i} className="px-6">
+                <button onClick={() => setOpenFaq(openFaq === i ? null : i)} className="w-full flex items-center justify-between py-4 text-left">
+                  <span className="text-sm font-medium text-gray-900 pr-4">{f.q}</span>
+                  {openFaq === i ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
+                </button>
+                {openFaq === i && <div className="pb-4 text-sm text-gray-600">{f.a}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center"><Shield className="w-5 h-5 mr-2 text-brand" /> Regole del Programma</h3>
+          <div className="space-y-3 text-sm text-gray-700">
+            {[
+              ['Trasparenza', 'Presenta RentHubber in modo onesto. No promesse irrealistiche.'],
+              ['Qualità', 'Porta Hubber con qualcosa da offrire. Qualità > quantità.'],
+              ['Zone', 'Opera solo nelle zone approvate.'],
+              ['Esclusività', 'Non rappresentare concorrenti nella stessa zona.'],
+            ].map(([t, d], i) => (
+              <div key={i} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl">
+                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <p><strong>{t}:</strong> {d}</p>
+              </div>
+            ))}
+            <div className="flex items-start space-x-3 p-3 bg-red-50 rounded-xl">
+              <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+              <p><strong>Vietato:</strong> Registrazioni fake, spam, promesse di guadagni garantiti, uso improprio del brand.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center"><MessageSquare className="w-5 h-5 mr-2 text-brand" /> Contatta il Supporto</h3>
+          <p className="text-sm text-gray-600 mb-4">Per qualsiasi domanda, non esitare a contattarci.</p>
+          <div className="flex flex-wrap gap-3">
+            <a href="mailto:collaboratori@renthubber.com" className="flex items-center bg-brand/10 text-brand px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand/20">
+              <Mail className="w-4 h-4 mr-2" /> collaboratori@renthubber.com
+            </a>
+            <a href="https://wa.me/393331234567" target="_blank" rel="noopener noreferrer" className="flex items-center bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-100">
+              <Send className="w-4 h-4 mr-2" /> WhatsApp Supporto
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // 8️⃣ PROFILO
+  // ============================================================
+  function renderProfile() {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-bold text-gray-900 flex items-center"><User className="w-5 h-5 mr-2 text-brand" /> Il tuo Profilo</h3>
+            {!isEditingProfile && <button onClick={() => setIsEditingProfile(true)} className="text-brand text-sm hover:underline">Modifica</button>}
+          </div>
+
+          <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+          <div className="flex items-center space-x-4 mb-6">
+           <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
+              {(collaborator as any)?.avatar_url ? (
+                <img src={(collaborator as any).avatar_url} alt="Avatar" className="w-16 h-16 rounded-full object-cover border-2 border-brand/20" />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-brand/10 flex items-center justify-center text-2xl font-bold text-brand">
+                  {collaborator!.first_name.charAt(0)}{collaborator!.last_name.charAt(0)}
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                {isUploadingAvatar ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <span className="text-white text-xs font-medium">Cambia</span>}
+              </div>
+            </div>
+            <div>
+              <h4 className="text-xl font-bold text-gray-900">{collaborator!.first_name} {collaborator!.last_name}</h4>
+              <p className="text-sm text-gray-500">{collaborator!.email}</p>
+              <div className="flex items-center space-x-2 mt-1">
+                <span className="text-sm">{badge.emoji} {badge.label}</span>
+                <span className="text-xs text-gray-400">·</span>
+                <span className="text-xs text-gray-500">Membro da {new Date(collaborator!.created_at).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })}</span>
+              </div>
+            </div>
+          </div>
+
+          {isEditingProfile ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Telefono</label>
+                <input type="tel" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none"
+                  value={profileForm.phone} onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">P.IVA / Codice Fiscale</label>
+                <input type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none uppercase"
+                  value={profileForm.tax_id} onChange={e => setProfileForm({ ...profileForm, tax_id: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Bio</label>
+                <textarea className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none resize-none" rows={3}
+                  value={profileForm.bio} onChange={e => setProfileForm({ ...profileForm, bio: e.target.value })} />
+              </div>
+              <div className="flex space-x-3">
+                <button onClick={() => setIsEditingProfile(false)} className="px-4 py-2 text-sm text-gray-600">Annulla</button>
+                <button onClick={handleSaveProfile} disabled={isSavingProfile}
+                  className="bg-brand hover:bg-brand-dark text-white font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 flex items-center">
+                  {isSavingProfile ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />} Salva
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InfoRow icon={<User className="w-4 h-4" />} label="Nome" value={`${collaborator!.first_name} ${collaborator!.last_name}`} />
+              <InfoRow icon={<Mail className="w-4 h-4" />} label="Email" value={collaborator!.email} />
+              <InfoRow icon={<Phone className="w-4 h-4" />} label="Telefono" value={collaborator!.phone || 'Non impostato'} />
+              <InfoRow icon={<FileText className="w-4 h-4" />} label="P.IVA / CF" value={collaborator!.tax_id || 'Non impostato'} />
+              <InfoRow icon={<Link2 className="w-4 h-4" />} label="Codice Referral" value={collaborator!.referral_code} />
+              <InfoRow icon={<Shield className="w-4 h-4" />} label="Stato" value={collaborator!.status === 'approvato' ? '✓ Attivo' : collaborator!.status} />
+              <InfoRow icon={<MapPin className="w-4 h-4" />} label="Zone Attive" value={`${approvedZones.length} zone`} />
+              <InfoRow icon={<Calendar className="w-4 h-4" />} label="Iscritto dal" value={new Date(collaborator!.created_at).toLocaleDateString('it-IT')} />
+            </div>
+          )}
+        </div>
+
+        {collaborator!.bio && !isEditingProfile && (
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <h4 className="font-bold text-gray-900 text-sm mb-2">La tua presentazione</h4>
+            <p className="text-sm text-gray-600">{collaborator!.bio}</p>
+          </div>
+        )}
+        
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <h4 className="font-bold text-gray-900 text-sm mb-3 flex items-center"><Award className="w-4 h-4 mr-2 text-brand" /> Il tuo Badge Collaboratore</h4>
+          <p className="text-xs text-gray-500 mb-4">Formato A6 verticale — stampabile per porta-badge.</p>
+          <canvas id="collab-badge-canvas" className="hidden" width="630" height="892" />
+          <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-center min-h-[320px]">
+            <img id="collab-badge-preview" alt="Clicca Genera per vedere l'anteprima" className="rounded-lg shadow-md" style={{ maxHeight: 320 }} />
+          </div>
+          <button onClick={() => {
+            const canvas = document.getElementById('collab-badge-canvas') as HTMLCanvasElement;
+            if (!canvas) return;
+            const w = 630, ht = 892;
+            canvas.width = w;
+            canvas.height = ht;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            const drawBadge = (avatarImg?: HTMLImageElement, logoImg?: HTMLImageElement) => {
+              ctx.clearRect(0, 0, w, ht);
+
+              // Sfondo bianco
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, w, ht);
+
+              // Banda superiore blu petrolio
+              ctx.fillStyle = '#0D414B';
+              ctx.fillRect(0, 0, w, 8);
+
+              // Logo centrato
+              if (logoImg) {
+                const lh = 48;
+                const lw = logoImg.width * (lh / logoImg.height);
+                ctx.drawImage(logoImg, (w - lw) / 2, 40, lw, lh);
+              }
+
+              // Linea turchese sotto logo
+              ctx.strokeStyle = '#3DD9D0';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.moveTo(160, 110);
+              ctx.lineTo(w - 160, 110);
+              ctx.stroke();
+
+              // Titolo
+              const isAgente = (collaborator as any)?.collaborator_type === 'agente';
+              ctx.fillStyle = '#0D414B';
+              ctx.textAlign = 'center';
+              ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
+              ctx.fillText(isAgente ? 'AGENTE UFFICIALE' : 'COLLABORATORE INDIPENDENTE', w / 2, 140);
+
+              // Avatar grande
+              const cx = w / 2, cy = 280, r = 90;
+              // Cerchio bordo
+              ctx.beginPath();
+              ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+              ctx.fillStyle = '#0D414B';
+              ctx.fill();
+              // Cerchio interno turchese
+              ctx.beginPath();
+              ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
+              ctx.fillStyle = '#3DD9D0';
+              ctx.fill();
+
+              if (avatarImg) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(avatarImg, cx - r, cy - r, r * 2, r * 2);
+                ctx.restore();
+              } else {
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fillStyle = '#E0F7F5';
+                ctx.fill();
+                ctx.fillStyle = '#0D414B';
+                ctx.font = 'bold 56px system-ui, -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${collaborator!.first_name.charAt(0)}${collaborator!.last_name.charAt(0)}`, cx, cy);
+                ctx.textBaseline = 'alphabetic';
+              }
+
+              // Nome grande
+              ctx.fillStyle = '#0D414B';
+              ctx.font = 'bold 32px system-ui, -apple-system, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText(collaborator!.first_name, w / 2, 420);
+              ctx.fillText(collaborator!.last_name, w / 2, 458);
+
+              // Badge livello
+              ctx.fillStyle = '#6b7280';
+              ctx.font = '16px system-ui, -apple-system, sans-serif';
+              ctx.fillText(`${badge.emoji} ${badge.label}`, w / 2, 495);
+
+              // Disclaimer per occasionale
+              if (!isAgente) {
+                ctx.fillStyle = '#6b7280';
+                ctx.font = '10px system-ui, -apple-system, sans-serif';
+                ctx.fillText('Attività di segnalazione occasionale.', w / 2, 525);
+                ctx.fillText('Non dipendente né agente della piattaforma.', w / 2, 540);
+              }
+
+              // Separatore
+              ctx.strokeStyle = '#3DD9D0';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.moveTo(80, 565);
+              ctx.lineTo(w - 80, 565);
+              ctx.stroke();
+
+              // Box codice invito
+              ctx.fillStyle = '#F0FDFA';
+              ctx.beginPath();
+              ctx.roundRect(60, 585, w - 120, 100, 12);
+              ctx.fill();
+              ctx.strokeStyle = '#3DD9D0';
+              ctx.lineWidth = 1.5;
+              ctx.beginPath();
+              ctx.roundRect(60, 585, w - 120, 100, 12);
+              ctx.stroke();
+
+              ctx.fillStyle = '#6b7280';
+              ctx.font = '11px system-ui, -apple-system, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('CODICE INVITO PERSONALE', w / 2, 615);
+              ctx.fillStyle = '#0D414B';
+              ctx.font = 'bold 28px monospace';
+              ctx.fillText(collaborator!.referral_code, w / 2, 655);
+
+              // Link
+              ctx.fillStyle = '#0D414B';
+              ctx.font = '12px system-ui, -apple-system, sans-serif';
+              ctx.fillText('renthubber.com/partner/' + collaborator!.referral_code, w / 2, 720);
+
+              // Footer
+              ctx.fillStyle = '#0D414B';
+              ctx.font = '12px system-ui, -apple-system, sans-serif';
+              ctx.fillText('Noleggio oggetti e spazi vicino a te', w / 2, 810);
+              ctx.fillStyle = '#3DD9D0';
+              ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
+              ctx.fillText('renthubber.com', w / 2, 832);
+
+              // Banda inferiore turchese
+              ctx.fillStyle = '#3DD9D0';
+              ctx.fillRect(0, ht - 8, w, 8);
+
+              // Bordo esterno
+              ctx.strokeStyle = '#e5e7eb';
+              ctx.lineWidth = 1;
+              ctx.strokeRect(0, 0, w, ht);
+
+              // Mostra anteprima
+              const preview = document.getElementById('collab-badge-preview') as HTMLImageElement;
+              if (preview) preview.src = canvas.toDataURL('image/png');
+            };
+
+            // Carica logo e avatar
+            let logoLoaded: HTMLImageElement | undefined;
+            let avatarLoaded: HTMLImageElement | undefined;
+            let loadCount = 0;
+            const totalLoads = 2;
+            const checkDone = () => { loadCount++; if (loadCount >= totalLoads) drawBadge(avatarLoaded, logoLoaded); };
+
+            const logo = new Image();
+            logo.crossOrigin = 'anonymous';
+            logo.onload = () => { logoLoaded = logo; checkDone(); };
+            logo.onerror = () => checkDone();
+            logo.src = 'https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png.png';
+
+            if ((collaborator as any)?.avatar_url) {
+              const avatar = new Image();
+              avatar.crossOrigin = 'anonymous';
+              avatar.onload = () => { avatarLoaded = avatar; checkDone(); };
+              avatar.onerror = () => checkDone();
+              avatar.src = (collaborator as any).avatar_url;
+            } else {
+              checkDone();
+            }
+          }} className="mt-4 w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 rounded-lg text-sm flex items-center justify-center">
+            <Eye className="w-4 h-4 mr-2" /> Genera Anteprima
+          </button>
+          <button onClick={() => {
+            const canvas = document.getElementById('collab-badge-canvas') as HTMLCanvasElement;
+            if (!canvas || !canvas.toDataURL('image/png').includes('data:image')) { alert('Genera prima l\'anteprima!'); return; }
+            const link = document.createElement('a');
+            link.download = `badge-renthubber-${collaborator!.referral_code}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+          }} className="mt-2 w-full bg-brand hover:bg-brand-dark text-white font-medium py-2.5 rounded-lg text-sm flex items-center justify-center">
+            <Award className="w-4 h-4 mr-2" /> Scarica Badge PNG
+          </button>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-red-200 shadow-sm">
+          <h4 className="font-bold text-red-700 text-sm mb-3">Zona Pericolo</h4>
+          <button onClick={handleLogout} className="flex items-center text-red-600 hover:text-red-700 text-sm font-medium">
+            <LogOut className="w-4 h-4 mr-2" /> Esci dal tuo account
+          </button>
+        </div>
+      </div>
+    );
+  }
+};
+
+// ============================================================
+// HELPER COMPONENTS
+// ============================================================
+const KPICard: React.FC<{ icon: React.ReactNode; label: string; value: string | number; color: string }> = ({ icon, label, value, color }) => {
+  const colors: Record<string, string> = {
+    blue: 'bg-blue-50 text-blue-600', green: 'bg-green-50 text-green-600',
+    brand: 'bg-brand/10 text-brand', purple: 'bg-purple-50 text-purple-600', amber: 'bg-amber-50 text-amber-600',
+  };
+  return (
+    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm">
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2 ${colors[color] || colors.blue}`}>{icon}</div>
+      <p className="text-xl sm:text-2xl font-bold text-gray-900">{value}</p>
+      <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+    </div>
+  );
+};
+
+const InfoRow: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
+  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+    <div className="text-gray-400">{icon}</div>
+    <div>
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="text-sm font-medium text-gray-900">{value}</p>
+    </div>
+  </div>
+);
