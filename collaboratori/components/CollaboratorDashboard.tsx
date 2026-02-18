@@ -846,6 +846,68 @@ Se vuoi ne parliamo!`;
             </div>
           )}
         </div>
+
+        {/* Roadmap Livelli e Guadagni */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-2 flex items-center"><Euro className="w-5 h-5 mr-2 text-brand" /> Piano Guadagni per Livello</h3>
+          <p className="text-xs text-gray-500 mb-5">Più Hubber attivi porti, più guadagni. I premi milestone scattano solo quando i tuoi Hubber hanno prenotazioni completate.</p>
+
+          <div className="space-y-3">
+            {[
+              { emoji: '🔰', label: 'Starter', range: '0-9 Hubber', bonus: '€5', percent: '5%', milestone: null, current: (collaborator?.badge || 'none') === 'none', color: 'border-gray-200 bg-gray-50' },
+              { emoji: '🥉', label: 'Bronze', range: '10-24 Hubber', bonus: '€8', percent: '8%', milestone: '€50 quando 10 Hubber con almeno 1 prenotazione', current: collaborator?.badge === 'bronze', color: 'border-amber-200 bg-amber-50/30' },
+              { emoji: '🥈', label: 'Silver', range: '25-49 Hubber', bonus: '€12', percent: '10%', milestone: '€150 quando 25 Hubber con almeno 1 prenotazione', current: collaborator?.badge === 'silver', color: 'border-slate-300 bg-slate-50/30' },
+              { emoji: '🥇', label: 'Gold', range: '50+ Hubber', bonus: '€15', percent: '15%', milestone: '€500 quando 50 Hubber con almeno 1 prenotazione', current: collaborator?.badge === 'gold', color: 'border-yellow-300 bg-yellow-50/30' },
+            ].map((level, i) => (
+              <div key={i} className={`relative rounded-xl border-2 p-4 transition-all ${level.current ? 'border-brand bg-brand/5 ring-2 ring-brand/20' : level.color}`}>
+                {level.current && (
+                  <span className="absolute -top-2.5 right-3 bg-brand text-white text-[10px] font-bold px-2 py-0.5 rounded-full">IL TUO LIVELLO</span>
+                )}
+                <div className="flex items-start gap-4">
+                  <span className="text-3xl flex-shrink-0">{level.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h4 className="font-bold text-gray-900">{level.label}</h4>
+                        <p className="text-xs text-gray-500">{level.range} attivi</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div className="bg-white rounded-lg p-2.5 border border-gray-100">
+                        <p className="text-[10px] text-gray-400 uppercase font-medium">Bonus / Hubber</p>
+                        <p className="text-sm font-bold text-brand">{level.bonus}</p>
+                        <p className="text-[10px] text-gray-400">per ogni registrato con annuncio</p>
+                      </div>
+                      <div className="bg-white rounded-lg p-2.5 border border-gray-100">
+                        <p className="text-[10px] text-gray-400 uppercase font-medium">Ricorrente 12 mesi</p>
+                        <p className="text-sm font-bold text-green-600">{level.percent}</p>
+                        <p className="text-[10px] text-gray-400">sulle commissioni RentHubber</p>
+                      </div>
+                      <div className="bg-white rounded-lg p-2.5 border border-gray-100">
+                        <p className="text-[10px] text-gray-400 uppercase font-medium">Premio Milestone</p>
+                        {level.milestone ? (
+                          <>
+                            <p className="text-sm font-bold text-amber-600">{level.milestone.split(' quando')[0]}</p>
+                            <p className="text-[10px] text-gray-400">quando{level.milestone.split('quando')[1]}</p>
+                          </>
+                        ) : (
+                          <p className="text-xs text-gray-400 italic">—</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <p className="text-xs text-blue-800 flex items-start gap-2">
+              <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span><strong>Come funziona:</strong> Il bonus acquisizione si ottiene per ogni Hubber che si registra e pubblica almeno 1 annuncio. La commissione ricorrente è una % su ogni prenotazione completata dai tuoi Hubber per 12 mesi. I premi milestone scattano solo quando i tuoi Hubber hanno prenotazioni reali completate.</span>
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
