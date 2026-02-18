@@ -1,7 +1,7 @@
 // Service Worker per RentHubber PWA
-const CACHE_NAME = 'renthubber-v1';
-const STATIC_CACHE = 'renthubber-static-v1';
-const DYNAMIC_CACHE = 'renthubber-dynamic-v1';
+const CACHE_NAME = 'renthubber-v2';
+const STATIC_CACHE = 'renthubber-static-v2';
+const DYNAMIC_CACHE = 'renthubber-dynamic-v2';
 
 // File statici da cacheare immediatamente
 const STATIC_ASSETS = [
@@ -17,11 +17,12 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       console.log('[SW] Caching static assets');
-      return cache.addAll(STATIC_ASSETS);
+      return cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.warn('[SW] Errore caching static assets:', err);
+      });
     })
   );
   
-  // Attiva immediatamente il nuovo service worker
   self.skipWaiting();
 });
 
@@ -33,7 +34,6 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
-          // Rimuovi vecchie cache
           if (cache !== STATIC_CACHE && cache !== DYNAMIC_CACHE) {
             console.log('[SW] Deleting old cache:', cache);
             return caches.delete(cache);
@@ -43,7 +43,6 @@ self.addEventListener('activate', (event) => {
     })
   );
   
-  // Prendi controllo immediato di tutte le pagine
   return self.clients.claim();
 });
 
@@ -52,54 +51,68 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
   
-  // Ignora richieste non-HTTP (chrome-extension, etc)
-  if (!request.url.startsWith('http')) {
+  // ❌ Ignora richieste non-HTTP
+  if (!request.url.startsWith('http')) return;
+  
+  // ❌ Ignora TUTTE le richieste POST (non cachabili)
+  if (request.method !== 'GET') return;
+  
+  // ❌ Ignora API esterne — sempre dalla rete senza intercettare
+  if (url.hostname.includes('supabase.co') ||
+      url.hostname.includes('stripe.com') ||
+      url.hostname.includes('js.stripe.com') ||
+      url.hostname.includes('sms.to') ||
+      url.hostname.includes('googleapis.com')) {
     return;
   }
   
-  // Ignora chiamate API Supabase - sempre dalla rete
-  if (url.hostname.includes('supabase.co')) {
-    event.respondWith(fetch(request));
-    return;
-  }
-  
-  // Strategia: Cache First per assets statici, Network First per il resto
+  // ❌ Ignora richieste chrome-extension, webpack HMR, etc
+  if (url.protocol === 'chrome-extension:' || url.pathname.includes('__vite')) return;
+
+  // ✅ Cache First per assets statici (immagini, CSS, JS, font)
   if (request.destination === 'image' || 
       request.destination === 'style' || 
       request.destination === 'script' ||
       request.destination === 'font') {
-    // Cache First per risorse statiche
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
+        if (cachedResponse) return cachedResponse;
         
         return fetch(request).then((networkResponse) => {
-          // Cache della risposta per richieste future
-          return caches.open(DYNAMIC_CACHE).then((cache) => {
-            cache.put(request, networkResponse.clone());
-            return networkResponse;
-          });
+          if (networkResponse && networkResponse.ok) {
+            const responseClone = networkResponse.clone();
+            caches.open(DYNAMIC_CACHE).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return networkResponse;
+        }).catch(() => {
+          // Asset non disponibile offline — ritorna undefined
+          return undefined;
         });
       })
     );
-  } else {
-    // Network First per HTML e dati dinamici
+    return;
+  }
+
+  // ✅ Network First per HTML e navigazione
+  if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then((networkResponse) => {
-          // Aggiorna cache con risposta fresca
-          return caches.open(DYNAMIC_CACHE).then((cache) => {
-            cache.put(request, networkResponse.clone());
-            return networkResponse;
+      fetch(request).then((networkResponse) => {
+        if (networkResponse && networkResponse.ok) {
+          const responseClone = networkResponse.clone();
+          caches.open(DYNAMIC_CACHE).then((cache) => {
+            cache.put(request, responseClone);
           });
-        })
-        .catch(() => {
-          // Fallback alla cache se la rete non è disponibile
-          return caches.match(request);
-        })
+        }
+        return networkResponse;
+      }).catch(() => {
+        return caches.match(request).then((cached) => {
+          return cached || caches.match('/index.html');
+        });
+      })
     );
+    return;
   }
 });
 
