@@ -4,6 +4,7 @@ import { User, Briefcase, Check, Upload, ShieldCheck, ArrowRight, ChevronLeft, C
 import { User as UserType } from '../types';
 import { api } from '../services/api';
 import { referralApi } from '../services/referralApi';
+import { supabase } from '../services/supabaseClient';
 
 interface SignupProps {
   onComplete: (user: UserType) => void;
@@ -43,6 +44,9 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
   // ✅ NUOVO: Leggi il codice referral dall'URL
   const [searchParams] = useSearchParams();
   
+  const [inviterName, setInviterName] = useState<string | null>(null);
+  const [inviterType, setInviterType] = useState<'user' | 'collaborator' | null>(null);
+
   useEffect(() => {
     const refCode = searchParams.get('ref');
     const openSignup = searchParams.get('openSignup');
@@ -52,12 +56,38 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
         ...prev,
         referralCode: refCode.toUpperCase()
       }));
+
+      // Cerca chi ha questo codice referral (collaboratore o utente)
+      const lookupInviter = async () => {
+        try {
+          // Prima cerca tra i collaboratori
+          const { data: collab } = await supabase
+            .from('collaborators')
+            .select('first_name, last_name')
+            .eq('referral_code', refCode.toUpperCase())
+            .eq('status', 'approvato')
+            .single();
+          if (collab) {
+            setInviterName(`${collab.first_name} ${collab.last_name.charAt(0)}.`);
+            setInviterType('collaborator');
+            return;
+          }
+          // Poi cerca tra gli utenti normali
+          const { data: user } = await supabase
+            .from('users')
+            .select('first_name, last_name')
+            .eq('referral_code', refCode.toUpperCase())
+            .single();
+          if (user) {
+            setInviterName(`${user.first_name} ${user.last_name?.charAt(0) || ''}.`);
+            setInviterType('user');
+          }
+        } catch (e) { /* silenzioso */ }
+      };
+      lookupInviter();
     }
     
-    // Se arriva da link invito, salta alla selezione ruolo
     if (openSignup === 'true' && step === 'role') {
-      // Non cambiare step automaticamente, lascia che l'utente scelga
-      // ma il codice referral è già pre-compilato
     }
   }, [searchParams]);
 
@@ -124,6 +154,38 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
            }
          } catch (refErr) {
            console.warn("⚠️ Errore registrazione referral (non bloccante):", refErr);
+         }
+
+         // ✅ COLLABORATORI: Se il codice referral è di un collaboratore, crea il lead
+         try {
+           const { data: collab } = await supabase
+             .from('collaborators')
+             .select('id')
+             .eq('referral_code', formData.referralCode.toUpperCase())
+             .eq('status', 'approvato')
+             .single();
+           if (collab) {
+             const { data: collabZone } = await supabase
+               .from('collaborator_zones')
+               .select('id')
+               .eq('collaborator_id', collab.id)
+               .eq('status', 'approvata')
+               .limit(1)
+               .single();
+             await supabase.from('collaborator_leads').insert({
+               collaborator_id: collab.id,
+               zone_id: collabZone?.id || null,
+               contact_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+               contact_email: formData.email,
+               lead_type: 'privato',
+               status: 'registrato',
+               registered_at: new Date().toISOString(),
+               linked_user_id: user.id,
+             });
+             console.log("✅ Lead collaboratore creato automaticamente");
+           }
+         } catch (collabErr) {
+           console.warn("⚠️ Errore lead collaboratore (non bloccante):", collabErr);
          }
        }
        
@@ -283,8 +345,23 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
   const renderRoleSelection = () => (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-brand-dark mb-2">Benvenuto su Renthubber</h2>
-        <p className="text-gray-500">Come vuoi utilizzare la piattaforma oggi?</p>
+        {inviterName ? (
+          <>
+            <div className="inline-flex items-center bg-green-50 border border-green-200 rounded-full px-4 py-2 mb-4">
+              <Gift className="w-4 h-4 text-green-600 mr-2" />
+              <span className="text-sm font-medium text-green-800">
+                {inviterType === 'collaborator' ? `${inviterName} ti invita a scoprire RentHubber!` : `${inviterName} ti ha invitato su RentHubber!`}
+              </span>
+            </div>
+            <h2 className="text-3xl font-bold text-brand-dark mb-2">Benvenuto su Renthubber</h2>
+            <p className="text-gray-500">Registrati e inizia subito — {inviterType === 'collaborator' ? 'un esperto della piattaforma ti ha scelto!' : 'il tuo amico ti ha riservato un bonus!'}</p>
+          </>
+        ) : (
+          <>
+            <h2 className="text-3xl font-bold text-brand-dark mb-2">Benvenuto su Renthubber</h2>
+            <p className="text-gray-500">Come vuoi utilizzare la piattaforma oggi?</p>
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
