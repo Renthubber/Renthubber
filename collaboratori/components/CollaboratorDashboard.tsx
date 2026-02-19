@@ -100,6 +100,7 @@ export const CollaboratorDashboard: React.FC = () => {
   const [newNoteText, setNewNoteText] = useState('');
   const [newNoteType, setNewNoteType] = useState('generale');
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
 
   // DATA LOADING
   useEffect(() => {
@@ -776,7 +777,7 @@ export const CollaboratorDashboard: React.FC = () => {
 
               return (
                 <div key={lead.id} className="bg-white rounded-xl border border-gray-100 hover:shadow-sm transition-shadow overflow-hidden">
-                  <div className="p-4">
+                  <div className="p-4 cursor-pointer" onClick={() => setExpandedLeadId(expandedLeadId === lead.id ? null : lead.id)}>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-1">
@@ -807,6 +808,80 @@ export const CollaboratorDashboard: React.FC = () => {
                       </div>
                     </div>
                   </div>
+       
+                 {/* DETTAGLI LEAD ESPANDIBILE */}
+                  {expandedLeadId === lead.id && (
+                    <div className="border-t border-gray-100 bg-blue-50/30 p-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Tipo</p>
+                          <p className="text-xs font-medium text-gray-800">
+                            {lead.lead_type === 'privato' ? '👤 Privato' : lead.lead_type === 'ditta_individuale' ? '🏪 Ditta Individuale' : lead.lead_type === 'societa' ? '🏢 Società' : lead.lead_type === 'associazione' ? '🤝 Associazione' : lead.lead_type || '-'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Email</p>
+                          <p className="text-xs text-gray-800">{lead.contact_email || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Telefono</p>
+                          <p className="text-xs text-gray-800">{lead.contact_phone || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Attività</p>
+                          <p className="text-xs text-gray-800">{lead.business_name || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Codice Fiscale</p>
+                          <p className="text-xs text-gray-800 font-mono">{lead.fiscal_code || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Partita IVA</p>
+                          <p className="text-xs text-gray-800 font-mono">{lead.vat_number || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">PEC</p>
+                          <p className="text-xs text-gray-800">{lead.pec || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Codice SDI</p>
+                          <p className="text-xs text-gray-800 font-mono">{lead.sdi_code || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Zona</p>
+                          <p className="text-xs text-gray-800">{zone ? (zone.city || zone.province || zone.region) : '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Categoria</p>
+                          <p className="text-xs text-gray-800">{lead.category || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Inserito il</p>
+                          <p className="text-xs text-gray-800">{new Date(lead.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Registrato il</p>
+                          <p className="text-xs text-gray-800">{lead.registered_at ? new Date(lead.registered_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Attivato il</p>
+                          <p className="text-xs text-gray-800">{lead.activated_at ? new Date(lead.activated_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</p>
+                        </div>
+                        {le > 0 && (
+                          <div>
+                            <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Guadagni Totali</p>
+                            <p className="text-xs font-bold text-green-600">€{le.toFixed(2)}</p>
+                          </div>
+                        )}
+                      </div>
+                      {lead.notes && (
+                        <div className="mt-3 pt-3 border-t border-gray-200/50">
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Note</p>
+                          <p className="text-xs text-gray-700 italic">"{lead.notes}"</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* SEZIONE NOTE ESPANDIBILE */}
                   {isNotesExpanded && (
