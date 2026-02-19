@@ -199,12 +199,13 @@ export const Wallet: React.FC<WalletProps> = ({
   useEffect(() => {
     const loadBankDetails = async () => {
       try {
-        const { data, error } = await supabase
-          .from('bank_details')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .limit(1)
-          .single();
+        const { data: rows, error } = await supabase
+  .from('bank_details')
+  .select('*')
+  .eq('user_id', currentUser.id)
+  .limit(1);
+
+const data = rows?.[0] || null;
 
         if (!error && data) {
           const loaded: BankDetails = {
