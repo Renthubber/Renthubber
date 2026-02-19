@@ -10,7 +10,8 @@ import {
   MapPin, Eye, ChevronDown, ChevronUp, Mail, Phone, Star,
   Award, TrendingUp, AlertTriangle, FileText, CreditCard,
   Loader2, RefreshCw, Check, X, Shield, Activity, Target,
-  Building, Tag, Link2, Wallet, Receipt, Filter, MoreVertical
+  Building, Tag, Link2, Wallet, Receipt, Filter, MoreVertical,
+  Plus, Trash2, Edit3, Zap
 } from 'lucide-react';
 import { supabase } from '../../services/supabaseClient';
 
@@ -86,6 +87,15 @@ export const AdminCollaboratori: React.FC = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // Available Zones
+  const [availableZones, setAvailableZones] = useState<any[]>([]);
+  const [showAddZoneForm, setShowAddZoneForm] = useState(false);
+  const [editingZone, setEditingZone] = useState<any | null>(null);
+  const [zoneForm, setZoneForm] = useState({ name: '', zone_level: 'city', region: '', province: '', city: '', max_collaborators: 5, description: '' });
+  const [savingZone, setSavingZone] = useState(false);
+  const [zoneSuggestionForm, setZoneSuggestionForm] = useState({ zone_id: '', category: '', priority: 'normale', note: '' });
+  const [zoneSuggestions, setZoneSuggestions] = useState<any[]>([]);
+
   // Settings
   const [settings, setSettings] = useState({
     acquisition_bonus: 25,
@@ -106,17 +116,21 @@ export const AdminCollaboratori: React.FC = () => {
   const loadAllData = async () => {
     setIsLoading(true);
     try {
-      const [collabRes, zonesRes, leadsRes, commissionsRes, settingsRes] = await Promise.all([
+      const [collabRes, zonesRes, leadsRes, commissionsRes, settingsRes, availZonesRes, suggestionsRes] = await Promise.all([
         supabase.from('collaborators').select('*').order('created_at', { ascending: false }),
         supabase.from('collaborator_zones').select('*'),
         supabase.from('collaborator_leads').select('*').order('created_at', { ascending: false }),
         supabase.from('collaborator_commissions').select('*').order('created_at', { ascending: false }),
         supabase.from('collaborator_settings').select('*').eq('id', '00000000-0000-0000-0000-000000000001').single(),
+        supabase.from('collaborator_available_zones').select('*').order('region').order('province').order('city'),
+        supabase.from('collaborator_zone_suggestions').select('*'),
       ]);
       setCollaborators(collabRes.data || []);
       setZones(zonesRes.data || []);
       setLeads(leadsRes.data || []);
       setCommissions(commissionsRes.data || []);
+      setAvailableZones(availZonesRes.data || []);
+      setZoneSuggestions(suggestionsRes.data || []);
       if (settingsRes.data) {
         setSettings({
           acquisition_bonus: settingsRes.data.acquisition_bonus_amount || 25,
@@ -245,6 +259,71 @@ export const AdminCollaboratori: React.FC = () => {
       ));
     } catch (err) { console.error(err); }
     finally { setActionLoading(null); }
+  };
+
+ // AVAILABLE ZONES MANAGEMENT
+  const handleSaveAvailableZone = async () => {
+    if (!zoneForm.name || !zoneForm.region) return;
+    setSavingZone(true);
+    try {
+      if (editingZone) {
+        const { data, error } = await supabase.from('collaborator_available_zones')
+          .update({ name: zoneForm.name, zone_level: zoneForm.zone_level, region: zoneForm.region, province: zoneForm.province || null, city: zoneForm.city || null, max_collaborators: zoneForm.max_collaborators, description: zoneForm.description || null, updated_at: new Date().toISOString() })
+          .eq('id', editingZone.id).select('*').single();
+        if (error) throw error;
+        setAvailableZones(prev => prev.map(z => z.id === editingZone.id ? data : z));
+      } else {
+        const { data, error } = await supabase.from('collaborator_available_zones')
+          .insert({ name: zoneForm.name, zone_level: zoneForm.zone_level, region: zoneForm.region, province: zoneForm.province || null, city: zoneForm.city || null, max_collaborators: zoneForm.max_collaborators, description: zoneForm.description || null })
+          .select('*').single();
+        if (error) throw error;
+        setAvailableZones(prev => [...prev, data]);
+      }
+      setZoneForm({ name: '', zone_level: 'city', region: '', province: '', city: '', max_collaborators: 5, description: '' });
+      setShowAddZoneForm(false);
+      setEditingZone(null);
+    } catch (err) { console.error(err); alert('Errore salvataggio zona.'); }
+    finally { setSavingZone(false); }
+  };
+
+  const handleToggleAvailableZone = async (zoneId: string, currentActive: boolean) => {
+    try {
+      const { error } = await supabase.from('collaborator_available_zones').update({ is_active: !currentActive }).eq('id', zoneId);
+      if (error) throw error;
+      setAvailableZones(prev => prev.map(z => z.id === zoneId ? { ...z, is_active: !currentActive } : z));
+    } catch (err) { console.error(err); }
+  };
+
+  const handleDeleteAvailableZone = async (zoneId: string) => {
+    if (!confirm('Eliminare questa zona disponibile?')) return;
+    try {
+      const { error } = await supabase.from('collaborator_available_zones').delete().eq('id', zoneId);
+      if (error) throw error;
+      setAvailableZones(prev => prev.filter(z => z.id !== zoneId));
+    } catch (err) { console.error(err); alert('Errore eliminazione.'); }
+  };
+
+  const handleEditAvailableZone = (zone: any) => {
+    setEditingZone(zone);
+    setZoneForm({ name: zone.name, zone_level: zone.zone_level || 'city', region: zone.region, province: zone.province || '', city: zone.city || '', max_collaborators: zone.max_collaborators || 5, description: zone.description || '' });
+    setShowAddZoneForm(true);
+  };
+
+  const handleAddZoneSuggestion = async () => {
+    if (!zoneSuggestionForm.zone_id || !zoneSuggestionForm.category) return;
+    try {
+      const { data, error } = await supabase.from('collaborator_zone_suggestions')
+        .insert({ zone_id: zoneSuggestionForm.zone_id, category: zoneSuggestionForm.category.trim(), priority: zoneSuggestionForm.priority, note: zoneSuggestionForm.note.trim() || null })
+        .select('*').single();
+      if (error) throw error;
+      setZoneSuggestions(prev => [...prev, data]);
+      setZoneSuggestionForm({ zone_id: zoneSuggestionForm.zone_id, category: '', priority: 'normale', note: '' });
+    } catch (err) { console.error(err); alert('Errore aggiunta suggerimento.'); }
+  };
+
+  const handleDeleteZoneSuggestion = async (id: string) => {
+    const { error } = await supabase.from('collaborator_zone_suggestions').delete().eq('id', id);
+    if (!error) setZoneSuggestions(prev => prev.filter(s => s.id !== id));
   };
 
   const handleSaveSettings = async () => {
@@ -596,11 +675,156 @@ export const AdminCollaboratori: React.FC = () => {
   // ZONE
   // ============================================================
   function renderZones() {
-
     const pendingZones = allZonesData.filter(z => z.status === 'richiesta');
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
+
+        {/* ========== ZONE DISPONIBILI (CATALOGO ADMIN) ========== */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-900 flex items-center"><Zap className="w-5 h-5 mr-2 text-blue-600" /> Zone Disponibili</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Zone che i collaboratori possono richiedere. Gestisci l'espansione di RentHubber da qui.</p>
+            </div>
+            <button onClick={() => { setEditingZone(null); setZoneForm({ name: '', zone_level: 'city', region: '', province: '', city: '', max_collaborators: 5, description: '' }); setShowAddZoneForm(!showAddZoneForm); }}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center">
+              <Plus className="w-4 h-4 mr-1" /> Aggiungi Zona
+            </button>
+          </div>
+
+          {/* Form aggiungi/modifica zona */}
+          {showAddZoneForm && (
+            <div className="p-5 bg-blue-50/50 border-b border-gray-100">
+              <h4 className="font-semibold text-gray-900 text-sm mb-3">{editingZone ? 'Modifica Zona' : 'Nuova Zona Disponibile'}</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nome Zona *</label>
+                  <input type="text" placeholder="Es. Messina Centro" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={zoneForm.name} onChange={e => setZoneForm({ ...zoneForm, name: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Regione *</label>
+                  <input type="text" placeholder="Es. Sicilia" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={zoneForm.region} onChange={e => setZoneForm({ ...zoneForm, region: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Provincia</label>
+                  <input type="text" placeholder="Es. ME" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={zoneForm.province} onChange={e => setZoneForm({ ...zoneForm, province: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Città</label>
+                  <input type="text" placeholder="Es. Messina" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={zoneForm.city} onChange={e => setZoneForm({ ...zoneForm, city: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Livello</label>
+                  <select className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={zoneForm.zone_level} onChange={e => setZoneForm({ ...zoneForm, zone_level: e.target.value })}>
+                    <option value="city">Città</option>
+                    <option value="province">Provincia</option>
+                    <option value="region">Regione</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Max Collaboratori</label>
+                  <input type="number" min={1} max={50} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={zoneForm.max_collaborators} onChange={e => setZoneForm({ ...zoneForm, max_collaborators: Number(e.target.value) })} />
+                </div>
+                <div className="sm:col-span-3">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Descrizione (opzionale)</label>
+                  <input type="text" placeholder="Note sulla zona..." className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={zoneForm.description} onChange={e => setZoneForm({ ...zoneForm, description: e.target.value })} />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-4">
+                <button onClick={() => { setShowAddZoneForm(false); setEditingZone(null); }} className="px-4 py-2 text-sm text-gray-600">Annulla</button>
+                <button onClick={handleSaveAvailableZone} disabled={savingZone || !zoneForm.name || !zoneForm.region}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 flex items-center">
+                  {savingZone ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                  {editingZone ? 'Aggiorna' : 'Salva'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Lista zone disponibili */}
+          {availableZones.length === 0 ? (
+            <div className="p-8 text-center">
+              <MapPin className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Nessuna zona disponibile. Aggiungi la prima!</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {availableZones.map(az => {
+                const currentCount = zones.filter(z => z.status === 'approvata' && z.region === az.region && (!az.province || z.province === az.province) && (!az.city || z.city === az.city)).length;
+                const suggestions = zoneSuggestions.filter(s => s.zone_id === az.id);
+                return (
+                  <div key={az.id} className={`px-5 py-4 ${!az.is_active ? 'opacity-50 bg-gray-50' : ''}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-gray-900 text-sm">{az.name}</h4>
+                          <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${az.is_active ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-100 border-gray-200 text-gray-500'}`}>
+                            {az.is_active ? 'Attiva' : 'Disattivata'}
+                          </span>
+                          <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">{az.zone_level}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">{[az.city, az.province, az.region].filter(Boolean).join(', ')}</p>
+                        {az.description && <p className="text-xs text-gray-400 mt-0.5 italic">{az.description}</p>}
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <span className="text-xs text-gray-500">
+                            <Users className="w-3 h-3 inline mr-1" />{currentCount}/{az.max_collaborators} collaboratori
+                          </span>
+                          {suggestions.length > 0 && (
+                            <div className="flex gap-1">
+                              {suggestions.map(s => (
+                                <span key={s.id} className="inline-flex items-center text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full">
+                                  {s.category}
+                                  <button onClick={() => handleDeleteZoneSuggestion(s.id)} className="ml-1 text-blue-400 hover:text-red-500"><X className="w-2.5 h-2.5" /></button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button onClick={() => handleEditAvailableZone(az)} className="text-gray-400 hover:text-blue-600 p-1"><Edit3 className="w-4 h-4" /></button>
+                        <button onClick={() => handleToggleAvailableZone(az.id, az.is_active)}
+                          className={`text-xs px-2.5 py-1 rounded-lg font-medium ${az.is_active ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-green-50 text-green-700 hover:bg-green-100'}`}>
+                          {az.is_active ? 'Disattiva' : 'Attiva'}
+                        </button>
+                        <button onClick={() => handleDeleteAvailableZone(az.id)} className="text-gray-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+
+                    {/* Aggiungi suggerimento tipologia */}
+                    <div className="mt-2 flex gap-2 items-center">
+                      <input type="text" placeholder="Aggiungi tipologia consigliata..." className="px-2.5 py-1 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-blue-500 outline-none flex-1 max-w-xs"
+                        value={zoneSuggestionForm.zone_id === az.id ? zoneSuggestionForm.category : ''} 
+                        onChange={e => setZoneSuggestionForm({ ...zoneSuggestionForm, zone_id: az.id, category: e.target.value })}
+                        onKeyDown={e => { if (e.key === 'Enter' && zoneSuggestionForm.category.trim()) handleAddZoneSuggestion(); }} />
+                      <select className="px-2 py-1 rounded-lg border border-gray-200 text-xs outline-none"
+                        value={zoneSuggestionForm.zone_id === az.id ? zoneSuggestionForm.priority : 'normale'}
+                        onChange={e => setZoneSuggestionForm({ ...zoneSuggestionForm, zone_id: az.id, priority: e.target.value })}>
+                        <option value="alta">🔴 Alta</option>
+                        <option value="normale">🔵 Normale</option>
+                        <option value="bassa">⚪ Bassa</option>
+                      </select>
+                      <button onClick={() => { if (zoneSuggestionForm.zone_id === az.id && zoneSuggestionForm.category.trim()) handleAddZoneSuggestion(); else setZoneSuggestionForm({ ...zoneSuggestionForm, zone_id: az.id }); }}
+                        className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded-lg text-xs font-medium">
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ========== ZONE ASSEGNATE AI COLLABORATORI ========== */}
         {pendingZones.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
             <h4 className="font-semibold text-amber-900 text-sm mb-3 flex items-center">
@@ -633,6 +857,9 @@ export const AdminCollaboratori: React.FC = () => {
         )}
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100">
+            <h3 className="font-semibold text-gray-900 flex items-center"><MapPin className="w-5 h-5 mr-2 text-blue-600" /> Zone Assegnate</h3>
+          </div>
           <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 grid grid-cols-12 gap-4 text-xs font-semibold text-gray-500 uppercase">
             <div className="col-span-3">Zona</div>
             <div className="col-span-2">Collaboratore</div>
@@ -643,33 +870,37 @@ export const AdminCollaboratori: React.FC = () => {
             <div className="col-span-1">Attivi</div>
             <div className="col-span-2">Azioni</div>
           </div>
-          {allZonesData.filter(z => z.status !== 'richiesta').map(z => (
-            <div key={z.id} className="px-4 py-3 grid grid-cols-12 gap-4 items-center border-b border-gray-50 text-sm hover:bg-gray-50">
-              <div className="col-span-3 font-medium text-gray-900">{z.city && `${z.city}, `}{z.province && `${z.province}, `}{z.region}</div>
-              <div className="col-span-2 text-gray-600">{z.collab ? `${z.collab.first_name} ${z.collab.last_name}` : 'N/A'}</div>
-              <div className="col-span-1"><span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">{z.level}</span></div>
-              <div className="col-span-1">
-                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${z.status === 'approvata' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
-                  {z.status}
-                </span>
+          {allZonesData.filter(z => z.status !== 'richiesta').length === 0 ? (
+            <div className="p-8 text-center text-gray-400"><p className="text-sm">Nessuna zona assegnata</p></div>
+          ) : (
+            allZonesData.filter(z => z.status !== 'richiesta').map(z => (
+              <div key={z.id} className="px-4 py-3 grid grid-cols-12 gap-4 items-center border-b border-gray-50 text-sm hover:bg-gray-50">
+                <div className="col-span-3 font-medium text-gray-900">{z.city && `${z.city}, `}{z.province && `${z.province}, `}{z.region}</div>
+                <div className="col-span-2 text-gray-600">{z.collab ? `${z.collab.first_name} ${z.collab.last_name}` : 'N/A'}</div>
+                <div className="col-span-1"><span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">{z.level}</span></div>
+                <div className="col-span-1">
+                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${z.status === 'approvata' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                    {z.status}
+                  </span>
+                </div>
+                <div className="col-span-1">
+                  <button onClick={() => handleToggleExclusive(z.id, z.is_exclusive)}
+                    className={`text-xs px-2 py-0.5 rounded-full border font-medium transition-colors ${z.is_exclusive ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-yellow-50'}`}>
+                    {z.is_exclusive ? '⭐ Sì' : 'No'}
+                  </button>
+                </div>
+                <div className="col-span-1 text-gray-600">{z.leadsCount}</div>
+                <div className="col-span-1 text-green-600 font-medium">{z.activeCount}</div>
+                <div className="col-span-2">
+                  {z.status === 'approvata' ? (
+                    <button onClick={() => handleUpdateZoneStatus(z.id, 'rifiutata')} className="text-xs text-red-600 hover:underline">Revoca</button>
+                  ) : (
+                    <button onClick={() => handleUpdateZoneStatus(z.id, 'approvata')} className="text-xs text-green-600 hover:underline">Riattiva</button>
+                  )}
+                </div>
               </div>
-              <div className="col-span-1">
-                <button onClick={() => handleToggleExclusive(z.id, z.is_exclusive)}
-                  className={`text-xs px-2 py-0.5 rounded-full border font-medium transition-colors ${z.is_exclusive ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-yellow-50'}`}>
-                  {z.is_exclusive ? '⭐ Sì' : 'No'}
-                </button>
-              </div>
-              <div className="col-span-1 text-gray-600">{z.leadsCount}</div>
-              <div className="col-span-1 text-green-600 font-medium">{z.activeCount}</div>
-              <div className="col-span-2">
-                {z.status === 'approvata' ? (
-                  <button onClick={() => handleUpdateZoneStatus(z.id, 'rifiutata')} className="text-xs text-red-600 hover:underline">Revoca</button>
-                ) : (
-                  <button onClick={() => handleUpdateZoneStatus(z.id, 'approvata')} className="text-xs text-green-600 hover:underline">Riattiva</button>
-                )}
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     );
