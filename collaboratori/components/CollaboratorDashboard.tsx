@@ -101,6 +101,7 @@ export const CollaboratorDashboard: React.FC = () => {
   const [newNoteType, setNewNoteType] = useState('generale');
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
+  const [registeredHubbers, setRegisteredHubbers] = useState<any[]>([]);
 
   // DATA LOADING
   useEffect(() => {
@@ -114,18 +115,20 @@ export const CollaboratorDashboard: React.FC = () => {
     if (!collaborator) return;
     setIsLoading(true);
     try {
-      const [lr, zr, cr, azr, szr] = await Promise.all([
+      const [lr, zr, cr, azr, szr, rhr] = await Promise.all([
         supabase.from('collaborator_leads').select('*').eq('collaborator_id', collaborator.id).order('created_at', { ascending: false }),
         supabase.from('collaborator_zones').select('*').eq('collaborator_id', collaborator.id),
         supabase.from('collaborator_commissions').select('*').eq('collaborator_id', collaborator.id).order('created_at', { ascending: false }),
         supabase.from('collaborator_available_zones').select('*').eq('is_active', true).order('region').order('province').order('city'),
         supabase.from('collaborator_zone_suggestions').select('*'),
+        supabase.from('collaborator_hubbers_view').select('*').eq('collaborator_id', collaborator.id).order('registered_at', { ascending: false }),
       ]);
       setLeads(lr.data || []);
       setZones(zr.data || []);
       setCommissions(cr.data || []);
       setAvailableZones(azr.data || []);
       setZoneSuggestions(szr.data || []);
+      setRegisteredHubbers(rhr.data || []);
     } catch (err) { console.error('Errore:', err); }
     finally { setIsLoading(false); }
   };
@@ -712,6 +715,63 @@ export const CollaboratorDashboard: React.FC = () => {
             <Plus className="w-4 h-4 mr-1" /> Nuovo Hubber
           </button>
         </div>
+        
+        {/* HUBBER REGISTRATI */}
+        {registeredHubbers.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100 bg-green-50/50">
+              <h3 className="font-bold text-gray-900 text-sm flex items-center">
+                <CheckCircle className="w-4 h-4 mr-2 text-green-600" /> Hubber Registrati tramite il tuo link
+                <span className="ml-2 bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{registeredHubbers.length}</span>
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5">Utenti che si sono registrati tramite il tuo codice referral</p>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {registeredHubbers.map(h => (
+                <div key={h.lead_id} className="px-5 py-4 flex items-center justify-between">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {h.avatar_url ? (
+                        <img src={h.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-sm font-bold text-brand">{(h.first_name || '?').charAt(0)}{(h.last_name || '?').charAt(0)}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{h.first_name} {h.last_name}</p>
+                        {h.is_super_hubber && <Star className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500">
+                        <span>{h.email}</span>
+                        {h.registered_at && <span>Registrato: {new Date(h.registered_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-gray-900">{h.active_listings_count || 0}</p>
+                      <p className="text-[10px] text-gray-400">Annunci</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-gray-900">{h.completed_bookings_90d || 0}</p>
+                      <p className="text-[10px] text-gray-400">Prenotazioni</p>
+                    </div>
+                    {h.rating > 0 && (
+                      <div className="text-center">
+                        <p className="text-sm font-bold text-amber-600">⭐ {Number(h.rating).toFixed(1)}</p>
+                        <p className="text-[10px] text-gray-400">Rating</p>
+                      </div>
+                    )}
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium border ${h.lead_status === 'attivo' ? 'bg-green-50 border-green-200 text-green-700' : h.lead_status === 'registrato' ? 'bg-purple-50 border-purple-200 text-purple-700' : 'bg-gray-50 border-gray-200 text-gray-600'}`}>
+                      {h.lead_status === 'attivo' ? '✓ Attivo' : h.lead_status === 'registrato' ? 'Registrato' : h.lead_status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {showNewLeadForm && (
           <div className="bg-white p-6 rounded-2xl border-2 border-brand/20 shadow-sm">
