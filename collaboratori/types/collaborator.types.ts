@@ -52,6 +52,11 @@ export interface CollaboratorLead {
   activated_at: string | null;
   created_at: string;
   updated_at: string;
+  lead_type: string | null;
+  fiscal_code: string | null;
+  vat_number: string | null;
+  pec: string | null;
+  sdi_code: string | null;
   // Joined
   zone?: CollaboratorZone;
 }
