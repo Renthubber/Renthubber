@@ -102,6 +102,7 @@ export const CollaboratorDashboard: React.FC = () => {
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
   const [registeredHubbers, setRegisteredHubbers] = useState<any[]>([]);
+  const [settingsLevels, setSettingsLevels] = useState<any[]>([]);
 
   // DATA LOADING
   useEffect(() => {
@@ -115,13 +116,14 @@ export const CollaboratorDashboard: React.FC = () => {
     if (!collaborator) return;
     setIsLoading(true);
     try {
-      const [lr, zr, cr, azr, szr, rhr] = await Promise.all([
+      const [lr, zr, cr, azr, szr, rhr, slr] = await Promise.all([
         supabase.from('collaborator_leads').select('*').eq('collaborator_id', collaborator.id).order('created_at', { ascending: false }),
         supabase.from('collaborator_zones').select('*').eq('collaborator_id', collaborator.id),
         supabase.from('collaborator_commissions').select('*').eq('collaborator_id', collaborator.id).order('created_at', { ascending: false }),
         supabase.from('collaborator_available_zones').select('*').eq('is_active', true).order('region').order('province').order('city'),
         supabase.from('collaborator_zone_suggestions').select('*'),
         supabase.from('collaborator_hubbers_view').select('*').eq('collaborator_id', collaborator.id).order('registered_at', { ascending: false }),
+        supabase.from('collaborator_settings').select('*').order('min_active_hubbers', { ascending: true }),
       ]);
       setLeads(lr.data || []);
       setZones(zr.data || []);
@@ -129,6 +131,7 @@ export const CollaboratorDashboard: React.FC = () => {
       setAvailableZones(azr.data || []);
       setZoneSuggestions(szr.data || []);
       setRegisteredHubbers(rhr.data || []);
+      setSettingsLevels(slr.data || []);
     } catch (err) { console.error('Errore:', err); }
     finally { setIsLoading(false); }
   };
@@ -1275,12 +1278,18 @@ Se vuoi ne parliamo!`;
           <hr className="border-gray-100 my-4" />
 
           <div className="space-y-3">
-            {[
-              { emoji: '🔰', label: 'Starter', range: '0-9 Hubber', bonus: '€5', percent: '5%', milestone: null, current: (collaborator?.badge || 'none') === 'none', color: 'border-gray-200 bg-gray-50' },
-              { emoji: '🥉', label: 'Bronze', range: '10-24 Hubber', bonus: '€7', percent: '7%', milestone: '€50 quando 10 Hubber con almeno 1 prenotazione', current: collaborator?.badge === 'bronze', color: 'border-amber-200 bg-amber-50/30' },
-              { emoji: '🥈', label: 'Silver', range: '25-49 Hubber', bonus: '€8', percent: '8%', milestone: '€150 quando 25 Hubber con almeno 1 prenotazione', current: collaborator?.badge === 'silver', color: 'border-slate-300 bg-slate-50/30' },
-              { emoji: '🥇', label: 'Gold', range: '50+ Hubber', bonus: '€10', percent: '10%', milestone: '€250 quando 50 Hubber con almeno 1 prenotazione', current: collaborator?.badge === 'gold', color: 'border-yellow-300 bg-yellow-50/30' },
-            ].map((level, i) => (
+            {(settingsLevels.length > 0 ? settingsLevels.map(s => ({
+              emoji: s.badge_level === 'starter' ? '🔰' : s.badge_level === 'bronze' ? '🥉' : s.badge_level === 'silver' ? '🥈' : '🥇',
+              label: s.badge_level === 'starter' ? 'Starter' : s.badge_level === 'bronze' ? 'Bronze' : s.badge_level === 'silver' ? 'Silver' : 'Gold',
+              range: s.max_active_hubbers ? `${s.min_active_hubbers}-${s.max_active_hubbers} Hubber` : `${s.min_active_hubbers}+ Hubber`,
+              bonus: `€${Number(s.acquisition_bonus_amount).toFixed(0)}`,
+              percent: `${Number(s.recurring_commission_pct).toFixed(0)}%`,
+              milestone: s.milestone_bonus > 0 ? `€${Number(s.milestone_bonus).toFixed(0)} quando ${s.milestone_hubbers_required} Hubber con almeno 1 prenotazione` : null,
+              current: (collaborator?.badge || 'none') === (s.badge_level === 'starter' ? 'none' : s.badge_level),
+              color: s.badge_level === 'starter' ? 'border-gray-200 bg-gray-50' : s.badge_level === 'bronze' ? 'border-amber-200 bg-amber-50/30' : s.badge_level === 'silver' ? 'border-slate-300 bg-slate-50/30' : 'border-yellow-300 bg-yellow-50/30',
+            })) : [
+              { emoji: '🔰', label: 'Starter', range: '0-9 Hubber', bonus: '€5', percent: '5%', milestone: null, current: true, color: 'border-gray-200 bg-gray-50' },
+            ]).map((level, i) => (
               <div key={i} className={`relative rounded-xl border-2 p-4 transition-all ${level.current ? 'border-brand bg-brand/5 ring-2 ring-brand/20' : level.color}`}>
                 {level.current && (
                   <span className="absolute -top-2.5 right-3 bg-brand text-white text-[10px] font-bold px-2 py-0.5 rounded-full">IL TUO LIVELLO</span>
