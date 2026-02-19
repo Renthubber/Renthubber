@@ -717,7 +717,7 @@ export const CollaboratorDashboard: React.FC = () => {
         </div>
         
         {/* HUBBER REGISTRATI */}
-        {registeredHubbers.length > 0 && (
+        {(
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 bg-green-50/50">
               <h3 className="font-bold text-gray-900 text-sm flex items-center">
@@ -727,7 +727,13 @@ export const CollaboratorDashboard: React.FC = () => {
               <p className="text-xs text-gray-500 mt-0.5">Utenti che si sono registrati tramite il tuo codice referral</p>
             </div>
             <div className="divide-y divide-gray-50">
-              {registeredHubbers.map(h => (
+              {registeredHubbers.length === 0 ? (
+                <div className="px-5 py-8 text-center">
+                  <Users className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500 font-medium">Nessun hubber registrato ancora</p>
+                  <p className="text-xs text-gray-400 mt-1">Condividi il tuo link referral per iniziare!</p>
+                </div>
+              ) : registeredHubbers.map(h => (
                 <div key={h.lead_id} className="px-5 py-4 flex items-center justify-between">
                   <div className="flex items-center space-x-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
