@@ -94,7 +94,7 @@ export const AdminCollaboratori: React.FC = () => {
   const [availableZones, setAvailableZones] = useState<any[]>([]);
   const [showAddZoneForm, setShowAddZoneForm] = useState(false);
   const [editingZone, setEditingZone] = useState<any | null>(null);
-  const [zoneForm, setZoneForm] = useState({ name: '', zone_level: 'city', region: '', province: '', city: '', max_collaborators: 5, description: '' });
+  const [zoneForm, setZoneForm] = useState({ name: '', zone_level: 'citta', region: '', province: '', city: '', max_collaborators: 5, description: '' });
   const [savingZone, setSavingZone] = useState(false);
   const [zoneSuggestionForm, setZoneSuggestionForm] = useState({ zone_id: '', category: '', priority: 'normale', note: '' });
   const [zoneSuggestions, setZoneSuggestions] = useState<any[]>([]);
@@ -706,7 +706,7 @@ export const AdminCollaboratori: React.FC = () => {
                   <select className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     value={zoneForm.region} onChange={e => {
                       const r = e.target.value;
-                      setZoneForm({ ...zoneForm, region: r, province: '', city: '', name: r, zone_level: 'region' });
+                      setZoneForm({ ...zoneForm, region: r, province: '', city: '', name: r, zone_level: 'regione' });
                     }}>
                     <option value="">Seleziona regione...</option>
                     {Object.keys(ITALY_ZONES).sort().map(r => <option key={r} value={r}>{r}</option>)}
@@ -718,7 +718,7 @@ export const AdminCollaboratori: React.FC = () => {
                     value={zoneForm.province} disabled={!zoneForm.region}
                     onChange={e => {
                       const p = e.target.value;
-                      setZoneForm({ ...zoneForm, province: p, city: '', name: p ? `${p}, ${zoneForm.region}` : zoneForm.region, zone_level: p ? 'province' : 'region' });
+                      setZoneForm({ ...zoneForm, province: p, city: '', name: p ? `${p}, ${zoneForm.region}` : zoneForm.region, zone_level: p ? 'provincia' : 'regione' });
                     }}>
                     <option value="">Tutta la regione</option>
                     {zoneForm.region && ITALY_ZONES[zoneForm.region] && Object.keys(ITALY_ZONES[zoneForm.region]).sort().map(p => <option key={p} value={p}>{p}</option>)}
@@ -730,7 +730,7 @@ export const AdminCollaboratori: React.FC = () => {
                     value={zoneForm.city} disabled={!zoneForm.province}
                     onChange={e => {
                       const c = e.target.value;
-                      setZoneForm({ ...zoneForm, city: c, name: c ? `${c}, ${zoneForm.province}` : `${zoneForm.province}, ${zoneForm.region}`, zone_level: c ? 'city' : 'province' });
+                      setZoneForm({ ...zoneForm, city: c, name: c ? `${c}, ${zoneForm.province}` : `${zoneForm.province}, ${zoneForm.region}`, zone_level: c ? 'citta' : 'provincia' });
                     }}>
                     <option value="">Tutta la provincia</option>
                     {zoneForm.region && zoneForm.province && ITALY_ZONES[zoneForm.region]?.[zoneForm.province]?.sort().map(c => <option key={c} value={c}>{c}</option>)}
