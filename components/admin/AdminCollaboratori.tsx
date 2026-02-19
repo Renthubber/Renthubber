@@ -95,6 +95,7 @@ export const AdminCollaboratori: React.FC = () => {
   const [showAddZoneForm, setShowAddZoneForm] = useState(false);
   const [editingZone, setEditingZone] = useState<any | null>(null);
   const [zoneForm, setZoneForm] = useState({ name: '', zone_level: 'citta', region: '', province: '', city: '', max_collaborators: 5, description: '' });
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [savingZone, setSavingZone] = useState(false);
   const [zoneSuggestionForm, setZoneSuggestionForm] = useState({ zone_id: '', category: '', priority: 'normale', note: '' });
   const [zoneSuggestions, setZoneSuggestions] = useState<any[]>([]);
@@ -348,6 +349,29 @@ export const AdminCollaboratori: React.FC = () => {
       alert('Impostazioni salvate!');
     } catch (err) { console.error(err); alert('Errore salvataggio.'); }
     finally { setActionLoading(null); }
+  };
+
+  const handleSaveMultipleCities = async () => {
+    if (!zoneForm.region || !zoneForm.province || selectedCities.length === 0) return;
+    setSavingZone(true);
+    try {
+      const rows = selectedCities.map(city => ({
+        name: `${city}, ${zoneForm.province}`,
+        zone_level: 'citta',
+        region: zoneForm.region,
+        province: zoneForm.province,
+        city,
+        max_collaborators: zoneForm.max_collaborators,
+        description: zoneForm.description || null,
+      }));
+      const { data, error } = await supabase.from('collaborator_available_zones').insert(rows).select('*');
+      if (error) throw error;
+      setAvailableZones(prev => [...prev, ...(data || [])]);
+      setZoneForm({ name: '', zone_level: 'citta', region: '', province: '', city: '', max_collaborators: 5, description: '' });
+      setSelectedCities([]);
+      setShowAddZoneForm(false);
+    } catch (err) { console.error(err); alert('Errore salvataggio zone.'); }
+    finally { setSavingZone(false); }
   };
 
   // ============================================================
@@ -707,6 +731,7 @@ export const AdminCollaboratori: React.FC = () => {
                     value={zoneForm.region} onChange={e => {
                       const r = e.target.value;
                       setZoneForm({ ...zoneForm, region: r, province: '', city: '', name: r, zone_level: 'regione' });
+                      setSelectedCities([]);
                     }}>
                     <option value="">Seleziona regione...</option>
                     {Object.keys(ITALY_ZONES).sort().map(r => <option key={r} value={r}>{r}</option>)}
@@ -719,47 +744,74 @@ export const AdminCollaboratori: React.FC = () => {
                     onChange={e => {
                       const p = e.target.value;
                       setZoneForm({ ...zoneForm, province: p, city: '', name: p ? `${p}, ${zoneForm.region}` : zoneForm.region, zone_level: p ? 'provincia' : 'regione' });
+                      setSelectedCities([]);
                     }}>
                     <option value="">Tutta la regione</option>
                     {zoneForm.region && ITALY_ZONES[zoneForm.region] && Object.keys(ITALY_ZONES[zoneForm.region]).sort().map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Città</label>
-                  <select className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    value={zoneForm.city} disabled={!zoneForm.province}
-                    onChange={e => {
-                      const c = e.target.value;
-                      setZoneForm({ ...zoneForm, city: c, name: c ? `${c}, ${zoneForm.province}` : `${zoneForm.province}, ${zoneForm.region}`, zone_level: c ? 'citta' : 'provincia' });
-                    }}>
-                    <option value="">Tutta la provincia</option>
-                    {zoneForm.region && zoneForm.province && ITALY_ZONES[zoneForm.region]?.[zoneForm.province]?.sort().map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Nome Zona</label>
-                  <input type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50"
-                    value={zoneForm.name} onChange={e => setZoneForm({ ...zoneForm, name: e.target.value })} />
-                  <p className="text-[10px] text-gray-400 mt-0.5">Generato automaticamente, puoi modificarlo</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Max Collaboratori</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Max Collaboratori (per zona)</label>
                   <input type="number" min={1} max={50} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     value={zoneForm.max_collaborators} onChange={e => setZoneForm({ ...zoneForm, max_collaborators: Number(e.target.value) })} />
                 </div>
-                <div>
+                <div className="sm:col-span-3">
                   <label className="block text-xs font-medium text-gray-600 mb-1">Descrizione (opzionale)</label>
                   <input type="text" placeholder="Note sulla zona..." className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     value={zoneForm.description} onChange={e => setZoneForm({ ...zoneForm, description: e.target.value })} />
                 </div>
               </div>
+
+              {/* Selezione città con checkbox */}
+              {zoneForm.province && ITALY_ZONES[zoneForm.region]?.[zoneForm.province] && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-gray-600">Città in {zoneForm.province} ({selectedCities.length} selezionate)</label>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => setSelectedCities(ITALY_ZONES[zoneForm.region][zoneForm.province])}
+                        className="text-[10px] text-blue-600 hover:underline">Seleziona tutte</button>
+                      <button type="button" onClick={() => setSelectedCities([])}
+                        className="text-[10px] text-gray-500 hover:underline">Deseleziona</button>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg border border-gray-200 max-h-48 overflow-y-auto p-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1">
+                    {ITALY_ZONES[zoneForm.region][zoneForm.province].map(city => {
+                      const isChecked = selectedCities.includes(city);
+                      const alreadyExists = availableZones.some(az => az.city === city && az.province === zoneForm.province && az.region === zoneForm.region);
+                      return (
+                        <label key={city} className={`flex items-center px-2 py-1.5 rounded text-xs cursor-pointer transition-colors ${alreadyExists ? 'opacity-40 cursor-not-allowed' : isChecked ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50 text-gray-700'}`}>
+                          <input type="checkbox" checked={isChecked} disabled={alreadyExists}
+                            onChange={() => setSelectedCities(prev => isChecked ? prev.filter(c => c !== city) : [...prev, city])}
+                            className="mr-1.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                          {city} {alreadyExists && <span className="ml-1 text-[9px] text-gray-400">✓ già attiva</span>}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-end space-x-3 mt-4">
-                <button onClick={() => { setShowAddZoneForm(false); setEditingZone(null); }} className="px-4 py-2 text-sm text-gray-600">Annulla</button>
-                <button onClick={handleSaveAvailableZone} disabled={savingZone || !zoneForm.name || !zoneForm.region}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 flex items-center">
-                  {savingZone ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
-                  {editingZone ? 'Aggiorna' : 'Salva'}
-                </button>
+                <button onClick={() => { setShowAddZoneForm(false); setEditingZone(null); setSelectedCities([]); }} className="px-4 py-2 text-sm text-gray-600">Annulla</button>
+                {!zoneForm.province ? (
+                  <button onClick={handleSaveAvailableZone} disabled={savingZone || !zoneForm.name || !zoneForm.region}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 flex items-center">
+                    {savingZone ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                    {editingZone ? 'Aggiorna' : 'Salva Regione'}
+                  </button>
+                ) : selectedCities.length === 0 ? (
+                  <button onClick={handleSaveAvailableZone} disabled={savingZone || !zoneForm.region}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 flex items-center">
+                    {savingZone ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                    {editingZone ? 'Aggiorna' : 'Salva Provincia'}
+                  </button>
+                ) : (
+                  <button onClick={handleSaveMultipleCities} disabled={savingZone}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm disabled:opacity-50 flex items-center">
+                    {savingZone ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                    Salva {selectedCities.length} {selectedCities.length === 1 ? 'città' : 'città'}
+                  </button>
+                )}
               </div>
             </div>
           )}
