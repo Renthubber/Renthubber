@@ -810,6 +810,7 @@ export const CollaboratorDashboard: React.FC = () => {
                   </div>
        
                  {/* DETTAGLI LEAD ESPANDIBILE */}
+                  {/* DETTAGLI LEAD ESPANDIBILE */}
                   {expandedLeadId === lead.id && (
                     <div className="border-t border-gray-100 bg-blue-50/30 p-4">
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -819,60 +820,58 @@ export const CollaboratorDashboard: React.FC = () => {
                             {lead.lead_type === 'privato' ? '👤 Privato' : lead.lead_type === 'ditta_individuale' ? '🏪 Ditta Individuale' : lead.lead_type === 'societa' ? '🏢 Società' : lead.lead_type === 'associazione' ? '🤝 Associazione' : lead.lead_type || '-'}
                           </p>
                         </div>
-                        <div>
+                        {lead.contact_email && <div>
                           <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Email</p>
-                          <p className="text-xs text-gray-800">{lead.contact_email || '-'}</p>
-                        </div>
-                        <div>
+                          <p className="text-xs text-gray-800">{lead.contact_email}</p>
+                        </div>}
+                        {lead.contact_phone && <div>
                           <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Telefono</p>
-                          <p className="text-xs text-gray-800">{lead.contact_phone || '-'}</p>
-                        </div>
-                        <div>
+                          <p className="text-xs text-gray-800">{lead.contact_phone}</p>
+                        </div>}
+                        {lead.business_name && <div>
                           <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Attività</p>
-                          <p className="text-xs text-gray-800">{lead.business_name || '-'}</p>
-                        </div>
-                        <div>
+                          <p className="text-xs text-gray-800">{lead.business_name}</p>
+                        </div>}
+                        {lead.fiscal_code && <div>
                           <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Codice Fiscale</p>
-                          <p className="text-xs text-gray-800 font-mono">{lead.fiscal_code || '-'}</p>
-                        </div>
-                        <div>
+                          <p className="text-xs text-gray-800 font-mono">{lead.fiscal_code}</p>
+                        </div>}
+                        {lead.vat_number && <div>
                           <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Partita IVA</p>
-                          <p className="text-xs text-gray-800 font-mono">{lead.vat_number || '-'}</p>
-                        </div>
-                        <div>
+                          <p className="text-xs text-gray-800 font-mono">{lead.vat_number}</p>
+                        </div>}
+                        {lead.pec && <div>
                           <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">PEC</p>
-                          <p className="text-xs text-gray-800">{lead.pec || '-'}</p>
-                        </div>
-                        <div>
+                          <p className="text-xs text-gray-800">{lead.pec}</p>
+                        </div>}
+                        {lead.sdi_code && <div>
                           <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Codice SDI</p>
-                          <p className="text-xs text-gray-800 font-mono">{lead.sdi_code || '-'}</p>
-                        </div>
+                          <p className="text-xs text-gray-800 font-mono">{lead.sdi_code}</p>
+                        </div>}
                         <div>
                           <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Zona</p>
                           <p className="text-xs text-gray-800">{zone ? (zone.city || zone.province || zone.region) : '-'}</p>
                         </div>
-                        <div>
+                        {lead.category && <div>
                           <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Categoria</p>
-                          <p className="text-xs text-gray-800">{lead.category || '-'}</p>
-                        </div>
+                          <p className="text-xs text-gray-800">{lead.category}</p>
+                        </div>}
                         <div>
                           <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Inserito il</p>
                           <p className="text-xs text-gray-800">{new Date(lead.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                         </div>
-                        <div>
+                        {lead.registered_at && <div>
                           <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Registrato il</p>
-                          <p className="text-xs text-gray-800">{lead.registered_at ? new Date(lead.registered_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</p>
-                        </div>
-                        <div>
+                          <p className="text-xs text-gray-800">{new Date(lead.registered_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                        </div>}
+                        {lead.activated_at && <div>
                           <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Attivato il</p>
-                          <p className="text-xs text-gray-800">{lead.activated_at ? new Date(lead.activated_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</p>
-                        </div>
-                        {le > 0 && (
-                          <div>
-                            <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Guadagni Totali</p>
-                            <p className="text-xs font-bold text-green-600">€{le.toFixed(2)}</p>
-                          </div>
-                        )}
+                          <p className="text-xs text-gray-800">{new Date(lead.activated_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                        </div>}
+                        {le > 0 && <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">Guadagni Totali</p>
+                          <p className="text-xs font-bold text-green-600">€{le.toFixed(2)}</p>
+                        </div>}
                       </div>
                       {lead.notes && (
                         <div className="mt-3 pt-3 border-t border-gray-200/50">
