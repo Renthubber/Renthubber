@@ -14,6 +14,9 @@ import {
   Plus, Trash2, Edit3, Zap
 } from 'lucide-react';
 import { supabase } from '../../services/supabaseClient';
+import { ITALY_DATA as ITALY_ZONES } from '../../collaboratori/data/italyData';
+
+
 
 // Types
 interface Collaborator {
@@ -699,40 +702,52 @@ export const AdminCollaboratori: React.FC = () => {
               <h4 className="font-semibold text-gray-900 text-sm mb-3">{editingZone ? 'Modifica Zona' : 'Nuova Zona Disponibile'}</h4>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Nome Zona *</label>
-                  <input type="text" placeholder="Es. Messina Centro" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    value={zoneForm.name} onChange={e => setZoneForm({ ...zoneForm, name: e.target.value })} />
-                </div>
-                <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Regione *</label>
-                  <input type="text" placeholder="Es. Sicilia" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    value={zoneForm.region} onChange={e => setZoneForm({ ...zoneForm, region: e.target.value })} />
+                  <select className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={zoneForm.region} onChange={e => {
+                      const r = e.target.value;
+                      setZoneForm({ ...zoneForm, region: r, province: '', city: '', name: r, zone_level: 'region' });
+                    }}>
+                    <option value="">Seleziona regione...</option>
+                    {Object.keys(ITALY_ZONES).sort().map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Provincia</label>
-                  <input type="text" placeholder="Es. ME" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    value={zoneForm.province} onChange={e => setZoneForm({ ...zoneForm, province: e.target.value })} />
+                  <select className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={zoneForm.province} disabled={!zoneForm.region}
+                    onChange={e => {
+                      const p = e.target.value;
+                      setZoneForm({ ...zoneForm, province: p, city: '', name: p ? `${p}, ${zoneForm.region}` : zoneForm.region, zone_level: p ? 'province' : 'region' });
+                    }}>
+                    <option value="">Tutta la regione</option>
+                    {zoneForm.region && ITALY_ZONES[zoneForm.region] && Object.keys(ITALY_ZONES[zoneForm.region]).sort().map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Città</label>
-                  <input type="text" placeholder="Es. Messina" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    value={zoneForm.city} onChange={e => setZoneForm({ ...zoneForm, city: e.target.value })} />
+                  <select className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={zoneForm.city} disabled={!zoneForm.province}
+                    onChange={e => {
+                      const c = e.target.value;
+                      setZoneForm({ ...zoneForm, city: c, name: c ? `${c}, ${zoneForm.province}` : `${zoneForm.province}, ${zoneForm.region}`, zone_level: c ? 'city' : 'province' });
+                    }}>
+                    <option value="">Tutta la provincia</option>
+                    {zoneForm.region && zoneForm.province && ITALY_ZONES[zoneForm.region]?.[zoneForm.province]?.sort().map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Livello</label>
-                  <select className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    value={zoneForm.zone_level} onChange={e => setZoneForm({ ...zoneForm, zone_level: e.target.value })}>
-                    <option value="city">Città</option>
-                    <option value="province">Provincia</option>
-                    <option value="region">Regione</option>
-                  </select>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nome Zona</label>
+                  <input type="text" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50"
+                    value={zoneForm.name} onChange={e => setZoneForm({ ...zoneForm, name: e.target.value })} />
+                  <p className="text-[10px] text-gray-400 mt-0.5">Generato automaticamente, puoi modificarlo</p>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Max Collaboratori</label>
                   <input type="number" min={1} max={50} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     value={zoneForm.max_collaborators} onChange={e => setZoneForm({ ...zoneForm, max_collaborators: Number(e.target.value) })} />
                 </div>
-                <div className="sm:col-span-3">
+                <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Descrizione (opzionale)</label>
                   <input type="text" placeholder="Note sulla zona..." className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     value={zoneForm.description} onChange={e => setZoneForm({ ...zoneForm, description: e.target.value })} />
