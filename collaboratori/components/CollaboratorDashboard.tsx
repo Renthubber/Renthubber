@@ -341,6 +341,13 @@ export const CollaboratorDashboard: React.FC = () => {
     const { error } = await supabase.from('collaborator_lead_notes').delete().eq('id', noteId);
     if (!error) setLeadNotes(prev => ({ ...prev, [leadId]: (prev[leadId] || []).filter(n => n.id !== noteId) }));
   };
+
+  const handleDeleteLead = async (leadId: string) => {
+    if (!confirm('Sei sicuro di voler eliminare questo contatto?')) return;
+    const { error } = await supabase.from('collaborator_leads').delete().eq('id', leadId);
+    if (!error) setLeads(prev => prev.filter(l => l.id !== leadId));
+  };
+
   if (!collaborator) return null;
 
   // RENDER SHELL
@@ -712,7 +719,7 @@ export const CollaboratorDashboard: React.FC = () => {
             </select>
           </div>
           <button onClick={() => setShowNewLeadForm(true)} className="bg-brand hover:bg-brand-dark text-white font-medium px-4 py-2 rounded-lg text-sm flex items-center shadow-sm">
-            <Plus className="w-4 h-4 mr-1" /> Nuovo Hubber
+            <Plus className="w-4 h-4 mr-1" /> Aggiungi Contatto
           </button>
         </div>
         
@@ -781,7 +788,7 @@ export const CollaboratorDashboard: React.FC = () => {
 
         {showNewLeadForm && (
           <div className="bg-white p-6 rounded-2xl border-2 border-brand/20 shadow-sm">
-            <h3 className="font-bold text-gray-900 mb-4 flex items-center"><UserPlus className="w-5 h-5 mr-2 text-brand" /> Nuovo Hubber</h3>
+            <h3 className="font-bold text-gray-900 mb-4 flex items-center"><UserPlus className="w-5 h-5 mr-2 text-brand" /> Nuovo Contatto</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><label className="block text-xs font-medium text-gray-600 mb-1">Tipo *</label>
                 <select className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none" value={newLead.lead_type} onChange={e => setNewLead({ ...newLead, lead_type: e.target.value })}>
@@ -848,6 +855,9 @@ export const CollaboratorDashboard: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-1">
                           <h4 className="font-semibold text-gray-900 text-sm truncate">{lead.contact_name}</h4>
+                          {registeredHubbers.some(h => h.email && lead.contact_email && h.email.toLowerCase() === lead.contact_email.toLowerCase()) && (
+                            <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">✓ Registrato</span>
+                          )}
                           <select value={lead.status} onChange={e => handleUpdateLeadStatus(lead.id, e.target.value)}
                             className={`text-xs px-2 py-0.5 rounded-full border font-medium ${st.bg} ${st.color} outline-none cursor-pointer`}>
                             {Object.entries(LEAD_STATUS_CONFIG).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
@@ -866,6 +876,10 @@ export const CollaboratorDashboard: React.FC = () => {
                         <button onClick={() => handleToggleNotes(lead.id)}
                           className={`text-xs px-2.5 py-1.5 rounded-lg font-medium flex items-center transition-colors ${isNotesExpanded ? 'bg-brand/10 text-brand' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                           <FileText className="w-3 h-3 mr-1" /> Note {notes.length > 0 && `(${notes.length})`}
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteLead(lead.id); }}
+                          className="text-xs px-2.5 py-1.5 rounded-lg font-medium flex items-center bg-gray-100 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                          <XCircle className="w-3 h-3" />
                         </button>
                         <div className="text-right">
                           <p className="text-xs text-gray-400">{new Date(lead.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
