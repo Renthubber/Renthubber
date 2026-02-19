@@ -254,14 +254,24 @@ export const CollaboratorDashboard: React.FC = () => {
   // ZONE REQUEST
   const requestableZones = useMemo(() => {
     return availableZones.filter(az => {
+      if (!az.is_active) return false;
       const alreadyHas = zones.some(z =>
         z.region === az.region &&
         (!az.province || z.province === az.province) &&
         (!az.city || z.city === az.city) &&
         ['approvata', 'richiesta'].includes(z.status)
       );
-      return !alreadyHas;
-    });
+      if (alreadyHas) return false;
+      return true;
+    }).map(az => {
+      const currentCount = zones.filter(z =>
+        z.status === 'approvata' &&
+        z.region === az.region &&
+        (!az.province || z.province === az.province) &&
+        (!az.city || z.city === az.city)
+      ).length;
+      return { ...az, currentCount, isFull: currentCount >= (az.max_collaborators || 5) };
+    }).filter(az => !az.isFull);
   }, [availableZones, zones]);
 
   const handleRequestZone = async (az: any) => {
@@ -524,6 +534,7 @@ export const CollaboratorDashboard: React.FC = () => {
                   {approvedZoneSuggestions.map(s => (
                     <span key={s.id} className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${s.priority === 'alta' ? 'bg-red-50 border-red-200 text-red-700' : s.priority === 'bassa' ? 'bg-gray-50 border-gray-200 text-gray-600' : 'bg-blue-50 border-blue-200 text-blue-700'}`}>
                       <Tag className="w-3 h-3 mr-1" />{s.category}
+                      <span className="ml-1 opacity-60">· {(() => { const az = availableZones.find(a => a.id === s.zone_id); return az ? (az.city || az.province || az.region) : ''; })()}</span>
                     </span>
                   ))}
                 </div>
@@ -561,6 +572,9 @@ export const CollaboratorDashboard: React.FC = () => {
                               <h4 className="font-semibold text-gray-900 text-sm">{az.name}</h4>
                               <p className="text-xs text-gray-500 mt-0.5">
                                 {[az.city, az.province, az.region].filter(Boolean).join(', ')}
+                              </p>
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                <Users className="w-3 h-3 inline mr-1" />{az.currentCount}/{az.max_collaborators || 5} collaboratori
                               </p>
                               {az.description && <p className="text-xs text-gray-400 mt-1 italic">{az.description}</p>}
                               {suggestions.length > 0 && (
