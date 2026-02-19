@@ -270,7 +270,7 @@ export const CollaboratorDashboard: React.FC = () => {
     try {
       const { data, error } = await supabase.from('collaborator_zones').insert({
         collaborator_id: collaborator.id,
-        zone_level: az.zone_level || 'citta',
+        zone_level: ({ region: 'regione', province: 'provincia', city: 'citta' }[az.zone_level] || az.zone_level || 'citta'),
         region: az.region,
         province: az.province || null,
         city: az.city || null,
