@@ -101,16 +101,8 @@ export const AdminCollaboratori: React.FC = () => {
   const [zoneSuggestions, setZoneSuggestions] = useState<any[]>([]);
 
   // Settings
-  const [settings, setSettings] = useState({
-    acquisition_bonus: 25,
-    recurring_percentage: 10,
-    recurring_months: 12,
-    milestone_10: 100,
-    milestone_25: 300,
-    milestone_50: 750,
-    min_payout: 50,
-    payout_day: 15,
-  });
+  const [settingsLevels, setSettingsLevels] = useState<any[]>([]);
+  const [generalSettings, setGeneralSettings] = useState({ min_payout: 50, payout_day: 15, recurring_months: 12 });
 
   // ============================================================
   // DATA LOADING
@@ -125,7 +117,7 @@ export const AdminCollaboratori: React.FC = () => {
         supabase.from('collaborator_zones').select('*'),
         supabase.from('collaborator_leads').select('*').order('created_at', { ascending: false }),
         supabase.from('collaborator_commissions').select('*').order('created_at', { ascending: false }),
-        supabase.from('collaborator_settings').select('*').eq('id', '00000000-0000-0000-0000-000000000001').single(),
+        supabase.from('collaborator_settings').select('*').order('min_active_hubbers', { ascending: true }),
         supabase.from('collaborator_available_zones').select('*').order('region').order('province').order('city'),
         supabase.from('collaborator_zone_suggestions').select('*'),
       ]);
@@ -135,16 +127,13 @@ export const AdminCollaboratori: React.FC = () => {
       setCommissions(commissionsRes.data || []);
       setAvailableZones(availZonesRes.data || []);
       setZoneSuggestions(suggestionsRes.data || []);
-      if (settingsRes.data) {
-        setSettings({
-          acquisition_bonus: settingsRes.data.acquisition_bonus_amount || 25,
-          recurring_percentage: settingsRes.data.recurring_commission_pct || 10,
-          recurring_months: settingsRes.data.recurring_duration_months || 12,
-          milestone_10: settingsRes.data.milestone_10_bonus || 100,
-          milestone_25: settingsRes.data.milestone_25_bonus || 300,
-          milestone_50: settingsRes.data.milestone_50_bonus || 750,
-          min_payout: settingsRes.data.min_payout || 50,
-          payout_day: settingsRes.data.payout_day || 15,
+      if (settingsRes.data && settingsRes.data.length > 0) {
+        setSettingsLevels(settingsRes.data);
+        const first = settingsRes.data[0];
+        setGeneralSettings({
+          min_payout: first.min_payout || 50,
+          payout_day: first.payout_day || 15,
+          recurring_months: first.recurring_duration_months || 12,
         });
       }
     } catch (err) { console.error('Errore caricamento:', err); }
@@ -333,19 +322,19 @@ export const AdminCollaboratori: React.FC = () => {
   const handleSaveSettings = async () => {
     setActionLoading('settings');
     try {
-      const { error } = await supabase.from('collaborator_settings').upsert({
-        id: '00000000-0000-0000-0000-000000000001',
-        acquisition_bonus_amount: settings.acquisition_bonus,
-        recurring_commission_pct: settings.recurring_percentage,
-        recurring_duration_months: settings.recurring_months,
-        milestone_10_bonus: settings.milestone_10,
-        milestone_25_bonus: settings.milestone_25,
-        milestone_50_bonus: settings.milestone_50,
-        min_payout: settings.min_payout,
-        payout_day: settings.payout_day,
-        updated_at: new Date().toISOString(),
-      });
-      if (error) throw error;
+      for (const level of settingsLevels) {
+        const { error } = await supabase.from('collaborator_settings').update({
+          acquisition_bonus_amount: level.acquisition_bonus_amount,
+          recurring_commission_pct: level.recurring_commission_pct,
+          recurring_duration_months: generalSettings.recurring_months,
+          milestone_bonus: level.milestone_bonus,
+          milestone_hubbers_required: level.milestone_hubbers_required,
+          min_payout: generalSettings.min_payout,
+          payout_day: generalSettings.payout_day,
+          updated_at: new Date().toISOString(),
+        }).eq('id', level.id);
+        if (error) throw error;
+      }
       alert('Impostazioni salvate!');
     } catch (err) { console.error(err); alert('Errore salvataggio.'); }
     finally { setActionLoading(null); }
@@ -977,66 +966,87 @@ export const AdminCollaboratori: React.FC = () => {
   // IMPOSTAZIONI
   // ============================================================
   function renderSettings() {
+    const LEVEL_CONFIG: Record<string, { emoji: string; label: string; color: string }> = {
+      starter: { emoji: '🔰', label: 'Starter', color: 'border-gray-200' },
+      bronze: { emoji: '🥉', label: 'Bronze', color: 'border-amber-300' },
+      silver: { emoji: '🥈', label: 'Silver', color: 'border-slate-300' },
+      gold: { emoji: '🥇', label: 'Gold', color: 'border-yellow-400' },
+    };
+
+    const updateLevel = (id: string, field: string, value: number) => {
+      setSettingsLevels(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
+    };
+
     return (
       <div className="space-y-6">
+        {/* Livelli */}
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center"><Euro className="w-5 h-5 mr-2 text-blue-600" /> Commissioni</h3>
+          <h3 className="font-semibold text-gray-900 mb-2 flex items-center"><Award className="w-5 h-5 mr-2 text-blue-600" /> Commissioni per Livello</h3>
+          <p className="text-xs text-gray-500 mb-5">Configura bonus, commissioni ricorrenti e premi milestone per ogni livello collaboratore.</p>
+          <div className="space-y-4">
+            {settingsLevels.map(level => {
+              const cfg = LEVEL_CONFIG[level.badge_level] || LEVEL_CONFIG.starter;
+              return (
+                <div key={level.id} className={`border-2 ${cfg.color} rounded-xl p-5`}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-2xl">{cfg.emoji}</span>
+                    <div>
+                      <h4 className="font-bold text-gray-900">{cfg.label}</h4>
+                      <p className="text-xs text-gray-500">{level.min_active_hubbers}{level.max_active_hubbers ? `-${level.max_active_hubbers}` : '+'} Hubber attivi</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Bonus Acquisizione (€)</label>
+                      <input type="number" step="0.5" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={level.acquisition_bonus_amount} onChange={e => updateLevel(level.id, 'acquisition_bonus_amount', Number(e.target.value))} />
+                      <p className="text-[10px] text-gray-400 mt-0.5">Per Hubber con annuncio</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Ricorrente (%)</label>
+                      <input type="number" step="0.5" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={level.recurring_commission_pct} onChange={e => updateLevel(level.id, 'recurring_commission_pct', Number(e.target.value))} />
+                      <p className="text-[10px] text-gray-400 mt-0.5">% su commissioni RH</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Premio Milestone (€)</label>
+                      <input type="number" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={level.milestone_bonus} onChange={e => updateLevel(level.id, 'milestone_bonus', Number(e.target.value))} />
+                      <p className="text-[10px] text-gray-400 mt-0.5">{level.milestone_hubbers_required > 0 ? `A ${level.milestone_hubbers_required} Hubber con prenotazione` : 'Nessuno'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Hubber per Milestone</label>
+                      <input type="number" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={level.milestone_hubbers_required} onChange={e => updateLevel(level.id, 'milestone_hubbers_required', Number(e.target.value))} />
+                      <p className="text-[10px] text-gray-400 mt-0.5">Con almeno 1 prenotazione</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Impostazioni Generali */}
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center"><CreditCard className="w-5 h-5 mr-2 text-blue-600" /> Impostazioni Generali</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Bonus Acquisizione (€)</label>
-              <input type="number" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                value={settings.acquisition_bonus} onChange={e => setSettings({ ...settings, acquisition_bonus: Number(e.target.value) })} />
-              <p className="text-xs text-gray-400 mt-1">Una tantum per Hubber attivo</p>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Commissione Ricorrente (%)</label>
-              <input type="number" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                value={settings.recurring_percentage} onChange={e => setSettings({ ...settings, recurring_percentage: Number(e.target.value) })} />
-              <p className="text-xs text-gray-400 mt-1">% sulle commissioni RH</p>
-            </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Durata Ricorrente (mesi)</label>
               <input type="number" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                value={settings.recurring_months} onChange={e => setSettings({ ...settings, recurring_months: Number(e.target.value) })} />
-              <p className="text-xs text-gray-400 mt-1">Mesi di commissione ricorrente</p>
+                value={generalSettings.recurring_months} onChange={e => setGeneralSettings({ ...generalSettings, recurring_months: Number(e.target.value) })} />
+              <p className="text-xs text-gray-400 mt-1">Mesi di commissione ricorrente per tutti i livelli</p>
             </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center"><Award className="w-5 h-5 mr-2 text-blue-600" /> Bonus Milestone</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">10 Hubber Attivi (€)</label>
-              <input type="number" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                value={settings.milestone_10} onChange={e => setSettings({ ...settings, milestone_10: Number(e.target.value) })} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">25 Hubber Attivi (€)</label>
-              <input type="number" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                value={settings.milestone_25} onChange={e => setSettings({ ...settings, milestone_25: Number(e.target.value) })} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">50 Hubber Attivi (€)</label>
-              <input type="number" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                value={settings.milestone_50} onChange={e => setSettings({ ...settings, milestone_50: Number(e.target.value) })} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center"><CreditCard className="w-5 h-5 mr-2 text-blue-600" /> Pagamenti</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Payout Minimo (€)</label>
               <input type="number" className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                value={settings.min_payout} onChange={e => setSettings({ ...settings, min_payout: Number(e.target.value) })} />
+                value={generalSettings.min_payout} onChange={e => setGeneralSettings({ ...generalSettings, min_payout: Number(e.target.value) })} />
               <p className="text-xs text-gray-400 mt-1">Importo minimo per pagamento</p>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Giorno Pagamento</label>
               <input type="number" min={1} max={28} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                value={settings.payout_day} onChange={e => setSettings({ ...settings, payout_day: Number(e.target.value) })} />
+                value={generalSettings.payout_day} onChange={e => setGeneralSettings({ ...generalSettings, payout_day: Number(e.target.value) })} />
               <p className="text-xs text-gray-400 mt-1">Giorno del mese per i pagamenti</p>
             </div>
           </div>
