@@ -54,17 +54,11 @@ self.addEventListener('fetch', (event) => {
   // ❌ Ignora richieste non-HTTP
   if (!request.url.startsWith('http')) return;
   
-  // ❌ Ignora TUTTE le richieste POST (non cachabili)
+  // ❌ Ignora TUTTE le richieste non-GET (POST, PUT, DELETE non cachabili)
   if (request.method !== 'GET') return;
   
-  // ❌ Ignora API esterne — sempre dalla rete senza intercettare
-  if (url.hostname.includes('supabase.co') ||
-      url.hostname.includes('stripe.com') ||
-      url.hostname.includes('js.stripe.com') ||
-      url.hostname.includes('sms.to') ||
-      url.hostname.includes('googleapis.com')) {
-    return;
-  }
+  // ❌ Ignora TUTTE le richieste esterne (Supabase, Stripe, CDN, ecc.)
+  if (url.origin !== self.location.origin) return;
   
   // ❌ Ignora richieste chrome-extension, webpack HMR, etc
   if (url.protocol === 'chrome-extension:' || url.pathname.includes('__vite')) return;
@@ -87,8 +81,7 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         }).catch(() => {
-          // Asset non disponibile offline — ritorna undefined
-          return undefined;
+          return new Response('', { status: 408, statusText: 'Offline' });
         });
       })
     );
