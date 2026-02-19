@@ -90,6 +90,17 @@ export const CollaboratorDashboard: React.FC = () => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
+  // ZONE & CRM STATES
+  const [availableZones, setAvailableZones] = useState<any[]>([]);
+  const [zoneSuggestions, setZoneSuggestions] = useState<any[]>([]);
+  const [showZoneRequestModal, setShowZoneRequestModal] = useState(false);
+  const [requestingZone, setRequestingZone] = useState(false);
+  const [leadNotes, setLeadNotes] = useState<Record<string, any[]>>({});
+  const [expandedLeadNotes, setExpandedLeadNotes] = useState<string | null>(null);
+  const [newNoteText, setNewNoteText] = useState('');
+  const [newNoteType, setNewNoteType] = useState('generale');
+  const [isSavingNote, setIsSavingNote] = useState(false);
+
   // DATA LOADING
   useEffect(() => {
     if (collaborator) {
@@ -102,14 +113,18 @@ export const CollaboratorDashboard: React.FC = () => {
     if (!collaborator) return;
     setIsLoading(true);
     try {
-      const [lr, zr, cr] = await Promise.all([
+      const [lr, zr, cr, azr, szr] = await Promise.all([
         supabase.from('collaborator_leads').select('*').eq('collaborator_id', collaborator.id).order('created_at', { ascending: false }),
         supabase.from('collaborator_zones').select('*').eq('collaborator_id', collaborator.id),
         supabase.from('collaborator_commissions').select('*').eq('collaborator_id', collaborator.id).order('created_at', { ascending: false }),
+        supabase.from('collaborator_available_zones').select('*').eq('is_active', true).order('region').order('province').order('city'),
+        supabase.from('collaborator_zone_suggestions').select('*'),
       ]);
       setLeads(lr.data || []);
       setZones(zr.data || []);
       setCommissions(cr.data || []);
+      setAvailableZones(azr.data || []);
+      setZoneSuggestions(szr.data || []);
     } catch (err) { console.error('Errore:', err); }
     finally { setIsLoading(false); }
   };
@@ -236,6 +251,82 @@ export const CollaboratorDashboard: React.FC = () => {
   };
 
   const handleLogout = () => { logout(); navigate('/collaboratori/login'); };
+  // ZONE REQUEST
+  const requestableZones = useMemo(() => {
+    return availableZones.filter(az => {
+      const alreadyHas = zones.some(z =>
+        z.region === az.region &&
+        (!az.province || z.province === az.province) &&
+        (!az.city || z.city === az.city) &&
+        ['approvata', 'richiesta'].includes(z.status)
+      );
+      return !alreadyHas;
+    });
+  }, [availableZones, zones]);
+
+  const handleRequestZone = async (az: any) => {
+    if (!collaborator) return;
+    setRequestingZone(true);
+    try {
+      const { data, error } = await supabase.from('collaborator_zones').insert({
+        collaborator_id: collaborator.id,
+        zone_level: az.zone_level || 'city',
+        region: az.region,
+        province: az.province || null,
+        city: az.city || null,
+        is_exclusive: false,
+        status: 'richiesta',
+      }).select('*').single();
+      if (error) throw error;
+      setZones(prev => [...prev, data]);
+      setShowZoneRequestModal(false);
+    } catch (err) { console.error(err); alert('Errore nella richiesta zona.'); }
+    finally { setRequestingZone(false); }
+  };
+
+  // CRM NOTES
+  const loadLeadNotes = async (leadId: string) => {
+    const { data } = await supabase
+      .from('collaborator_lead_notes')
+      .select('*')
+      .eq('lead_id', leadId)
+      .order('created_at', { ascending: false });
+    setLeadNotes(prev => ({ ...prev, [leadId]: data || [] }));
+  };
+
+  const handleToggleNotes = async (leadId: string) => {
+    if (expandedLeadNotes === leadId) {
+      setExpandedLeadNotes(null);
+    } else {
+      setExpandedLeadNotes(leadId);
+      if (!leadNotes[leadId]) await loadLeadNotes(leadId);
+    }
+    setNewNoteText('');
+    setNewNoteType('generale');
+  };
+
+  const handleAddNote = async (leadId: string) => {
+    if (!collaborator || !newNoteText.trim()) return;
+    setIsSavingNote(true);
+    try {
+      const { data, error } = await supabase.from('collaborator_lead_notes').insert({
+        lead_id: leadId,
+        collaborator_id: collaborator.id,
+        note: newNoteText.trim(),
+        note_type: newNoteType,
+      }).select('*').single();
+      if (error) throw error;
+      setLeadNotes(prev => ({ ...prev, [leadId]: [data, ...(prev[leadId] || [])] }));
+      setNewNoteText('');
+      setNewNoteType('generale');
+    } catch (err) { console.error(err); alert('Errore salvataggio nota.'); }
+    finally { setIsSavingNote(false); }
+  };
+
+  const handleDeleteNote = async (noteId: string, leadId: string) => {
+    const { error } = await supabase.from('collaborator_lead_notes').delete().eq('id', noteId);
+    if (!error) setLeadNotes(prev => ({ ...prev, [leadId]: (prev[leadId] || []).filter(n => n.id !== noteId) }));
+  };
   if (!collaborator) return null;
 
   // RENDER SHELL
@@ -244,7 +335,7 @@ export const CollaboratorDashboard: React.FC = () => {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <img src="/R-logo.png" alt="RentHubber" className="w-8 h-8" />
+            <img src="/R-logo.png" alt="Renthubber" className="w-8 h-8" />
             <div>
               <h1 className="text-base sm:text-lg font-bold text-gray-900">Area Collaboratori</h1>
               <p className="text-xs text-gray-500">{collaborator.first_name} {collaborator.last_name} · {badge.emoji} {badge.label}</p>
@@ -392,16 +483,108 @@ export const CollaboratorDashboard: React.FC = () => {
           </div>
         </div>
 
-        {zones.length > 0 && (
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="font-bold text-gray-900 mb-3 flex items-center text-sm"><MapPin className="w-4 h-4 mr-2 text-brand" /> Le tue Zone</h3>
+        {/* SEZIONE ZONE */}
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-gray-900 flex items-center text-sm"><MapPin className="w-4 h-4 mr-2 text-brand" /> Le tue Zone</h3>
+            <button onClick={() => setShowZoneRequestModal(true)} className="text-brand text-xs font-medium hover:underline flex items-center">
+              <Plus className="w-3 h-3 mr-1" /> Richiedi zona
+            </button>
+          </div>
+          {zones.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {zones.map(z => (
                 <span key={z.id} className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${z.status === 'approvata' ? 'bg-green-50 border-green-200 text-green-700' : z.status === 'richiesta' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
                   <MapPin className="w-3 h-3 mr-1" />{z.city || z.province || z.region}
+                  {z.status === 'richiesta' && <Clock className="w-3 h-3 ml-1" />}
                   {z.is_exclusive && <Star className="w-3 h-3 ml-1 text-yellow-500" />}
                 </span>
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <MapPin className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="text-xs text-gray-400">Nessuna zona assegnata</p>
+              <button onClick={() => setShowZoneRequestModal(true)} className="mt-2 text-brand text-xs font-medium hover:underline">Richiedi la tua prima zona</button>
+            </div>
+          )}
+
+          {/* Suggerimenti tipologie per le zone approvate */}
+          {approvedZones.length > 0 && (() => {
+            const approvedZoneSuggestions = zoneSuggestions.filter(s =>
+              availableZones.some(az =>
+                az.id === s.zone_id &&
+                approvedZones.some(z => z.region === az.region && (!az.province || z.province === az.province) && (!az.city || z.city === az.city))
+              )
+            );
+            return approvedZoneSuggestions.length > 0 ? (
+              <div className="mt-4 pt-3 border-t border-gray-100">
+                <p className="text-xs font-medium text-gray-500 mb-2 flex items-center"><Zap className="w-3 h-3 mr-1 text-amber-500" /> Tipologie consigliate nella tua zona</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {approvedZoneSuggestions.map(s => (
+                    <span key={s.id} className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${s.priority === 'alta' ? 'bg-red-50 border-red-200 text-red-700' : s.priority === 'bassa' ? 'bg-gray-50 border-gray-200 text-gray-600' : 'bg-blue-50 border-blue-200 text-blue-700'}`}>
+                      <Tag className="w-3 h-3 mr-1" />{s.category}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null;
+          })()}
+        </div>
+
+        {/* MODALE RICHIESTA ZONA */}
+        {showZoneRequestModal && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowZoneRequestModal(false)}>
+            <div className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-gray-900 flex items-center"><MapPin className="w-5 h-5 mr-2 text-brand" /> Richiedi Nuova Zona</h3>
+                  <button onClick={() => setShowZoneRequestModal(false)} className="text-gray-400 hover:text-gray-600"><XCircle className="w-5 h-5" /></button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Seleziona una zona disponibile. La richiesta verrà valutata dall'admin.</p>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[55vh]">
+                {requestableZones.length === 0 ? (
+                  <div className="text-center py-8">
+                    <MapPin className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500 font-medium">Nessuna zona disponibile</p>
+                    <p className="text-xs text-gray-400 mt-1">Tutte le zone sono già assegnate o le hai già richieste.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {requestableZones.map(az => {
+                      const suggestions = zoneSuggestions.filter(s => s.zone_id === az.id);
+                      return (
+                        <div key={az.id} className="border border-gray-200 rounded-xl p-4 hover:border-brand/30 hover:bg-brand/5 transition-all">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-gray-900 text-sm">{az.name}</h4>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {[az.city, az.province, az.region].filter(Boolean).join(', ')}
+                              </p>
+                              {az.description && <p className="text-xs text-gray-400 mt-1 italic">{az.description}</p>}
+                              {suggestions.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {suggestions.map(s => (
+                                    <span key={s.id} className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full">{s.category}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => handleRequestZone(az)}
+                              disabled={requestingZone}
+                              className="ml-3 bg-brand hover:bg-brand-dark text-white text-xs font-medium px-3 py-2 rounded-lg disabled:opacity-50 flex items-center flex-shrink-0"
+                            >
+                              {requestingZone ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Plus className="w-3 h-3 mr-1" /> Richiedi</>}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -411,7 +594,7 @@ export const CollaboratorDashboard: React.FC = () => {
           <h3 className="font-bold text-gray-900 mb-1 flex items-center">
             <FileText className="w-5 h-5 mr-2 text-brand" /> Kit Promozionale
           </h3>
-          <p className="text-xs text-gray-500 mb-5">Tutto il materiale per presentare RentHubber ai tuoi contatti.</p>
+          <p className="text-xs text-gray-500 mb-5">Tutto il materiale per presentare Renthubber ai tuoi contatti.</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Presentazione PDF */}
@@ -432,7 +615,7 @@ export const CollaboratorDashboard: React.FC = () => {
                 <Eye className="w-5 h-5 text-purple-500" />
               </div>
               <h4 className="font-semibold text-gray-900 text-sm mb-1">Video Presentazione</h4>
-              <p className="text-xs text-gray-500 mb-3">Video ufficiale che spiega cos'è RentHubber e come funziona.</p>
+              <p className="text-xs text-gray-500 mb-3">Video ufficiale che spiega cos'è Renthubber e come funziona.</p>
               <span className="inline-flex items-center text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
                 <Clock className="w-3 h-3 mr-1" /> In arrivo
               </span>
@@ -444,7 +627,7 @@ export const CollaboratorDashboard: React.FC = () => {
                 <Award className="w-5 h-5 text-brand" />
               </div>
               <h4 className="font-semibold text-gray-900 text-sm mb-1">Logo & Assets</h4>
-              <p className="text-xs text-gray-500 mb-3">Logo RentHubber in vari formati per i tuoi materiali.</p>
+              <p className="text-xs text-gray-500 mb-3">Logo Renthubber in vari formati per i tuoi materiali.</p>
               <span className="inline-flex items-center text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
                 <Clock className="w-3 h-3 mr-1" /> In arrivo
               </span>
@@ -566,31 +749,100 @@ export const CollaboratorDashboard: React.FC = () => {
               const zone = zones.find(z => z.id === lead.zone_id);
               const lc = commissions.filter(c => c.lead_id === lead.id && c.status !== 'annullata');
               const le = lc.reduce((s, c) => s + Number(c.amount), 0);
+              const isNotesExpanded = expandedLeadNotes === lead.id;
+              const notes = leadNotes[lead.id] || [];
+
+              const NOTE_TYPE_CONFIG: Record<string, { label: string; emoji: string }> = {
+                generale: { label: 'Generale', emoji: '📝' },
+                chiamata: { label: 'Chiamata', emoji: '📞' },
+                incontro: { label: 'Incontro', emoji: '🤝' },
+                followup: { label: 'Follow-up', emoji: '🔄' },
+                obiezione: { label: 'Obiezione', emoji: '⚠️' },
+              };
+
               return (
-                <div key={lead.id} className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-sm transition-shadow">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h4 className="font-semibold text-gray-900 text-sm truncate">{lead.contact_name}</h4>
-                        <select value={lead.status} onChange={e => handleUpdateLeadStatus(lead.id, e.target.value)}
-                          className={`text-xs px-2 py-0.5 rounded-full border font-medium ${st.bg} ${st.color} outline-none cursor-pointer`}>
-                          {Object.entries(LEAD_STATUS_CONFIG).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
-                        </select>
+                <div key={lead.id} className="bg-white rounded-xl border border-gray-100 hover:shadow-sm transition-shadow overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h4 className="font-semibold text-gray-900 text-sm truncate">{lead.contact_name}</h4>
+                          <select value={lead.status} onChange={e => handleUpdateLeadStatus(lead.id, e.target.value)}
+                            className={`text-xs px-2 py-0.5 rounded-full border font-medium ${st.bg} ${st.color} outline-none cursor-pointer`}>
+                            {Object.entries(LEAD_STATUS_CONFIG).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
+                          </select>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+                          {lead.business_name && <span className="flex items-center"><Building className="w-3 h-3 mr-1" />{lead.business_name}</span>}
+                          {lead.contact_email && <span className="flex items-center"><Mail className="w-3 h-3 mr-1" />{lead.contact_email}</span>}
+                          {lead.contact_phone && <span className="flex items-center"><Phone className="w-3 h-3 mr-1" />{lead.contact_phone}</span>}
+                          {zone && <span className="flex items-center"><MapPin className="w-3 h-3 mr-1" />{zone.city || zone.province || zone.region}</span>}
+                          {lead.category && <span className="flex items-center"><Tag className="w-3 h-3 mr-1" />{lead.category}</span>}
+                        </div>
+                        {lead.notes && <p className="text-xs text-gray-400 mt-1 italic">"{lead.notes}"</p>}
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
-                        {lead.business_name && <span className="flex items-center"><Building className="w-3 h-3 mr-1" />{lead.business_name}</span>}
-                        {lead.contact_email && <span className="flex items-center"><Mail className="w-3 h-3 mr-1" />{lead.contact_email}</span>}
-                        {lead.contact_phone && <span className="flex items-center"><Phone className="w-3 h-3 mr-1" />{lead.contact_phone}</span>}
-                        {zone && <span className="flex items-center"><MapPin className="w-3 h-3 mr-1" />{zone.city || zone.province || zone.region}</span>}
-                        {lead.category && <span className="flex items-center"><Tag className="w-3 h-3 mr-1" />{lead.category}</span>}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button onClick={() => handleToggleNotes(lead.id)}
+                          className={`text-xs px-2.5 py-1.5 rounded-lg font-medium flex items-center transition-colors ${isNotesExpanded ? 'bg-brand/10 text-brand' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                          <FileText className="w-3 h-3 mr-1" /> Note {notes.length > 0 && `(${notes.length})`}
+                        </button>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-400">{new Date(lead.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                          {le > 0 && <p className="text-xs font-semibold text-green-600">€{le.toFixed(2)}</p>}
+                        </div>
                       </div>
-                      {lead.notes && <p className="text-xs text-gray-400 mt-1 italic">"{lead.notes}"</p>}
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <p className="text-xs text-gray-400">{new Date(lead.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-                      {le > 0 && <p className="text-xs font-semibold text-green-600">€{le.toFixed(2)}</p>}
                     </div>
                   </div>
+
+                  {/* SEZIONE NOTE ESPANDIBILE */}
+                  {isNotesExpanded && (
+                    <div className="border-t border-gray-100 bg-gray-50/50 p-4">
+                      {/* Form nuova nota */}
+                      <div className="flex gap-2 mb-3">
+                        <select value={newNoteType} onChange={e => setNewNoteType(e.target.value)}
+                          className="px-2 py-1.5 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-brand outline-none bg-white">
+                          {Object.entries(NOTE_TYPE_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.emoji} {v.label}</option>)}
+                        </select>
+                        <input type="text" placeholder="Scrivi una nota..." value={newNoteText} onChange={e => setNewNoteText(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter' && newNoteText.trim()) handleAddNote(lead.id); }}
+                          className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-brand outline-none bg-white" />
+                        <button onClick={() => handleAddNote(lead.id)} disabled={isSavingNote || !newNoteText.trim()}
+                          className="bg-brand hover:bg-brand-dark text-white px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 flex items-center flex-shrink-0">
+                          {isSavingNote ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                        </button>
+                      </div>
+
+                      {/* Lista note */}
+                      {notes.length === 0 ? (
+                        <p className="text-xs text-gray-400 text-center py-3">Nessuna nota. Aggiungi la prima!</p>
+                      ) : (
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {notes.map((n: any) => {
+                            const nt = NOTE_TYPE_CONFIG[n.note_type] || NOTE_TYPE_CONFIG.generale;
+                            return (
+                              <div key={n.id} className="bg-white rounded-lg p-3 border border-gray-100 group">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                      <span className="text-xs">{nt.emoji}</span>
+                                      <span className="text-[10px] font-medium text-gray-500 uppercase">{nt.label}</span>
+                                      <span className="text-[10px] text-gray-300">·</span>
+                                      <span className="text-[10px] text-gray-400">{new Date(n.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-700">{n.note}</p>
+                                  </div>
+                                  <button onClick={() => handleDeleteNote(n.id, lead.id)}
+                                    className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                    <XCircle className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -706,7 +958,7 @@ export const CollaboratorDashboard: React.FC = () => {
   // 4️⃣ STRUMENTI DI INVITO
   // ============================================================
   function renderInvite() {
-    const script = `Ciao! Ti scrivo perché conosco una piattaforma che potrebbe farti guadagnare: si chiama RentHubber.
+    const script = `Ciao! Ti scrivo perché conosco una piattaforma che potrebbe farti guadagnare: si chiama Renthubber.
 
 È un marketplace dove puoi mettere a noleggio oggetti, attrezzature, spazi — qualsiasi cosa tu abbia.
 
@@ -714,7 +966,7 @@ La registrazione è gratuita:
 ${referralLink}
 
 Se vuoi ne parliamo!`;
-    const wa = encodeURIComponent(`Ciao! Conosci RentHubber? Puoi mettere a noleggio le tue cose e guadagnare. Registrati qui: ${referralLink}`);
+    const wa = encodeURIComponent(`Ciao! Conosci Renthubber? Puoi mettere a noleggio le tue cose e guadagnare. Registrati qui: ${referralLink}`);
 
     return (
       <div className="space-y-6">
@@ -729,8 +981,8 @@ Se vuoi ne parliamo!`;
           </div>
           <div className="flex flex-wrap gap-2 mt-4">
             <a href={`https://wa.me/?text=${wa}`} target="_blank" rel="noopener noreferrer" className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center"><Send className="w-4 h-4 mr-1" /> WhatsApp</a>
-            <a href={`mailto:?subject=Scopri RentHubber&body=${encodeURIComponent(script)}`} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center"><Mail className="w-4 h-4 mr-1" /> Email</a>
-            <button onClick={() => { if (navigator.share) navigator.share({ title: 'RentHubber', text: 'Scopri RentHubber!', url: referralLink }); else copyText(referralLink, 'link'); }} className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center"><Share2 className="w-4 h-4 mr-1" /> Condividi</button>
+            <a href={`mailto:?subject=Scopri Renthubber&body=${encodeURIComponent(script)}`} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center"><Mail className="w-4 h-4 mr-1" /> Email</a>
+            <button onClick={() => { if (navigator.share) navigator.share({ title: 'Renthubber', text: 'Scopri Renthubber!', url: referralLink }); else copyText(referralLink, 'link'); }} className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center"><Share2 className="w-4 h-4 mr-1" /> Condividi</button>
           </div>
         </div>
 
@@ -850,14 +1102,16 @@ Se vuoi ne parliamo!`;
         {/* Roadmap Livelli e Guadagni */}
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
           <h3 className="font-bold text-gray-900 mb-2 flex items-center"><Euro className="w-5 h-5 mr-2 text-brand" /> Piano Guadagni per Livello</h3>
-          <p className="text-xs text-gray-500 mb-5">Più Hubber attivi porti, più guadagni. I premi milestone scattano solo quando i tuoi Hubber hanno prenotazioni completate.</p>
+          <p className="text-xs text-gray-500 mb-6">Più Hubber attivi porti, più guadagni. I premi milestone scattano solo quando i tuoi Hubber hanno prenotazioni completate.</p>
+
+          <hr className="border-gray-100 my-4" />
 
           <div className="space-y-3">
             {[
               { emoji: '🔰', label: 'Starter', range: '0-9 Hubber', bonus: '€5', percent: '5%', milestone: null, current: (collaborator?.badge || 'none') === 'none', color: 'border-gray-200 bg-gray-50' },
-              { emoji: '🥉', label: 'Bronze', range: '10-24 Hubber', bonus: '€8', percent: '8%', milestone: '€50 quando 10 Hubber con almeno 1 prenotazione', current: collaborator?.badge === 'bronze', color: 'border-amber-200 bg-amber-50/30' },
-              { emoji: '🥈', label: 'Silver', range: '25-49 Hubber', bonus: '€12', percent: '10%', milestone: '€150 quando 25 Hubber con almeno 1 prenotazione', current: collaborator?.badge === 'silver', color: 'border-slate-300 bg-slate-50/30' },
-              { emoji: '🥇', label: 'Gold', range: '50+ Hubber', bonus: '€15', percent: '15%', milestone: '€500 quando 50 Hubber con almeno 1 prenotazione', current: collaborator?.badge === 'gold', color: 'border-yellow-300 bg-yellow-50/30' },
+              { emoji: '🥉', label: 'Bronze', range: '10-24 Hubber', bonus: '€7', percent: '7%', milestone: '€50 quando 10 Hubber con almeno 1 prenotazione', current: collaborator?.badge === 'bronze', color: 'border-amber-200 bg-amber-50/30' },
+              { emoji: '🥈', label: 'Silver', range: '25-49 Hubber', bonus: '€8', percent: '8%', milestone: '€150 quando 25 Hubber con almeno 1 prenotazione', current: collaborator?.badge === 'silver', color: 'border-slate-300 bg-slate-50/30' },
+              { emoji: '🥇', label: 'Gold', range: '50+ Hubber', bonus: '€10', percent: '10%', milestone: '€250 quando 50 Hubber con almeno 1 prenotazione', current: collaborator?.badge === 'gold', color: 'border-yellow-300 bg-yellow-50/30' },
             ].map((level, i) => (
               <div key={i} className={`relative rounded-xl border-2 p-4 transition-all ${level.current ? 'border-brand bg-brand/5 ring-2 ring-brand/20' : level.color}`}>
                 {level.current && (
@@ -881,7 +1135,7 @@ Se vuoi ne parliamo!`;
                       <div className="bg-white rounded-lg p-2.5 border border-gray-100">
                         <p className="text-[10px] text-gray-400 uppercase font-medium">Ricorrente 12 mesi</p>
                         <p className="text-sm font-bold text-green-600">{level.percent}</p>
-                        <p className="text-[10px] text-gray-400">sulle commissioni RentHubber</p>
+                        <p className="text-[10px] text-gray-400">sulle commissioni Renthubber</p>
                       </div>
                       <div className="bg-white rounded-lg p-2.5 border border-gray-100">
                         <p className="text-[10px] text-gray-400 uppercase font-medium">Premio Milestone</p>
@@ -1007,7 +1261,7 @@ Se vuoi ne parliamo!`;
           <h3 className="font-bold text-gray-900 mb-4 flex items-center"><Shield className="w-5 h-5 mr-2 text-brand" /> Regole del Programma</h3>
           <div className="space-y-3 text-sm text-gray-700">
             {[
-              ['Trasparenza', 'Presenta RentHubber in modo onesto. No promesse irrealistiche.'],
+              ['Trasparenza', 'Presenta Renthubber in modo onesto. No promesse irrealistiche.'],
               ['Qualità', 'Porta Hubber con qualcosa da offrire. Qualità > quantità.'],
               ['Zone', 'Opera solo nelle zone approvate.'],
               ['Esclusività', 'Non rappresentare concorrenti nella stessa zona.'],
