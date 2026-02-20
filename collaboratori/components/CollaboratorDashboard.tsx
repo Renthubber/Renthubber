@@ -650,15 +650,81 @@ export const CollaboratorDashboard: React.FC = () => {
             </div>
 
             {/* Logo e Assets */}
-            <div className="border border-gray-200 rounded-xl p-4 hover:border-brand/30 hover:shadow-sm transition-all">
+            <div className="border border-brand/30 bg-brand/5 rounded-xl p-4 hover:shadow-sm transition-all">
               <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center mb-3">
                 <Award className="w-5 h-5 text-brand" />
               </div>
               <h4 className="font-semibold text-gray-900 text-sm mb-1">Logo & Assets</h4>
               <p className="text-xs text-gray-500 mb-3">Logo Renthubber in vari formati per i tuoi materiali.</p>
-              <span className="inline-flex items-center text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-                <Clock className="w-3 h-3 mr-1" /> In arrivo
-              </span>
+              <button
+                onClick={() => {
+                  const w = window.open('', '_blank', 'width=500,height=600');
+                  if (!w) return;
+                  w.document.write(`<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Logo & Assets - RentHubber</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#e5e7eb;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:30px}
+.card{background:white;border-radius:16px;padding:32px;box-shadow:0 8px 30px rgba(0,0,0,0.12);max-width:420px;width:100%}
+.title{font-size:16px;font-weight:700;color:#0D414B;margin-bottom:4px;text-align:center}
+.subtitle{font-size:12px;color:#6B7280;margin-bottom:24px;text-align:center}
+.asset{background:#F7FAFA;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:12px;text-align:center}
+.asset-dark{background:#0D414B}
+.asset img{height:50px;width:auto;margin-bottom:10px}
+.asset-label{font-size:11px;color:#6B7280;font-weight:600;margin-bottom:8px}
+.asset-dark .asset-label{color:#B0EDE8}
+.btn-dl{display:inline-block;padding:6px 16px;background:#3DD9D0;color:#0D414B;border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s}
+.btn-dl:hover{background:#2CC5BC}
+.colors{display:flex;gap:10px;justify-content:center;margin-bottom:12px}
+.swatch{width:50px;height:50px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:white;text-shadow:0 1px 2px rgba(0,0,0,0.3)}
+.font-info{background:#F7FAFA;border:1px solid #e5e7eb;border-radius:12px;padding:16px;text-align:center}
+.font-name{font-size:18px;font-weight:700;color:#0D414B;margin-bottom:4px}
+.font-detail{font-size:11px;color:#6B7280}
+.no-print{margin-top:20px;text-align:center}
+.no-print button{padding:10px 24px;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-weight:600;font-size:14px;cursor:pointer;background:#e5e7eb;color:#374151}
+@media print{body{background:none;padding:0}.card{box-shadow:none}.no-print{display:none!important}}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="title">Logo & Assets RentHubber</div>
+<div class="subtitle">Scarica i materiali per le tue comunicazioni</div>
+<div class="asset">
+<div class="asset-label">Logo su sfondo chiaro</div>
+<img src="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png.png" alt="Logo"><br>
+<a class="btn-dl" href="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png.png" download="RentHubber_Logo.png">⬇️ Scarica PNG</a>
+</div>
+<div class="asset asset-dark">
+<div class="asset-label">Logo su sfondo scuro</div>
+<img src="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png.png" alt="Logo" style="filter:brightness(0) invert(1)"><br>
+<a class="btn-dl" href="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png.png" download="RentHubber_Logo_White.png">⬇️ Scarica PNG</a>
+</div>
+<div style="margin-top:20px;margin-bottom:8px;font-size:13px;font-weight:700;color:#0D414B;text-align:center">Colori Brand</div>
+<div class="colors">
+<div class="swatch" style="background:#0D414B">#0D414B</div>
+<div class="swatch" style="background:#3DD9D0;color:#0D414B;text-shadow:none">#3DD9D0</div>
+<div class="swatch" style="background:#1F2937">#1F2937</div>
+<div class="swatch" style="background:#F7FAFA;color:#6B7280;text-shadow:none">#F7FAFA</div>
+</div>
+<div class="font-info">
+<div class="font-name">Inter</div>
+<div class="font-detail">Font ufficiale RentHubber · Pesi: 400, 600, 700, 800</div>
+</div>
+</div>
+<div class="no-print">
+<button onclick="window.close()">Chiudi</button>
+</div>
+</body></html>`);
+                  w.document.close();
+                }}
+                className="inline-flex items-center text-xs text-brand font-semibold bg-brand/10 hover:bg-brand/20 px-3 py-1.5 rounded-full transition-all"
+              >
+                <Award className="w-3 h-3 mr-1" /> Apri Assets
+              </button>
             </div>
 
             {/* Volantino / Flyer */}
@@ -683,17 +749,17 @@ export const CollaboratorDashboard: React.FC = () => {
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--brand:#0D414B;--teal:#3DD9D0;--teal-light:#E6FAF8;--teal-mid:#B0EDE8;--bg:#F7FAFA;--white:#FFFFFF;--dark:#1F2937;--gray:#6B7280;--gray-light:#D1D5DB}
-body{font-family:'Inter',sans-serif;background:#e5e7eb;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
-.flyer{width:148mm;height:210mm;background:var(--bg);position:relative;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.15)}
-.header{background:var(--brand);padding:14mm 10mm 10mm;text-align:center;position:relative;overflow:hidden}
-.header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2.5mm;background:var(--teal)}
+body{font-family:'Inter',sans-serif;background:#e5e7eb;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px}
+.flyer{width:148mm;height:210mm;background:var(--bg);position:relative;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.15);display:flex;flex-direction:column}
+.logo-bar{background:var(--white);padding:6mm 10mm;text-align:center;border-bottom:1px solid #e5e7eb}
+.logo-bar img{height:12mm;width:auto;object-fit:contain}
+.header{background:var(--brand);padding:6mm 10mm;text-align:center;position:relative;overflow:hidden}
+.header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2mm;background:var(--teal)}
 .header::before{content:'';position:absolute;top:-15mm;left:-10mm;width:50mm;height:50mm;border-radius:50%;background:rgba(255,255,255,0.03)}
 .header-deco{position:absolute;bottom:-8mm;right:-5mm;width:35mm;height:35mm;border-radius:50%;background:rgba(255,255,255,0.03)}
-.logo-row{display:flex;align-items:center;justify-content:center;gap:2.5mm;margin-bottom:3mm}
-.logo-img{width:32mm;height:auto;object-fit:contain;filter:brightness(0) invert(1)}
-.header-sub{font-size:7pt;color:var(--teal-mid);letter-spacing:0.5px;margin-bottom:5mm}
+.header-sub{font-size:7pt;color:var(--teal-mid);letter-spacing:0.5px;margin-bottom:3mm}
 .tagline{font-size:11.5pt;font-weight:700;color:var(--white);line-height:1.45}
-.content{padding:5mm 8mm 0}
+.content{padding:5mm 8mm 0;flex:1;display:flex;flex-direction:column}
 .section-title{font-size:9pt;font-weight:700;color:var(--brand);text-align:center;margin-bottom:1.5mm;position:relative}
 .section-title::after{content:'';display:block;width:18mm;height:1.5px;background:var(--teal);margin:1.5mm auto 0;border-radius:1px}
 .categories{margin-top:3mm;display:grid;grid-template-columns:repeat(3,1fr);gap:2mm;margin-bottom:5mm}
@@ -708,19 +774,20 @@ body{font-family:'Inter',sans-serif;background:#e5e7eb;display:flex;justify-cont
 .step-desc{font-size:5.5pt;color:var(--gray)}
 .step:not(:last-child)::after{content:'';position:absolute;top:4mm;right:-3mm;width:6mm;height:1px;background:var(--teal)}
 .step:not(:last-child)::before{content:'';position:absolute;top:2.8mm;right:-3mm;width:0;height:0;border-top:1.5mm solid transparent;border-bottom:1.5mm solid transparent;border-left:2mm solid var(--teal)}
-.benefits{background:var(--teal-light);border-radius:3mm;padding:3mm;display:flex;justify-content:space-around;margin-bottom:4mm}
+.benefits{background:var(--teal-light);border-radius:3mm;padding:3mm;display:flex;justify-content:space-around;margin-bottom:auto}
 .benefit{text-align:center;font-size:5.5pt;color:var(--brand);font-weight:500;display:flex;align-items:center;gap:1mm}
 .benefit-check{color:var(--teal);font-weight:800;font-size:7pt}
-.referral-box{background:var(--white);border:1.5px solid var(--teal);border-radius:4mm;padding:4mm 5mm;display:flex;align-items:center;gap:5mm;margin-bottom:4mm}
-.qr-wrapper{flex-shrink:0;width:26mm;height:26mm;border:1px solid var(--gray-light);border-radius:2mm;overflow:hidden;padding:1mm;background:white}
-.qr-wrapper canvas{width:24mm!important;height:24mm!important;display:block}
+.referral-section{margin-top:auto;padding-bottom:12mm}
+.referral-box{background:var(--white);border:1.5px solid var(--teal);border-radius:4mm;padding:4mm 5mm;display:flex;align-items:center;gap:5mm}
+.qr-wrapper{flex-shrink:0;width:26mm;height:26mm;border:1px solid var(--gray-light);border-radius:2mm;overflow:hidden;padding:1mm;background:white;display:flex;align-items:center;justify-content:center}
+.qr-wrapper canvas,.qr-wrapper img{max-width:24mm!important;max-height:24mm!important;width:24mm!important;height:24mm!important;display:block}
 .referral-info{flex:1}
 .referral-label{font-size:7.5pt;font-weight:700;color:var(--brand);margin-bottom:2mm}
 .referral-sublabel{font-size:6pt;color:var(--gray);margin-bottom:1.5mm}
 .referral-code{font-size:16pt;font-weight:800;color:var(--teal);letter-spacing:1.5px;margin-bottom:2mm}
 .referral-hint{font-size:5.5pt;color:var(--gray);line-height:1.4}
 .referral-url{font-size:6.5pt;font-weight:700;color:var(--brand);margin-top:1mm}
-.footer{position:absolute;bottom:0;left:0;right:0;background:var(--brand);padding:2.5mm 8mm;text-align:center}
+.footer{background:var(--brand);padding:2.5mm 8mm;text-align:center;position:relative}
 .footer::before{content:'';position:absolute;top:0;left:0;right:0;height:1.2px;background:var(--teal)}
 .footer-text{font-size:5pt;color:var(--teal-mid);letter-spacing:0.3px}
 .no-print{text-align:center;margin-top:15px;display:flex;gap:10px;justify-content:center}
@@ -734,12 +801,12 @@ body{font-family:'Inter',sans-serif;background:#e5e7eb;display:flex;justify-cont
 </head>
 <body>
 <div class="flyer">
+<div class="logo-bar">
+<img src="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png.png" alt="RentHubber">
+</div>
 <div class="header">
 <div class="header-deco"></div>
-<div class="logo-row">
-<img class="logo-img" src="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png.png" alt="RentHubber">
-</div>
-<div class="header-sub">Il marketplace del noleggio di oggetti e spazi vicino a te</div>
+<div class="header-sub">La piattafomra di noleggio oggetti e spazi vicino a te</div>
 <div class="tagline">Noleggia ciò che ti serve.<br>Guadagna da ciò che non usi.</div>
 </div>
 <div class="content">
@@ -766,6 +833,7 @@ body{font-family:'Inter',sans-serif;background:#e5e7eb;display:flex;justify-cont
 <div class="benefit"><span class="benefit-check">✓</span> Utenti verificati</div>
 <div class="benefit"><span class="benefit-check">✓</span> Assistenza dedicata</div>
 </div>
+<div class="referral-section">
 <div class="referral-box">
 <div class="qr-wrapper" id="qrContainer"></div>
 <div class="referral-info">
@@ -773,7 +841,8 @@ body{font-family:'Inter',sans-serif;background:#e5e7eb;display:flex;justify-cont
 <div class="referral-sublabel">Il tuo codice invito:</div>
 <div class="referral-code">${code}</div>
 <div class="referral-hint">Inquadra il QR code o vai su:</div>
-<div class="referral-url">renthubber.com</div>
+<div class="referral-url">renthubber.com/partner/${code}</div>
+</div>
 </div>
 </div>
 </div>
@@ -799,15 +868,71 @@ new QRCode(document.getElementById('qrContainer'),{text:'${link}',width:90,heigh
             </div>
 
             {/* QR Code Personale */}
-            <div className="border border-gray-200 rounded-xl p-4 hover:border-brand/30 hover:shadow-sm transition-all">
+            <div className="border border-brand/30 bg-brand/5 rounded-xl p-4 hover:shadow-sm transition-all">
               <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center mb-3">
                 <Share2 className="w-5 h-5 text-green-500" />
               </div>
               <h4 className="font-semibold text-gray-900 text-sm mb-1">QR Code Personale</h4>
               <p className="text-xs text-gray-500 mb-3">QR code collegato al tuo link referral, da stampare o condividere.</p>
-              <span className="inline-flex items-center text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-                <Clock className="w-3 h-3 mr-1" /> In arrivo
-              </span>
+              <button
+                onClick={() => {
+                  const code = collaborator?.referral_code || 'CODICE';
+                  const link = `https://renthubber.com/partner/${code}`;
+                  const w = window.open('', '_blank', 'width=500,height=600');
+                  if (!w) return;
+                  w.document.write(`<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>QR Code - RentHubber</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#e5e7eb;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:30px}
+.card{background:white;border-radius:16px;padding:32px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,0.12);max-width:360px;width:100%}
+.logo{height:40px;width:auto;margin-bottom:16px}
+.title{font-size:14px;font-weight:700;color:#0D414B;margin-bottom:4px}
+.subtitle{font-size:11px;color:#6B7280;margin-bottom:20px}
+.qr-box{background:#F7FAFA;border:2px solid #3DD9D0;border-radius:12px;padding:20px;display:inline-block;margin-bottom:16px}
+#qrContainer{display:flex;align-items:center;justify-content:center}
+#qrContainer canvas,#qrContainer img{width:200px!important;height:200px!important}
+.code-label{font-size:11px;color:#6B7280;margin-bottom:4px}
+.code{font-size:22px;font-weight:800;color:#3DD9D0;letter-spacing:2px;margin-bottom:8px}
+.link{font-size:10px;color:#0D414B;font-weight:600;word-break:break-all}
+.no-print{margin-top:20px;display:flex;gap:10px}
+.no-print button{padding:10px 24px;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-weight:600;font-size:14px;cursor:pointer}
+.btn-print{background:#0D414B;color:white}
+.btn-download{background:#3DD9D0;color:#0D414B}
+.btn-close{background:#e5e7eb;color:#374151}
+@media print{body{background:none;padding:0}.card{box-shadow:none}.no-print{display:none!important}@page{margin:10mm}}
+</style>
+</head>
+<body>
+<div class="card">
+<img class="logo" src="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png.png" alt="RentHubber">
+<div class="title">Il tuo QR Code Personale</div>
+<div class="subtitle">Condividilo per invitare nuovi Hubber</div>
+<div class="qr-box"><div id="qrContainer"></div></div>
+<div class="code-label">Il tuo codice:</div>
+<div class="code">${code}</div>
+<div class="link">renthubber.com/partner/${code}</div>
+</div>
+<div class="no-print">
+<button class="btn-download" onclick="var c=document.querySelector('#qrContainer canvas');if(c){var a=document.createElement('a');a.download='QR_RentHubber_${code}.png';a.href=c.toDataURL('image/png');a.click()}">⬇️ Scarica QR</button>
+<button class="btn-print" onclick="window.print()">🖨️ Stampa</button>
+<button class="btn-close" onclick="window.close()">Chiudi</button>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>
+<script>
+new QRCode(document.getElementById('qrContainer'),{text:'${link}',width:200,height:200,colorDark:'#0D414B',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+<\/script>
+</body></html>`);
+                  w.document.close();
+                }}
+                className="inline-flex items-center text-xs text-brand font-semibold bg-brand/10 hover:bg-brand/20 px-3 py-1.5 rounded-full transition-all"
+              >
+                <Share2 className="w-3 h-3 mr-1" /> Genera QR Code
+              </button>
             </div>
 
             {/* Badge Collaboratore - questo è già pronto */}
