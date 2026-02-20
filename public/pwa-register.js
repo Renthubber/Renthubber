@@ -1,10 +1,13 @@
+// ⏸️ PWA temporaneamente disattivata
+// Per riattivare: rimuovi i commenti /* */ sotto
+
+/*
 // Registrazione Service Worker per PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/service-worker.js')
       .then((registration) => {
-        console.log('✅ Service Worker registrato con successo:', registration.scope);
         
         // Controlla aggiornamenti ogni 60 secondi
         setInterval(() => {
@@ -45,46 +48,27 @@ if ('serviceWorker' in navigator) {
 let deferredPrompt;
 
 window.addEventListener('beforeinstallprompt', (e) => {
-  console.log('💾 Evento beforeinstallprompt intercettato');
   e.preventDefault();
   deferredPrompt = e;
-  
-  // Mostra banner personalizzato (opzionale)
   showInstallPromotion();
 });
 
 window.addEventListener('appinstalled', () => {
-  console.log('✅ PWA installata con successo!');
   deferredPrompt = null;
-  
-  // Analytics o notifica utente (opzionale)
   hideInstallPromotion();
 });
 
-// Funzioni helper per UI installazione (opzionali)
 function showInstallPromotion() {
-  // Puoi creare un banner personalizzato qui
-  console.log('📱 App installabile! Mostra banner promozionale.');
+  // Banner personalizzato per installazione
 }
 
 function hideInstallPromotion() {
-  console.log('✅ App già installata, nascondi banner.');
 }
 
-// Funzione globale per triggare installazione manualmente
 window.installPWA = function() {
   if (deferredPrompt) {
     deferredPrompt.prompt();
-    
-    deferredPrompt.userChoice.then((choiceResult) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('✅ Utente ha accettato installazione PWA');
-      } else {
-        console.log('❌ Utente ha rifiutato installazione PWA');
-      }
-      deferredPrompt = null;
-    });
-  } else {
-    console.log('⚠️ PWA non disponibile per installazione o già installata');
+    deferredPrompt = null;
   }
 };
+*/
