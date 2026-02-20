@@ -91,7 +91,6 @@ export const SicurezzaVerifica: React.FC<SicurezzaVerificaProps> = ({
          .getPublicUrl(filePath);
  
        const publicUrl = urlData.publicUrl;
-       console.log(`✅ File caricato: ${publicUrl}`);
  
        // 4️⃣ Aggiorna database con URL del documento
        const updateField = side === 'front' ? 'document_front_url' : 'document_back_url';
@@ -118,7 +117,6 @@ export const SicurezzaVerifica: React.FC<SicurezzaVerificaProps> = ({
          });
        }
  
-       console.log(`✅ ${side === 'front' ? 'Fronte' : 'Retro'} documento caricato con successo!`);
        alert(`✅ ${side === 'front' ? 'Fronte' : 'Retro'} caricato con successo!`);
  
      } catch (err: any) {
