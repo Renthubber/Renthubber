@@ -4015,10 +4015,6 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
     getAllListings: async (): Promise<Listing[]> => {
       try {
         const listings = await api.listings.getAll();
-        console.log(
-          "✅ admin.getAllListings – annunci ricevuti:",
-          listings.length
-        );
         return listings;
       } catch (err) {
         console.error("❌ admin.getAllListings – errore inatteso:", err);
