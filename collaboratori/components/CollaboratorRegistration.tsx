@@ -275,7 +275,7 @@ export const CollaboratorRegistration: React.FC = () => {
             required
           />
           <label htmlFor="privacy" className="text-sm text-gray-600">
-            Acconsento al trattamento dei miei dati personali ai sensi del Regolamento UE 2016/679 (GDPR) e della normativa italiana vigente. Ho letto e accettato l'<a href="/privacy-policy" target="_blank" className="text-brand underline hover:text-brand-dark">Informativa sulla Privacy</a> e i <a href="/terms" target="_blank" className="text-brand underline hover:text-brand-dark">Termini e Condizioni</a>.
+            Acconsento al trattamento dei miei dati personali ai sensi del Regolamento UE 2016/679 (GDPR) e della normativa italiana vigente. Ho letto e accettato l'<a href="/privacy-policy" target="_blank" className="text-brand underline hover:text-brand-dark">Informativa sulla Privacy</a> e i <a href="/termini-condizioni" target="_blank" className="text-brand underline hover:text-brand-dark">Termini e Condizioni</a>.
           </label>
         </div>
 
