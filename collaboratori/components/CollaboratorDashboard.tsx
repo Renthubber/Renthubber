@@ -662,15 +662,140 @@ export const CollaboratorDashboard: React.FC = () => {
             </div>
 
             {/* Volantino / Flyer */}
-            <div className="border border-gray-200 rounded-xl p-4 hover:border-brand/30 hover:shadow-sm transition-all">
+            <div className="border border-brand/30 bg-brand/5 rounded-xl p-4 hover:shadow-sm transition-all">
               <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center mb-3">
                 <Clipboard className="w-5 h-5 text-amber-500" />
               </div>
               <h4 className="font-semibold text-gray-900 text-sm mb-1">Volantino Stampabile</h4>
               <p className="text-xs text-gray-500 mb-3">Flyer A5 pronto da stampare con il tuo codice referral.</p>
-              <span className="inline-flex items-center text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-                <Clock className="w-3 h-3 mr-1" /> In arrivo
-              </span>
+              <button
+                onClick={() => {
+                  const code = collaborator?.referral_code || 'CODICE';
+                  const link = `https://renthubber.com/partner/${code}`;
+                  const w = window.open('', '_blank', 'width=700,height=900');
+                  if (!w) return;
+                  w.document.write(`<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Volantino RentHubber</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--brand:#0D414B;--teal:#3DD9D0;--teal-light:#E6FAF8;--teal-mid:#B0EDE8;--bg:#F7FAFA;--white:#FFFFFF;--dark:#1F2937;--gray:#6B7280;--gray-light:#D1D5DB}
+body{font-family:'Inter',sans-serif;background:#e5e7eb;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+.flyer{width:148mm;height:210mm;background:var(--bg);position:relative;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.15)}
+.header{background:var(--brand);padding:14mm 10mm 10mm;text-align:center;position:relative;overflow:hidden}
+.header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2.5mm;background:var(--teal)}
+.header::before{content:'';position:absolute;top:-15mm;left:-10mm;width:50mm;height:50mm;border-radius:50%;background:rgba(255,255,255,0.03)}
+.header-deco{position:absolute;bottom:-8mm;right:-5mm;width:35mm;height:35mm;border-radius:50%;background:rgba(255,255,255,0.03)}
+.logo-row{display:flex;align-items:center;justify-content:center;gap:2.5mm;margin-bottom:3mm}
+.logo-img{width:32mm;height:auto;object-fit:contain}
+.header-sub{font-size:7pt;color:var(--teal-mid);letter-spacing:0.5px;margin-bottom:5mm}
+.tagline{font-size:11.5pt;font-weight:700;color:var(--white);line-height:1.45}
+.content{padding:5mm 8mm 0}
+.section-title{font-size:9pt;font-weight:700;color:var(--brand);text-align:center;margin-bottom:1.5mm;position:relative}
+.section-title::after{content:'';display:block;width:18mm;height:1.5px;background:var(--teal);margin:1.5mm auto 0;border-radius:1px}
+.categories{margin-top:3mm;display:grid;grid-template-columns:repeat(3,1fr);gap:2mm;margin-bottom:5mm}
+.cat-card{background:var(--white);border-radius:2.5mm;padding:2.5mm 2mm;display:flex;align-items:center;gap:2mm;box-shadow:0 0.5px 2px rgba(0,0,0,0.06)}
+.cat-emoji{font-size:10pt;flex-shrink:0;width:6mm;text-align:center}
+.cat-label{font-size:6pt;font-weight:600;color:var(--dark);line-height:1.2}
+.steps-section{margin-bottom:4mm}
+.steps{display:flex;align-items:flex-start;justify-content:center;gap:0;margin-top:3mm;position:relative}
+.step{flex:1;text-align:center;position:relative}
+.step-num{width:8mm;height:8mm;border-radius:50%;background:var(--teal);color:var(--brand);font-size:9pt;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 2mm}
+.step-title{font-size:7pt;font-weight:700;color:var(--brand);margin-bottom:0.5mm}
+.step-desc{font-size:5.5pt;color:var(--gray)}
+.step:not(:last-child)::after{content:'';position:absolute;top:4mm;right:-3mm;width:6mm;height:1px;background:var(--teal)}
+.step:not(:last-child)::before{content:'';position:absolute;top:2.8mm;right:-3mm;width:0;height:0;border-top:1.5mm solid transparent;border-bottom:1.5mm solid transparent;border-left:2mm solid var(--teal)}
+.benefits{background:var(--teal-light);border-radius:3mm;padding:3mm;display:flex;justify-content:space-around;margin-bottom:4mm}
+.benefit{text-align:center;font-size:5.5pt;color:var(--brand);font-weight:500;display:flex;align-items:center;gap:1mm}
+.benefit-check{color:var(--teal);font-weight:800;font-size:7pt}
+.referral-box{background:var(--white);border:1.5px solid var(--teal);border-radius:4mm;padding:4mm 5mm;display:flex;align-items:center;gap:5mm;margin-bottom:4mm}
+.qr-wrapper{flex-shrink:0;width:28mm;height:28mm;border:1px solid var(--gray-light);border-radius:2mm;display:flex;align-items:center;justify-content:center;padding:1mm;background:white}
+.qr-wrapper canvas{width:100%!important;height:100%!important}
+.referral-info{flex:1}
+.referral-label{font-size:7.5pt;font-weight:700;color:var(--brand);margin-bottom:2mm}
+.referral-sublabel{font-size:6pt;color:var(--gray);margin-bottom:1.5mm}
+.referral-code{font-size:16pt;font-weight:800;color:var(--teal);letter-spacing:1.5px;margin-bottom:2mm}
+.referral-hint{font-size:5.5pt;color:var(--gray);line-height:1.4}
+.referral-url{font-size:6.5pt;font-weight:700;color:var(--brand);margin-top:1mm}
+.footer{position:absolute;bottom:0;left:0;right:0;background:var(--brand);padding:2.5mm 8mm;text-align:center}
+.footer::before{content:'';position:absolute;top:0;left:0;right:0;height:1.2px;background:var(--teal)}
+.footer-text{font-size:5pt;color:var(--teal-mid);letter-spacing:0.3px}
+.no-print{text-align:center;margin-top:15px;display:flex;gap:10px;justify-content:center}
+.no-print button{padding:10px 24px;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:all 0.2s}
+.btn-print{background:#0D414B;color:white}
+.btn-print:hover{background:#092F36}
+.btn-close{background:#e5e7eb;color:#374151}
+.btn-close:hover{background:#d1d5db}
+@media print{body{background:none;padding:0;margin:0}.flyer{box-shadow:none;margin:0}.no-print{display:none!important}@page{size:148mm 210mm;margin:0}}
+</style>
+</head>
+<body>
+<div class="flyer">
+<div class="header">
+<div class="header-deco"></div>
+<div class="logo-row">
+<img class="logo-img" src="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png.png" alt="RentHubber">
+</div>
+<div class="header-sub">Il marketplace del noleggio di oggetti e spazi vicino a te</div>
+<div class="tagline">Noleggia ciò che ti serve.<br>Guadagna da ciò che non usi.</div>
+</div>
+<div class="content">
+<div class="section-title">Cosa puoi noleggiare?</div>
+<div class="categories">
+<div class="cat-card"><span class="cat-emoji">🚲</span><span class="cat-label">Bici & Sport</span></div>
+<div class="cat-card"><span class="cat-emoji">📷</span><span class="cat-label">Elettronica</span></div>
+<div class="cat-card"><span class="cat-emoji">🔧</span><span class="cat-label">Attrezzi</span></div>
+<div class="cat-card"><span class="cat-emoji">🛵</span><span class="cat-label">Veicoli</span></div>
+<div class="cat-card"><span class="cat-emoji">🏠</span><span class="cat-label">Spazi</span></div>
+<div class="cat-card"><span class="cat-emoji">🎸</span><span class="cat-label">E molto altro</span></div>
+</div>
+<div class="steps-section">
+<div class="section-title">Come funziona</div>
+<div class="steps">
+<div class="step"><div class="step-num">1</div><div class="step-title">Registrati</div><div class="step-desc">Gratis in 2 minuti</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-title">Pubblica</div><div class="step-desc">Il tuo annuncio</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-title">Guadagna</div><div class="step-desc">Ad ogni noleggio</div></div>
+</div>
+</div>
+<div class="benefits">
+<div class="benefit"><span class="benefit-check">✓</span> Pagamenti sicuri</div>
+<div class="benefit"><span class="benefit-check">✓</span> Zero costi fissi</div>
+<div class="benefit"><span class="benefit-check">✓</span> Utenti verificati</div>
+<div class="benefit"><span class="benefit-check">✓</span> Assistenza dedicata</div>
+</div>
+<div class="referral-box">
+<div class="qr-wrapper" id="qrContainer"></div>
+<div class="referral-info">
+<div class="referral-label">Registrati con il mio codice!</div>
+<div class="referral-sublabel">Il tuo codice invito:</div>
+<div class="referral-code">${code}</div>
+<div class="referral-hint">Inquadra il QR code o vai su:</div>
+<div class="referral-url">renthubber.com</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<div class="footer-text">renthubber.com · info@renthubber.com · La piattaforma per oggetti e spazi vicino a te</div>
+</div>
+</div>
+<div class="no-print">
+<button class="btn-print" onclick="window.print()">🖨️ Stampa / Salva PDF</button>
+<button class="btn-close" onclick="window.close()">Chiudi</button>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>
+<script>
+new QRCode(document.getElementById('qrContainer'),{text:'${link}',width:200,height:200,colorDark:'#0D414B',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+<\/script>
+</body></html>`);
+                  w.document.close();
+                }}
+                className="inline-flex items-center text-xs text-brand font-semibold bg-brand/10 hover:bg-brand/20 px-3 py-1.5 rounded-full transition-all"
+              >
+                <Clipboard className="w-3 h-3 mr-1" /> Genera Volantino
+              </button>
             </div>
 
             {/* QR Code Personale */}
