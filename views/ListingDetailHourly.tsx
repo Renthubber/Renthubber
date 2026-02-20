@@ -183,7 +183,6 @@ useEffect(() => {
         .single();
       
       if (error) {
-        console.log("Wallet non trovato, uso valori di default");
         return;
       }
       
@@ -241,7 +240,6 @@ useEffect(() => {
   const saveView = async () => {
     try {
       await api.recentlyViewed.add(currentUser.id, listing.id);
-      console.log('📌 Annuncio aggiunto ai visti di recente:', listing.title);
     } catch (err) {
       console.error('Errore salvataggio annuncio visualizzato:', err);
     }
