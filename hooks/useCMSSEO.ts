@@ -32,11 +32,13 @@ export const useCMSSEO = (slug: string): UseCMSSEOResult => {
 
   useEffect(() => {
     const loadSEO = async () => {
-      const { data, error } = await supabase
-        .from("cms_pages")
-        .select("title, meta_description, meta_keywords, featured_image")
-        .eq("slug", slug)
-        .single();
+      const { data: rows, error } = await supabase
+  .from("cms_pages")
+  .select("title, meta_description, meta_keywords, featured_image")
+  .eq("slug", slug)
+  .limit(1);
+
+const data = rows?.[0] || null;
 
       if (data && !error) {
         setSeo(data);
