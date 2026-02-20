@@ -70,7 +70,6 @@ export const ICalManager: React.FC<ICalManagerProps> = ({
 
 // Genera URL export se non esiste
 useEffect(() => {
-  console.log('🔍 ICalManager useEffect - exportUrl:', exportUrl, 'userId:', userId);
   
   if (!exportUrl && userId && listingId) {
   getOrCreateExportUrl(userId, listingId).then(({ url }) => {
