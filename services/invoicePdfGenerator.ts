@@ -442,7 +442,6 @@ export async function uploadInvoicePDF(
       throw updateError;
     }
 
-    console.log('✅ PDF fattura generato e salvato:', publicUrl);
     return publicUrl;
 
   } catch (error) {
@@ -562,7 +561,6 @@ export async function downloadInvoicePDF(invoice: InvoiceData): Promise<void> {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     
-    console.log('✅ PDF scaricato:', invoice.invoice_number);
   } catch (error) {
     console.error('Errore download PDF:', error);
     throw error;

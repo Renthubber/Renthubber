@@ -406,7 +406,6 @@ export async function downloadSingleInvoiceXml(invoice: InvoiceData): Promise<vo
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     
-    console.log('✅ XML FatturaPA scaricato:', fileName);
   } catch (error) {
     console.error('Errore generazione XML:', error);
     throw error;
@@ -445,7 +444,6 @@ export async function exportInvoicesToCsv(invoices: InvoiceData[]): Promise<void
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     
-    console.log('✅ CSV esportato');
   } catch (error) {
     console.error('Errore export CSV:', error);
     throw error;

@@ -326,7 +326,6 @@ await notifyBookingConfirmed(booking.id);
       startDate: params.startDate,
       endDate: params.endDate,
     });
-    console.log("✅ Conversazione prenotazione creata");
   } catch (convError) {
     console.warn("⚠️ Errore creazione conversazione (non bloccante):", convError);
   }
@@ -363,7 +362,6 @@ const formatDate = (dateString: string) => {
 
 const startFormatted = formatDate(startDate);
 const endFormatted = formatDate(endDate);
-console.log('🔍 DEBUG DATE FORMATTATE:', startFormatted, endFormatted);
 
 // Numero prenotazione (primi 8 caratteri del booking ID)
 const bookingNumber = `#${bookingId.slice(0, 8).toUpperCase()}`;
@@ -950,14 +948,6 @@ export const api = {
       const firstName = userData.firstName || (fullName ? fullName.trim().split(" ")[0] : "") || "";
       const lastName = userData.lastName || (fullName ? fullName.trim().split(" ").slice(1).join(" ") : "") || "";
 
-      console.log("📝 Registrazione - Dati ricevuti:", { 
-        fullName, 
-        firstName, 
-        lastName, 
-        email,
-        userData 
-      });
-
       // ✅ Registra con metadata per salvare nome in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -984,8 +974,6 @@ export const api = {
       const userRole = userData.role || "renter";
       const userRoles = userData.roles || [userRole];
 
-      console.log("✅ Auth creato, userId:", userId);
-
       // ✅ STEP 1: Prova INSERT
       // NOTA: hubber_balance deve essere NULL per evitare che il trigger sync_wallet_from_user
       // cerchi di creare il wallet prima che l'utente sia completamente inserito
@@ -1004,8 +992,6 @@ export const api = {
         created_at: new Date().toISOString(),
       };
 
-      console.log("📝 Tentativo INSERT con dati:", insertData);
-
       const { error: insertError } = await supabase
         .from("users")
         .insert(insertData);
@@ -1014,7 +1000,6 @@ export const api = {
         console.warn("⚠️ INSERT fallito (probabilmente utente già esiste):", insertError.message);
         
         // ✅ STEP 2: Se INSERT fallisce, fai UPDATE
-        console.log("📝 Tentativo UPDATE...");
         
         const { error: updateError } = await supabase
           .from("users")
@@ -1032,10 +1017,8 @@ export const api = {
         if (updateError) {
           console.error("❌ UPDATE fallito:", updateError);
         } else {
-          console.log("✅ UPDATE completato con successo");
         }
       } else {
-        console.log("✅ INSERT completato con successo");
       }
 
       // ✅ Verifica finale - leggi l'utente dal DB
@@ -1044,8 +1027,6 @@ export const api = {
         .select("id, email, name, first_name, last_name")
         .eq("id", userId)
         .single();
-      
-      console.log("🔍 Verifica utente nel DB:", verifyUser);
 
       return api.users.get(userId);
     },
@@ -1237,8 +1218,6 @@ export const api = {
           throw new Error('Impossibile eliminare i dati utente');
         }
 
-        console.log('✅ Dati utente eliminati da public.users');
-
         // 2. Elimina account auth (Supabase Admin API - richiede Service Role)
         // NOTA: Questo richiede che l'utente sia autenticato
         const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
@@ -1247,10 +1226,7 @@ export const api = {
           console.warn('⚠️ Errore eliminazione auth (potrebbe richiedere permessi admin):', deleteAuthError);
           // Non blocchiamo qui - i dati sono già stati eliminati
         } else {
-          console.log('✅ Account auth eliminato');
         }
-
-        console.log('✅ Account eliminato completamente');
       } catch (err: any) {
         console.error('Errore deleteMyAccount:', err);
         throw new Error(err.message || 'Errore durante l\'eliminazione dell\'account');
@@ -1302,7 +1278,6 @@ export const api = {
    */
   getAllLight: async (): Promise<Listing[]> => {
       try {
-        console.log("⚡ listings.getAllLight – query ottimizzata...");
 
         const { data, error } = await supabase
           .from("listings")
@@ -1367,7 +1342,6 @@ export const api = {
  */
 getById: async (listingId: string): Promise<Listing | null> => {
   try {
-    console.log("📄 listings.getById –", listingId);
 
     const { data, error } = await supabase
       .from("listings")
@@ -1391,9 +1365,6 @@ getById: async (listingId: string): Promise<Listing | null> => {
       `)
       .eq("id", listingId)
       .single();
-
-    console.log("🔍 RAW DATA FROM DB:", data);        // ← AGGIUNGI
-    console.log("🔍 OWNER FROM DB:", data?.owner);   // ← AGGIUNGI
 
     if (error || !data) {
       console.error("Errore listings.getById:", error);
@@ -1422,8 +1393,6 @@ getById: async (listingId: string): Promise<Listing | null> => {
           console.log("📦 listings.getAll – uso cache");
           return api.listings._cache;
         }
-
-        console.log("📥 listings.getAll – chiamo Supabase...");
 
         // Query semplificata senza JOIN complesso
         const { data, error } = await supabase
@@ -1465,8 +1434,6 @@ if (ownerIds.length > 0) {
         // Salva in cache
         api.listings._cache = mapped;
         api.listings._cacheTimestamp = now;
-
-        console.log("✅ listings.getAll – caricati:", mapped.length);
         return mapped;
       } catch (e) {
         console.error("Errore inatteso getAll listings:", e);
@@ -1667,15 +1634,12 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
 
       // Invalida cache
       api.listings.invalidateCache();
-      
-      console.log("✅ Annuncio nascosto (soft delete):", listingId);
       return { 
         success: true, 
         message: "Annuncio nascosto con successo (ha prenotazioni completate)" 
       };
     } else {
       // 3️⃣ NESSUNA PRENOTAZIONE PROCESSATA → HARD DELETE
-      console.log("✅ Nessuna prenotazione processata, eseguo HARD DELETE");
 
       // Prima cancella eventuali prenotazioni pending/cancelled
       const { data: pendingBookings } = await supabase
@@ -1712,8 +1676,6 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
 
       // Invalida cache
       api.listings.invalidateCache();
-      
-      console.log("✅ Annuncio eliminato definitivamente:", listingId);
       return { 
         success: true, 
         message: "Annuncio eliminato definitivamente" 
@@ -1744,8 +1706,6 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
 
         // Invalida cache
         api.listings.invalidateCache();
-        
-        console.log("✅ Stato annuncio aggiornato:", listingId, "→", status);
         return true;
       } catch (e) {
         console.error("Errore inatteso updateStatus listing:", e);
@@ -1781,7 +1741,6 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
      */
     getForHubberFromDb: async (hubberId: string) => {
       try {
-        console.log("⚡ bookings.getForHubberFromDb – query ottimizzata...");
         
         const { data, error } = await supabase
           .from("bookings")
@@ -1870,7 +1829,6 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
      */
     getForRenterFromDb: async (renterId: string) => {
       try {
-        console.log("⚡ bookings.getForRenterFromDb – query ottimizzata...");
         
         const { data, error } = await supabase
           .from("bookings")
@@ -2283,8 +2241,6 @@ if (cardPaidOriginal > 0) {
             stripe_refund_id: refundData.refund?.id || null
           })
           .eq("id", bookingId);
-          
-        console.log('✅ Rimborso Stripe completato:', refundData.refund?.id);
       } else {
         console.error('❌ Errore rimborso Stripe:', await refundResponse.text());
       }
@@ -2332,21 +2288,9 @@ if (cardPaidOriginal > 0) {
                 description: `Compenso per cancellazione prenotazione #${bookingId.substring(0, 8).toUpperCase()} (${booking.listing?.title || 'Noleggio'}) - ${100 - refundPercentage}% trattenuto`,
                 related_booking_id: bookingId,
               });
-
-              console.log(`✅ Hubber compensato: €${hubberEarnings.toFixed(2)} accreditati sul wallet`);
             }
           }
         }
-    
-        console.log("✅ Prenotazione cancellata:", {
-          policy,
-          refundPercentage,
-          refundMethod,
-          totalPaid,
-          refundAmount,
-          walletRefunded,
-          cardRefunded,
-        });
 
         const listingTitle = booking.listing?.title || "l'annuncio";
 
@@ -2557,8 +2501,6 @@ if (cardPaidOriginal > 0) {
                       stripe_refund_id: refundData.refund?.id || null
                     })
                     .eq("id", bookingId);
-                    
-                  console.log('✅ Rimborso Stripe completato:', refundData.refund?.id);
                 } else {
                   console.error('❌ Errore rimborso Stripe:', await refundResponse.text());
                 }
@@ -2568,13 +2510,6 @@ if (cardPaidOriginal > 0) {
             }
           }
         }  // ✅ AGGIUNTA - Chiude if (refundAmount > 0)
-
-        console.log("✅ Prenotazione cancellata dall'Hubber:", {
-          bookingId,
-          hubberId,
-          refundAmount,
-          reason,
-        });
 
         // ✅ Invia messaggio di sistema nella chat
         const listingTitle = booking.listing?.title || "l'annuncio";
@@ -2810,20 +2745,6 @@ if (cardPaidOriginal > 0) {
           console.error("Errore aggiornamento prenotazione:", updateError);
           return { success: false, error: "Errore durante la modifica." };
         }
-
-        console.log("✅ Prenotazione modificata:", {
-          originalDays,
-          newDays,
-          originalBasePrice,
-          newBasePrice,
-          basePriceDiff,
-          commissionDiff,
-          totalDifference,
-          newTotal,
-          refundedWallet,
-          refundedCard,
-          chargedExtra,
-        });
 
         // ✅ Invia messaggio di sistema nella chat
         const listingTitle = booking.listing?.title || "l'annuncio";
@@ -3329,8 +3250,6 @@ if (cardPaidOriginal > 0) {
         console.error("Errore update users (admin credit):", updateError);
         throw updateError;
       }
-
-      console.log(`✅ Admin credit: ${walletType} wallet +€${amount} → €${newBalance}`);
       
       // ✅ Aggiorna anche wallets.balance_cents per il wallet renter
       if (walletType === 'renter') {
@@ -3415,8 +3334,6 @@ if (cardPaidOriginal > 0) {
         console.error("Errore update users (admin debit):", updateError);
         throw updateError;
       }
-
-      console.log(`✅ Admin debit: ${walletType} wallet -€${amount} → €${newBalance}`);
 
 // ✅ Aggiorna anche wallets.balance_cents per il wallet renter
 if (walletType === 'renter') {
@@ -3744,7 +3661,6 @@ return { newBalance };
 // GET ALL WALLETS (per Admin Dashboard)
 // ==========================================
 getAllWallets: async (): Promise<any[]> => {
-  console.log('👑 admin.getAllWallets – inizio');
   try {
     // 💰 Leggi da users E fai JOIN con wallets per avere tutti i wallet renter
     const { data: usersData, error: usersError } = await supabase
@@ -3770,7 +3686,6 @@ getAllWallets: async (): Promise<any[]> => {
     }
 
     if (!usersData || usersData.length === 0) {
-      console.log('👑 admin.getAllWallets – nessun utente');
       return [];
     }
 
@@ -3825,8 +3740,6 @@ getAllWallets: async (): Promise<any[]> => {
         updated_at: u.updated_at,
       };
     });
-
-    console.log('✅ admin.getAllWallets – trovati:', result.length);
     return result;
   } catch (e) {
     console.error('❌ admin.getAllWallets – eccezione:', e);
@@ -3971,14 +3884,12 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
         });
 
         renterInvoiceId = invoice?.id;
-        console.log("✅ Fattura RENTER creata:", renterInvoiceId, "- Imponibile:", subtotal, "+ IVA:", vatAmount, "= Totale:", total);
         
         // ✅ GENERA PDF AUTOMATICAMENTE
         if (invoice?.id) {
           try {
             const pdfUrl = await generateAndSaveInvoicePDF(invoice);
             if (pdfUrl) {
-              console.log("✅ PDF Renter generato:", pdfUrl);
             }
           } catch (pdfErr) {
             console.error("⚠️ Errore generazione PDF renter (non bloccante):", pdfErr);
@@ -4040,14 +3951,12 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
         });
 
         hubberInvoiceId = invoice?.id;
-        console.log("✅ Fattura HUBBER creata:", hubberInvoiceId, "- Imponibile:", subtotal, "+ IVA:", vatAmount, "= Totale:", total);
         
         // ✅ GENERA PDF AUTOMATICAMENTE
         if (invoice?.id) {
           try {
             const pdfUrl = await generateAndSaveInvoicePDF(invoice);
             if (pdfUrl) {
-              console.log("✅ PDF Hubber generato:", pdfUrl);
             }
           } catch (pdfErr) {
             console.error("⚠️ Errore generazione PDF hubber (non bloccante):", pdfErr);
@@ -4072,14 +3981,11 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
 // 🔹 UTENTI REALI per Admin (nessun mock)
     getAllUsers: async (): Promise<User[]> => {
       try {
-        console.log("👑 admin.getAllUsers – inizio");
 
         const { data, error } = await supabase
           .from("users")
           .select("*")
           .order("created_at", { ascending: false });
-
-        console.log("👑 admin.getAllUsers – raw:", data, error);
 
         if (error) {
           console.error("❌ admin.getAllUsers – errore Supabase:", error);
@@ -4108,7 +4014,6 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
     // 🔹 ANNUNCI REALI per la Dashboard Admin (nessun mock)
     getAllListings: async (): Promise<Listing[]> => {
       try {
-        console.log("👑 admin.getAllListings – chiamo api.listings.getAll()");
         const listings = await api.listings.getAll();
         console.log(
           "✅ admin.getAllListings – annunci ricevuti:",
@@ -4124,7 +4029,6 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
     // 🔹 PRENOTAZIONI REALI per Admin Dashboard
     getAllBookings: async (): Promise<BookingRequest[]> => {
       try {
-        console.log("👑 admin.getAllBookings – inizio");
 
         // 1. Recupera tutte le prenotazioni con listing
         const { data: bookingsData, error: bookingsError } = await supabase
@@ -4207,8 +4111,6 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
             createdAt: row.created_at,
           };
         });
-
-        console.log("✅ admin.getAllBookings – prenotazioni mappate:", mapped.length);
         return mapped;
       } catch (err) {
         console.error("❌ admin.getAllBookings – errore inatteso:", err);
@@ -4219,7 +4121,6 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
     // 🔹 AGGIORNA UTENTE (Admin)
     updateUser: async (userId: string, updates: Partial<User>): Promise<void> => {
       try {
-        console.log("👑 admin.updateUser – userId:", userId, "updates:", updates);
   
         
         // Mappa i campi dall'app al DB
@@ -4279,8 +4180,6 @@ if ((updates as any).is_super_hubber !== undefined) dbUpdates.is_super_hubber = 
 
 if (updates.bankDetails === null) dbUpdates.bank_details = null;
 
-console.log("👑 admin.updateUser – dbUpdates preparati:", dbUpdates);
-
         dbUpdates.updated_at = new Date().toISOString();
         
         const { error } = await supabase
@@ -4292,8 +4191,6 @@ console.log("👑 admin.updateUser – dbUpdates preparati:", dbUpdates);
           console.error("❌ admin.updateUser – errore Supabase:", error);
           throw error;
         }
-        
-        console.log("✅ admin.updateUser – utente aggiornato con successo");
 
         // 📧 Invia email se documento verificato o rifiutato
 if (updates.idDocumentVerified === true || (updates as any).id_document_verified === true) {
@@ -4307,7 +4204,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
           try {
             const { checkAndUpdateSuperHubberStatus } = await import('./superHubberService');
             await checkAndUpdateSuperHubberStatus(userId);
-            console.log("✅ Verifica SuperHubber completata dopo verifica documenti");
           } catch (superHubberErr) {
             console.error("⚠️ Errore verifica SuperHubber (non bloccante):", superHubberErr);
           }
@@ -4322,7 +4218,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
     // 🔹 ELIMINA UTENTE (Admin)
     deleteUser: async (userId: string): Promise<void> => {
       try {
-        console.log("👑 admin.deleteUser – userId:", userId);
         
         // Prima elimina dalla tabella users
         const { error: dbError } = await supabase
@@ -4337,7 +4232,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
         
         // Nota: L'eliminazione da Supabase Auth richiede una funzione server-side
         // Per ora eliminiamo solo dal DB users
-        console.log("✅ admin.deleteUser – utente eliminato dal DB");
       } catch (err) {
         console.error("❌ admin.deleteUser – errore inatteso:", err);
         throw err;
@@ -4357,7 +4251,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
       customFeePercentage?: number;
     }): Promise<User | null> => {
       try {
-        console.log("👑 admin.createUser – creazione utente:", userData.email);
         
         // 1. Crea utente in Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -4408,8 +4301,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
           throw new Error("Errore durante la creazione del profilo utente");
         }
         
-        console.log("✅ admin.createUser – utente creato con successo:", userId);
-        
         // Ritorna l'utente appena creato
         return {
           id: userId,
@@ -4437,7 +4328,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
     // 🔹 RESET PASSWORD UTENTE (Admin)
     resetUserPassword: async (email: string): Promise<void> => {
       try {
-        console.log("👑 admin.resetUserPassword – email:", email);
         
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,
@@ -4447,8 +4337,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
           console.error("❌ admin.resetUserPassword – errore:", error);
           throw error;
         }
-        
-        console.log("✅ admin.resetUserPassword – email inviata");
       } catch (err) {
         console.error("❌ admin.resetUserPassword – errore inatteso:", err);
         throw err;
@@ -4458,7 +4346,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
     // 🔹 PAYMENTS (Transazioni) per Admin
     getAllPayments: async () => {
       try {
-        console.log("👑 admin.getAllPayments – inizio");
         
         const { data: paymentsData, error: paymentsError } = await supabase
           .from("payments")
@@ -4471,7 +4358,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
         }
 
         if (!paymentsData || paymentsData.length === 0) {
-          console.log("👑 admin.getAllPayments – nessun pagamento");
           return [];
         }
 
@@ -4500,8 +4386,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
           hubber: usersMap.get(p.hubber_id) || null,
           booking: bookingsMap.get(p.booking_id) || null,
         }));
-
-        console.log("✅ admin.getAllPayments – trovati:", result.length);
         return result;
       } catch (err) {
         console.error("❌ admin.getAllPayments – errore inatteso:", err);
@@ -4513,7 +4397,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
     // 🔹 WALLET TRANSACTIONS per Admin (tutti i movimenti)
     getAllWalletTransactions: async () => {
       try {
-        console.log("👑 admin.getAllWalletTransactions – inizio");
         
         const { data: txData, error: txError } = await supabase
           .from("wallet_transactions")
@@ -4527,7 +4410,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
         }
 
         if (!txData || txData.length === 0) {
-          console.log("👑 admin.getAllWalletTransactions – nessuna transazione");
           return [];
         }
 
@@ -4545,8 +4427,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
           amountEur: (t.amount_cents || 0) / 100,
           balanceAfterEur: t.balance_after_cents ? t.balance_after_cents / 100 : null,
         }));
-
-        console.log("✅ admin.getAllWalletTransactions – trovati:", result.length);
         return result;
       } catch (err) {
         console.error("❌ admin.getAllWalletTransactions – errore inatteso:", err);
@@ -4557,7 +4437,6 @@ if (updates.idDocumentVerified === true || (updates as any).id_document_verified
    // 🔹 PAYOUT REQUESTS per Admin
 getAllPayouts: async () => {
   try {
-    console.log("👑 admin.getAllPayouts – inizio");
     
     const { data: payoutsData, error: payoutsError } = await supabase
       .from("payout_requests")
@@ -4570,7 +4449,6 @@ getAllPayouts: async () => {
     }
 
     if (!payoutsData || payoutsData.length === 0) {
-      console.log("👑 admin.getAllPayouts – nessun payout");
       return [];
     }
 
@@ -4610,8 +4488,6 @@ getAllPayouts: async () => {
         amountEur: (p.amount_cents || 0) / 100,
       };
     });
-
-    console.log("✅ admin.getAllPayouts – trovati:", result.length);
     return result;
   } catch (err) {
     console.error("❌ admin.getAllPayouts – errore inatteso:", err);
@@ -4637,8 +4513,6 @@ getAllPayouts: async () => {
         console.error("❌ admin.approvePayout – errore:", error);
         throw error;
       }
-
-      console.log("✅ Payout approvato:", payoutId);
       return true;
     },
 
@@ -4704,8 +4578,6 @@ rejectPayout: async (payoutId: string, reason: string) => {
       description: `Rimborso prelievo rifiutato: ${reason}`,
       related_payout_id: payoutId,
     });
-
-  console.log("✅ Payout rifiutato e rimborsato:", payoutId);
   return true;
 },
 
@@ -4727,8 +4599,6 @@ rejectPayout: async (payoutId: string, reason: string) => {
         console.error("❌ admin.processPayout – errore:", error);
         throw error;
       }
-
-      console.log("✅ Payout processato:", payoutId);
       return true;
     },
 
@@ -4810,7 +4680,6 @@ rejectPayout: async (payoutId: string, reason: string) => {
    // Lista tutti i rimborsi
 getAllRefunds: async () => {
   try {
-    console.log("👑 admin.getAllRefunds – inizio");
     
     // Prima prendi i refunds
     const { data: refundsData, error: refundsError } = await supabase
@@ -4824,7 +4693,6 @@ getAllRefunds: async () => {
     }
 
     if (!refundsData || refundsData.length === 0) {
-      console.log("👑 admin.getAllRefunds – nessun rimborso");
       return [];
     }
 
@@ -4857,8 +4725,6 @@ getAllRefunds: async () => {
       hubber: usersMap.get(r.hubber_id) || null,
       booking: bookingsMap.get(r.booking_id) || null,
     }));
-
-    console.log("✅ admin.getAllRefunds – trovati:", result.length);
     return result;
   } catch (err) {
     console.error("❌ admin.getAllRefunds – errore inatteso:", err);
@@ -4916,8 +4782,6 @@ getAllRefunds: async () => {
         console.error("❌ admin.approveRefund – errore:", error);
         throw error;
       }
-
-      console.log("✅ Rimborso approvato:", refundId);
       return data;
     },
 
@@ -4941,8 +4805,6 @@ getAllRefunds: async () => {
         console.error("❌ admin.rejectRefund – errore:", error);
         throw error;
       }
-
-      console.log("✅ Rimborso rifiutato:", refundId);
       return data;
     },
 
@@ -5013,8 +4875,6 @@ getAllRefunds: async () => {
         console.error("❌ admin.processRefund – errore:", error);
         throw error;
       }
-
-      console.log("✅ Rimborso processato:", refundId, "metodo:", method);
       return data;
     },
 
@@ -5052,8 +4912,6 @@ getAllRefunds: async () => {
         console.error("❌ admin.createRefund – errore:", error);
         throw error;
       }
-
-      console.log("✅ Rimborso creato:", data.id);
       return data;
     },
 
@@ -5504,7 +5362,6 @@ issued_at: new Date().toISOString()
      */
     getInvoicesForUser: async (userId: string, userType?: 'renter' | 'hubber') => {
       try {
-        console.log("📄 getInvoicesForUser –", userId, userType);
 
         let query = supabase
           .from("invoices")
@@ -5526,8 +5383,6 @@ issued_at: new Date().toISOString()
           console.error("❌ Errore caricamento fatture utente:", error);
           return [];
         }
-
-        console.log("✅ Fatture utente caricate:", data?.length || 0);
         return data || [];
       } catch (err) {
         console.error("❌ Errore inatteso getInvoicesForUser:", err);
@@ -5571,7 +5426,6 @@ issued_at: new Date().toISOString()
     // AGGIORNA STATO PRENOTAZIONE (con fatturazione automatica)
     // ==========================================
     updateBookingStatus: async (bookingId: string, status: string): Promise<boolean> => {
-      console.log("👑 admin.updateBookingStatus –", bookingId, status);
       
       try {
 
@@ -5581,8 +5435,6 @@ issued_at: new Date().toISOString()
           console.error("❌ admin.updateBookingStatus – errore:", error);
           return false;
         }
-
-        console.log("✅ admin.updateBookingStatus – stato aggiornato");
 
         // ✅ Se lo stato diventa 'completed', genera fatture automatiche E accredita hubber
         if (status === 'completed') {
@@ -5595,10 +5447,6 @@ issued_at: new Date().toISOString()
             if (result.errors.length > 0) {
               console.warn("⚠️ Errori durante generazione fatture:", result.errors);
             } else {
-              console.log("✅ Fatture generate:", {
-                renter: result.renterInvoiceId,
-                hubber: result.hubberInvoiceId
-              });
 
               // 📧 Invia fatture via email
              await notifyInvoiceGenerated(bookingId);
@@ -5655,8 +5503,6 @@ issued_at: new Date().toISOString()
                   description: `Guadagno per prenotazione #${bookingNumber} (${listingTitle}) completata`,
                   related_booking_id: bookingId,
                 });
-
-                console.log(`✅ Accreditati €${hubberNetAmount.toFixed(2)} all'Hubber ${booking.hubber_id}`);
               }
             }
           } catch (payoutErr) {
@@ -5674,7 +5520,6 @@ issued_at: new Date().toISOString()
             if (booking?.hubber_id) {
               const { checkAndUpdateSuperHubberStatus } = await import('./superHubberService');
               await checkAndUpdateSuperHubberStatus(booking.hubber_id);
-              console.log("✅ Verifica SuperHubber completata");
             }
           } catch (superHubberErr) {
             console.error("⚠️ Errore verifica SuperHubber (non bloccante):", superHubberErr);
@@ -5690,7 +5535,6 @@ issued_at: new Date().toISOString()
 
          if (booking) {
               await referralApi.completeReferral(booking.renter_id, bookingId);
-              console.log("✅ Referral completato (se esistente)");
             }
           } catch (refErr) {
             console.error("⚠️ Errore completamento referral (non bloccante):", refErr);
@@ -6689,8 +6533,6 @@ sendMessage: async (params: {
         return [];
       }
 
-      console.log("✅ [ADMIN] Ticket caricati:", data.length, data);
-
       // Carica utenti separatamente
       const userIds = [...new Set(data.map(t => t.user_id).filter(Boolean))];
       const assignedIds = [...new Set(data.map(t => t.assigned_to).filter(Boolean))];
@@ -7024,8 +6866,6 @@ Il team Renthubber esaminerà la controversia entro 48 ore lavorative.`;
                 updated_at: new Date().toISOString()
               })
               .eq("id", ticket.related_dispute_id);
-            
-            console.log('✅ Disputa collegata chiusa:', ticket.related_dispute_id);
           }
         } catch (error) {
           console.error('⚠️ Errore chiusura disputa collegata:', error);
@@ -7137,7 +6977,6 @@ Il team Renthubber esaminerà la controversia entro 48 ore lavorative.`;
       categoryRatings?: Record<string, number>;
       comment?: string;
     }) => {
-      console.log("📝 reviews.create – dati:", reviewData);
 
       // ✅ Supporta sia camelCase che snake_case
       const bookingId = reviewData.booking_id || reviewData.bookingId;
@@ -7147,10 +6986,6 @@ Il team Renthubber esaminerà la controversia entro 48 ore lavorative.`;
       const reviewType = reviewData.review_type || reviewData.reviewType;
       const overallRating = reviewData.overall_rating || reviewData.overallRating;
       const categoryRatings = reviewData.category_ratings || reviewData.categoryRatings || {};
-
-      console.log("📝 reviews.create – valori estratti:", {
-        bookingId, listingId, reviewerId, revieweeId, reviewType, overallRating
-      });
 
       if (!reviewerId) {
         throw new Error("reviewer_id è obbligatorio");
@@ -7181,8 +7016,6 @@ Il team Renthubber esaminerà la controversia entro 48 ore lavorative.`;
         console.error("❌ Errore creazione recensione:", error);
         throw error;
       }
-
-      console.log("✅ Recensione creata:", data);
 
       // Aggiorna rating medio del reviewee (utente)
 await api.reviews.updateUserRating(revieweeId);
@@ -7269,7 +7102,6 @@ getForHubber: async (userId: string) => {
  * Ottieni recensioni ricevute da un renter (recensioni fatte dagli hubber)
  */
 getForRenter: async (userId: string) => {
-  console.log("🔍 getForRenter chiamata con userId:", userId);
 
   const { data, error } = await supabase
     .from("reviews")
@@ -7353,8 +7185,6 @@ updateUserRating: async (userId: string) => {
     .from("users")
     .update({ rating: roundedAvg })
     .eq("id", userId);
-
-  console.log(`✅ Rating utente ${userId} aggiornato a ${roundedAvg}`);
 },
 
 /**
@@ -7397,7 +7227,6 @@ updateListingRating: async (listingId: string) => {
   }
 
   api.listings.invalidateCache();
-  console.log(`✅ Listing ${listingId} aggiornato: rating=${avgRating}, review_count=${reviewCount}`);
 },
 
 /**
@@ -7415,8 +7244,6 @@ checkAndPublishMutualReviews: async (bookingId: string) => {
       console.error("Errore caricamento recensioni reciproche:", error);
       return;
     }
-
-    console.log(`🔍 Trovate ${reviews.length} recensioni per booking ${bookingId}`);
 
     // 2. Se ci sono 2 recensioni, verifica che siano di reviewer DIVERSI
     if (reviews.length === 2) {
@@ -7440,8 +7267,6 @@ checkAndPublishMutualReviews: async (bookingId: string) => {
           console.error(`Errore pubblicazione recensione ${review.id}:`, updateError);
         }
       }
-      
-      console.log(`✅ Recensioni reciproche pubblicate per booking ${bookingId}`);
       
       // ✅ Aggiorna i rating (usa Set per evitare duplicati)
       const revieweeIds = [...new Set(reviews.map(r => r.reviewee_id))];
@@ -7499,8 +7324,6 @@ checkAndPublishMutualReviews: async (bookingId: string) => {
             console.error("Errore pubblicazione recensione dopo 7 giorni:", updateError);
             return;
           }
-          
-          console.log(`✅ Recensione pubblicata dopo 7 giorni per booking ${bookingId}`);
           
           // Aggiorna i rating
           await api.reviews.updateUserRating(review.reviewee_id);
@@ -7632,7 +7455,6 @@ recentlyViewed: {
           p_user_id: userId,
           p_listing_id: listingId
         });
-        console.log('✅ Annuncio aggiunto ai visti di recente');
       } catch (e) {
         console.error('Errore add recently viewed:', e);
       }

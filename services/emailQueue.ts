@@ -212,8 +212,6 @@ export async function queueEmail(event: EmailEvent, data: EmailEventData): Promi
         status: 'pending',
         scheduled_at: new Date().toISOString()
       });
-      
-      console.log(`✅ Review notification email queued for user ${data.revieweeId}`);
     }
     
     // ========== DISPUTE OPENED ==========
@@ -239,8 +237,6 @@ export async function queueEmail(event: EmailEvent, data: EmailEventData): Promi
         status: 'pending',
         scheduled_at: new Date().toISOString()
       });
-      
-      console.log(`✅ Dispute notification email queued for user ${data.userId}`);
     }
     
     // ========== MESSAGE RECEIVED ==========
@@ -268,8 +264,6 @@ export async function queueEmail(event: EmailEvent, data: EmailEventData): Promi
         status: 'pending',
         scheduled_at: new Date().toISOString()
       });
-      
-      console.log(`✅ Message notification email queued for user ${data.recipientId}`);
     }
     
     // ========== SUPPORT TICKET CREATED ==========
@@ -296,8 +290,6 @@ export async function queueEmail(event: EmailEvent, data: EmailEventData): Promi
         status: 'pending',
         scheduled_at: new Date().toISOString()
       });
-      
-      console.log(`✅ Support ticket email queued for user ${data.userId}`);
     }
     
     // ========== WALLET CREDIT ==========
@@ -324,8 +316,6 @@ export async function queueEmail(event: EmailEvent, data: EmailEventData): Promi
         status: 'pending',
         scheduled_at: new Date().toISOString()
       });
-      
-      console.log(`✅ Wallet credit email queued for user ${data.userId}`);
     }
     
     // ========== ALTRI EVENTI ==========
@@ -363,8 +353,6 @@ export async function queueCustomEmail(params: {
     });
     
     if (error) throw error;
-    
-    console.log(`✅ Custom email queued: ${params.templateId}`);
   } catch (error) {
     console.error(`⚠️ Failed to queue custom email (non-blocking):`, error);
   }

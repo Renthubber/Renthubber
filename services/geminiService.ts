@@ -32,7 +32,6 @@ export const generateListingDescription = async (
     }
 
     const data = await response.json();
-    console.log('✅ Descrizione generata:', data.result.substring(0, 100) + '...');
     
     return data.result;
 
@@ -71,7 +70,6 @@ export const suggestPrice = async (
     }
 
     const data = await response.json();
-    console.log('✅ Prezzo suggerito:', data.result);
     
     return data.result;
 

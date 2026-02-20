@@ -99,7 +99,6 @@ export const referralApi = {
    */
   updateSettings: async (settings: Partial<ReferralSettings>): Promise<boolean> => {
     try {
-      console.log("👑 referralApi.updateSettings:", settings);
 
       const updateData: any = {
         updated_at: new Date().toISOString(),
@@ -137,7 +136,6 @@ export const referralApi = {
         return false;
       }
 
-      console.log("✅ referralApi.updateSettings completato");
       return true;
     } catch (e) {
       console.error("❌ referralApi.updateSettings eccezione:", e);
@@ -219,7 +217,6 @@ export const referralApi = {
         return false;
       }
 
-      console.log("✅ Referral registrato con successo");
       return true;
     } catch (e) {
       console.error("❌ referralApi.registerReferral eccezione:", e);
@@ -300,7 +297,6 @@ export const referralApi = {
         })
         .eq("id", referral.id);
 
-      console.log("✅ Referral completato e bonus accreditati");
       return true;
     } catch (e) {
       console.error("❌ referralApi.completeReferral eccezione:", e);
@@ -386,7 +382,6 @@ export const referralApi = {
         return false;
       }
 
-      console.log("✅ Bonus referral accreditato:", amountCents / 100, "€ su referral_balance_cents");
       return true;
     } catch (e) {
       console.error("❌ referralApi.creditBonus eccezione:", e);
@@ -505,7 +500,6 @@ export const referralApi = {
    */
   getAllReferrals: async (): Promise<ReferralTracking[]> => {
     try {
-      console.log("👑 referralApi.getAllReferrals");
 
       const { data: referrals, error } = await supabase
         .from("referral_tracking")

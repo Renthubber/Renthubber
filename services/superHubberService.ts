@@ -229,14 +229,6 @@ export async function updateHubberMetrics(userId: string): Promise<{
       throw updateError;
     }
 
-    console.log(`✅ Metriche aggiornate per hubber ${userId}:`, {
-      completedBookings90d: completedBookings90d || 0,
-      cancellationRate90d: cancellationRate90d.toFixed(2),
-      reviewsCount: reviewsCount || 0,
-      activeListingsCount: activeListingsCount || 0,
-      rating
-    });
-
     return {
       completedBookings90d: completedBookings90d || 0,
       cancellationRate90d: parseFloat(cancellationRate90d.toFixed(2)),
@@ -320,8 +312,6 @@ export async function checkAndUpdateSuperHubberStatus(userId: string): Promise<{
       };
     }
 
-    console.log(`🔍 Eseguo controllo trimestrale SuperHubber per ${userId}`);
-
     // 4. Aggiorna tutte le metriche
     const metrics = await updateHubberMetrics(userId);
     
@@ -372,12 +362,6 @@ export async function checkAndUpdateSuperHubberStatus(userId: string): Promise<{
     if (updateError) {
       console.error('❌ Errore aggiornamento badge SuperHubber:', updateError);
       throw updateError;
-    }
-
-    if (meetsRequirements !== currentStatus) {
-      console.log(`🌟 Badge SuperHubber ${meetsRequirements ? 'ASSEGNATO' : 'RIMOSSO'} per hubber ${userId}`);
-    } else {
-      console.log(`✅ Status SuperHubber invariato (${currentStatus}) per hubber ${userId}`);
     }
 
     return {
@@ -446,10 +430,6 @@ export async function checkAllHubbersSuperStatus(): Promise<{
         }
       }
     }
-
-    console.log(`✅ Verifica completata: ${hubbers.length} hubber controllati`);
-    console.log(`   - Nuovi SuperHubber: ${newSuperHubbers}`);
-    console.log(`   - Badge rimossi: ${removedSuperHubbers}`);
 
     return {
       totalChecked: hubbers.length,
