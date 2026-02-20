@@ -111,8 +111,6 @@ export const PayoutRequestButton: React.FC<PayoutRequestButtonProps> = ({
         throw new Error(error.message || 'Errore creazione richiesta');
       }
 
-      console.log('✅ Payout request created:', data.id);
-
       setSuccess(true);
 
       setTimeout(() => {

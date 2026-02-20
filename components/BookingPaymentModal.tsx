@@ -472,15 +472,12 @@ const actualWalletUsable = useMemo(() => {
           console.log(`🔄 Tentativo ${attempts}/${maxAttempts} - Cerco prenotazione...`);
           
           const piId = paymentIntent.id;
-console.log(`🔍 Cerco booking con stripe_payment_intent_id = "${piId}"`);
 
 const { data, error } = await supabase
   .from("bookings")
   .select("*")
   .eq("stripe_payment_intent_id", piId)
   .maybeSingle();
-
-console.log(`📊 Risultato:`, { data, error });
 
 if (data) {
   booking = data;

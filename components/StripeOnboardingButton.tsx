@@ -39,8 +39,6 @@ export const StripeOnboardingButton: React.FC<StripeOnboardingButtonProps> = ({
         lastName
       );
 
-      console.log('✅ Onboarding URL received:', result.onboardingUrl);
-
       // Redirect a Stripe per completare onboarding
       // NON chiamare onSuccess qui - viene eseguito il redirect
       window.location.href = result.onboardingUrl;

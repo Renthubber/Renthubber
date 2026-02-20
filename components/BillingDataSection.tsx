@@ -153,7 +153,7 @@ export const BillingDataSection: React.FC<BillingDataSectionProps> = ({
 
       setBillingData({ ...editForm });
       setIsModalOpen(false);
-      console.log('✅ Dati fatturazione salvati');
+      
     } catch (err) {
       console.error('Errore salvataggio billing:', err);
       alert('Si è verificato un errore. Riprova.');

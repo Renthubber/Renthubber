@@ -182,7 +182,6 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
     });
 
     // ✅ Se arriviamo qui senza errori, la recensione è stata creata
-    console.log("✅ Recensione salvata:", result);
     setSuccess(true);
     
     setTimeout(() => {

@@ -45,13 +45,11 @@ export const CookieConsent: React.FC = () => {
     // Implementa logica per attivare/disattivare script
     if (prefs.analytics) {
       // Attiva Google Analytics
-      console.log('✅ Analytics abilitati');
       // window.gtag('consent', 'update', { analytics_storage: 'granted' });
     }
     
     if (prefs.marketing) {
       // Attiva pixel marketing
-      console.log('✅ Marketing abilitato');
     }
     
     // Emetti evento per notificare il CookieSettingsButton

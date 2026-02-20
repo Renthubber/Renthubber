@@ -29,12 +29,12 @@ export const MapSection: React.FC<MapSectionProps> = ({
       // ✅ IGNORA le coordinate salvate nel DB (spesso sono sbagliate - es. Milano per tutti)
       // Geocodifica SEMPRE dalla location testuale per avere coordinate corrette
       if (location && location.trim()) {
-        console.log("🔍 Geocodifica location:", location);
+        
         try {
           const result = await geocodeAddress(location);
           
           if (result && result.lat && result.lng) {
-            console.log("✅ Coordinate da geocoding:", result.lat, result.lng);
+            
             setMapCoordinates({ lat: result.lat, lng: result.lng });
           } else {
             console.warn("⚠️ Geocoding fallito per:", location);

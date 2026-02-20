@@ -130,7 +130,6 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({ listingId, onRen
                           .eq("id", reviewerId)
                           .single();
                         
-                        console.log('🔍 DEBUG data:', data);
                         
                         onRenterClick({
   id: reviewerId,
