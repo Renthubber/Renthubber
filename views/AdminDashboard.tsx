@@ -371,13 +371,10 @@ useEffect(() => {
         console.log('DEBUG: syncUsers chiamato, allUsers.length:', allUsers?.length);
         if (allUsers && allUsers.length > 0) {
           setLocalUsers(allUsers);
-          console.log('👑 ADMIN DASHBOARD – uso utenti passati dal parent:', allUsers);
           return;
         }
 
-        console.log('👑 ADMIN DASHBOARD – nessun utente nel prop, carico da api.admin.getAllUsers()...');
         const usersFromApi = await api.admin.getAllUsers();
-        console.log('👑 ADMIN DASHBOARD – utenti caricati da api.admin.getAllUsers():', usersFromApi);
         setLocalUsers(usersFromApi || []);
       } catch (error) {
         console.error('Errore caricando utenti in AdminDashboard:', error);
@@ -405,7 +402,7 @@ useEffect(() => {
       try {
         // ✅ Carica fees da Supabase SEMPRE (prima di tutto)
         const feesFromApi = await api.admin.getFees();
-        console.log('👑 ADMIN DASHBOARD – fees caricate:', feesFromApi);
+       
         if (feesFromApi) {
           console.log('🔄 Applico fees allo state:', feesFromApi.renter_percentage);
           setRenterFee(feesFromApi.renter_percentage ?? 10);
@@ -419,31 +416,26 @@ useEffect(() => {
         }
         // Fallback: carica tutte le prenotazioni da Supabase
         const bookingsFromApi = await api.admin.getAllBookings();
-        console.log('👑 ADMIN DASHBOARD – prenotazioni caricate:', bookingsFromApi);
+        
         setLocalBookings(bookingsFromApi || []);
 
         // Carica tutti i payments per la sezione Transazioni
         const paymentsFromApi = await api.admin.getAllPayments();
-        console.log('👑 ADMIN DASHBOARD – payments caricati:', paymentsFromApi);
         setLocalPayments(paymentsFromApi || []);
 
         // Carica wallets e transazioni wallet
         const walletsFromApi = await api.admin.getAllWallets();
-        console.log('👑 ADMIN DASHBOARD – wallets caricati:', walletsFromApi);
         setLocalWallets(walletsFromApi || []);
 
         const walletTxFromApi = await api.admin.getAllWalletTransactions();
-        console.log('👑 ADMIN DASHBOARD – wallet transactions caricate:', walletTxFromApi);
         setLocalWalletTransactions(walletTxFromApi || []);
 
         // Carica payout requests
         const payoutsFromApi = await api.admin.getAllPayouts();
-        console.log('👑 ADMIN DASHBOARD – payouts caricati:', payoutsFromApi);
         setLocalPayouts(payoutsFromApi || []);
 
         // Carica refunds (rimborsi)
         const refundsFromApi = await api.admin.getAllRefunds();
-        console.log('👑 ADMIN DASHBOARD – refunds caricati:', refundsFromApi);
         setLocalRefunds(refundsFromApi || []);
 
         // Carica stats rimborsi
@@ -453,11 +445,9 @@ useEffect(() => {
 // ========== CARICA FATTURE ==========
         try {
           const invoicesFromApi = await api.admin.getAllInvoices();
-          console.log('👑 ADMIN DASHBOARD – fatture caricate:', invoicesFromApi);
           setLocalInvoices(invoicesFromApi || []);
 
           const creditNotesFromApi = await api.admin.getAllCreditNotes();
-          console.log('👑 ADMIN DASHBOARD – note credito caricate:', creditNotesFromApi);
           setLocalCreditNotes(creditNotesFromApi || []);
 
           const invoiceStatsFromApi = await api.admin.getInvoiceStats();
@@ -471,7 +461,6 @@ useEffect(() => {
           }
 
          const invoiceRulesFromApi = await api.admin.getInvoiceRules();
-          console.log('👑 ADMIN DASHBOARD – regole fatture caricate:', invoiceRulesFromApi);
           if (invoiceRulesFromApi && invoiceRulesFromApi.length > 0) {
             setInvoiceRules(invoiceRulesFromApi);
           } else {
@@ -515,7 +504,6 @@ useEffect(() => {
 
   useEffect(() => {
     setLocalListings(allListings || []);
-    console.log('👑 ADMIN DASHBOARD – sync da allListings:', allListings);
   }, [allListings]);
 
   // Invoice Generation State (legacy form per modale generazione singola)
@@ -1224,7 +1212,6 @@ const chartData = useMemo(() => {
         superHubberPercentage: parseFloat(superHubberFee.toString()),
         fixedFeeEur: parseFloat(fixedFee.toString())
       });
-      console.log('✅ Fees salvate su Supabase');
 
       // Aggiorna anche lo state locale per compatibilità
       const newConfig: SystemConfig = {
@@ -7704,7 +7691,6 @@ const renderFinanceRefunds = () => {
                         
                         // Prova a salvare nel DB
                         await api.admin.updateInvoiceRule(rule.id, { enabled: !rule.enabled });
-                          console.log('✅ Regola aggiornata nel DB');
                         } catch (e) {
                           console.warn('⚠️ Regola salvata solo localmente:', e);
                         }

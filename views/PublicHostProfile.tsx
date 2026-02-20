@@ -415,9 +415,7 @@ export const PublicHostProfile: React.FC<PublicHostProfileProps> = ({
   onRenterClick,
   currentUser,
 }) => {
-  // 🔍 DEBUG
-  console.log("🔍 PublicHostProfile - host:", host);
-  console.log("🔍 PublicHostProfile - host.userType:", (host as any).userType);
+
   // ✅ Recensioni caricate da Supabase
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);

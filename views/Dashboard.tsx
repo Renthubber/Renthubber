@@ -260,7 +260,6 @@ const loadPendingReviewsCount = async () => {
       count++;
     }
 
-     console.log('🔢 Count finale recensioni valide:', count);
     setPendingReviewsCount(count);
   } catch (err) {
     console.error('Errore caricamento conteggio recensioni:', err);

@@ -362,15 +362,6 @@ const moveImageRight = (index: number) => {
 
       console.log('DEBUG Publish – newListing:', newListing);
 
-      console.log('🔍 PREZZI PRIMA DI SALVARE:', {
-        price: newListing.price,
-        deposit: newListing.deposit,
-        cleaningFee: newListing.cleaningFee,
-        draft_price: draft.price,
-        draft_deposit: draft.deposit,
-        draft_cleaningFee: draft.cleaningFee
-      });
-
       // chiama il callback fornito da App.tsx e aspetta che finisca
       await onPublish(newListing);
     } catch (error) {

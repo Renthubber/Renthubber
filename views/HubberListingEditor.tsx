@@ -120,8 +120,6 @@ if (!formData.images || formData.images.length === 0) {
       setIsSaving(false);
       return;
     }
-
-    console.log('✅ Listing salvato con successo!');
     
     onSave(dataToSave);
     

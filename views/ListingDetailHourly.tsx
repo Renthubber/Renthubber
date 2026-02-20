@@ -109,14 +109,12 @@ export const ListingDetailHourly: React.FC<ListingDetailHourlyProps> = ({
         const fees = await api.admin.getFees();
         if (fees) {
           setPlatformFees(fees);
-          console.log("✅ Fee caricate da Supabase:", fees);
         }
         
         const refSettings = await referralApi.getSettings();
         if (refSettings) {
           setMaxCreditUsagePercent(refSettings.maxCreditUsagePercent);
-          console.log("✅ Referral settings caricate:", refSettings.maxCreditUsagePercent, "%");
-        }
+           }
       } catch (err) {
         console.error("Errore caricamento fee:", err);
       }
@@ -371,7 +369,6 @@ const handlePaymentSuccess = async () => {
   }
 
   try {
-    console.log("✅ Prenotazione creata dal webhook, aggiornamento wallet locale...");
     onPaymentSuccess(total, walletUsedEur);
   } catch (err) {
     console.error("Errore durante l'aggiornamento post-pagamento:", err);

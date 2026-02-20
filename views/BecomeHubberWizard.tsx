@@ -252,8 +252,6 @@ export const BecomeHubberWizard: React.FC<BecomeHubberWizardProps> = ({ user, on
             throw new Error("Errore nel salvataggio. Riprova.");
           }
           
-          console.log("✅ Utente aggiornato a Hubber:", upgradedUser);
-          
           setIsLoading(false);
           setStep(5);
           

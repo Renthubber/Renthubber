@@ -120,15 +120,6 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
        
        // ✅ COSTRUZIONE NOME COMPLETO
        const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`;
-       
-       // ✅ DEBUG: Log dei dati che stiamo inviando
-       console.log("📝 Registrazione - Dati inviati:", {
-         firstName: formData.firstName.trim(),
-         lastName: formData.lastName.trim(),
-         fullName,
-         email: formData.email,
-         role: selectedRole
-       });
 
        // 2. REGISTRAZIONE UTENTE (Auth + DB Profile)
        // ✅ MODIFICATO: rimosso renterBalance e referralCode - il bonus arriva dopo la prima prenotazione
@@ -139,16 +130,13 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
           role: selectedRole,
           roles: selectedRole === 'hubber' ? ['hubber', 'renter'] : ['renter'],
        });
-       
-       // ✅ DEBUG: Log dell'utente creato
-       console.log("✅ Utente registrato:", user);
 
        // ✅ REGISTRA IL REFERRAL SE C'È UN CODICE INVITO
        if (formData.referralCode && user) {
          try {
            const referralRegistered = await referralApi.registerReferral(user.id, formData.referralCode);
            if (referralRegistered) {
-             console.log("✅ Referral registrato con successo - bonus in attesa");
+             
            } else {
              console.warn("⚠️ Codice referral non valido o già utilizzato");
            }
@@ -182,7 +170,7 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
                registered_at: new Date().toISOString(),
                linked_user_id: user.id,
              });
-             console.log("✅ Lead collaboratore creato automaticamente");
+             
            }
          } catch (collabErr) {
            console.warn("⚠️ Errore lead collaboratore (non bloccante):", collabErr);

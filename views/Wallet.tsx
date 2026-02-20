@@ -178,7 +178,7 @@ export const Wallet: React.FC<WalletProps> = ({
             ...currentUser,
             referralCode: newCode,
           });
-          console.log('✅ Referral code generato:', newCode);
+          
         } else {
           console.error('Errore aggiornando referral_code:', error);
         }
@@ -255,11 +255,7 @@ const data = rows?.[0] || null;
           setGeneralBalance((wallet.balance_cents || 0) / 100);
           setReferralBalance((wallet.referral_balance_cents || 0) / 100);
           setRefundBalance((wallet.refund_balance_cents || 0) / 100);
-          console.log('✅ Saldi renter caricati:', {
-            general: (wallet.balance_cents || 0) / 100,
-            referral: (wallet.referral_balance_cents || 0) / 100,
-            refund: (wallet.refund_balance_cents || 0) / 100
-          });
+          
         }
       } catch (err) {
         console.error('Errore caricando saldi renter:', err);
@@ -314,7 +310,6 @@ const data = rows?.[0] || null;
           const totalPending = pending.reduce((sum, r) => sum + (r.inviter_bonus_cents || 0), 0) / 100;
           setPendingBonus(totalPending);
           setPendingCount(pending.length);
-          console.log('✅ Referral in attesa:', { totalPending, count: pending.length });
         }
       } catch (err) {
         console.error('Errore caricando referral in attesa:', err);
@@ -407,10 +402,9 @@ const data = rows?.[0] || null;
   useEffect(() => {
     const loadWallet = async () => {
       setWalletLoading(true);
-      console.log('🟢 [WALLET] Carico saldo - activeMode:', activeMode, 'userId:', currentUser.id);
+      
       try {
         const balance = await api.wallet.getBalanceFromDb(currentUser.id, activeMode);
-        console.log('🟢 [WALLET] Saldo ricevuto:', balance, 'per mode:', activeMode);
         setWalletBalance(balance);
       } catch (err) {
         console.error('❌ [WALLET] Errore caricando saldo wallet:', err);
@@ -467,7 +461,6 @@ const data = rows?.[0] || null;
           const totalPending = pendingBookings.reduce((sum, b) => sum + (b.hubber_net_amount || 0), 0);
           setPendingEarnings(totalPending);
           setPendingBookingsCount(pendingBookings.length);
-          console.log('✅ Guadagni in attesa hubber:', { totalPending, count: pendingBookings.length });
         }
       } catch (err) {
         console.error('Errore caricando guadagni in attesa:', err);

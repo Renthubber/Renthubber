@@ -397,13 +397,6 @@ useEffect(() => {
     ? new Date((renter as any).created_at).getFullYear()
     : new Date().getFullYear();
 
-    // ✅ DEBUG
-console.log('🔍 DEBUG joinYear:', {
-  hubberSince: renter.hubberSince,
-  created_at: (renter as any).created_at,
-  joinYear: joinYear
-});
-
   // Nome privacy
   const privacyName = 
     (renter as any).publicName ||

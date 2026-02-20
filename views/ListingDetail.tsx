@@ -170,11 +170,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
           setGeneralBalance((wallet.balance_cents || 0) / 100);
           setReferralBalance((wallet.referral_balance_cents || 0) / 100);
           setRefundBalance((wallet.refund_balance_cents || 0) / 100);
-          console.log("✅ Saldi wallet caricati:", {
-            general: (wallet.balance_cents || 0) / 100,
-            referral: (wallet.referral_balance_cents || 0) / 100,
-            refund: (wallet.refund_balance_cents || 0) / 100
-          });
+          
         }
       } catch (err) {
         console.error("Errore caricamento wallet:", err);
@@ -415,12 +411,7 @@ useEffect(() => {
   // ✅ CARICA SLOT ORARI OCCUPATI per la data selezionata
 useEffect(() => {
   const loadBookedTimeSlots = async () => {
-    console.log('🔍 loadBookedTimeSlots chiamato', {
-      startDate,
-      category: listing.category,
-      priceUnit: listing.priceUnit
-    });
-    
+        
     if (!startDate || listing.category !== 'spazio' || listing.priceUnit !== 'ora') {
       console.log('⏭️ Skip: condizioni non soddisfatte');
       return;
@@ -428,7 +419,6 @@ useEffect(() => {
     
     try {
       const bookings = await api.bookings.getByListingId(listing.id);
-      console.log('📥 Bookings ricevuti:', bookings);
       
       const bookedSlots: string[] = [];
       const bookedEndSlots: string[] = [];
@@ -437,10 +427,9 @@ useEffect(() => {
       
       bookings.forEach((booking: any) => {
         const bookingDateStr = new Date(booking.startDate).toISOString().split('T')[0];
-        console.log('🔍 Confronto date:', { bookingDateStr, selectedDateStr, match: bookingDateStr === selectedDateStr });
-        
+                
        if (bookingDateStr === selectedDateStr) {
-  console.log('✅ Match! StartTime:', booking.startTime, 'EndTime:', booking.endTime);
+  
   if (booking.startTime && booking.endTime) {
     // Genera tutti gli slot tra start e end
     const startH = parseInt(booking.startTime.split(':')[0]);
