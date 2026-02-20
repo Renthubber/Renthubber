@@ -690,7 +690,7 @@ body{font-family:'Inter',sans-serif;background:#e5e7eb;display:flex;justify-cont
 .header::before{content:'';position:absolute;top:-15mm;left:-10mm;width:50mm;height:50mm;border-radius:50%;background:rgba(255,255,255,0.03)}
 .header-deco{position:absolute;bottom:-8mm;right:-5mm;width:35mm;height:35mm;border-radius:50%;background:rgba(255,255,255,0.03)}
 .logo-row{display:flex;align-items:center;justify-content:center;gap:2.5mm;margin-bottom:3mm}
-.logo-img{width:32mm;height:auto;object-fit:contain}
+.logo-img{width:32mm;height:auto;object-fit:contain;filter:brightness(0) invert(1)}
 .header-sub{font-size:7pt;color:var(--teal-mid);letter-spacing:0.5px;margin-bottom:5mm}
 .tagline{font-size:11.5pt;font-weight:700;color:var(--white);line-height:1.45}
 .content{padding:5mm 8mm 0}
@@ -712,8 +712,8 @@ body{font-family:'Inter',sans-serif;background:#e5e7eb;display:flex;justify-cont
 .benefit{text-align:center;font-size:5.5pt;color:var(--brand);font-weight:500;display:flex;align-items:center;gap:1mm}
 .benefit-check{color:var(--teal);font-weight:800;font-size:7pt}
 .referral-box{background:var(--white);border:1.5px solid var(--teal);border-radius:4mm;padding:4mm 5mm;display:flex;align-items:center;gap:5mm;margin-bottom:4mm}
-.qr-wrapper{flex-shrink:0;width:28mm;height:28mm;border:1px solid var(--gray-light);border-radius:2mm;display:flex;align-items:center;justify-content:center;padding:1mm;background:white}
-.qr-wrapper canvas{width:100%!important;height:100%!important}
+.qr-wrapper{flex-shrink:0;width:26mm;height:26mm;border:1px solid var(--gray-light);border-radius:2mm;overflow:hidden;padding:1mm;background:white}
+.qr-wrapper canvas{width:24mm!important;height:24mm!important;display:block}
 .referral-info{flex:1}
 .referral-label{font-size:7.5pt;font-weight:700;color:var(--brand);margin-bottom:2mm}
 .referral-sublabel{font-size:6pt;color:var(--gray);margin-bottom:1.5mm}
@@ -787,7 +787,7 @@ body{font-family:'Inter',sans-serif;background:#e5e7eb;display:flex;justify-cont
 </div>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>
 <script>
-new QRCode(document.getElementById('qrContainer'),{text:'${link}',width:200,height:200,colorDark:'#0D414B',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+new QRCode(document.getElementById('qrContainer'),{text:'${link}',width:90,height:90,colorDark:'#0D414B',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
 <\/script>
 </body></html>`);
                   w.document.close();
