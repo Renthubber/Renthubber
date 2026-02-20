@@ -249,8 +249,6 @@ export const ListingsMapView: React.FC<ListingsMapViewProps> = ({
       maxZoom: 12, // Non zoomare troppo se i marker sono vicini
     });
     
-    console.log(`🔍 Zoom calcolato: ${map.getZoom()}`);
-    
     mapRef.current = map;
 
     setTimeout(() => {
