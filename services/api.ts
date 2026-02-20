@@ -545,8 +545,6 @@ async function sendBookingSystemMessage(params: {
   } catch (e) {
     console.warn("Errore sync messaggio sistema Supabase:", e);
   }
-
-  console.log("📩 Messaggio di sistema inviato:", messageText.slice(0, 50));
 }
 
 /**
@@ -563,7 +561,6 @@ async function hideContactsAfterCancellation(bookingId: string): Promise<void> {
       .update({ has_confirmed_booking: false })
       .eq("conversation_id", conversationId);
     
-    console.log("🔒 Contatti rioscurati per conversazione:", conversationId);
   } catch (e) {
     console.warn("Errore rioscuramento contatti:", e);
   }
@@ -1066,9 +1063,6 @@ export const api = {
 
       if (error || !userRow) {
         if (authUser && authUser.id === userId) {
-          console.log(
-            "Auto-healing: Creating missing user row in public.users..."
-          );
           
           // ✅ Prova a recuperare nome da user_metadata di Supabase Auth
           const authMetadata = authUser.user_metadata || {};
@@ -1179,8 +1173,6 @@ export const api = {
           .select("*")
           .order("created_at", { ascending: false });
 
-        console.log("DEBUG raw users from Supabase (users.getAll):", data, error);
-
         if (error) {
           console.error("Errore caricamento utenti da Supabase:", error);
           return [];
@@ -1189,7 +1181,6 @@ export const api = {
         if (!data) return [];
 
         const mapped = data.map(mapDbUserToAppUser);
-        console.log("DEBUG mapped users (users.getAll):", mapped);
 
         return mapped;
       } catch (err) {
@@ -1205,7 +1196,6 @@ export const api = {
      */
     deleteMyAccount: async (userId: string): Promise<void> => {
       try {
-        console.log('🗑️ Eliminazione account:', userId);
 
         // 1. Elimina dati utente dal database (CASCADE gestirà le foreign keys)
         const { error: deleteUserError } = await supabase
@@ -1390,7 +1380,6 @@ getById: async (listingId: string): Promise<Listing | null> => {
           api.listings._cache &&
           now - api.listings._cacheTimestamp < api.listings._cacheDuration
         ) {
-          console.log("📦 listings.getAll – uso cache");
           return api.listings._cache;
         }
 
@@ -1407,7 +1396,6 @@ getById: async (listingId: string): Promise<Listing | null> => {
         }
 
         if (!data || data.length === 0) {
-          console.log("📭 listings.getAll – nessun annuncio trovato in DB");
           return [];
         }
 
@@ -1447,7 +1435,6 @@ if (ownerIds.length > 0) {
     invalidateCache: () => {
       api.listings._cache = null;
       api.listings._cacheTimestamp = 0;
-      console.log("🗑️ Cache listings invalidata");
     },
 
     create: async (listing: Listing): Promise<Listing> => {
@@ -1515,7 +1502,6 @@ if (ownerIds.length > 0) {
       }
 
       const mapped = mapDbListingToAppListing(data);
-      console.log("DEBUG listings.create mapped:", mapped);
       
       // Invalida cache
       api.listings.invalidateCache();
@@ -1589,7 +1575,6 @@ if (ownerIds.length > 0) {
       }
 
       const mapped = mapDbListingToAppListing(data);
-      console.log("DEBUG listings.update mapped:", mapped);
       
       // Invalida cache
       api.listings.invalidateCache();
@@ -1602,7 +1587,6 @@ if (ownerIds.length > 0) {
  */
 delete: async (listingId: string): Promise<{ success: boolean; message: string }> => {
   try {
-    console.log("🗑️ listings.delete – inizio per", listingId);
 
     // 1️⃣ Controlla se ci sono prenotazioni PROCESSATE (confirmed, completed)
     const { data: processedBookings, error: bookingsError } = await supabase
@@ -1620,7 +1604,6 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
 
     if (hasProcessedBookings) {
       // 2️⃣ CI SONO PRENOTAZIONI PROCESSATE → SOFT DELETE
-      console.log("⚠️ Annuncio ha prenotazioni processate, eseguo SOFT DELETE");
       
       const { error: softDeleteError } = await supabase
         .from("listings")
@@ -1649,7 +1632,6 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
         .in("status", ["pending", "cancelled"]);
 
       if (pendingBookings && pendingBookings.length > 0) {
-        console.log(`🗑️ Cancello ${pendingBookings.length} prenotazioni pending/cancelled`);
         
         const { error: deleteBookingsError } = await supabase
           .from("bookings")
@@ -1692,7 +1674,6 @@ delete: async (listingId: string): Promise<{ success: boolean; message: string }
      */
     updateStatus: async (listingId: string, status: string): Promise<boolean> => {
       try {
-        console.log("🔄 listings.updateStatus –", listingId, status);
 
         const { error } = await supabase
           .from("listings")
@@ -3759,21 +3740,14 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
   let hubberInvoiceId: string | undefined;
 
   try {
-    console.log("🧾 generateInvoicesOnCheckout – inizio per booking:", bookingId);
 
     // 1. Recupera le regole di fatturazione
     const rules = await api.admin.getInvoiceRules();
     const renterOnCheckout = rules.find((r: any) => r.rule_type === 'renter_on_checkout');
     const hubberOnCheckout = rules.find((r: any) => r.rule_type === 'hubber_on_checkout');
 
-    console.log("🧾 Regole trovate:", {
-      renterOnCheckout: renterOnCheckout?.enabled,
-      hubberOnCheckout: hubberOnCheckout?.enabled
-    });
-
     // Se nessuna regola è attiva, esci
     if (!renterOnCheckout?.enabled && !hubberOnCheckout?.enabled) {
-      console.log("🧾 Nessuna regola checkout attiva, skip fatturazione");
       return { errors: [] };
     }
 
@@ -3783,8 +3757,6 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
     const hubberCommissionPct = platformFees?.hubber_percentage || 10;
     const superHubberCommissionPct = platformFees?.super_hubber_percentage || 5;
     //const fixedFee = platformFees?.fixed_fee_eur || 2;
-
-    console.log("🧾 Commissioni:", { renterCommissionPct, hubberCommissionPct, superHubberCommissionPct });
 
     // 3. Recupera i dati della prenotazione con renter, hubber, listing + DATI FISCALI
     const { data: booking, error: bookingError } = await supabase
@@ -3812,14 +3784,6 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
       return { errors };
     }
 
-    console.log("🧾 Prenotazione recuperata:", {
-      id: booking.id,
-      renterId: booking.renter_id,
-      hubberId: booking.hubber_id,
-      amountTotal: booking.amount_total,
-      hubberNetAmount: booking.hubber_net_amount
-    });
-
     // Determina % commissione hubber (SuperHubber o normale)
     const isSuperHubber = booking.hubber?.is_super_hubber || false;
     const actualHubberCommissionPct = isSuperHubber ? superHubberCommissionPct : hubberCommissionPct;
@@ -3829,8 +3793,6 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
     const prezzoBase = Number(booking.amount_total) - Number(booking.platform_fee || 0);
     const hubberNet = Number(booking.hubber_net_amount) || 0;
 
-    console.log("🧾 Calcoli:", { prezzoBase, hubberNet, isSuperHubber, actualHubberCommissionPct });
-
     // Ottieni settings fattura
     const settings = await api.admin.getInvoiceSettings();
     const vatRate = settings?.default_vat_rate || 22;
@@ -3838,7 +3800,6 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
     // 4. FATTURA RENTER (se regola attiva)
     if (renterOnCheckout?.enabled && booking.renter) {
       try {
-        console.log("🧾 Generazione fattura RENTER...");
         
         const renterName = `${booking.renter.first_name || ''} ${booking.renter.last_name || ''}`.trim() ||
   booking.renter.public_name ||
@@ -3904,7 +3865,6 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
     // 5. FATTURA HUBBER (se regola attiva)
     if (hubberOnCheckout?.enabled && booking.hubber) {
       try {
-        console.log("🧾 Generazione fattura HUBBER...");
         
         const hubberName = `${booking.hubber.first_name || ''} ${booking.hubber.last_name || ''}`.trim() ||
           booking.hubber.public_name ||
@@ -3968,7 +3928,6 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
       }
     }
 
-    console.log("🧾 generateInvoicesOnCheckout – completato");
     return { renterInvoiceId, hubberInvoiceId, errors };
 
   } catch (err: any) {
@@ -3993,16 +3952,10 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
         }
 
         if (!data || data.length === 0) {
-          console.log("📭 admin.getAllUsers – nessun utente trovato in DB");
           return [];
         }
 
         const mapped = data.map(mapDbUserToAppUser);
-        console.log(
-          "✅ admin.getAllUsers – utenti mappati:",
-          mapped.length,
-          mapped
-        );
 
         return mapped;
       } catch (err) {
@@ -4038,7 +3991,6 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
         }
 
         if (!bookingsData || bookingsData.length === 0) {
-          console.log("📭 admin.getAllBookings – nessuna prenotazione trovata");
           return [];
         }
 
@@ -5026,7 +4978,6 @@ let nextNum: number;
 const updateField = invoiceData.invoiceType === 'renter' ? 'renter_next_number' : 'hubber_next_number';
 
 if (currentYear !== s.current_year) {
-  console.log(`🔄 Nuovo anno rilevato: ${currentYear}. Reset contatori fatture.`);
   nextNum = 1;
   
   // Reset anno e entrambi i contatori atomicamente
@@ -5434,7 +5385,6 @@ issued_at: new Date().toISOString()
 
         // ✅ Se lo stato diventa 'completed', genera fatture automatiche E accredita hubber
         if (status === 'completed') {
-          console.log("🧾 Stato = completed, avvio generazione fatture e accredito hubber...");
           
           // 1. Genera fatture
           try {
@@ -5878,7 +5828,6 @@ issued_at: new Date().toISOString()
             
             if (hoursPassed >= 48) {
               shouldHideContacts = true;
-              console.log(`🔒 Booking ${bookingId} completato da ${Math.floor(hoursPassed)} ore - Contatti oscurati`);
             }
           }
         }
@@ -6509,7 +6458,6 @@ sendMessage: async (params: {
   support: {
     // Ottieni tutti i ticket (per admin/support)
     getAllTickets: async () => {
-      console.log("🎫 [ADMIN] Caricamento tutti i ticket...");
       
       // Query semplice senza JOIN
       const { data, error } = await supabase
@@ -6517,15 +6465,12 @@ sendMessage: async (params: {
         .select("*")
         .order("updated_at", { ascending: false });
 
-      console.log("🎫 [ADMIN] Query result - data:", data, "error:", error);
-
       if (error) {
         console.error("❌ [ADMIN] Errore caricamento ticket:", error);
         return [];
       }
 
       if (!data || data.length === 0) {
-        console.log("🎫 [ADMIN] Nessun ticket trovato");
         return [];
       }
 
@@ -7307,8 +7252,6 @@ checkAndPublishMutualReviews: async (bookingId: string) => {
         const createdAt = new Date(review.created_at);
         const now = new Date();
         const daysPassed = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-        
-        console.log(`📅 Recensione pending da ${daysPassed.toFixed(1)} giorni`);
         
         if (daysPassed >= 7) {
           const { error: updateError } = await supabase
