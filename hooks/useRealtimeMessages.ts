@@ -12,8 +12,6 @@ export const useRealtimeMessages = ({ userId, onNewMessage }: UseRealtimeMessage
   useEffect(() => {
     if (!userId) return;
 
-    console.log('🔔 Realtime: Subscribing to messages for user:', userId);
-
     // 📊 CARICA CONTATORE INIZIALE
     const loadInitialCount = async () => {
   try {
@@ -34,7 +32,7 @@ export const useRealtimeMessages = ({ userId, onNewMessage }: UseRealtimeMessage
     }).length || 0;
     
     setUnreadCount(validCount);
-    console.log('📊 Unread count iniziale (escluse cancellate):', validCount);
+    
   } catch (err) {
     console.error('Errore caricamento count iniziale:', err);
   }
@@ -54,7 +52,7 @@ loadInitialCount();
           filter: `to_user_id=eq.${userId}`,
         },
         async (payload) => {
-  console.log('🔔 Nuovo messaggio ricevuto:', payload.new);
+  
   
   const msg: any = payload.new;
   if (msg.conversation_id) {
@@ -160,7 +158,7 @@ const pollingInterval = setInterval(async () => {
 
     // Cleanup
     return () => {
-      console.log('🔕 Unsubscribing from realtime messages');
+      
       supabase.removeChannel(channel);
       clearInterval(pollingInterval);
     };
