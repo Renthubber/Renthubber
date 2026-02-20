@@ -32,6 +32,7 @@ export const CollaboratorRegistration: React.FC = () => {
     phone: '',
     tax_id: '',
     bio: '',
+    privacy: false,
     collaborator_type: 'occasionale' as 'occasionale' | 'agente',
     vat_number: '',
     pec: '',
@@ -262,6 +263,20 @@ export const CollaboratorRegistration: React.FC = () => {
             value={formData.bio}
             onChange={e => setFormData({ ...formData, bio: e.target.value })}
           />
+        </div>
+ 
+       <div className="flex items-start space-x-3">
+          <input
+            type="checkbox"
+            id="privacy"
+            checked={formData.privacy || false}
+            onChange={e => setFormData({ ...formData, privacy: e.target.checked })}
+            className="mt-1 h-4 w-4 text-brand border-gray-300 rounded focus:ring-brand"
+            required
+          />
+          <label htmlFor="privacy" className="text-sm text-gray-600">
+            Acconsento al trattamento dei miei dati personali ai sensi del Regolamento UE 2016/679 (GDPR) e della normativa italiana vigente. Ho letto e accettato l'<a href="/privacy-policy" target="_blank" className="text-brand underline hover:text-brand-dark">Informativa sulla Privacy</a> e i <a href="/terms" target="_blank" className="text-brand underline hover:text-brand-dark">Termini e Condizioni</a>.
+          </label>
         </div>
 
         <div className="pt-2">
