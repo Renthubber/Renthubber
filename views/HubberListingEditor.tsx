@@ -78,6 +78,13 @@ if (!formData.images || formData.images.length === 0) {
   return;
 }
 
+// Validazione coordinate (località selezionata dal dropdown)
+  if (!formData.coordinates?.lat || !formData.coordinates?.lng) {
+    alert('Seleziona una città dal menu a tendina per aggiornare la posizione.');
+    setIsSaving(false);
+    return;
+  }
+
   try {
     const dataToSave = {
       ...formData,
