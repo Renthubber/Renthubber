@@ -40,6 +40,7 @@ import { TariffePage } from "./pages/TariffePage";
 import { InvitaAmicoPage } from "./pages/InvitaAmicoPage";
 import { SuperHubberPage } from "./pages/SuperHubberPage";
 import { InvestitoriPage } from "./pages/InvestitoriPage";
+import LavoraConNoiPage from './pages/LavoraConNoiPage';
 import { FaqPage } from "./pages/FaqPage";
 import { DiventareHubberPage } from "./pages/DiventareHubberPage";
 import { AssistenzaPage } from "./pages/AssistenzaPage";
@@ -762,6 +763,7 @@ const handleRenterClick = async (renter: User) => {
           <Route path="/invita-amico" element={<InvitaAmicoPage />} />
           <Route path="/super-hubber" element={<SuperHubberPage />} />
           <Route path="/investitori" element={<InvestitoriPage />} />
+          <Route path="/lavora-con-noi" element={<LavoraConNoiPage />} />
 
           {/* PAGINE FOOTER - SUPPORTO */}
           <Route path="/faq" element={<FaqPage />} />
