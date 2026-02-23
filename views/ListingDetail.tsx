@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   Minus,
   Plus,
+  Clock,
   MessageSquare,
 } from "lucide-react";
 import { AirbnbCalendar } from "../components/AirbnbCalendar";
@@ -162,7 +163,6 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
           .single();
         
         if (error) {
-          console.log("Wallet non trovato, uso valori di default");
           return;
         }
         
@@ -235,7 +235,6 @@ useEffect(() => {
   const saveView = async () => {
     try {
       await api.recentlyViewed.add(currentUser.id, listing.id);
-      console.log('📌 Annuncio aggiunto ai visti di recente:', listing.title);
     } catch (err) {
       console.error('Errore salvataggio annuncio visualizzato:', err);
     }
@@ -350,7 +349,6 @@ useEffect(() => {
         // ✅ SKIPPA le prenotazioni a ore (hanno start_time e end_time)
         // Quelle occupano solo slot orari, non l'intera giornata
         if (booking.startTime && booking.endTime) {
-          console.log('⏭️ Skip prenotazione a ore:', booking.startDate, booking.startTime, '-', booking.endTime);
           return;
         }
         
@@ -366,7 +364,6 @@ useEffect(() => {
       });
       
       setBookedDates(allBookedDates);
-      console.log("📅 Date prenotate caricate:", allBookedDates.length);
     } catch (err) {
       console.error("Errore caricamento date prenotate:", err);
     }
@@ -397,7 +394,6 @@ useEffect(() => {
       });
       
       setBlockedDates(allBlockedDates);
-      console.log("🚫 Date bloccate caricate:", allBlockedDates.length);
     } catch (err) {
       console.error("Errore caricamento date bloccate:", err);
     }
@@ -413,7 +409,6 @@ useEffect(() => {
   const loadBookedTimeSlots = async () => {
         
     if (!startDate || listing.category !== 'spazio' || listing.priceUnit !== 'ora') {
-      console.log('⏭️ Skip: condizioni non soddisfatte');
       return;
     }
     
@@ -423,7 +418,6 @@ useEffect(() => {
       const bookedSlots: string[] = [];
       const bookedEndSlots: string[] = [];
       const selectedDateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-      console.log('📅 Data selezionata (ISO):', selectedDateStr);
       
       bookings.forEach((booking: any) => {
         const bookingDateStr = new Date(booking.startDate).toISOString().split('T')[0];
@@ -896,6 +890,16 @@ useEffect(() => {
           {/* RIGHT WIDGET (Booking) */}
           <div className="lg:col-span-1 relative">
             <div className="sticky top-28 border border-gray-200 rounded-2xl shadow-xl p-6 bg-white z-30">
+              {/* Tipo Noleggio Badge */}
+              <div className="mb-4">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand/10 text-brand">
+                  <Clock className="w-3.5 h-3.5" />
+                  {listing.priceUnit === 'ora' ? 'Noleggio orario' :
+                   listing.priceUnit === 'giorno' ? 'Noleggio giornaliero' :
+                   listing.priceUnit === 'settimana' ? 'Noleggio settimanale' :
+                   'Noleggio mensile'}
+                </span>
+              </div>
               {/* Price Header */}
               <div className="flex justify-between items-end mb-6">
                 <div>
@@ -918,7 +922,7 @@ useEffect(() => {
                 >
                   <div className="p-3 border-r border-gray-400 cursor-pointer hover:bg-gray-50 transition-colors relative rounded-tl-xl">
                     <p className="text-[10px] font-bold uppercase text-gray-800">
-                      Check-in
+                      {listing.category === 'oggetto' ? 'Ritiro' : 'Check-in'}
                     </p>
                     <p
                       className={`text-sm truncate ${
@@ -930,7 +934,7 @@ useEffect(() => {
                   </div>
                   <div className="p-3 cursor-pointer hover:bg-gray-50 transition-colors relative rounded-tr-xl">
                     <p className="text-[10px] font-bold uppercase text-gray-800">
-                      Check-out
+                      {listing.category === 'oggetto' ? 'Riconsegna' : 'Check-out'}
                     </p>
                     <p
                       className={`text-sm truncate ${
