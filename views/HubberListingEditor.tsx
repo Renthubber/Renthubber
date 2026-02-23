@@ -99,6 +99,8 @@ if (!formData.images || formData.images.length === 0) {
         price_unit: dataToSave.priceUnit,
         deposit: dataToSave.deposit,
         location: dataToSave.location,
+        lat: dataToSave.coordinates?.lat ?? null,
+        lng: dataToSave.coordinates?.lng ?? null,
         images: dataToSave.images,
         features: dataToSave.features,
         rules: dataToSave.rules,
@@ -855,13 +857,17 @@ if (!formData.images || formData.images.length === 0) {
   <h3 className="text-lg font-bold text-gray-900">Posizione Pubblica</h3>
   <p className="text-xs text-gray-500 -mt-2">Questa informazione sarà visibile nell'annuncio.</p>
   
- <CityAutocomplete
+<CityAutocomplete
   value={formData.location}
   onChange={(value, suggestion) => {
     const formattedLocation = suggestion 
       ? `${suggestion.city}, ${suggestion.region}`
       : value;
-    setFormData({...formData, location: formattedLocation});
+    setFormData({
+      ...formData, 
+      location: formattedLocation,
+      ...(suggestion ? { coordinates: { lat: suggestion.lat, lng: suggestion.lng } } : {})
+    });
   }}
   placeholder="Cerca una città italiana..."
   label="Città / Zona"
