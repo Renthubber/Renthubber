@@ -899,6 +899,12 @@ useEffect(() => {
                    listing.priceUnit === 'settimana' ? 'Noleggio settimanale' :
                    'Noleggio mensile'}
                 </span>
+                <p className="text-[11px] text-gray-400 mt-1.5 ml-1">
+                  {listing.priceUnit === 'ora' ? 'Prenota per una o più ore' :
+                   listing.priceUnit === 'giorno' ? 'Prenota per uno o più giorni' :
+                   listing.priceUnit === 'settimana' ? 'Prenota per una o più settimane' :
+                   'Prenota da uno a 18 mesi'}
+                </p>
               </div>
               {/* Price Header */}
               <div className="flex justify-between items-end mb-6">
