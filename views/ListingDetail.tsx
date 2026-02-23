@@ -889,9 +889,8 @@ useEffect(() => {
 
           {/* RIGHT WIDGET (Booking) */}
           <div className="lg:col-span-1 relative">
-            <div className="sticky top-28 border border-gray-200 rounded-2xl shadow-xl p-6 bg-white z-30">
               {/* Tipo Noleggio Badge */}
-              <div className="mb-4">
+              <div className="mb-3">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand/10 text-brand">
                   <Clock className="w-3.5 h-3.5" />
                   {listing.priceUnit === 'ora' ? 'Noleggio orario' :
@@ -906,6 +905,8 @@ useEffect(() => {
                    'Prenota da uno a 18 mesi'}
                 </p>
               </div>
+
+            <div className="sticky top-28 border border-gray-200 rounded-2xl shadow-xl p-6 bg-white z-30">
               {/* Price Header */}
               <div className="flex justify-between items-end mb-6">
                 <div>
