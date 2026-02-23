@@ -152,7 +152,7 @@ export const LavoraConNoiPage: React.FC = () => {
             <div className="py-6 px-6 text-center">
               <div className="text-2xl font-extrabold text-teal-500">€870+</div>
               <div className="text-sm text-gray-500 mt-1">
-                Guadagno potenziale 1° anno
+                Guadagno potenziale
               </div>
             </div>
           </div>
@@ -170,7 +170,7 @@ export const LavoraConNoiPage: React.FC = () => {
               </h2>
               <p className="text-gray-500 text-lg max-w-2xl mx-auto">
                 Il primo marketplace italiano per il noleggio tra privati di
-                oggetti e spazi. Tutto tranne gli alloggi.
+                oggetti e spazi. Noleggia tutto tranne gli alloggi.
               </p>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
@@ -353,7 +353,7 @@ export const LavoraConNoiPage: React.FC = () => {
                   },
                   {
                     label: "Ricorrente mensile (20 × €25 × 8%)",
-                    value: "€40/mese → €480/anno",
+                    value: "€40/mese → €480",
                   },
                   {
                     label: "Premio milestone Silver",
@@ -372,7 +372,7 @@ export const LavoraConNoiPage: React.FC = () => {
                 ))}
               </div>
               <div className="bg-teal-500 rounded-xl px-6 py-4 flex justify-between items-center">
-                <span className="font-bold text-lg">Totale primo anno</span>
+                <span className="font-bold text-lg">Totale</span>
                 <span className="font-extrabold text-2xl md:text-3xl">
                   circa €870
                 </span>
