@@ -24,6 +24,7 @@ import {
   CollaboratorLead, CollaboratorZone, CollaboratorCommission, CollaboratorKPI
 } from '../types/collaborator.types';
 
+
 type Tab = 'overview' | 'hubbers' | 'earnings' | 'invite' | 'performance' | 'payments' | 'support' | 'profile';
 
 const LEAD_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
@@ -625,16 +626,34 @@ export const CollaboratorDashboard: React.FC = () => {
           <p className="text-xs text-gray-500 mb-5">Tutto il materiale per presentare Renthubber ai tuoi contatti.</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Presentazione PDF */}
-            <div className="border border-gray-200 rounded-xl p-4 hover:border-brand/30 hover:shadow-sm transition-all">
-              <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center mb-3">
-                <FileText className="w-5 h-5 text-red-500" />
+           {/* Presentazione RentHubber PDF */}
+            <div className="border border-brand/30 bg-brand/5 rounded-xl p-4 hover:shadow-sm transition-all">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mb-3">
+                <FileText className="w-5 h-5 text-blue-500" />
               </div>
-              <h4 className="font-semibold text-gray-900 text-sm mb-1">Presentazione PDF</h4>
-              <p className="text-xs text-gray-500 mb-3">Slide deck ufficiale da mostrare o inviare ai potenziali Hubber.</p>
-              <span className="inline-flex items-center text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-                <Clock className="w-3 h-3 mr-1" /> In arrivo
-              </span>
+              <h4 className="font-semibold text-gray-900 text-sm mb-1">Presentazione RentHubber</h4>
+              <p className="text-xs text-gray-500 mb-3">Deck completo che spiega la piattaforma, da mostrare ai potenziali Hubber.</p>
+              <button
+               onClick={() => window.open('https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/documents/Renthubber_Presentation.pdf', '_blank')}
+                className="inline-flex items-center text-xs text-brand font-semibold bg-brand/10 hover:bg-brand/20 px-3 py-1.5 rounded-full transition-all"
+              >
+                <FileText className="w-3 h-3 mr-1" /> Scarica PDF
+              </button>
+            </div>
+
+            {/* Guida Collaboratore PDF */}
+            <div className="border border-brand/30 bg-brand/5 rounded-xl p-4 hover:shadow-sm transition-all">
+              <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center mb-3">
+                <FileText className="w-5 h-5 text-purple-500" />
+              </div>
+              <h4 className="font-semibold text-gray-900 text-sm mb-1">Guida per Collaboratori</h4>
+              <p className="text-xs text-gray-500 mb-3">Consigli pratici su come iniziare e portare nuovi Hubber.</p>
+              <button
+               onClick={() => window.open('https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/documents/guida_collaboratori_renthubber.pdf', '_blank')}
+                className="inline-flex items-center text-xs text-brand font-semibold bg-brand/10 hover:bg-brand/20 px-3 py-1.5 rounded-full transition-all"
+              >
+                <FileText className="w-3 h-3 mr-1" /> Scarica Guida
+              </button>
             </div>
 
             {/* Video Presentazione */}
