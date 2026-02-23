@@ -88,7 +88,8 @@ export const AirbnbCalendar: React.FC<AirbnbCalendarProps> = ({
       if (isBeforeDay(date, selectedStart)) {
         onChange(date, undefined); // Restart if clicked before
       } else if (isSameDay(date, selectedStart)) {
-         // Clicked same day twice -> do nothing or deselect? Airbnb usually keeps start.
+         onChange(selectedStart, date); // Stesso giorno = ritiro e riconsegna nello stesso giorno
+         setTimeout(() => { onClose?.(); }, 300);
       } else {
         onChange(selectedStart, date); // Set end
         // ✅ Chiudi automaticamente dopo aver selezionato entrambe le date
@@ -179,10 +180,12 @@ export const AirbnbCalendar: React.FC<AirbnbCalendarProps> = ({
      const days = [];
      for(let i=0; i<startPadding; i++) days.push(null);
      for(let i=1; i<=totalDays; i++) days.push(i);
+     
+     // Non aggiungere giorni del mese successivo per riempire la griglia
 
      return (
         <div className="w-[320px] select-none">
-           <h3 className="text-center font-bold text-gray-800 mb-4 capitalize text-sm md:text-base">
+           <h3 className="text-center font-bold text-gray-800 mb-4 capitalize text-xs md:text-base px-12">
               {MONTHS_IT[month]} {year}
            </h3>
            <div className="grid grid-cols-7 mb-2">
