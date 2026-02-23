@@ -1,64 +1,80 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Listing, ListingCategory } from '../types';
 import { ListingCard } from '../components/ListingCard';
-import { Search, SlidersHorizontal, Box, LayoutGrid, MapPin, Euro, Calendar, X, Sparkles } from 'lucide-react';
+import { Search, SlidersHorizontal, Box, LayoutGrid, MapPin, Euro, Calendar, X, Sparkles, SearchX } from 'lucide-react';
 import { CityAutocomplete } from '../components/CityAutocomplete';
 import { CitySuggestion, searchItalianCities } from '../services/geocodingService';
 import { AirbnbCalendar } from '../components/AirbnbCalendar';
 import { FeaturedListings } from '../components/FeaturedListings';
+import { findRelatedKeywords, getSearchExamples } from '../services/searchKeywords';
 
-// ========== KEYWORDS MAPPING PER RICERCA AI ==========
-const AI_KEYWORDS_MAP: Record<string, string[]> = {
-  // Eventi
-  'festa': ['locale', 'sala', 'audio', 'casse', 'luci', 'proiettore', 'tavoli', 'sedie', 'decorazioni', 'dj'],
-  'compleanno': ['locale', 'sala', 'audio', 'casse', 'luci', 'palloncini', 'tavoli', 'sedie', 'decorazioni'],
-  'matrimonio': ['location', 'sala ricevimenti', 'audio', 'luci', 'decorazioni', 'gazebo', 'tavoli', 'sedie'],
-  'evento': ['sala', 'locale', 'audio', 'luci', 'proiettore', 'microfono', 'sedie'],
-  'conferenza': ['sala', 'proiettore', 'microfono', 'sedie', 'lavagna', 'schermo'],
-  'riunione': ['sala riunioni', 'ufficio', 'proiettore', 'lavagna', 'webcam'],
-  'party': ['locale', 'sala', 'audio', 'casse', 'luci', 'dj', 'mixer'],
-  
-  // Lavoro creativo
-  'video': ['videocamera', 'fotocamera', 'luci', 'treppiede', 'microfono', 'gimbal', 'studio'],
-  'foto': ['fotocamera', 'obiettivo', 'luci', 'flash', 'treppiede', 'studio fotografico', 'fondale'],
-  'podcast': ['microfono', 'cuffie', 'mixer', 'scheda audio', 'studio'],
-  'musica': ['strumenti', 'chitarra', 'tastiera', 'amplificatore', 'sala prove', 'studio registrazione'],
-  'streaming': ['webcam', 'microfono', 'luci', 'green screen', 'scheda acquisizione'],
-  
-  // Casa e trasloco
-  'trasloco': ['furgone', 'carrello', 'scatoloni', 'nastro', 'coperte'],
-  'pulizia': ['aspirapolvere', 'idropulitrice', 'lucidatrice', 'vaporetto'],
-  'giardinaggio': ['tagliaerba', 'decespugliatore', 'motosega', 'soffiatore', 'attrezzi'],
-  'bricolage': ['trapano', 'avvitatore', 'sega', 'levigatrice', 'attrezzi'],
-  'ristrutturazione': ['trapano', 'martello demolitore', 'scala', 'ponteggio', 'attrezzi'],
-  
-  // Sport e tempo libero
-  'campeggio': ['tenda', 'sacco a pelo', 'fornello', 'lanterna', 'zaino'],
-  'escursione': ['zaino', 'bastoncini', 'tenda', 'sacco a pelo', 'gps'],
-  'sci': ['sci', 'scarponi', 'bastoncini', 'casco', 'maschera'],
-  'mare': ['sup', 'kayak', 'canoa', 'muta', 'attrezzatura snorkeling'],
-  'bici': ['bicicletta', 'mountain bike', 'casco', 'lucchetto'],
-  'fitness': ['attrezzi palestra', 'tapis roulant', 'pesi', 'panca'],
-  
-  // Bambini
-  'bambini': ['passeggino', 'seggiolino', 'culla', 'box', 'giochi'],
-  'neonato': ['culla', 'passeggino', 'seggiolino', 'fasciatoio', 'sterilizzatore'],
+// ========== HAVERSINE DISTANCE (km) ==========
+const haversineDistance = (
+  lat1: number, lng1: number,
+  lat2: number, lng2: number
+): number => {
+  const R = 6371;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-// Funzione per trovare keywords correlate
-const findRelatedKeywords = (query: string): string[] => {
-  const lowerQuery = query.toLowerCase();
-  const relatedTerms: Set<string> = new Set();
-  
-  // Cerca match nelle chiavi del mapping
-  Object.entries(AI_KEYWORDS_MAP).forEach(([key, values]) => {
-    if (lowerQuery.includes(key) || key.includes(lowerQuery)) {
-      values.forEach(v => relatedTerms.add(v.toLowerCase()));
+// ========== NORMALIZZA TESTO (rimuovi accenti, lowercase) ==========
+const normalizeText = (text: string): string =>
+  text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
+// ========== LEVENSHTEIN DISTANCE ==========
+const levenshteinDistance = (a: string, b: string): number => {
+  if (a === b) return 0;
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  if (Math.abs(a.length - b.length) > 3) return Math.abs(a.length - b.length);
+  const matrix: number[][] = [];
+  for (let i = 0; i <= a.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
     }
-  });
-  
-  return Array.from(relatedTerms);
+  }
+  return matrix[a.length][b.length];
 };
+
+// ========== FUZZY MATCH ==========
+const fuzzyMatch = (text: string, query: string): boolean => {
+  const nt = normalizeText(text);
+  const nq = normalizeText(query);
+  if (nt.includes(nq)) return true;
+  const queryWords = nq.split(/\s+/).filter(w => w.length >= 2);
+  if (queryWords.length > 1) {
+    const matchCount = queryWords.filter(w => nt.includes(w)).length;
+    if (matchCount >= Math.ceil(queryWords.length * 0.6)) return true;
+  }
+  const textWords = nt.split(/\s+/);
+  const words = queryWords.length > 0 ? queryWords : [nq];
+  for (const qw of words) {
+    const tolerance = qw.length < 5 ? 1 : 2;
+    for (const tw of textWords) {
+      if (tw.startsWith(qw) || qw.startsWith(tw)) return true;
+      if (levenshteinDistance(qw, tw) <= tolerance) return true;
+    }
+  }
+  return false;
+};
+
 
 interface HomeProps {
   onListingClick: (listing: Listing) => void;
@@ -204,38 +220,43 @@ useEffect(() => {
     return true; // ✅ Disponibile
   };
 
-  // ========== FILTRO LISTINGS CON AI ==========
+  // ========== FILTRO LISTINGS CON AI + FUZZY + DISTANZA ==========
   const filteredListings = listings.filter((l) => {
-    // Filtro solo annunci pubblicati (esclude sospesi, draft, ecc.)
     if (l.status !== 'published') return false;
-    
-    // Filtro categoria
     if (l.category !== activeTab) return false;
     
-    // Filtro ricerca testuale + AI
+    // Filtro ricerca testuale con fuzzy match + AI
     if (searchQuery) {
-      const lowerQuery = searchQuery.toLowerCase();
-      const titleMatch = l.title.toLowerCase().includes(lowerQuery);
-      const descMatch = l.description?.toLowerCase().includes(lowerQuery);
+      const titleMatch = fuzzyMatch(l.title, searchQuery);
+      const descMatch = l.description ? fuzzyMatch(l.description, searchQuery) : false;
+      const featuresMatch = l.features?.some(f => fuzzyMatch(f, searchQuery)) || false;
       
-      // AI: controlla se il listing matcha con keywords correlate
+      // AI: controlla keywords correlate con fuzzy
       const aiMatch = aiSuggestions.some(keyword => 
-        l.title.toLowerCase().includes(keyword) ||
-        l.description?.toLowerCase().includes(keyword)
+        fuzzyMatch(l.title, keyword) ||
+        (l.description ? fuzzyMatch(l.description, keyword) : false)
       );
       
-      if (!titleMatch && !descMatch && !aiMatch) return false;
+      if (!titleMatch && !descMatch && !featuresMatch && !aiMatch) return false;
     }
     
-    // Filtro città
-    if (searchCity && !l.location?.toLowerCase().includes(searchCity.toLowerCase())) {
-      return false;
+    // Filtro città/location con coordinate reali
+    if (selectedCitySuggestion && l.coordinates?.lat && l.coordinates?.lng) {
+      // Usa distanza reale Haversine
+      const distance = haversineDistance(
+        selectedCitySuggestion.lat, selectedCitySuggestion.lng,
+        l.coordinates.lat, l.coordinates.lng
+      );
+      if (distance > filterRadius) return false;
+    } else if (searchCity) {
+      // Fallback: match testuale su location, città, provincia, regione
+      const normalizedCity = normalizeText(searchCity);
+      const locationMatch = l.location ? fuzzyMatch(l.location, searchCity) : false;
+      if (!locationMatch) return false;
     }
     
-    // ✅ Filtro disponibilità per date
-    if (!isListingAvailable(l.id)) {
-      return false; // Listing occupato per le date selezionate
-    }
+    // Filtro disponibilità per date
+    if (!isListingAvailable(l.id)) return false;
     
     // Filtro prezzo
     if (filterPriceMin !== '' && l.price < filterPriceMin) return false;
@@ -411,7 +432,7 @@ useEffect(() => {
                 <div className="border-t border-gray-100 pt-4">
                   <p className="text-xs font-semibold text-gray-600 mb-2">Prova a cercare:</p>
                   <div className="space-y-2">
-                    {['festa di compleanno', 'attrezzatura video', 'trasloco'].map((example) => (
+                    {getSearchExamples().map((example) => (
                       <button
                         key={example}
                         onClick={() => {
@@ -817,12 +838,48 @@ useEffect(() => {
       {/* Listing Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20">
 
-        <FeaturedListings
-          listings={filteredListings}
-          userCity={currentUser?.city}
-          onListingClick={onListingClick}
-          currentUser={currentUser}
-        />
+        {filteredListings.length > 0 ? (
+          <FeaturedListings
+            listings={filteredListings}
+            userCity={currentUser?.city}
+            onListingClick={onListingClick}
+            currentUser={currentUser}
+          />
+        ) : (
+          <div className="text-center py-16">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <SearchX className="w-10 h-10 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              Nessun risultato trovato
+            </h3>
+            <p className="text-gray-500 max-w-md mx-auto mb-6">
+              {searchQuery && searchCity
+                ? `Non abbiamo trovato "${searchQuery}" vicino a ${searchCity}. Prova a cambiare i filtri o ampliare il raggio.`
+                : searchQuery
+                ? `Non abbiamo trovato risultati per "${searchQuery}". Prova con un termine diverso.`
+                : searchCity
+                ? `Non ci sono ancora annunci vicino a ${searchCity}. Prova ad ampliare il raggio di ricerca.`
+                : 'Prova a modificare i filtri di ricerca.'}
+            </p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <button
+                onClick={resetFilters}
+                className="px-6 py-2.5 text-sm font-semibold text-white rounded-full transition-colors bg-brand hover:bg-brand/90"
+              >
+                Resetta filtri
+              </button>
+              {filterRadius < 100 && selectedCitySuggestion && (
+                <button
+                  onClick={() => setFilterRadius(Math.min(filterRadius + 50, 200))}
+                  className="px-6 py-2.5 text-sm font-semibold text-brand border-2 border-brand rounded-full hover:bg-brand/5 transition-colors"
+                >
+                  Amplia raggio a {Math.min(filterRadius + 50, 200)} km
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
