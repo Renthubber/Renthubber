@@ -890,7 +890,7 @@ useEffect(() => {
           {/* RIGHT WIDGET (Booking) */}
           <div className="lg:col-span-1 relative">
               {/* Tipo Noleggio Badge */}
-              <div className="mb-3">
+              <div className="mb-3 text-center">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand/10 text-brand">
                   <Clock className="w-3.5 h-3.5" />
                   {listing.priceUnit === 'ora' ? 'Noleggio orario' :
@@ -898,7 +898,7 @@ useEffect(() => {
                    listing.priceUnit === 'settimana' ? 'Noleggio settimanale' :
                    'Noleggio mensile'}
                 </span>
-                <p className="text-[11px] text-gray-400 mt-1.5 ml-1">
+                <p className="text-[11px] text-gray-400 mt-1.5">
                   {listing.priceUnit === 'ora' ? 'Prenota per una o più ore' :
                    listing.priceUnit === 'giorno' ? 'Prenota per uno o più giorni' :
                    listing.priceUnit === 'settimana' ? 'Prenota per una o più settimane' :
