@@ -503,6 +503,17 @@ const handlePaymentSuccess = async () => {
 
           {/* Right Column - Booking Card (MODIFICATO PER ORE) */}
           <div className="lg:col-span-1">
+              {/* Tipo Noleggio Badge */}
+              <div className="mb-3 text-center">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand/10 text-brand">
+                  <Clock className="w-3.5 h-3.5" />
+                  Noleggio orario
+                </span>
+                <p className="text-[11px] text-gray-400 mt-1.5">
+                  Prenota per una o più ore
+                </p>
+              </div>
+
             <div className="sticky top-24 bg-white rounded-2xl border border-gray-200 shadow-lg p-6">
               {/* Price */}
               <div className="mb-6">
@@ -538,7 +549,7 @@ const handlePaymentSuccess = async () => {
                   <div className="mb-4">
                     <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                       <Clock className="w-4 h-4" />
-                      Ora inizio
+                      {listing.category === 'oggetto' ? 'Ritiro' : 'Check-in'} — Ora inizio
                     </label>
                     <select
                       value={startTime}
@@ -561,7 +572,7 @@ const handlePaymentSuccess = async () => {
                     <div className="mb-4">
                       <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                         <Clock className="w-4 h-4" />
-                        Ora fine
+                        {listing.category === 'oggetto' ? 'Riconsegna' : 'Check-out'} — Ora fine
                       </label>
                       <select
                         value={endTime}
