@@ -1006,7 +1006,12 @@ useEffect(() => {
                         </button>
                         <button
                           onClick={() => setGuests(guests + 1)}
-                          className="p-1 rounded-full border border-gray-400 text-gray-600 hover:border-black"
+                          className={`p-1 rounded-full border ${
+                            listing.maxGuests && guests >= listing.maxGuests
+                              ? "border-gray-200 text-gray-300"
+                              : "border-gray-400 text-gray-600 hover:border-black"
+                          }`}
+                          disabled={!!listing.maxGuests && guests >= listing.maxGuests}
                         >
                           <Plus className="w-4 h-4" />
                         </button>
