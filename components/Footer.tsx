@@ -34,6 +34,7 @@ export const Footer: React.FC = () => {
               <li><Link to="/invita-amico" className="hover:text-brand">Programma Invita un amico</Link></li>
               <li><Link to="/super-hubber" className="hover:text-brand">Programma SuperHubber</Link></li>
               <li><Link to="/investitori" className="hover:text-brand">Investitori</Link></li>
+              <li><Link to="/lavora-con-noi" className="hover:text-brand">Lavora con noi</Link></li>
             </ul>
           </div>
 
