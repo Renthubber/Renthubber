@@ -4004,7 +4004,7 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
         if (allUserIds.length > 0) {
           const { data: usersData, error: usersError } = await supabase
             .from("users")
-            .select("id, first_name, last_name, email, public_name, is_super_hubber")
+            .select("id, first_name, last_name, email, public_name, is_super_hubber, avatar_url")
             .in("id", allUserIds);
 
           if (usersError) {
@@ -4041,12 +4041,13 @@ generateInvoicesOnCheckout: async (bookingId: string): Promise<{
             renterId: row.renter_id,
             renterName: renterName,
             renterEmail: renter.email || '',
-            renterAvatar: row.renter_avatar || '',
+            renterAvatar: renter.avatar_url || `https://ui-avatars.com/api/?name=${(renter.first_name || 'R').charAt(0)}${(renter.last_name || '').charAt(0)}&background=0D414B&color=fff&bold=true`,
             hostId: row.host_id || row.hubber_id,
             hubberId: row.hubber_id,
             hostName: hubberName,
             hubberName: hubberName,
             hubberEmail: hubber.email || '',
+            hubberAvatar: hubber.avatar_url || `https://ui-avatars.com/api/?name=${(hubber.first_name || 'H').charAt(0)}${(hubber.last_name || '').charAt(0)}&background=0D414B&color=fff&bold=true`,
             dates: row.dates || `${row.start_date || ''} - ${row.end_date || ''}`,
             startDate: row.start_date,
             endDate: row.end_date,
