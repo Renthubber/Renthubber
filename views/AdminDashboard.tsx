@@ -923,6 +923,118 @@ useEffect(() => {
   };
 }, [selectedTicket]);
 
+// ✅ SUBSCRIPTION REAL-TIME per TUTTA la dashboard
+useEffect(() => {
+  const bookingsChannel = supabase
+    .channel('admin-bookings-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, async () => {
+      const data = await api.admin.getAllBookings();
+      setLocalBookings(data || []);
+      refreshNotifications();
+    })
+    .subscribe();
+
+  const listingsChannel = supabase
+    .channel('admin-listings-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, async () => {
+      const data = await api.admin.getAllListings();
+      setLocalListings(data || []);
+    })
+    .subscribe();
+
+  const usersChannel = supabase
+    .channel('admin-users-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async () => {
+      const data = await api.admin.getAllUsers();
+      setLocalUsers(data || []);
+    })
+    .subscribe();
+
+  const walletsChannel = supabase
+    .channel('admin-wallets-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'wallets' }, async () => {
+      const data = await api.admin.getAllWallets();
+      setLocalWallets(data || []);
+      const txData = await api.admin.getAllWalletTransactions();
+      setLocalWalletTransactions(txData || []);
+    })
+    .subscribe();
+
+  const disputesChannel = supabase
+    .channel('admin-disputes-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'disputes' }, async () => {
+      const data = await api.admin.getDisputes();
+      if (data) setLocalDisputes(data);
+    })
+    .subscribe();
+
+  const paymentsChannel = supabase
+    .channel('admin-payments-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, async () => {
+      const data = await api.admin.getAllPayments();
+      setLocalPayments(data || []);
+    })
+    .subscribe();
+
+  const invoicesChannel = supabase
+    .channel('admin-invoices-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, async () => {
+      const data = await api.admin.getAllInvoices();
+      setLocalInvoices(data || []);
+      const creditNotes = await api.admin.getAllCreditNotes();
+      setLocalCreditNotes(creditNotes || []);
+      const stats = await api.admin.getInvoiceStats();
+      if (stats) setInvoiceStats(stats);
+    })
+    .subscribe();
+
+  const reviewsChannel = supabase
+    .channel('admin-reviews-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, async () => {
+      refreshNotifications();
+    })
+    .subscribe();
+
+  const ticketsChannel = supabase
+    .channel('admin-tickets-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, async () => {
+      loadAllTickets();
+    })
+    .subscribe();
+
+  const payoutsChannel = supabase
+    .channel('admin-payouts-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'payout_requests' }, async () => {
+      const data = await api.admin.getAllPayouts();
+      setLocalPayouts(data || []);
+    })
+    .subscribe();
+
+  const refundsChannel = supabase
+    .channel('admin-refunds-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'refunds' }, async () => {
+      const data = await api.admin.getAllRefunds();
+      setLocalRefunds(data || []);
+      const stats = await api.admin.getRefundStats();
+      setRefundStats(stats);
+    })
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(bookingsChannel);
+    supabase.removeChannel(listingsChannel);
+    supabase.removeChannel(usersChannel);
+    supabase.removeChannel(walletsChannel);
+    supabase.removeChannel(disputesChannel);
+    supabase.removeChannel(paymentsChannel);
+    supabase.removeChannel(invoicesChannel);
+    supabase.removeChannel(reviewsChannel);
+    supabase.removeChannel(ticketsChannel);
+    supabase.removeChannel(payoutsChannel);
+    supabase.removeChannel(refundsChannel);
+  };
+}, []);
+
 const loadAllTickets = async () => {
 
   console.log("🎫 [DASHBOARD] Inizio caricamento ticket...");
