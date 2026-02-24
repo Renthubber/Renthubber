@@ -292,7 +292,8 @@ export const AdminBookingDetailModal: React.FC<AdminBookingDetailModalProps> = (
             </div>
           </div>
 
-          {/* Transfer Hubber */}
+         {/* Transfer Hubber - solo se non cancellata */}
+          {booking.status !== 'cancelled' && (
           <div className="pb-6 border-b border-gray-100">
             <p className="text-[10px] text-gray-400 uppercase font-bold mb-3">Trasferimento Hubber</p>
             <div className="flex items-center gap-2">
@@ -310,6 +311,7 @@ export const AdminBookingDetailModal: React.FC<AdminBookingDetailModalProps> = (
               )}
             </div>
           </div>
+          )}
 
           {/* Info cancellazione se cancellata */}
           {booking.status === 'cancelled' && (
