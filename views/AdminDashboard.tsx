@@ -57,6 +57,7 @@ import { OnlineIndicator } from '../components/OnlineIndicator';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import { AdminDisputesPage } from './AdminDisputesPage';
 import { AdminCollaboratori } from '../components/admin/AdminCollaboratori';
+import { AdminBookingDetailModal } from '../components/admin/AdminBookingDetailModal';
 
 
 // Funzione per formattare data in italiano
@@ -180,7 +181,10 @@ const [financePeriod, setFinancePeriod] = useState<'today' | '7days' | '30days' 
 // Stati per sezione Prenotazioni
 const [bookingSearch, setBookingSearch] = useState('');
 const [bookingStatusFilter, setBookingStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled'>('all');
+const [bookingDateFilter, setBookingDateFilter] = useState('');
+const [bookingPeriodFilter, setBookingPeriodFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year'>('all');
 const [updatingBookingId, setUpdatingBookingId] = useState<string | null>(null);
+const [selectedAdminBooking, setSelectedAdminBooking] = useState<any>(null);
 
 // ========== REFUNDS (Rimborsi) STATES ==========
 const [localRefunds, setLocalRefunds] = useState<any[]>([]);
@@ -1154,6 +1158,8 @@ const handleTicketAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElemen
   const pendingBookings = localBookings.filter(b => b.status === 'pending').length;
   const completedBookings = localBookings.filter(b => b.status === 'completed').length;
   const confirmedBookings = localBookings.filter(b => b.status === 'confirmed' || b.status === 'accepted').length;
+  const cancelledBookings = localBookings.filter(b => b.status === 'cancelled').length;
+  const activeBookings = localBookings.filter(b => b.status !== 'cancelled' && b.status !== 'rejected').length;
   
   // Controversie aperte
   const openDisputes = disputes.filter(d => d.status === 'open').length;
@@ -1969,8 +1975,8 @@ const handleSavePage = async () => {
         />
         <KpiCard 
           title="Prenotazioni" 
-          value={totalBookings} 
-          subtext={pendingBookings > 0 ? `${pendingBookings} in attesa` : completedBookings > 0 ? `${completedBookings} completate` : undefined}
+          value={activeBookings} 
+          subtext={cancelledBookings > 0 ? `${cancelledBookings} cancellate · ${totalBookings} totali` : `${totalBookings} totali`}
           icon={CalendarCheck} 
           color="bg-green-500" 
         />
@@ -2077,16 +2083,19 @@ const handleSavePage = async () => {
               <div key={booking.id || idx} className="flex items-start text-sm border-b border-gray-50 pb-3 last:border-0">
                 <div className={`p-1.5 rounded-full mr-3 mt-0.5 ${
                   booking.status === 'completed' ? 'bg-green-100' : 
+                  booking.status === 'cancelled' ? 'bg-red-100' :
                   booking.status === 'pending' ? 'bg-yellow-100' : 'bg-blue-100'
                 }`}>
                   <Activity className={`w-3 h-3 ${
                     booking.status === 'completed' ? 'text-green-500' : 
+                    booking.status === 'cancelled' ? 'text-red-500' :
                     booking.status === 'pending' ? 'text-yellow-500' : 'text-blue-500'
                   }`} />
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">
                     Prenotazione {booking.status === 'completed' ? 'completata' : 
+                                  booking.status === 'cancelled' ? 'cancellata' :
                                   booking.status === 'pending' ? 'in attesa' : 'confermata'}
                   </p>
                   <p className="text-xs text-gray-500">{booking.listingTitle || 'Annuncio'}</p>
@@ -2547,7 +2556,33 @@ const handleSavePage = async () => {
         booking.renterName?.toLowerCase().includes(bookingSearch.toLowerCase()) ||
         booking.hubberName?.toLowerCase().includes(bookingSearch.toLowerCase());
       const matchesStatus = bookingStatusFilter === 'all' || booking.status === bookingStatusFilter;
-      return matchesSearch && matchesStatus;
+      
+      // Filtro per data specifica
+      let matchesDate = true;
+      if (bookingDateFilter) {
+        const bookingDate = booking.createdAt ? new Date(booking.createdAt).toISOString().split('T')[0] : '';
+        matchesDate = bookingDate === bookingDateFilter;
+      }
+      
+      // Filtro per periodo
+      let matchesPeriod = true;
+      if (bookingPeriodFilter !== 'all' && booking.createdAt) {
+        const now = new Date();
+        const bookingDate = new Date(booking.createdAt);
+        if (bookingPeriodFilter === 'today') {
+          matchesPeriod = bookingDate.toISOString().split('T')[0] === now.toISOString().split('T')[0];
+        } else if (bookingPeriodFilter === 'week') {
+          const weekAgo = new Date(now);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          matchesPeriod = bookingDate >= weekAgo;
+        } else if (bookingPeriodFilter === 'month') {
+          matchesPeriod = bookingDate.getMonth() === now.getMonth() && bookingDate.getFullYear() === now.getFullYear();
+        } else if (bookingPeriodFilter === 'year') {
+          matchesPeriod = bookingDate.getFullYear() === now.getFullYear();
+        }
+      }
+      
+      return matchesSearch && matchesStatus && matchesDate && matchesPeriod;
     });
 
     const handleCompleteBooking = async (bookingId: string) => {
@@ -2638,7 +2673,7 @@ const handleSavePage = async () => {
           <div className="p-6 border-b border-gray-100 space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-gray-900 text-lg">Gestione Prenotazioni</h3>
-              <div className="flex gap-4 text-sm">
+              <div className="flex flex-wrap gap-3 text-sm">
                 <div className="px-3 py-1 bg-yellow-50 text-yellow-700 rounded-lg">
                   <span className="font-bold">{localBookings.filter(b => b.status === 'pending').length}</span> In Attesa
                 </div>
@@ -2647,6 +2682,9 @@ const handleSavePage = async () => {
                 </div>
                 <div className="px-3 py-1 bg-green-50 text-green-700 rounded-lg">
                   <span className="font-bold">{localBookings.filter(b => b.status === 'completed').length}</span> Completate
+                </div>
+                <div className="px-3 py-1 bg-red-50 text-red-700 rounded-lg">
+                  <span className="font-bold">{localBookings.filter(b => b.status === 'cancelled').length}</span> Cancellate
                 </div>
               </div>
             </div>
@@ -2663,6 +2701,23 @@ const handleSavePage = async () => {
                   onChange={(e) => setBookingSearch(e.target.value)}
                 />
               </div>
+              <input
+                type="date"
+                className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white"
+                value={bookingDateFilter}
+                onChange={(e) => setBookingDateFilter(e.target.value)}
+              />
+              <select
+                className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white"
+                value={bookingPeriodFilter}
+                onChange={(e) => setBookingPeriodFilter(e.target.value as any)}
+              >
+                <option value="all">Tutto il periodo</option>
+                <option value="today">Oggi</option>
+                <option value="week">Questa settimana</option>
+                <option value="month">Questo mese</option>
+                <option value="year">Quest'anno</option>
+              </select>
               <select
                 className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-brand outline-none bg-white"
                 value={bookingStatusFilter}
@@ -2674,6 +2729,14 @@ const handleSavePage = async () => {
                 <option value="completed">Completate</option>
                 <option value="cancelled">Cancellate</option>
               </select>
+              {(bookingDateFilter || bookingPeriodFilter !== 'all') && (
+                <button
+                  onClick={() => { setBookingDateFilter(''); setBookingPeriodFilter('all'); }}
+                  className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                >
+                  Resetta date
+                </button>
+              )}
             </div>
           </div>
 
@@ -2700,7 +2763,7 @@ const handleSavePage = async () => {
                   </tr>
                 ) : (
                   filteredBookings.map((booking) => (
-                    <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={booking.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelectedAdminBooking(booking)}>
                       <td className="py-4 px-6">
                         <div className="font-medium text-gray-900">{booking.listingTitle || 'N/A'}</div>
                         <div className="text-xs text-gray-500">Codice: <span className="font-mono font-bold text-brand">#{booking.id?.slice(0, 6).toUpperCase()}</span></div>
@@ -2728,7 +2791,7 @@ const handleSavePage = async () => {
                         <div className="flex gap-2">
                           {booking.status === 'confirmed' && (
                             <button
-                              onClick={() => handleCompleteBooking(booking.id)}
+                              onClick={(e) => { e.stopPropagation(); handleCompleteBooking(booking.id); }}
                               disabled={updatingBookingId === booking.id}
                               className="px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center"
                             >
@@ -2742,7 +2805,7 @@ const handleSavePage = async () => {
                           )}
                           {(booking.status === 'pending' || booking.status === 'confirmed') && (
                             <button
-                              onClick={() => handleCancelBooking(booking.id)}
+                              onClick={(e) => { e.stopPropagation(); handleCancelBooking(booking.id); }}
                               disabled={updatingBookingId === booking.id}
                               className="px-3 py-1.5 bg-red-100 text-red-600 text-xs font-bold rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50 flex items-center"
                             >
@@ -2762,6 +2825,22 @@ const handleSavePage = async () => {
             </table>
           </div>
         </div>
+
+        {/* Modale Dettaglio Prenotazione */}
+        {selectedAdminBooking && (
+          <AdminBookingDetailModal
+            booking={selectedAdminBooking}
+            onClose={() => setSelectedAdminBooking(null)}
+            onComplete={(id) => {
+              handleCompleteBooking(id);
+              setSelectedAdminBooking(null);
+            }}
+            onCancel={(id) => {
+              handleCancelBooking(id);
+              setSelectedAdminBooking(null);
+            }}
+          />
+        )}
       </div>
     );
   };
