@@ -57,6 +57,7 @@ import { OnlineIndicator } from '../components/OnlineIndicator';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import { AdminDisputesPage } from './AdminDisputesPage';
 import { AdminCollaboratori } from '../components/admin/AdminCollaboratori';
+import { AdminUsersMap } from '../components/admin/AdminUsersMap';
 import { AdminBookingDetailModal } from '../components/admin/AdminBookingDetailModal';
 
 
@@ -136,7 +137,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<
-  'overview' | 'users' | 'listings' | 'bookings' | 'messages' | 'support' | 'finance' | 'invoices' | 'cms' | 'disputes' | 'reviews' | 'email' | 'announcements' | 'config' | 'referral' | 'collaboratori'
+'overview' | 'users' | 'listings' | 'bookings' | 'messages' | 'support' | 'finance' | 'invoices' | 'cms' | 'disputes' | 'reviews' | 'email' | 'announcements' | 'config' | 'referral' | 'collaboratori' | 'map'
 >('overview');
   // Sotto-tab per Finanza & Wallet
 const [financeSubTab, setFinanceSubTab] = useState <
@@ -8917,6 +8918,16 @@ const renderCMS = () => <AdminCMSBranding />;
             <Users className="w-5 h-5 mr-3" /> Utenti
           </button>
           <button
+            onClick={() => setActiveTab('map')}
+            className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
+              activeTab === 'map'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+            }`}
+          >
+            <MapPin className="w-5 h-5 mr-3" /> Mappa Utenti
+          </button>
+          <button
             onClick={() => setActiveTab('listings')}
             className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
               activeTab === 'listings'
@@ -9139,6 +9150,7 @@ const renderCMS = () => <AdminCMSBranding />;
     {activeTab === 'announcements' && (<AdminAnnouncements currentUser={currentUser} />)}
     {activeTab === 'referral' && <ReferralSettings />}
     {activeTab === 'collaboratori' && <AdminCollaboratori />}
+    {activeTab === 'map' && <AdminUsersMap />}
     {activeTab === 'config' && renderConfig()}
   </div>
 </main>

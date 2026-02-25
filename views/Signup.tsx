@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { User, Briefcase, Check, Upload, ShieldCheck, ArrowRight, ChevronLeft, Camera, LogIn, Gift, Loader2, Eye, EyeOff } from 'lucide-react';
+import { User, Briefcase, Check, Upload, ShieldCheck, ArrowRight, ChevronLeft, Camera, LogIn, Gift, Loader2, Eye, EyeOff, MapPin } from 'lucide-react';
 import { User as UserType } from '../types';
 import { api } from '../services/api';
 import { referralApi } from '../services/referralApi';
@@ -39,6 +39,7 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
     lastName: '',
     email: '',
     password: '',
+    city: '',
     referralCode: '',
   });
 
@@ -99,7 +100,7 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
 
   const handleInfoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.city) {
        setErrorMsg("Compila tutti i campi obbligatori.");
        return;
     }
@@ -130,6 +131,7 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
           lastName: formData.lastName.trim(),    // ✅ AGGIUNGO lastName
           role: selectedRole,
           roles: selectedRole === 'hubber' ? ['hubber', 'renter'] : ['renter'],
+           city: formData.city.trim(),
        });
 
        // ✅ REGISTRA IL REFERRAL SE C'È UN CODICE INVITO
@@ -498,6 +500,24 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
             </button>
           </div>
           <p className="text-xs text-gray-400 mt-1">Minimo 8 caratteri.</p>
+        </div>
+       
+       <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Città *</label>
+          <div className="relative">
+            <div className="absolute left-3 top-3 text-brand-accent pointer-events-none">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <input 
+              type="text"
+              className="w-full pl-10 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all"
+              placeholder="Es. Milano, Roma, Napoli..."
+              value={formData.city}
+              onChange={e => setFormData({...formData, city: e.target.value.replace(/\b\w/g, c => c.toUpperCase())})}
+              required
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-1">La città in cui ti trovi. Aiuta a mostrarti contenuti vicini a te.</p>
         </div>
 
         <div>
