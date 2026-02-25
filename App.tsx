@@ -839,7 +839,8 @@ const handleRenterClick = async (renter: User) => {
        !location.pathname.startsWith('/my-listings') && 
        !location.pathname.startsWith('/become-hubber') && 
        !location.pathname.startsWith('/edit-listing') && 
-       !location.pathname.startsWith('/collaboratori') && (
+       !location.pathname.startsWith('/collaboratori') && 
+       !location.pathname.startsWith('/promo') && (
         <Footer />
       )}
     </div>
