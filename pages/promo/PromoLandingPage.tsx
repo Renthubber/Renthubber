@@ -161,6 +161,8 @@ const PromoLandingPage: React.FC = () => {
             'Elettrodomestici',
             'Giochi e gonfiabili',
             'Abbigliamento per eventi',
+            'Proiettori e audio',
+            'Articoli per feste',
             'Garage e box auto',
             'Location per eventi',
             'Sale di registrazione',
@@ -168,6 +170,7 @@ const PromoLandingPage: React.FC = () => {
             'Magazzini e depositi',
             'Negozi temporanei',
             'Giardini e terrazze',
+            'Studi fotografici',
             'E molto altro...',
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-2 bg-gray-50 rounded-lg p-3">
