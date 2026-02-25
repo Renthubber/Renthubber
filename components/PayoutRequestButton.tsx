@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DollarSign, Loader, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from "../services/supabaseClient";
 
@@ -33,7 +33,22 @@ export const PayoutRequestButton: React.FC<PayoutRequestButtonProps> = ({
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const minAmount = 50; // Minimo €50
+  const [minAmount, setMinAmount] = useState(50);
+
+useEffect(() => {
+  const fetchMinAmount = async () => {
+    const { data } = await supabase
+      .from('cms_settings')
+      .select('value')
+      .eq('type', 'finance_settings')
+      .maybeSingle();
+    
+    if (data?.value?.min_payout_amount) {
+      setMinAmount(data.value.min_payout_amount);
+    }
+  };
+  fetchMinAmount();
+}, []);
   const maxAmount = hubberBalance;
 
   const handleSubmit = async (e: React.FormEvent) => {
