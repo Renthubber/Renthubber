@@ -985,10 +985,10 @@ export const api = {
         referral_code: userData.referralCode || null,
         renter_balance: userData.renterBalance || 0,
         hubber_balance: null,  // ✅ NULL per evitare trigger wallet
+        city: userData.city || null,
         status: "active",
         created_at: new Date().toISOString(),
       };
-
       const { error: insertError } = await supabase
         .from("users")
         .insert(insertData);
@@ -1008,6 +1008,7 @@ export const api = {
             roles: userRoles,
             referral_code: userData.referralCode || null,
             renter_balance: userData.renterBalance || 0,
+            city: userData.city || null,
           })
           .eq("id", userId);
 
