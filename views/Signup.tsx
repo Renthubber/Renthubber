@@ -192,7 +192,7 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
 
        // ✅ PROMO: Se l'utente arriva da una landing promo, applica il fee override
        const promoCode = searchParams.get('promo');
-       if (promoCode && isValidPromo(promoCode) && user) {
+       if (promoCode && isValidPromo(promoCode) && user && (role === 'hubber')) {
          try {
            await applyPromoToUser(user.id, promoCode);
          } catch (promoErr) {
