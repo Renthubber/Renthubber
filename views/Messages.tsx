@@ -1280,7 +1280,7 @@ const handleSend = async () => {
           if (c.id === activeChatId) {
             return {
               ...c,
-              lastMessagePreview: safeText.slice(0, 80),
+              lastMessagePreview: safeText.slice(0, 150),
               lastMessageAt: now.toISOString(),
             };
           }
