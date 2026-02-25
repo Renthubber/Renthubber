@@ -48,7 +48,8 @@ const PromoLandingPage: React.FC = () => {
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">
-            Guadagna noleggiando i tuoi oggetti e Spazi.{' '}
+            Guadagna noleggiando i tuoi oggetti e Spazi.
+            <br />
             <span className="text-[#3DD9D0]">Zero commissioni.</span>
           </h1>
           
