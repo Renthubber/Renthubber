@@ -24,6 +24,10 @@
   path = "/listing/*"
   function = "og-preview"
 
+[[edge_functions]]
+  path = "/promo/*"
+  function = "og-inject"
+
 # ✅ Headers per il sitemap
 [[headers]]
   for = "/sitemap.xml"
