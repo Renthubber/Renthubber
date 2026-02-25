@@ -43,8 +43,8 @@ useEffect(() => {
       .eq('type', 'finance_settings')
       .maybeSingle();
     
-    if (data?.value?.min_payout_amount) {
-      setMinAmount(data.value.min_payout_amount);
+   if (data?.value?.minPayoutAmount !== undefined) {
+      setMinAmount(data.value.minPayoutAmount);
     }
   };
   fetchMinAmount();
