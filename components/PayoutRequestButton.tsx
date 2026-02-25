@@ -37,16 +37,13 @@ export const PayoutRequestButton: React.FC<PayoutRequestButtonProps> = ({
 
 useEffect(() => {
   const fetchMinAmount = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('cms_settings')
       .select('value')
       .eq('type', 'finance_settings')
       .maybeSingle();
     
-    console.log('💰 Finance settings:', data, 'error:', error);
-    
     if (data?.value?.minPayoutAmount !== undefined) {
-      console.log('💰 Min payout dal DB:', data.value.minPayoutAmount);
       setMinAmount(data.value.minPayoutAmount);
     }
   };
@@ -67,11 +64,6 @@ useEffect(() => {
 
     if (requestedAmount > maxAmount) {
       alert(`Saldo insufficiente. Disponibile: €${maxAmount.toFixed(2)}`);
-      return;
-    }
-
-    if (!iban || iban.length < 15) {
-      alert('IBAN non configurato. Vai in Impostazioni Fiscali.');
       return;
     }
 
@@ -247,44 +239,19 @@ useEffect(() => {
                     </p>
                   </div>
 
-                  {/* IBAN Display */}
+                  {/* Stripe Connect Status */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      IBAN di destinazione
+                      Metodo di pagamento
                     </label>
-                    {iban ? (
-                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-sm text-gray-900">
-                            {iban.replace(/(.{4})/g, '$1 ').trim()}
-                          </span>
-                          {onConfigureIban && (
-                            <button
-                              type="button"
-                              onClick={onConfigureIban}
-                              className="text-xs text-[#0d4a5f] hover:underline"
-                            >
-                              Cambia
-                            </button>
-                          )}
-                        </div>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <span className="text-sm text-green-800">
+                          Il bonifico verrà inviato sul conto configurato in Stripe
+                        </span>
                       </div>
-                    ) : (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                        <p className="text-sm text-yellow-800 mb-2">
-                          IBAN non configurato
-                        </p>
-                        {onConfigureIban && (
-                          <button
-                            type="button"
-                            onClick={onConfigureIban}
-                            className="text-sm text-[#0d4a5f] hover:underline font-medium"
-                          >
-                            Configura IBAN in Impostazioni Fiscali
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    </div>
                   </div>
 
                   {/* Buttons */}
