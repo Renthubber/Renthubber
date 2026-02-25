@@ -54,7 +54,7 @@ const PromoLandingPage: React.FC = () => {
           </h1>
           
           <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Sei un hubber di Catania e provincia? Registrati ora e ottieni <strong className="text-white">0% di commissioni percentuali per 30 giorni</strong> o 
+            Sei un hubber di Catania e provincia? Registrati ora e <strong className="text-white">Risparmi sulle commissioni per 30 giorni</strong> o 
             fino a <strong className="text-white">€1.000 di transazioni</strong>. 
             Tutto quello che guadagni è tuo, al 100%.
           </p>
