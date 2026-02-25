@@ -44,6 +44,7 @@ useEffect(() => {
       .maybeSingle();
     
    if (data?.value?.minPayoutAmount !== undefined) {
+      console.log('💰 Min payout dal DB:', data.value.minPayoutAmount);
       setMinAmount(data.value.minPayoutAmount);
     }
   };
