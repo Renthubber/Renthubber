@@ -30,6 +30,7 @@ import { Annunci } from "./views/Annunci";
 import { AnnouncementPopup } from './components/AnnouncementPopup';
 import { useUserPresence } from './hooks/useUserPresence';
 import { useRealtimeMessages } from './hooks/useRealtimeMessages';
+import PromoLandingPage from './pages/promo/PromoLandingPage';
 // import { InstallPrompt } from './components/InstallPrompt';
 
 
@@ -529,6 +530,7 @@ const handleRenterClick = async (renter: User) => {
 
   {/* ✅ LANCIO - Landing espansione città */}
 <Route path="/lancio" element={<LaunchLandingPage />} />
+<Route path="/promo/lancio-catania" element={<PromoLandingPage />} />
 
         <Route path="/signup" element={
   <Signup
