@@ -5,6 +5,7 @@ import { User as UserType } from '../types';
 import { api } from '../services/api';
 import { referralApi } from '../services/referralApi';
 import { supabase } from '../services/supabaseClient';
+import { applyPromoToUser, isValidPromo } from '../services/promoService';
 
 interface SignupProps {
   onComplete: (user: UserType) => void;
@@ -187,6 +188,16 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
          }
        } catch (uploadErr) {
          console.warn("Document upload issue (non-blocking):", uploadErr);
+       }
+
+       // ✅ PROMO: Se l'utente arriva da una landing promo, applica il fee override
+       const promoCode = searchParams.get('promo');
+       if (promoCode && isValidPromo(promoCode) && user) {
+         try {
+           await applyPromoToUser(user.id, promoCode);
+         } catch (promoErr) {
+           console.warn("⚠️ Errore applicazione promo (non bloccante):", promoErr);
+         }
        }
 
        // Salviamo l'utente nello stato locale per il passaggio successivo
