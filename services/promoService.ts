@@ -19,7 +19,7 @@ export interface PromoConfig {
 
 // Configurazione promozioni disponibili
 const PROMO_CONFIGS: Record<string, PromoConfig> = {
-  lancio: {
+  'lancio-catania': {
     code: 'lancio-catania',
     customRenterFee: null,       // Renter: commissioni standard
     customHubberFee: 0,          // Hubber: 0% commissioni
