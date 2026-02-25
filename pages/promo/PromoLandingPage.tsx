@@ -54,7 +54,7 @@ const PromoLandingPage: React.FC = () => {
           </h1>
           
           <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Sei un hubber di Catania e provincia? Registrati ora e <strong className="text-white">Risparmi sulle commissioni per 30 giorni</strong> o 
+            Sei un hubber di Catania e provincia? Registrati ora e <strong className="text-white">Risparmia sulle commissioni per 30 giorni</strong> o 
             fino a <strong className="text-white">€1.000 di transazioni</strong>. 
             Tutto quello che guadagni è tuo, al 100%.
           </p>
@@ -214,7 +214,7 @@ const PromoLandingPage: React.FC = () => {
               <li>La promozione è riservata ai primi 100 nuovi utenti che si registrano come <strong className="text-gray-300">hubber</strong> tramite questa pagina.</li>
               <li>La promo è attiva solo per hubber residenti a <strong className="text-gray-300">Catania e provincia</strong>.</li>
               <li>Le commissioni percentuali hubber sono azzerate per <strong className="text-gray-300">30 giorni</strong> dalla registrazione o fino a <strong className="text-gray-300">€1.000 di transazioni</strong> completate (il primo dei due limiti).</li>
-              <li>Le fee fisse della piattaforma restano invariate.</li>
+              <li>Le fee fisse della piattaforma verranno applicate da 0,50 fino a 2,00 euro per noleggio.</li>
               <li>Al termine della promozione si applicano le commissioni standard.</li>
               <li>RentHubber si riserva il diritto di modificare o terminare la promozione in qualsiasi momento.</li>
               <li>La promozione è limitata ai <strong className="text-gray-300">primi 100 hubber</strong> che si registrano tramite questa pagina.</li>
