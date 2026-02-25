@@ -127,13 +127,15 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
 
        // 2. REGISTRAZIONE UTENTE (Auth + DB Profile)
        // ✅ MODIFICATO: rimosso renterBalance e referralCode - il bonus arriva dopo la prima prenotazione
+       const promoCode = searchParams.get('promo');
        const user = await api.auth.register(formData.email, formData.password, {
           name: fullName,
-          firstName: formData.firstName.trim(),  // ✅ AGGIUNGO firstName
-          lastName: formData.lastName.trim(),    // ✅ AGGIUNGO lastName
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
           role: selectedRole,
           roles: selectedRole === 'hubber' ? ['hubber', 'renter'] : ['renter'],
-           city: formData.city.trim(),
+          city: formData.city.trim(),
+          ...(promoCode ? { promoCode } : {}),
        });
 
        // ✅ REGISTRA IL REFERRAL SE C'È UN CODICE INVITO
@@ -192,18 +194,6 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
          }
        } catch (uploadErr) {
          console.warn("Document upload issue (non-blocking):", uploadErr);
-       }
-
-       // ✅ PROMO: Se l'utente arriva da una landing promo, applica il fee override
-       const promoCode = searchParams.get('promo');
-       console.log('🎁 Promo check:', promoCode, 'valid:', promoCode ? isValidPromo(promoCode) : false, 'role:', role, 'user:', user?.id);
-       if (promoCode && isValidPromo(promoCode) && user && (role === 'hubber')) {
-         try {
-           await applyPromoToUser(user.id, promoCode);
-           console.log('🎁 Promo applicata!');
-         } catch (promoErr) {
-           console.warn("⚠️ Errore applicazione promo (non bloccante):", promoErr);
-         }
        }
 
        // Salviamo l'utente nello stato locale per il passaggio successivo
