@@ -48,8 +48,8 @@ const PromoLandingPage: React.FC = () => {
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">
-            Guadagna noleggiando i tuoi oggetti.{' '}
-            <span className="text-[#3DD9D0]">Senza commissioni.</span>
+            Guadagna noleggiando i tuoi oggetti e Spazi.{' '}
+            <span className="text-[#3DD9D0]">Zero commissioni.</span>
           </h1>
           
           <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
@@ -103,7 +103,7 @@ const PromoLandingPage: React.FC = () => {
             <div className="w-14 h-14 bg-[#3DD9D0]/15 rounded-xl flex items-center justify-center mx-auto mb-4">
               <Zap className="w-7 h-7 text-[#0D414B]" />
             </div>
-            <h3 className="font-bold text-[#0D414B] text-lg mb-2">Inizia in 5 Minuti</h3>
+            <h3 className="font-bold text-[#0D414B] text-lg mb-2">Inizia in 1 Minuto</h3>
             <p className="text-gray-600 text-sm leading-relaxed">
               Registrati, pubblica il tuo primo annuncio e inizia a ricevere richieste di noleggio.
             </p>
@@ -149,14 +149,24 @@ const PromoLandingPage: React.FC = () => {
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {[
+       {[
             'Attrezzatura fotografica',
             'Utensili da giardino',
             'Biciclette e monopattini',
             'Attrezzi da lavoro',
             'Strumenti musicali',
             'Attrezzatura sportiva',
-            'Spazi e garage',
+            'Attrezzatura da campeggio',
+            'Elettrodomestici',
+            'Giochi e gonfiabili',
+            'Abbigliamento per eventi',
+            'Garage e box auto',
+            'Location per eventi',
+            'Sale di registrazione',
+            'Spazi per coworking',
+            'Magazzini e depositi',
+            'Negozi temporanei',
+            'Giardini e terrazze',
             'E molto altro...',
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-2 bg-gray-50 rounded-lg p-3">
