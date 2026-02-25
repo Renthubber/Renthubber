@@ -338,9 +338,8 @@ async function handleAccountUpdated(
   const userId = account.metadata?.renthubber_user_id;
 
   if (!userId) {
-    console.log('No user ID in account metadata');
-    return;
-  }
+    console.log('No user ID in metadata, updating by stripe_account_id instead');
+}
 
   // Aggiorna stato onboarding su Supabase
   await fetch(
