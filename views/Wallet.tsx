@@ -113,6 +113,31 @@ export const Wallet: React.FC<WalletProps> = ({
   // Totale credito renter = wallet generale + referral + rimborsi
   const totalRenterCredit = generalBalance + referralBalance + refundBalance;
 
+// ✅ Fetch stato Stripe aggiornato dal DB
+const [stripeStatus, setStripeStatus] = useState<{
+  stripe_account_id?: string;
+  stripe_onboarding_completed: boolean;
+  stripe_charges_enabled: boolean;
+  stripe_payouts_enabled: boolean;
+} | null>(null);
+
+useEffect(() => {
+  const fetchStripeStatus = async () => {
+    const { supabase } = await import('../services/supabaseClient');
+    const { data } = await supabase
+      .from('users')
+      .select('stripe_account_id, stripe_onboarding_completed, stripe_charges_enabled, stripe_payouts_enabled')
+      .eq('id', currentUser.id)
+      .single();
+    
+    if (data) {
+      setStripeStatus(data);
+    }
+  };
+  
+  fetchStripeStatus();
+}, [currentUser.id]);
+
   // ===========================
   //   REFERRAL CODE: CREAZIONE AUTOMATICA
   // ===========================
@@ -1000,10 +1025,10 @@ const data = rows?.[0] || null;
           email={currentUser.email || ''}
           firstName={currentUser.firstName}
           lastName={currentUser.lastName}
-          stripeAccountId={(currentUser as any).stripe_account_id}
-          stripeOnboardingCompleted={(currentUser as any).stripe_onboarding_completed}
-          stripeChargesEnabled={(currentUser as any).stripe_charges_enabled}
-          stripePayoutsEnabled={(currentUser as any).stripe_payouts_enabled}
+          stripeAccountId={stripeStatus?.stripe_account_id || (currentUser as any).stripe_account_id}
+          stripeOnboardingCompleted={stripeStatus?.stripe_onboarding_completed || (currentUser as any).stripe_onboarding_completed}
+          stripeChargesEnabled={stripeStatus?.stripe_charges_enabled || (currentUser as any).stripe_charges_enabled}
+          stripePayoutsEnabled={stripeStatus?.stripe_payouts_enabled || (currentUser as any).stripe_payouts_enabled}
           onRefresh={() => window.location.reload()}
         />
 
@@ -1048,8 +1073,8 @@ const data = rows?.[0] || null;
               <PayoutRequestButton
                 userId={currentUser.id}
                 hubberBalance={walletBalance ?? 0}
-                stripeAccountId={(currentUser as any).stripe_account_id}
-                stripePayoutsEnabled={(currentUser as any).stripe_payouts_enabled}
+                stripeAccountId={stripeStatus?.stripe_account_id || (currentUser as any).stripe_account_id}
+                stripePayoutsEnabled={stripeStatus?.stripe_payouts_enabled || (currentUser as any).stripe_payouts_enabled}
                 iban={effectiveIban}
                 onConfigureIban={() => setShowBankModal(true)}
               />
