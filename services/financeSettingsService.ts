@@ -57,7 +57,7 @@ export async function updateFinanceSettings(settings: FinanceSettings): Promise<
     .from('cms_settings')
     .select('id')
     .eq('type', 'finance_settings')
-    .single();
+    .maybeSingle();
   
   if (existing) {
     // Update
