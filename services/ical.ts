@@ -547,7 +547,7 @@ export const getOrCreateExportUrl = async (
     .from('ical_tokens')
     .select('token')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
   if (existing?.token) {
   const baseUrl = typeof window !== 'undefined' 
