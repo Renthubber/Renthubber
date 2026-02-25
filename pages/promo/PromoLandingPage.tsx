@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Shield, Zap, TrendingUp, Clock, Gift, CheckCircle } from 'lucide-react';
 
@@ -10,6 +10,20 @@ import { ArrowRight, Shield, Zap, TrendingUp, Clock, Gift, CheckCircle } from 'l
  */
 const PromoLandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const [spotsLeft, setSpotsLeft] = useState<number>(100);
+
+  useEffect(() => {
+    const fetchSpotsLeft = async () => {
+      const { supabase } = await import('../../services/supabaseClient');
+      const { count } = await supabase
+        .from('user_fee_overrides')
+        .select('*', { count: 'exact', head: true })
+        .like('reason', '%lancio%');
+      
+      setSpotsLeft(Math.max(0, 100 - (count || 0)));
+    };
+    fetchSpotsLeft();
+  }, []);
 
   const handleSignup = () => {
     navigate('/signup?promo=lancio-catania');
@@ -30,7 +44,7 @@ const PromoLandingPage: React.FC = () => {
           {/* Badge promo */}
           <div className="inline-flex items-center gap-2 bg-[#3DD9D0]/20 text-[#3DD9D0] px-4 py-2 rounded-full text-sm font-semibold mb-8 border border-[#3DD9D0]/30">
             <Gift className="w-4 h-4" />
-            <span>Offerta di Lancio — Posti Limitati</span>
+            <span>Offerta di Lancio — Catania e Provincia — Solo {spotsLeft} posti rimasti!</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">
@@ -39,7 +53,7 @@ const PromoLandingPage: React.FC = () => {
           </h1>
           
           <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Registrati ora e ottieni <strong className="text-white">0% di commissioni per 30 giorni</strong> o 
+            Sei un hubber di Catania e provincia? Registrati ora e ottieni <strong className="text-white">0% di commissioni percentuali per 30 giorni</strong> o 
             fino a <strong className="text-white">€1.000 di transazioni</strong>. 
             Tutto quello che guadagni è tuo, al 100%.
           </p>
@@ -53,7 +67,7 @@ const PromoLandingPage: React.FC = () => {
           </button>
 
           <p className="text-sm text-gray-400 mt-4">
-            Nessun vincolo · Nessun costo · Cancellazione libera
+            Iscrizione gratuita per sempre · Nessun vincolo · Cancella il tuo account quando vuoi
           </p>
         </div>
       </section>
@@ -180,10 +194,18 @@ const PromoLandingPage: React.FC = () => {
             </div>
           </div>
 
-          <p className="text-gray-400 text-sm mb-8">
-            La promozione si applica per 30 giorni dalla registrazione o fino al raggiungimento di €1.000 di transazioni completate (il primo dei due limiti). 
-            Successivamente si applicano le commissioni standard della piattaforma.
-          </p>
+          <div className="text-left bg-white/5 rounded-xl p-6 mb-8 border border-white/10">
+            <h4 className="text-white font-bold mb-3 text-sm">Regolamento della promozione</h4>
+            <ul className="text-gray-400 text-xs space-y-2 list-disc list-inside">
+              <li>La promozione è riservata ai primi 100 nuovi utenti che si registrano come <strong className="text-gray-300">hubber</strong> tramite questa pagina.</li>
+              <li>La promo è attiva solo per hubber residenti a <strong className="text-gray-300">Catania e provincia</strong>.</li>
+              <li>Le commissioni percentuali hubber sono azzerate per <strong className="text-gray-300">30 giorni</strong> dalla registrazione o fino a <strong className="text-gray-300">€1.000 di transazioni</strong> completate (il primo dei due limiti).</li>
+              <li>Le fee fisse della piattaforma restano invariate.</li>
+              <li>Al termine della promozione si applicano le commissioni standard.</li>
+              <li>RentHubber si riserva il diritto di modificare o terminare la promozione in qualsiasi momento.</li>
+              <li>La promozione è limitata ai <strong className="text-gray-300">primi 100 hubber</strong> che si registrano tramite questa pagina.</li>
+            </ul>
+          </div>
 
           <button
             onClick={handleSignup}
