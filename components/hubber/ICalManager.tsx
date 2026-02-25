@@ -66,8 +66,6 @@ export const ICalManager: React.FC<ICalManagerProps> = ({
   // Sync state
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
-  console.log('🎨 ICalManager MOUNTED - userId:', userId, 'exportUrl:', exportUrl);
-
 // Genera URL export se non esiste
 useEffect(() => {
   
@@ -81,7 +79,7 @@ useEffect(() => {
     console.error('Errore generazione URL iCal:', err);
   });
 }
-}, [userId, listingId, exportUrl, onExportUrl]);
+}, [userId, listingId]);
 
   // Copia URL negli appunti
   const copyToClipboard = async () => {
