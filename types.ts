@@ -105,6 +105,7 @@ export interface User {
   customCommissionRate?: number;
   
   address?: string;
+  city?: string;
   phoneNumber?: string;
   phone_number?: string;
   renterBalance?: number;
