@@ -1,9 +1,7 @@
 import { Handler } from '@netlify/functions';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia',
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || '';
@@ -79,13 +77,13 @@ export const handler: Handler = async (event, context) => {
     if (!stripeAccountId) {
       const account = await stripe.accounts.create({
         type: 'express',
-        country: 'IT', // Italia
+        country: 'IT',
         email: email,
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },
         },
-        business_type: 'individual', // Per privati e ditte individuali
+        business_type: 'individual',
         metadata: {
           renthubber_user_id: userId,
           platform: 'renthubber',
@@ -114,6 +112,26 @@ export const handler: Handler = async (event, context) => {
       console.log('✅ Stripe Connect Account created:', stripeAccountId);
     } else {
       console.log('✅ Stripe Connect Account already exists:', stripeAccountId);
+
+      // Verifica stato attuale su Stripe e aggiorna DB
+      const account = await stripe.accounts.retrieve(stripeAccountId);
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            stripe_onboarding_completed: account.details_submitted || false,
+            stripe_charges_enabled: account.charges_enabled || false,
+            stripe_payouts_enabled: account.payouts_enabled || false,
+          }),
+        }
+      );
+      console.log('✅ Account status synced from Stripe');
     }
 
     // 4. Genera AccountLink per completare onboarding
