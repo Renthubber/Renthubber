@@ -37,13 +37,15 @@ export const PayoutRequestButton: React.FC<PayoutRequestButtonProps> = ({
 
 useEffect(() => {
   const fetchMinAmount = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('cms_settings')
       .select('value')
       .eq('type', 'finance_settings')
       .maybeSingle();
     
-   if (data?.value?.minPayoutAmount !== undefined) {
+    console.log('💰 Finance settings:', data, 'error:', error);
+    
+    if (data?.value?.minPayoutAmount !== undefined) {
       console.log('💰 Min payout dal DB:', data.value.minPayoutAmount);
       setMinAmount(data.value.minPayoutAmount);
     }
