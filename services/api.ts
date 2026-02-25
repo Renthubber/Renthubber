@@ -983,6 +983,7 @@ export const api = {
         role: userRole,
         roles: userRoles,
         referral_code: userData.referralCode || null,
+        promo_code: (userData as any).promoCode || null,
         renter_balance: userData.renterBalance || 0,
         hubber_balance: null,  // ✅ NULL per evitare trigger wallet
         city: userData.city || null,
