@@ -616,6 +616,16 @@ export const PrenotazioniRicevute: React.FC<PrenotazioniRicevuteProps> = ({
       </span>
     </div>
   )}
+  {((selectedBooking as any).extra_guests_count || 0) > 0 && ((selectedBooking as any).extra_guests_fee || 0) > 0 && (
+    <div className="flex justify-between text-sm">
+      <span className="text-gray-600">
+        {(selectedBooking as any).extra_guests_count} ospit{(selectedBooking as any).extra_guests_count > 1 ? 'i' : 'e'} extra
+      </span>
+      <span className="font-medium text-gray-900">
+        €{((selectedBooking as any).extra_guests_fee || 0).toFixed(2)}
+      </span>
+    </div>
+  )}
   {/* ✅ Commissione servizio (SOLO commissioni, senza cauzione) */}
   <div className="flex justify-between text-sm">
     <span className="text-gray-600">
@@ -681,6 +691,14 @@ export const PrenotazioniRicevute: React.FC<PrenotazioniRicevuteProps> = ({
           <span className="font-medium text-gray-400">€0.00</span>
         </div>
       )}
+      {((selectedBooking as any).extra_guests_count || 0) > 0 && (
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-400">
+            Ospiti extra
+          </span>
+          <span className="font-medium text-gray-400">€0.00</span>
+        </div>
+      )}
       
       {/* Commissione variabile */}
       <div className="flex justify-between text-sm">
@@ -731,18 +749,29 @@ export const PrenotazioniRicevute: React.FC<PrenotazioniRicevuteProps> = ({
           </span>
         </div>
       )}
+      {((selectedBooking as any).extra_guests_count || 0) > 0 && ((selectedBooking as any).extra_guests_fee || 0) > 0 && (
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">
+            {(selectedBooking as any).extra_guests_count} ospit{(selectedBooking as any).extra_guests_count > 1 ? 'i' : 'e'} extra
+          </span>
+          <span className="font-medium text-gray-900">
+            €{((selectedBooking as any).extra_guests_fee || 0).toFixed(2)}
+          </span>
+        </div>
+      )}
       
 {/* ✅ Commissione hubber (10%) */}
 {(() => {
   const cleaningFee = (selectedBooking as any).cleaningFee || 0;
+  const extraGuestsFee = (selectedBooking as any).extra_guests_fee || 0;
   const baseAmount = (selectedBooking as any).renterTotalPaid - (selectedBooking as any).renterTotalFee;
-  const fixedFee = calculateHubberFixedFee(baseAmount + cleaningFee);
+  const fixedFee = calculateHubberFixedFee(baseAmount + cleaningFee + extraGuestsFee);
   const realNetEarnings = (selectedBooking as any).netEarnings || (selectedBooking as any).hubber_net_amount || 0;
   const variableCommission = realNetEarnings > 0 
-    ? Math.max((baseAmount + cleaningFee) - realNetEarnings - fixedFee, 0)
+    ? Math.max((baseAmount + cleaningFee + extraGuestsFee) - realNetEarnings - fixedFee, 0)
     : baseAmount * 0.10;
-  const hubberFeePercent = (baseAmount + cleaningFee) > 0 
-    ? Math.round((variableCommission / (baseAmount + cleaningFee)) * 100) 
+  const hubberFeePercent = (baseAmount + cleaningFee + extraGuestsFee) > 0 
+    ? Math.round((variableCommission / (baseAmount + cleaningFee + extraGuestsFee)) * 100) 
     : 10;
 
   return (
