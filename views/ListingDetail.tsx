@@ -225,6 +225,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarEditingField, setCalendarEditingField] = useState<'start' | 'end'>('start');
   const calendarRef = useRef<HTMLDivElement>(null);
   
   // ✅ Date già prenotate (caricate da Supabase)
@@ -612,7 +613,22 @@ useEffect(() => {
 
     // ✅ Per alloggi: quando selezioni start, calendario resta aperto per scegliere end
     if (isAlloggio && start && !end) {
+      if (calendarEditingField === 'end' && startDate) {
+        const minMonths = parseInt((listing as any).alloggioSpecs?.minStayMonths) || 1;
+        const minEnd = new Date(startDate);
+        minEnd.setMonth(minEnd.getMonth() + minMonths);
+        let newEnd = start;
+        if (newEnd < minEnd) newEnd = minEnd;
+        if (newEnd <= startDate) {
+          newEnd = new Date(startDate);
+          newEnd.setDate(newEnd.getDate() + 30);
+        }
+        setEndDate(newEnd);
+        setIsCalendarOpen(false);
+        return;
+      }
       setStartDate(start);
+      setCalendarEditingField('end');
       return;
     }
     
@@ -651,6 +667,15 @@ useEffect(() => {
       }
     }
     
+    // ✅ Gestione separata start/end per tutti gli altri casi
+    if (calendarEditingField === 'end' && startDate && start && !end) {
+      if (start > startDate) {
+        setEndDate(start);
+        setIsCalendarOpen(false);
+        return;
+      }
+    }
+
     setStartDate(start);
     setEndDate(end);
     
@@ -990,9 +1015,8 @@ useEffect(() => {
                 {/* Date Section */}
                 <div
                   className="grid grid-cols-2 border-b border-gray-400"
-                  onClick={() => setIsCalendarOpen(!isCalendarOpen)}
                 >
-                  <div className="p-3 border-r border-gray-400 cursor-pointer hover:bg-gray-50 transition-colors relative rounded-tl-xl">
+                  <div className="p-3 border-r border-gray-400 cursor-pointer hover:bg-gray-50 transition-colors relative rounded-tl-xl" onClick={() => { setCalendarEditingField('start'); setIsCalendarOpen(!isCalendarOpen); }}>
                     <p className="text-[10px] font-bold uppercase text-gray-800">
                       {listing.category === 'oggetto' ? 'Ritiro' : 'Check-in'}
                     </p>
@@ -1004,7 +1028,7 @@ useEffect(() => {
                       {formatDate(startDate)}
                     </p>
                   </div>
-                  <div className="p-3 cursor-pointer hover:bg-gray-50 transition-colors relative rounded-tr-xl">
+                  <div className="p-3 cursor-pointer hover:bg-gray-50 transition-colors relative rounded-tr-xl" onClick={() => { setCalendarEditingField('end'); setIsCalendarOpen(!isCalendarOpen); }}>
                     <p className="text-[10px] font-bold uppercase text-gray-800">
                       {listing.category === 'oggetto' ? 'Riconsegna' : 'Check-out'}
                     </p>
