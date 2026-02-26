@@ -683,7 +683,7 @@ openingHours: row.opening_hours || "",
 closingHours: row.closing_hours || "",
 manualBadges: row.manual_badges || [],
 // 👇 CAMPI ALLOGGIO
-    alloggioSpecs: row.min_stay_months ? {
+    alloggioSpecs: (row.bedrooms || row.bathrooms || row.furnished || row.utilities_included || row.min_stay_months) ? {
       bedrooms: row.bedrooms ?? 0,
       bathrooms: row.bathrooms ?? 0,
       furnished: row.furnished || '',
@@ -1503,7 +1503,7 @@ if (ownerIds.length > 0) {
         bathrooms: (listing as any).alloggioSpecs?.bathrooms ?? null,
         furnished: (listing as any).alloggioSpecs?.furnished || null,
         utilities_included: (listing as any).alloggioSpecs?.utilitiesIncluded || null,
-        min_stay_months: (listing as any).alloggioSpecs?.minStayMonths ?? null,
+        min_stay_months: (listing as any).alloggioSpecs?.minStayMonths ?? 1,
       };
 
       const { data, error } = await supabase
