@@ -512,7 +512,6 @@ const disabledDates = [...bookedDates, ...blockedDates];
         }
 
         baseSubtotal = units * listing.price;
-        console.log('DEBUG UNITS:', { units, price: listing.price, baseSubtotal });
       }
       }
 
@@ -537,7 +536,6 @@ const totalCalc = completeSubtotal + renterTotalFee + deposit;
 
     setDuration(units);
     setSubtotal(baseSubtotal);
-    console.log('DEBUG SUBTOTAL:', { baseSubtotal, cleaningFee, completeSubtotal: baseSubtotal + cleaningFee });
     setServiceFee(renterTotalFee);
     setHubberFee(hubberTotalFee);
     setHubberNet(hubberNetAmount);
@@ -1332,7 +1330,6 @@ useEffect(() => {
                     {(() => {
   // Calcola commissione variabile e fee fissa separate
   const completeSubtotal = subtotal + (Number(listing.cleaningFee) || 0);
-  console.log('DEBUG FEE:', { completeSubtotal, renterFeePercentage, result: (completeSubtotal * renterFeePercentage) / 100 });
   const variableFee = (completeSubtotal * renterFeePercentage) / 100;
   const fixedFee = calculateRenterFixedFee(completeSubtotal);
   
