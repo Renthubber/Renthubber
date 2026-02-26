@@ -35,12 +35,21 @@ console.log('wallet_used_cents:', booking.wallet_used_cents);
 console.log('card_paid_cents:', booking.card_paid_cents);
 console.log('=====================');
 
-// Calcola rental_days se mancante
+// Calcola rental_days se mancante (in base al price_unit)
 if (!booking.rental_days && booking.start_date && booking.end_date) {
   const start = new Date(booking.start_date);
   const end = new Date(booking.end_date);
   const diffTime = Math.abs(end.getTime() - start.getTime());
-  booking.rental_days = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
+  const diffDays = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
+  
+  const unit = booking.price_unit || 'giorno';
+  if (unit === 'settimana') {
+    booking.rental_days = Math.max(Math.ceil(diffDays / 7), 1);
+  } else if (unit === 'mese') {
+    booking.rental_days = Math.max(Math.ceil(diffDays / 30), 1);
+  } else {
+    booking.rental_days = diffDays;
+  }
 }
 
   const formatDate = (dateString: string) => {
@@ -287,7 +296,7 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
   <div className="space-y-2">
     <div className="flex justify-between text-sm">
       <span className="text-gray-600">
-        €{(booking.price_per_day || booking.base_price || 0).toFixed(2)} × {booking.rental_days || 1} giorn{booking.rental_days > 1 ? 'i' : 'o'}
+        €{(booking.price_per_day || booking.base_price || 0).toFixed(2)} × {booking.rental_days || 1} {booking.price_unit === 'mese' ? (booking.rental_days > 1 ? 'mesi' : 'mese') : booking.price_unit === 'settimana' ? (booking.rental_days > 1 ? 'settimane' : 'settimana') : (booking.rental_days > 1 ? 'giorni' : 'giorno')}
       </span>
       <span className="font-medium">
         €{((booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1)).toFixed(2)}

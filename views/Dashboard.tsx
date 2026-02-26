@@ -63,6 +63,7 @@ import { PanoramicaRenter } from '../components/dashboard/renter/PanoramicaRente
 import { PagamentiFattureRenter } from '../components/dashboard/renter/PagamentiFattureRenter';
 import { FeeOverrideBanner } from '../components/FeeOverrideBanner';
 
+
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
 // Mock Data for Charts (rimane fittizio per ora)
@@ -1797,7 +1798,7 @@ if (result.requiresPayment && result.clientSecret) {
       const priceUnit = (booking as any).priceUnit || 'giorno';
       const cancellationPolicy = (booking as any).cancellationPolicy || 'flexible';
 
-      // Calcola giorni
+      // Calcola durata in base all'unità di prezzo
       const startStr = (booking as any).start_date;
       const endStr = (booking as any).end_date;
       let days = 1;
@@ -1806,7 +1807,17 @@ if (result.requiresPayment && result.clientSecret) {
         const start = new Date(startStr);
         const end = new Date(endStr);
         const diffTime = Math.abs(end.getTime() - start.getTime());
-        days = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
+        const diffDays = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
+
+        if (priceUnit === 'giorno') {
+          days = diffDays;
+        } else if (priceUnit === 'settimana') {
+          days = Math.max(Math.ceil(diffDays / 7), 1);
+        } else if (priceUnit === 'mese') {
+          days = Math.max(Math.ceil(diffDays / 30), 1);
+        } else {
+          days = diffDays;
+        }
       }
 
       // Calcola breakdown
@@ -1814,9 +1825,10 @@ if (result.requiresPayment && result.clientSecret) {
       const cleaningFee = (booking as any).cleaningFee || 0;
     
       // ✅ Carica override commissioni renter (se presente)
-      const totalFee = (booking as any).renterTotalFee || (booking as any).commission || (booking as any).platformFee || ((basePrice + cleaningFee) * 10) / 100;
-      const fixedFee = 0.50;
-      const commission = Math.max(totalFee - fixedFee, 0);
+      const completeSubtotal = basePrice + cleaningFee;
+      const fixedFee = calculateRenterFixedFee(completeSubtotal);
+      const totalFee = (booking as any).serviceFee || (booking as any).renterTotalFee || (booking as any).commission || (booking as any).platformFee || 0;
+      const commission = totalFee > 0 ? Math.max(totalFee - fixedFee, 0) : (completeSubtotal * 10) / 100;
       const variableCommission = commission;
       const renterFeePercent = (basePrice + cleaningFee) > 0 
         ? Math.round((variableCommission / (basePrice + cleaningFee)) * 100) 
