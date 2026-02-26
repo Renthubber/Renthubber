@@ -42,7 +42,7 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
   const diffTime = Math.abs(end.getTime() - start.getTime());
   const diffDays = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
   
-  const unit = booking.price_unit || 'giorno';
+  const unit = booking.price_unit || booking.listing?.price_unit || 'giorno';
   if (unit === 'settimana') {
     booking.rental_days = Math.max(Math.ceil(diffDays / 7), 1);
   } else if (unit === 'mese') {
