@@ -71,6 +71,21 @@ const deposit =
     ? raw.deposit
     : 0;
 
+// ✅ extra guests
+const extraGuestsCount =
+  typeof raw.extraGuestsCount === 'number'
+    ? raw.extraGuestsCount
+    : typeof raw.extra_guests_count === 'number'
+    ? raw.extra_guests_count
+    : 0;
+
+const extraGuestsFee =
+  typeof raw.extraGuestsFee === 'number'
+    ? raw.extraGuestsFee
+    : typeof raw.extra_guests_fee === 'number'
+    ? raw.extra_guests_fee
+    : 0;
+
 // ✅ service_fee = commissione totale hubber (10% + fee fissa)
 const hubberTotalFee =
   typeof raw.serviceFee === 'number'
@@ -138,6 +153,8 @@ const renterTotalFee =
     netEarnings,                      // Netto che riceve l'hubber
     status: raw.status || 'pending',
     cleaningFee,                      // ✅ NUOVO: Costo pulizia
+    extraGuestsCount,                 // ✅ NUOVO: Ospiti extra
+    extraGuestsFee,                   // ✅ NUOVO: Fee ospiti extra
     deposit,                          // ✅ NUOVO: Cauzione
     hubberTotalFee,                   // ✅ AGGIUNGI QUESTA
     renterTotalFee,                   // ✅ AGGIUNGI QUESTA
@@ -150,7 +167,9 @@ const renterTotalFee =
     priceUnit?: string;
     cancellationPolicy?: string;
     cleaningFee?: number;           // ✅ NUOVO
-    deposit?: number;  
+    extraGuestsCount?: number;      // ✅ NUOVO
+    extraGuestsFee?: number;        // ✅ NUOVO
+    deposit?: number;
     hubberName?: string;        // ✅ AGGIUNGI QUESTA
     hubberAvatar?: string;
     hubberTotalFee?: number;        // ✅ NUOVO
