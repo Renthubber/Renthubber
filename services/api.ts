@@ -3215,21 +3215,34 @@ if (cardPaidOriginal > 0) {
       if (amount <= 0) throw new Error("Amount must be > 0");
       if (!reason) throw new Error("Reason is required");
 
-      // Leggi saldo da users.hubber_balance o users.renter_balance
+      // Leggi saldo da wallets.balance_cents (fonte di verità per renter)
+      let currentBalance = 0;
       const balanceField = walletType === 'hubber' ? 'hubber_balance' : 'renter_balance';
-      
-      const { data: userData, error: readError } = await supabase
-        .from('users')
-        .select(balanceField)
-        .eq('id', userId)
-        .single();
 
-      if (readError) {
-        console.error('Errore lettura saldo:', readError);
-        throw readError;
+      if (walletType === 'renter') {
+        const { data: walletData, error: readError } = await supabase
+          .from('wallets')
+          .select('balance_cents')
+          .eq('user_id', userId)
+          .single();
+        if (readError) {
+          console.error('Errore lettura saldo wallet:', readError);
+          throw readError;
+        }
+        currentBalance = (walletData?.balance_cents || 0) / 100;
+      } else {
+        const { data: userData, error: readError } = await supabase
+          .from('users')
+          .select(balanceField)
+          .eq('id', userId)
+          .single();
+        if (readError) {
+          console.error('Errore lettura saldo:', readError);
+          throw readError;
+        }
+        currentBalance = userData?.[balanceField] || 0;
       }
 
-      const currentBalance = userData?.[balanceField] || 0;
       const newBalance = currentBalance + amount;
 
       const description = adminNote 
@@ -3294,21 +3307,33 @@ if (cardPaidOriginal > 0) {
       if (amount <= 0) throw new Error("Amount must be > 0");
       if (!reason) throw new Error("Reason is required");
 
-      // Leggi saldo da users.hubber_balance o users.renter_balance
+      // Leggi saldo da wallets.balance_cents (fonte di verità per renter)
+      let currentBalance = 0;
       const balanceField = walletType === 'hubber' ? 'hubber_balance' : 'renter_balance';
-      
-      const { data: userData, error: readError } = await supabase
-        .from('users')
-        .select(balanceField)
-        .eq('id', userId)
-        .single();
 
-      if (readError) {
-        console.error('Errore lettura saldo:', readError);
-        throw readError;
+      if (walletType === 'renter') {
+        const { data: walletData, error: readError } = await supabase
+          .from('wallets')
+          .select('balance_cents')
+          .eq('user_id', userId)
+          .single();
+        if (readError) {
+          console.error('Errore lettura saldo wallet:', readError);
+          throw readError;
+        }
+        currentBalance = (walletData?.balance_cents || 0) / 100;
+      } else {
+        const { data: userData, error: readError } = await supabase
+          .from('users')
+          .select(balanceField)
+          .eq('id', userId)
+          .single();
+        if (readError) {
+          console.error('Errore lettura saldo:', readError);
+          throw readError;
+        }
+        currentBalance = userData?.[balanceField] || 0;
       }
-
-      const currentBalance = userData?.[balanceField] || 0;
 
       if (amount > currentBalance) {
         throw new Error(`Saldo insufficiente nel wallet ${walletType}`);
