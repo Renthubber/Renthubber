@@ -38,6 +38,11 @@ const STEPS = [
   { id: 5, title: 'Media', icon: Upload },
   { id: 6, title: 'Riepilogo', icon: CheckCircle2 },
 ];
+const ALLOGGIO_SUBCATEGORIES = [
+  'stanza-singola', 'stanza-doppia', 'posto-letto',
+  'monolocale', 'bilocale', 'trilocale',
+  'appartamento-condiviso'
+];
 
 interface PublishProps {
   // 👇 permettiamo anche async (handleAddListing è async)
@@ -87,6 +92,11 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
     manualBadges: [] as string[], // Badge manuali
     cleaningFee: '',
     rules: '',
+    minStayMonths: '1',
+    bedrooms: '',
+    bathrooms: '',
+    furnished: '',
+    utilitiesIncluded: '',
     selectedFeatures: [] as string[],
   });
 
@@ -352,12 +362,21 @@ const moveImageRight = (index: number) => {
               condition: draft.condition
             }
           : undefined,
-        spaceSpecs: draft.category === 'spazio'
+          spaceSpecs: draft.category === 'spazio'
           ? {
               sqm: parseFloat(draft.sqm) || 0,
               capacity: parseInt(draft.capacity) || 0
             }
-          : undefined
+          : undefined,
+        alloggioSpecs: draft.category === 'spazio' && ALLOGGIO_SUBCATEGORIES.includes(draft.subCategory)
+          ? {
+              bedrooms: parseInt(draft.bedrooms) || 0,
+              bathrooms: parseInt(draft.bathrooms) || 0,
+              furnished: draft.furnished,
+              utilitiesIncluded: draft.utilitiesIncluded,
+              minStayMonths: parseInt(draft.minStayMonths) || 1,
+            }
+          : undefined,
       };
 
       console.log('DEBUG Publish – newListing:', newListing);
@@ -429,7 +448,15 @@ const moveImageRight = (index: number) => {
         <select
           className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-brand focus:border-transparent bg-white"
           value={draft.subCategory}
-          onChange={(e) => setDraft({ ...draft, subCategory: e.target.value })}
+          onChange={(e) => {
+            const newSub = e.target.value;
+            const isAlloggio = ALLOGGIO_SUBCATEGORIES.includes(newSub);
+            setDraft({ 
+              ...draft, 
+              subCategory: newSub,
+              ...(isAlloggio ? { priceUnit: 'mese' } : {})
+            });
+          }}
         >
           <option value="">Seleziona...</option>
           {draft.category === 'oggetto' ? (
@@ -679,6 +706,16 @@ const moveImageRight = (index: number) => {
                 <option value="sale-yoga">Sale Yoga</option>
                 <option value="spazi-meditazione">Spazi Meditazione</option>
                 <option value="centri-olistici">Centri Olistici</option>
+              </optgroup>
+
+              <optgroup label="🏠 ALLOGGI (Medio-Lungo Termine)">
+                <option value="stanza-singola">Stanza Singola</option>
+                <option value="stanza-doppia">Stanza Doppia</option>
+                <option value="posto-letto">Posto Letto</option>
+                <option value="monolocale">Monolocale</option>
+                <option value="bilocale">Bilocale</option>
+                <option value="trilocale">Trilocale+</option>
+                <option value="appartamento-condiviso">Appartamento Condiviso</option>
               </optgroup>
             </>
           )}
@@ -1015,6 +1052,79 @@ const moveImageRight = (index: number) => {
                 />
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dettagli Alloggio - solo per sottocategorie alloggio */}
+      {draft.category === 'spazio' && ALLOGGIO_SUBCATEGORIES.includes(draft.subCategory) && (
+        <div className="border-t border-gray-200 pt-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <Home className="w-5 h-5 mr-2 text-brand" />
+            Dettagli Alloggio
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Camere da Letto</label>
+              <input
+                type="number"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300"
+                placeholder="Es. 2"
+                value={draft.bedrooms}
+                onChange={(e) => setDraft({ ...draft, bedrooms: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Bagni</label>
+              <input
+                type="number"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300"
+                placeholder="Es. 1"
+                value={draft.bathrooms}
+                onChange={(e) => setDraft({ ...draft, bathrooms: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Arredato</label>
+              <select
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white"
+                value={draft.furnished}
+                onChange={(e) => setDraft({ ...draft, furnished: e.target.value })}
+              >
+                <option value="">Seleziona...</option>
+                <option value="si">Sì, completamente</option>
+                <option value="parziale">Parzialmente</option>
+                <option value="no">No, vuoto</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Spese Incluse</label>
+              <select
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white"
+                value={draft.utilitiesIncluded}
+                onChange={(e) => setDraft({ ...draft, utilitiesIncluded: e.target.value })}
+              >
+                <option value="">Seleziona...</option>
+                <option value="si">Sì, tutte incluse</option>
+                <option value="parziale">Parzialmente (solo alcune)</option>
+                <option value="no">No, escluse</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Durata Minima</label>
+            <select
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white"
+              value={draft.minStayMonths}
+              onChange={(e) => setDraft({ ...draft, minStayMonths: e.target.value })}
+            >
+              <option value="1">1 mese</option>
+              <option value="3">3 mesi</option>
+              <option value="6">6 mesi</option>
+              <option value="12">12 mesi</option>
+            </select>
           </div>
         </div>
       )}
