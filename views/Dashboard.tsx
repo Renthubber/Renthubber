@@ -1827,7 +1827,6 @@ if (result.requiresPayment && result.clientSecret) {
       const cleaningFee = (booking as any).cleaningFee || 0;
       const extraGuestsCount = (booking as any).extraGuestsCount || (booking as any).extra_guests_count || 0;
       const extraGuestsFee = (booking as any).extraGuestsFee || (booking as any).extra_guests_fee || 0;
-      console.log('🔍 EXTRA GUESTS DEBUG:', { extraGuestsCount, extraGuestsFee, bookingKeys: Object.keys(booking).filter(k => k.includes('extra') || k.includes('guest') || k.includes('Extra') || k.includes('Guest')) });
     
       // ✅ Carica override commissioni renter (se presente)
       const completeSubtotal = basePrice + cleaningFee + extraGuestsFee;
@@ -1835,8 +1834,8 @@ if (result.requiresPayment && result.clientSecret) {
       const totalFee = (booking as any).serviceFee || (booking as any).renterTotalFee || (booking as any).commission || (booking as any).platformFee || 0;
       const commission = totalFee > 0 ? Math.max(totalFee - fixedFee, 0) : (completeSubtotal * 10) / 100;
       const variableCommission = commission;
-      const renterFeePercent = (basePrice + cleaningFee) > 0 
-        ? Math.round((variableCommission / (basePrice + cleaningFee)) * 100) 
+      const renterFeePercent = (basePrice + cleaningFee + extraGuestsFee) > 0 
+        ? Math.round((variableCommission / (basePrice + cleaningFee + extraGuestsFee)) * 100) 
         : 10;
       const deposit = (booking as any).deposit || 0;
 
