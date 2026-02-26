@@ -1453,6 +1453,8 @@ useEffect(() => {
           platformFeeEur={serviceFee}
           depositEur={Number(listing.deposit) || 0}
           cleaningFeeEur={Number(listing.cleaningFee) || 0}
+          extraGuestsCount={listing.guestsIncluded && listing.extraGuestFee && guests > listing.guestsIncluded ? guests - listing.guestsIncluded : 0}
+          extraGuestsFeeEur={listing.guestsIncluded && listing.extraGuestFee && guests > listing.guestsIncluded ? (guests - listing.guestsIncluded) * listing.extraGuestFee * (duration || 1) : 0}
           walletUsedEur={walletUsedEur}
           generalBalance={generalBalance}
           onSuccess={async () => {

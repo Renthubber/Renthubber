@@ -412,6 +412,8 @@ const [profileData, setProfileData] = useState(() => {
     days: number;
     basePrice: number;
     cleaningFee: number,
+    extraGuestsCount: number,
+    extraGuestsFee: number,
     commission: number;
     fixedFee: number;
     renterFeePercent: number;
@@ -1823,9 +1825,11 @@ if (result.requiresPayment && result.clientSecret) {
       // Calcola breakdown
       const basePrice = days * listingPrice;
       const cleaningFee = (booking as any).cleaningFee || 0;
+      const extraGuestsCount = (booking as any).extraGuestsCount || (booking as any).extra_guests_count || 0;
+      const extraGuestsFee = (booking as any).extraGuestsFee || (booking as any).extra_guests_fee || 0;
     
       // ✅ Carica override commissioni renter (se presente)
-      const completeSubtotal = basePrice + cleaningFee;
+      const completeSubtotal = basePrice + cleaningFee + extraGuestsFee;
       const fixedFee = calculateRenterFixedFee(completeSubtotal);
       const totalFee = (booking as any).serviceFee || (booking as any).renterTotalFee || (booking as any).commission || (booking as any).platformFee || 0;
       const commission = totalFee > 0 ? Math.max(totalFee - fixedFee, 0) : (completeSubtotal * 10) / 100;
@@ -1879,6 +1883,8 @@ if (result.requiresPayment && result.clientSecret) {
         days,
         basePrice,
         cleaningFee,
+        extraGuestsCount,
+        extraGuestsFee,
         commission,
         fixedFee,
         deposit,

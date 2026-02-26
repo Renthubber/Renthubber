@@ -309,6 +309,12 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
         <span className="font-medium">€{booking.cleaning_fee.toFixed(2)}</span>
       </div>
     )}
+    {booking.extra_guests_count > 0 && booking.extra_guests_fee > 0 && (
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-600">{booking.extra_guests_count} ospit{booking.extra_guests_count > 1 ? 'i' : 'e'} extra</span>
+        <span className="font-medium">€{booking.extra_guests_fee.toFixed(2)}</span>
+      </div>
+    )}
     {booking.deposit > 0 && (
       <div className="flex justify-between text-sm">
         <span className="text-gray-600">Deposito cauzionale</span>
@@ -317,7 +323,7 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
     )}
     
     {(() => {
-      const baseAmount = (booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1) + (booking.cleaning_fee || 0);
+      const baseAmount = (booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1) + (booking.cleaning_fee || 0) + (booking.extra_guests_fee || 0);
       const { variableFee, fixedFee, totalFee } = calculateRenterFee(baseAmount);
       
       return (
@@ -624,6 +630,12 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
                       <span className="font-medium">€{booking.cleaning_fee.toFixed(2)}</span>
                     </div>
                   )}
+                  {booking.extra_guests_count > 0 && booking.extra_guests_fee > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">{booking.extra_guests_count} ospit{booking.extra_guests_count > 1 ? 'i' : 'e'} extra</span>
+                      <span className="font-medium">€{booking.extra_guests_fee.toFixed(2)}</span>
+                    </div>
+                  )}
                   {booking.deposit > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Deposito cauzionale</span>
@@ -656,6 +668,12 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
         <span className="font-medium">€{booking.cleaning_fee.toFixed(2)}</span>
       </div>
     )}
+    {booking.extra_guests_count > 0 && booking.extra_guests_fee > 0 && (
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-600">{booking.extra_guests_count} ospit{booking.extra_guests_count > 1 ? 'i' : 'e'} extra</span>
+        <span className="font-medium">€{booking.extra_guests_fee.toFixed(2)}</span>
+      </div>
+    )}
     {booking.deposit > 0 && (
       <div className="flex justify-between text-sm">
         <span className="text-gray-600">Deposito cauzionale</span>
@@ -664,12 +682,12 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
     )}
     <div className="flex justify-between text-sm text-red-600">
       <span>Commissione di servizio 10% (IVA inclusa)</span>
-      <span>-€{(((booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1) + (booking.cleaning_fee || 0)) * 0.1).toFixed(2)}</span>
+      <span>-€{(((booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1) + (booking.cleaning_fee || 0) + (booking.extra_guests_fee || 0)) * 0.1).toFixed(2)}</span>
     </div>
     <div className="flex justify-between text-sm text-red-600">
       <span>Fee fissa piattaforma (IVA inclusa)</span>
       <span>-€{(() => {
-        const baseAmount = (booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1) + (booking.cleaning_fee || 0);
+        const baseAmount = (booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1) + (booking.cleaning_fee || 0) + (booking.extra_guests_fee || 0);
         const { fixedFee } = calculateHubberFee(baseAmount);
         return fixedFee.toFixed(2);
       })()}</span>

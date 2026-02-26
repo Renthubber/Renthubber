@@ -1350,6 +1350,8 @@ const handleSend = async () => {
     // Calcola costi
     const basePrice = days * listingPrice;
     const cleaningFee = data.cleaning_fee || 0;
+    const extraGuestsCount = data.extra_guests_count || 0;
+    const extraGuestsFee = data.extra_guests_fee || 0;
     const renterTotalPaid = data.amount_total || 0;
     
     // Recupera wallet e carta
@@ -1369,6 +1371,8 @@ const handleSend = async () => {
       days,
       basePrice,
       cleaningFee,
+      extraGuestsCount,
+      extraGuestsFee,
       total: renterTotalPaid,
       walletUsed,
       cardPaid,
