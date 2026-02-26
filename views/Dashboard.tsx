@@ -1827,7 +1827,7 @@ if (result.requiresPayment && result.clientSecret) {
       const cleaningFee = (booking as any).cleaningFee || 0;
       const extraGuestsCount = (booking as any).extraGuestsCount || (booking as any).extra_guests_count || 0;
       const extraGuestsFee = (booking as any).extraGuestsFee || (booking as any).extra_guests_fee || 0;
-      console.log('🔍 EXTRA GUESTS DEBUG:', { extraGuestsCount, extraGuestsFee });
+      console.log('🔍 EXTRA GUESTS DEBUG:', { extraGuestsCount, extraGuestsFee, bookingKeys: Object.keys(booking).filter(k => k.includes('extra') || k.includes('guest') || k.includes('Extra') || k.includes('Guest')) });
     
       // ✅ Carica override commissioni renter (se presente)
       const completeSubtotal = basePrice + cleaningFee + extraGuestsFee;
