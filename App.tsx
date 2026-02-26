@@ -487,7 +487,7 @@ const handleRenterClick = async (renter: User) => {
     <BrandingProvider>
     <div className="min-h-screen flex flex-col bg-gray-50">
       <ScrollToTop />
-      {!location.pathname.startsWith('/collaboratori') && (
+      {!location.pathname.startsWith('/collaboratori') && !location.pathname.startsWith('/promo') && (
   <Header
     currentUser={currentUser}
     activeMode={activeMode}
