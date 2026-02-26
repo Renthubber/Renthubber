@@ -768,6 +768,8 @@ const mapDbBookingToAppBooking = (row: any) => {
     serviceFee: Number(row.service_fee || 0),
     hubberNetAmount: Number(row.hubber_net_amount || 0),
     cleaningFee: Number(row.cleaning_fee || 0),
+    extraGuestsCount: Number(row.extra_guests_count || 0),
+    extraGuestsFee: Number(row.extra_guests_fee || 0),
     deposit: Number(row.deposit || 0),
     walletUsedCents: row.wallet_used_cents || 0,
     status: row.status,
