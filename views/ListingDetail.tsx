@@ -492,6 +492,7 @@ const disabledDates = [...bookedDates, ...blockedDates];
 
       if (startDate) {
         baseSubtotal = units * listing.price;
+        console.log('DEBUG UNITS:', { units, price: listing.price, baseSubtotal });
       }
     } else {
       // --- CASO GIORNO / SETTIMANA / MESE ----
