@@ -575,8 +575,9 @@ useEffect(() => {
     start: Date | undefined,
     end: Date | undefined
   ) => {
+    const isAlloggio = ALLOGGIO_SUBCATEGORIES.includes(listing.subCategory);
+    
     // ✅ Gestione doppio click stesso giorno
-    // Se clicco la stessa data già selezionata, setta end = start
     if (start && !end && startDate) {
       const isSameDay =
         start.getDate() === startDate.getDate() &&
@@ -584,8 +585,72 @@ useEffect(() => {
         start.getFullYear() === startDate.getFullYear();
       
       if (isSameDay) {
-        // Doppio click! Setta end = start e chiudi
+        if (isAlloggio) {
+          const minMonths = parseInt((listing as any).alloggioSpecs?.minStayMonths) || 1;
+          const autoEnd = new Date(start);
+          autoEnd.setMonth(autoEnd.getMonth() + minMonths);
+          setStartDate(start);
+          setEndDate(autoEnd);
+          setIsCalendarOpen(false);
+          return;
+        }
         setEndDate(start);
+        setIsCalendarOpen(false);
+        return;
+      }
+    }
+    
+   // ✅ Per noleggi settimanali: auto-imposta end a +7 giorni
+    if (listing.priceUnit === 'settimana' && start && !end) {
+      const autoEnd = new Date(start);
+      autoEnd.setDate(autoEnd.getDate() + 7);
+      setStartDate(start);
+      setEndDate(autoEnd);
+      setIsCalendarOpen(false);
+      return;
+    }
+
+    // ✅ Per alloggi: quando selezioni start, auto-imposta end a +minStayMonths
+    if (isAlloggio && start && !end) {
+      const minMonths = parseInt((listing as any).alloggioSpecs?.minStayMonths) || 1;
+      const autoEnd = new Date(start);
+      autoEnd.setMonth(autoEnd.getMonth() + minMonths);
+      setStartDate(start);
+      setEndDate(autoEnd);
+      setIsCalendarOpen(false);
+      return;
+    }
+    
+    // ✅ Per alloggi: se l'utente seleziona un end troppo vicino, forza il minimo
+    if (isAlloggio && start && end) {
+      const minMonths = parseInt((listing as any).alloggioSpecs?.minStayMonths) || 1;
+      const minEnd = new Date(start);
+      minEnd.setMonth(minEnd.getMonth() + minMonths);
+      if (end < minEnd) {
+        setStartDate(start);
+        setEndDate(minEnd);
+        setIsCalendarOpen(false);
+        return;
+      }
+    }
+
+    // ✅ Per noleggi settimanali: auto-imposta end a +7 giorni
+    if (listing.priceUnit === 'settimana' && start && !end) {
+      const autoEnd = new Date(start);
+      autoEnd.setDate(autoEnd.getDate() + 7);
+      setStartDate(start);
+      setEndDate(autoEnd);
+      setIsCalendarOpen(false);
+      return;
+    }
+
+    // ✅ Per noleggi settimanali: end minimo +7 giorni
+    if (listing.priceUnit === 'settimana' && start && end) {
+      const minEnd = new Date(start);
+      minEnd.setDate(minEnd.getDate() + 7);
+      if (end < minEnd) {
+        setStartDate(start);
+        setEndDate(minEnd);
         setIsCalendarOpen(false);
         return;
       }
