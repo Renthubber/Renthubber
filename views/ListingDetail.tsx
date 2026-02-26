@@ -520,7 +520,14 @@ const disabledDates = [...bookedDates, ...blockedDates];
     const cleaningFee = listing.cleaningFee || 0;
     
     // ✅ SUBTOTALE COMPLETO: prezzo base + tutti i costi extra impostati dall'hubber
-    const completeSubtotal = baseSubtotal + cleaningFee;
+    // ✅ Supplemento ospiti extra (solo per spazi)
+    let extraGuestsCost = 0;
+    if (listing.category === 'spazio' && listing.guestsIncluded && listing.extraGuestFee && guests > listing.guestsIncluded) {
+      const extraGuests = guests - listing.guestsIncluded;
+      extraGuestsCost = extraGuests * listing.extraGuestFee * (units || 1);
+    }
+
+    const completeSubtotal = baseSubtotal + cleaningFee + extraGuestsCost;
 
    // ✅ CALCOLO COMMISSIONI RENTER (sul subtotale completo)
 const renterVariableFee = (completeSubtotal * renterFeePercentage) / 100;
@@ -1360,6 +1367,13 @@ useEffect(() => {
                       <div className="flex justify-between underline decoration-gray-300">
                         <span>Costo pulizia</span>
                         <span>€{Number(listing.cleaningFee).toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    {listing.guestsIncluded && listing.extraGuestFee && guests > listing.guestsIncluded && (
+                      <div className="flex justify-between underline decoration-gray-300">
+                        <span>{guests - listing.guestsIncluded} ospite{guests - listing.guestsIncluded > 1 ? 'i' : ''} extra × €{listing.extraGuestFee.toFixed(2)} × {duration} {unitLabel}</span>
+                        <span>€{((guests - listing.guestsIncluded) * listing.extraGuestFee * (duration || 1)).toFixed(2)}</span>
                       </div>
                     )}
                     

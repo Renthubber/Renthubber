@@ -124,6 +124,8 @@ if (!formData.images || formData.images.length === 0) {
         pickup_instructions: dataToSave.pickupInstructions,
         zone_description: dataToSave.zoneDescription,
         max_guests: dataToSave.maxGuests,
+        guests_included: (dataToSave as any).guestsIncluded ?? null,
+        extra_guest_fee: (dataToSave as any).extraGuestFee ?? null,
         opening_hours: dataToSave.openingHours,
         closing_hours: dataToSave.closingHours,
         bedrooms: (dataToSave as any).alloggioSpecs?.bedrooms ?? null,
@@ -973,9 +975,31 @@ if (!formData.images || formData.images.length === 0) {
                />
             </div>
          </div>
+         <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Ospiti Inclusi nel Prezzo</label>
+            <input 
+              type="number" 
+              value={(formData as any).guestsIncluded || ''}
+              onChange={(e) => setFormData({...formData, guestsIncluded: parseInt(e.target.value) || undefined} as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+              placeholder="Es. 30"
+            />
+            <p className="text-xs text-gray-400 mt-1">Oltre questo numero si paga un extra</p>
+         </div>
+         <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Prezzo per Ospite Extra (€)</label>
+            <input 
+              type="number"
+              step="0.01"
+              value={(formData as any).extraGuestFee || ''}
+              onChange={(e) => setFormData({...formData, extraGuestFee: parseFloat(e.target.value) || undefined} as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+              placeholder="Es. 10.00"
+            />
+            <p className="text-xs text-gray-400 mt-1">Costo aggiuntivo per ogni ospite oltre il minimo</p>
+         </div>
       </div>
    </div>
-
 )}
 
 {/* Dettagli Alloggio - solo per sottocategorie alloggio */}
@@ -1043,6 +1067,7 @@ if (!formData.images || formData.images.length === 0) {
               <option value="3">3 mesi</option>
               <option value="6">6 mesi</option>
               <option value="12">12 mesi</option>
+              <option value="12">18 mesi</option>
             </select>
          </div>
       </div>

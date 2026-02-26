@@ -86,7 +86,9 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
     pickupInstructions: '',
     // Campi aggiuntivi dall'editor
     zoneDescription: '',      // Descrizione zona/quartiere
-    maxGuests: '',            // Ospiti massimi (per spazi)
+    maxGuests: '',
+    guestsIncluded: '',
+    extraGuestFee: '',            // Ospiti massimi (per spazi)
     openingHours: '',         // Orari apertura (per spazi)
     closingHours: '',         // Orari chiusura/riconsegna
     manualBadges: [] as string[], // Badge manuali
@@ -351,6 +353,8 @@ const moveImageRight = (index: number) => {
         // 👇 CAMPI AGGIUNTIVI
         zoneDescription: draft.zoneDescription,
         maxGuests: draft.maxGuests ? parseInt(draft.maxGuests) : undefined,
+        guestsIncluded: draft.guestsIncluded ? parseInt(draft.guestsIncluded) : undefined,
+        extraGuestFee: draft.extraGuestFee ? parseFloat(draft.extraGuestFee) : undefined,
         openingHours: draft.openingHours,
         closingHours: draft.closingHours,
         manualBadges: draft.manualBadges,
@@ -1051,6 +1055,29 @@ const moveImageRight = (index: number) => {
                   onChange={(e) => setDraft({ ...draft, maxGuests: e.target.value })}
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ospiti Inclusi nel Prezzo</label>
+              <input
+                type="number"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300"
+                placeholder="Es. 30"
+                value={draft.guestsIncluded}
+                onChange={(e) => setDraft({ ...draft, guestsIncluded: e.target.value })}
+              />
+              <p className="text-xs text-gray-400 mt-1">Oltre questo numero si paga un extra</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Prezzo per Ospite Extra (€)</label>
+              <input
+                type="number"
+                step="0.01"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300"
+                placeholder="Es. 10.00"
+                value={draft.extraGuestFee}
+                onChange={(e) => setDraft({ ...draft, extraGuestFee: e.target.value })}
+              />
+              <p className="text-xs text-gray-400 mt-1">Costo aggiuntivo per ogni ospite oltre il minimo</p>
             </div>
           </div>
         </div>
