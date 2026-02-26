@@ -130,7 +130,7 @@ if (!formData.images || formData.images.length === 0) {
         bathrooms: (dataToSave as any).alloggioSpecs?.bathrooms ?? null,
         furnished: (dataToSave as any).alloggioSpecs?.furnished || null,
         utilities_included: (dataToSave as any).alloggioSpecs?.utilitiesIncluded || null,
-        min_stay_months: (dataToSave as any).alloggioSpecs?.minStayMonths ?? null
+        min_stay_months: (dataToSave as any).alloggioSpecs?.minStayMonths ?? 1
       })
       .eq('id', dataToSave.id);
 
