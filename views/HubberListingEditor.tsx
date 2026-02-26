@@ -9,6 +9,12 @@ import { processImageSingle } from '../utils/imageProcessing';
 import { supabase } from "../services/supabaseClient";
 import { CityAutocomplete } from '../components/CityAutocomplete';
 
+const ALLOGGIO_SUBCATEGORIES = [
+  'stanza-singola', 'stanza-doppia', 'posto-letto',
+  'monolocale', 'bilocale', 'trilocale',
+  'appartamento-condiviso'
+];
+
 interface HubberListingEditorProps {
   listing: Listing;
   onSave: (updatedListing: Listing) => void;
@@ -119,7 +125,12 @@ if (!formData.images || formData.images.length === 0) {
         zone_description: dataToSave.zoneDescription,
         max_guests: dataToSave.maxGuests,
         opening_hours: dataToSave.openingHours,
-        closing_hours: dataToSave.closingHours
+        closing_hours: dataToSave.closingHours,
+        bedrooms: (dataToSave as any).alloggioSpecs?.bedrooms ?? null,
+        bathrooms: (dataToSave as any).alloggioSpecs?.bathrooms ?? null,
+        furnished: (dataToSave as any).alloggioSpecs?.furnished || null,
+        utilities_included: (dataToSave as any).alloggioSpecs?.utilitiesIncluded || null,
+        min_stay_months: (dataToSave as any).alloggioSpecs?.minStayMonths ?? null
       })
       .eq('id', dataToSave.id);
 
@@ -598,6 +609,15 @@ if (!formData.images || formData.images.length === 0) {
                           <option value="spazi-meditazione">Spazi Meditazione</option>
                           <option value="centri-olistici">Centri Olistici</option>
                         </optgroup>
+                        <optgroup label="🏠 ALLOGGI (Medio-Lungo Termine)">
+                          <option value="stanza-singola">Stanza Singola</option>
+                          <option value="stanza-doppia">Stanza Doppia</option>
+                          <option value="posto-letto">Posto Letto</option>
+                          <option value="monolocale">Monolocale</option>
+                          <option value="bilocale">Bilocale</option>
+                          <option value="trilocale">Trilocale+</option>
+                          <option value="appartamento-condiviso">Appartamento Condiviso</option>
+                        </optgroup>
                       </>
                     )}
                   </select>
@@ -955,7 +975,80 @@ if (!formData.images || formData.images.length === 0) {
          </div>
       </div>
    </div>
+
 )}
+
+{/* Dettagli Alloggio - solo per sottocategorie alloggio */}
+{formData.category === 'spazio' && ALLOGGIO_SUBCATEGORIES.includes(formData.subCategory) && (
+   <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+      <h3 className="text-lg font-bold text-gray-900 flex items-center">
+        <Home className="w-5 h-5 mr-2 text-brand" />
+        Dettagli Alloggio
+      </h3>
+      <div className="grid grid-cols-2 gap-6">
+         <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Camere da Letto</label>
+            <input 
+              type="number" 
+              value={(formData as any).alloggioSpecs?.bedrooms || ''}
+              onChange={(e) => setFormData({...formData, alloggioSpecs: { ...(formData as any).alloggioSpecs, bedrooms: parseInt(e.target.value) || 0 }} as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+              placeholder="Es. 2"
+            />
+         </div>
+         <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Bagni</label>
+            <input 
+              type="number" 
+              value={(formData as any).alloggioSpecs?.bathrooms || ''}
+              onChange={(e) => setFormData({...formData, alloggioSpecs: { ...(formData as any).alloggioSpecs, bathrooms: parseInt(e.target.value) || 0 }} as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand outline-none"
+              placeholder="Es. 1"
+            />
+         </div>
+         <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Arredato</label>
+            <select
+              value={(formData as any).alloggioSpecs?.furnished || ''}
+              onChange={(e) => setFormData({...formData, alloggioSpecs: { ...(formData as any).alloggioSpecs, furnished: e.target.value }} as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-brand outline-none"
+            >
+              <option value="">Seleziona...</option>
+              <option value="si">Sì, completamente</option>
+              <option value="parziale">Parzialmente</option>
+              <option value="no">No, vuoto</option>
+            </select>
+         </div>
+         <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Spese Incluse</label>
+            <select
+              value={(formData as any).alloggioSpecs?.utilitiesIncluded || ''}
+              onChange={(e) => setFormData({...formData, alloggioSpecs: { ...(formData as any).alloggioSpecs, utilitiesIncluded: e.target.value }} as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-brand outline-none"
+            >
+              <option value="">Seleziona...</option>
+              <option value="si">Sì, tutte incluse</option>
+              <option value="parziale">Parzialmente (solo alcune)</option>
+              <option value="no">No, escluse</option>
+            </select>
+         </div>
+         <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Durata Minima</label>
+            <select
+              value={(formData as any).alloggioSpecs?.minStayMonths || '1'}
+              onChange={(e) => setFormData({...formData, alloggioSpecs: { ...(formData as any).alloggioSpecs, minStayMonths: parseInt(e.target.value) }} as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-brand outline-none"
+            >
+              <option value="1">1 mese</option>
+              <option value="3">3 mesi</option>
+              <option value="6">6 mesi</option>
+              <option value="12">12 mesi</option>
+            </select>
+         </div>
+      </div>
+   </div>
+)}
+
 
 {/* Orari - per TUTTI */}
 <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
