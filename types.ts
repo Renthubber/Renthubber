@@ -385,10 +385,16 @@ export interface Listing {
   cancellationPolicy?: CancellationPolicyType;
   techSpecs?: TechSpecs;
   spaceSpecs?: SpaceSpecs;
+  alloggioSpecs?: {
+    bedrooms: number;
+    bathrooms: number;
+    furnished: string;
+    utilitiesIncluded: string;
+    minStayMonths: number;
+  };
   minDuration?: number;
   maxDuration?: number;
   completenessScore?: number;
-  privateAddress?: string;
 
   zoneDescription?: string;
   openingHours?: string;
@@ -471,7 +477,7 @@ export interface ListingDraft {
   sqm: string;
   capacity: string;
   price: string;
-  priceUnit: "ora" | "giorno";
+  priceUnit: "ora" | "giorno" | "settimana" | "mese";
   deposit: string;
   cancellationPolicy: CancellationPolicyType;
   location: string;
@@ -488,6 +494,12 @@ export interface ListingDraft {
   closingHours?: string;
   manualBadges?: string[];
   selectedFeatures?: string[];
+   // 🏠 CAMPI ALLOGGIO
+  minStayMonths?: string;
+  bedrooms?: string;
+  bathrooms?: string;
+  furnished?: string;
+  utilitiesIncluded?: string;
 }
 
 // --- BOOKING REQUEST (UI / MOCK DASHBOARD) ---
