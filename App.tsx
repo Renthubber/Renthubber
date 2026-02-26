@@ -821,7 +821,7 @@ const handleRenterClick = async (renter: User) => {
       </main>
 
       {/* Bottom Navigation Bar - Solo Mobile */}
-      {!location.pathname.startsWith('/collaboratori') && (
+      {!location.pathname.startsWith('/collaboratori') && !location.pathname.startsWith('/promo') && (
   <BottomNavBar
     currentUser={currentUser}
     activeMode={activeMode}
