@@ -378,6 +378,7 @@ const [profileData, setProfileData] = useState(() => {
   const [isHubberCancelling, setIsHubberCancelling] = useState(false);
   const [hubberCancelError, setHubberCancelError] = useState<string | null>(null);
   const [hubberCancelSuccess, setHubberCancelSuccess] = useState<string | null>(null);
+  const [bannerRefreshKey, setBannerRefreshKey] = useState(0);
 
   // MODIFICA PRENOTAZIONI RENTER
   const [modifyModalOpen, setModifyModalOpen] = useState(false);
@@ -1316,6 +1317,9 @@ const handleRemoveCalendar = async (calendarId: string): Promise<void> => {
             req.id === bookingToCancel.id ? { ...req, status: 'cancelled' } : req
           )
         );
+
+        // Aggiorna il banner fee override
+        setBannerRefreshKey(prev => prev + 1);
 
         // Chiudi modale dopo 2.5 secondi
         setTimeout(() => {
@@ -2611,7 +2615,7 @@ const renderHubberCalendar = () => {
       </div>
      
       {/* Banner promozione commissioni */}
-      <FeeOverrideBanner userId={user.id} mode="hubber" />
+      <FeeOverrideBanner userId={user.id} mode="hubber" key={`hubber-banner-${bannerRefreshKey}`} />
 
       {/* Custom Tabs */}
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 bg-white p-3 rounded-xl border border-gray-200 mb-8 w-full sm:w-auto">
@@ -2761,7 +2765,7 @@ const renderHubberCalendar = () => {
       </div>
      
       {/* Banner promozione commissioni */}
-      <FeeOverrideBanner userId={user.id} mode="renter" />
+      <FeeOverrideBanner userId={user.id} mode="renter" key={`renter-banner-${bannerRefreshKey}`} />
 
       {/* Custom Tabs for Renter */}
 <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 bg-white p-3 rounded-xl border border-gray-200 mb-8 w-full sm:w-auto">
