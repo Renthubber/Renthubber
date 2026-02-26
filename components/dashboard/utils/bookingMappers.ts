@@ -86,7 +86,7 @@ const extraGuestsFee =
     ? raw.extra_guests_fee
     : 0;
 
-console.log('🔍 MAPPER RAW:', { rawExtraCount: raw.extra_guests_count, rawExtraFee: raw.extra_guests_fee, rawCleaningFee: raw.cleaning_fee });
+console.log('🔍 MAPPER RAW KEYS:', Object.keys(raw).join(', '));
 
 // ✅ service_fee = commissione totale hubber (10% + fee fissa)
 const hubberTotalFee =
