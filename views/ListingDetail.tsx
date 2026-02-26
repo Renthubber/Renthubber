@@ -10,6 +10,7 @@ import {
   Plus,
   Clock,
   MessageSquare,
+  Home,
 } from "lucide-react";
 import { AirbnbCalendar } from "../components/AirbnbCalendar";
 import { PhotoGallery } from "../components/PhotoGallery";
@@ -951,6 +952,41 @@ useEffect(() => {
                 </div>
               </div>
             </div>
+
+            {/* Dettagli Alloggio */}
+            {ALLOGGIO_SUBCATEGORIES.includes(listing.subCategory) && (listing as any).alloggioSpecs && (
+              <div className="py-4 space-y-4 border-b border-gray-100 pb-8">
+                <h3 className="font-bold text-gray-900 mb-4 flex items-center">
+                  <Home className="w-5 h-5 mr-2 text-brand" />
+                  Dettagli Alloggio
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {(listing as any).alloggioSpecs.bedrooms > 0 && (
+                    <div className="flex items-center text-gray-600">
+                      <Check className="w-5 h-5 mr-3 text-gray-400" /> {(listing as any).alloggioSpecs.bedrooms} Camera{(listing as any).alloggioSpecs.bedrooms > 1 ? 'e' : ''} da letto
+                    </div>
+                  )}
+                  {(listing as any).alloggioSpecs.bathrooms > 0 && (
+                    <div className="flex items-center text-gray-600">
+                      <Check className="w-5 h-5 mr-3 text-gray-400" /> {(listing as any).alloggioSpecs.bathrooms} Bagn{(listing as any).alloggioSpecs.bathrooms > 1 ? 'i' : 'o'}
+                    </div>
+                  )}
+                  {(listing as any).alloggioSpecs.furnished && (
+                    <div className="flex items-center text-gray-600">
+                      <Check className="w-5 h-5 mr-3 text-gray-400" /> Arredato: {(listing as any).alloggioSpecs.furnished === 'si' ? 'Sì, completamente' : (listing as any).alloggioSpecs.furnished === 'parziale' ? 'Parzialmente' : 'No'}
+                    </div>
+                  )}
+                  {(listing as any).alloggioSpecs.utilitiesIncluded && (
+                    <div className="flex items-center text-gray-600">
+                      <Check className="w-5 h-5 mr-3 text-gray-400" /> Spese: {(listing as any).alloggioSpecs.utilitiesIncluded === 'si' ? 'Tutte incluse' : (listing as any).alloggioSpecs.utilitiesIncluded === 'parziale' ? 'Parzialmente' : 'Escluse'}
+                    </div>
+                  )}
+                  <div className="flex items-center text-gray-600">
+                    <Check className="w-5 h-5 mr-3 text-gray-400" /> Durata minima: {(listing as any).alloggioSpecs.minStayMonths} mes{(listing as any).alloggioSpecs.minStayMonths > 1 ? 'i' : 'e'}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 4. RULES & POLICIES */}
             <RulesAndPolicies
