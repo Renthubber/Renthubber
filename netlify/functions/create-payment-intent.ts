@@ -23,6 +23,8 @@ interface CreatePaymentIntentRequest {
   hubberFee: number;
   deposit: number;
   cleaningFee?: number;
+  extraGuestsCount?: number;
+  extraGuestsFee?: number;
   totalAmount: number;
   
   // Wallet da usare
@@ -66,6 +68,8 @@ export const handler: Handler = async (event, context) => {
       hubberFee,
       deposit,
       cleaningFee = 0,
+      extraGuestsCount = 0,
+      extraGuestsFee = 0,
       totalAmount,
       useWallet,
       generalBalanceToUse = 0,
@@ -213,6 +217,8 @@ export const handler: Handler = async (event, context) => {
             p_platform_fee_cents: Math.round(renterFee * 100),
             p_hubber_net_amount_cents: Math.round((basePrice + cleaningFee - hubberFee) * 100),
             p_wallet_used_cents: Math.round(walletUsedTotal * 100),
+            p_extra_guests_count: extraGuestsCount,
+            p_extra_guests_fee_cents: Math.round(extraGuestsFee * 100),
             p_provider: 'wallet',
             p_provider_payment_id: 'WALLET_PAYMENT',
           }),
@@ -377,6 +383,8 @@ export const handler: Handler = async (event, context) => {
         renthubber_hubber_fee: hubberFee.toString(),
         renthubber_deposit: deposit.toString(),
         renthubber_cleaning_fee: cleaningFee.toString(),
+        renthubber_extra_guests_count: extraGuestsCount.toString(),
+        renthubber_extra_guests_fee: extraGuestsFee.toString(),
         renthubber_total_amount: totalAmount.toString(),
         renthubber_wallet_used: walletUsedTotal.toString(),
         renthubber_general_used: generalBalanceToUse.toString(),
