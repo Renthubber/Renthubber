@@ -1372,7 +1372,7 @@ useEffect(() => {
 
                     {listing.guestsIncluded && listing.extraGuestFee && guests > listing.guestsIncluded && (
                       <div className="flex justify-between underline decoration-gray-300">
-                        <span>{guests - listing.guestsIncluded} ospite{guests - listing.guestsIncluded > 1 ? 'i' : ''} extra × €{listing.extraGuestFee.toFixed(2)} × {duration} {unitLabel}</span>
+                        <span>{guests - listing.guestsIncluded} ospit{guests - listing.guestsIncluded > 1 ? 'i' : 'e'} extra × €{listing.extraGuestFee.toFixed(2)} × {duration} {unitLabel}</span>
                         <span>€{((guests - listing.guestsIncluded) * listing.extraGuestFee * (duration || 1)).toFixed(2)}</span>
                       </div>
                     )}
