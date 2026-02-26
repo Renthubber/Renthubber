@@ -559,8 +559,11 @@ const totalCalc = completeSubtotal + renterTotalFee + deposit;
     listing.deposit,
     listing.cleaningFee,
     listing.category,
+    listing.guestsIncluded,
+    listing.extraGuestFee,
     renterFeePercentage,
     actualHubberFeePercentage,
+    guests,
   ]);
 
   // Chiudi dropdown quando clicchi fuori
@@ -1379,7 +1382,11 @@ useEffect(() => {
                     
                     {(() => {
   // Calcola commissione variabile e fee fissa separate
-  const completeSubtotal = subtotal + (Number(listing.cleaningFee) || 0);
+  let displayExtraGuestsCost = 0;
+  if (listing.guestsIncluded && listing.extraGuestFee && guests > listing.guestsIncluded) {
+    displayExtraGuestsCost = (guests - listing.guestsIncluded) * listing.extraGuestFee * (duration || 1);
+  }
+  const completeSubtotal = subtotal + (Number(listing.cleaningFee) || 0) + displayExtraGuestsCost;
   const variableFee = (completeSubtotal * renterFeePercentage) / 100;
   const fixedFee = calculateRenterFixedFee(completeSubtotal);
   
