@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, MapPin, Copy, Calendar, User, Clock } from 'lucide-react';
 import { calculateHubberFee, calculateRenterFee } from '../utils/feeUtils';
+import { supabase } from '../services/supabaseClient';
 
 interface BookingDetailDrawerProps {
   isOpen: boolean;
@@ -23,6 +24,29 @@ export const BookingDetailDrawer: React.FC<BookingDetailDrawerProps> = ({
   onCancelBooking,
   onModifyDates,
 }) => {
+  const [hubberFeeOverride, setHubberFeeOverride] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !booking?.hubber_id) return;
+
+    const fetchFeeOverride = async () => {
+      try {
+        const { data } = await supabase.rpc('get_active_fee_override', { p_user_id: booking.hubber_id });
+        const override = Array.isArray(data) ? data[0] : data;
+        if (override?.custom_hubber_fee !== null && override?.custom_hubber_fee !== undefined) {
+          setHubberFeeOverride(parseFloat(override.custom_hubber_fee));
+        } else {
+          setHubberFeeOverride(null);
+        }
+      } catch (err) {
+        console.error('Errore fetch fee override hubber:', err);
+        setHubberFeeOverride(null);
+      }
+    };
+
+    fetchFeeOverride();
+  }, [isOpen, booking?.id, booking?.hubber_id]);
+
   if (!isOpen || !booking) return null;
 
   // DEBUG TEMPORANEO
@@ -681,8 +705,8 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
       </div>
     )}
     <div className="flex justify-between text-sm text-red-600">
-      <span>Commissione di servizio 10% (IVA inclusa)</span>
-      <span>-€{(((booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1) + (booking.cleaning_fee || 0) + (booking.extra_guests_fee || 0)) * 0.1).toFixed(2)}</span>
+      <span>Commissione di servizio {hubberFeeOverride !== null ? hubberFeeOverride : 10}% (IVA inclusa)</span>
+      <span>-€{(((booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1) + (booking.cleaning_fee || 0) + (booking.extra_guests_fee || 0)) * ((hubberFeeOverride !== null ? hubberFeeOverride : 10) / 100)).toFixed(2)}</span>
     </div>
     <div className="flex justify-between text-sm text-red-600">
       <span>Fee fissa piattaforma (IVA inclusa)</span>
@@ -697,7 +721,12 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
       <span className="font-bold text-gray-900">Totale (EUR)</span>
       <span className="font-bold text-lg text-green-600">
         €{(booking.hubber_net_amount || (() => {
-          const baseAmount = (booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1)+ (booking.cleaning_fee || 0);
+          const baseAmount = (booking.price_per_day || booking.base_price || 0) * (booking.rental_days || 1) + (booking.cleaning_fee || 0) + (booking.extra_guests_fee || 0);
+          if (hubberFeeOverride !== null) {
+            const { fixedFee } = calculateHubberFee(baseAmount);
+            const variableFee = baseAmount * (hubberFeeOverride / 100);
+            return baseAmount - variableFee - fixedFee;
+          }
           const { totalFee } = calculateHubberFee(baseAmount);
           return baseAmount - totalFee;
         })()).toFixed(2)}
