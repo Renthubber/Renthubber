@@ -151,6 +151,8 @@ interface Props {
   platformFeeEur: number;
   depositEur?: number;
   cleaningFeeEur?: number;
+  extraGuestsCount?: number;
+  extraGuestsFeeEur?: number;
   walletUsedEur?: number;
   generalBalance?: number;  // ✅ AGGIUNTO: Wallet generale
   onSuccess?: (booking: any) => void;
@@ -169,6 +171,8 @@ const BookingPaymentInner: React.FC<Props> = (props) => {
     platformFeeEur,
     depositEur = 0,
     cleaningFeeEur = 0,
+    extraGuestsCount = 0,
+    extraGuestsFeeEur = 0,
     walletUsedEur = 0,
     onSuccess,
   } = props;
@@ -308,7 +312,7 @@ const actualWalletUsable = useMemo(() => {
 
     // ✅ CALCOLO CORRETTO COMMISSIONE HUBBER (include pulizia!)
     // Subtotale completo = prezzo base + pulizia
-    const completeSubtotalEur = rentalAmountEur + cleaningFeeEur;
+    const completeSubtotalEur = rentalAmountEur + cleaningFeeEur + extraGuestsFeeEur;
     const fixedFee = calculateHubberFixedFee(completeSubtotalEur);
     
     // Commissione hubber = (subtotale completo × % hubber) + fee fissa
@@ -330,7 +334,7 @@ const actualWalletUsable = useMemo(() => {
       hubberNetCents,
       hubberTotalFeeCents,
     };
-  }, [totalAmountEur, rentalAmountEur, platformFeeEur, depositEur, actualWalletUsable, platformFees, cleaningFeeEur, hubberFeeOverride]);
+  }, [totalAmountEur, rentalAmountEur, platformFeeEur, depositEur, actualWalletUsable, platformFees, cleaningFeeEur, extraGuestsFeeEur, hubberFeeOverride]);
 
   if (!isOpen) return null;
 
@@ -395,6 +399,8 @@ const actualWalletUsable = useMemo(() => {
           hubberFee: amounts.hubberTotalFeeCents / 100,
           deposit: depositEur,
           cleaningFee: cleaningFeeEur,
+          extraGuestsCount: extraGuestsCount,
+          extraGuestsFee: extraGuestsFeeEur,
           totalAmount: totalAmountEur,
           useWallet: actualWalletUsable > 0,
           // ✅ Quando usa "Credito Rimborsi", prima refund poi general
@@ -552,6 +558,12 @@ if (data) {
             <div className="flex justify-between">
               <span>Costo pulizia</span>
               <span>{cleaningFeeEur.toFixed(2)} €</span>
+            </div>
+          )}
+          {extraGuestsCount > 0 && extraGuestsFeeEur > 0 && (
+            <div className="flex justify-between">
+              <span>{extraGuestsCount} ospit{extraGuestsCount > 1 ? 'i' : 'e'} extra</span>
+              <span>{extraGuestsFeeEur.toFixed(2)} €</span>
             </div>
           )}
           <div className="flex justify-between">
