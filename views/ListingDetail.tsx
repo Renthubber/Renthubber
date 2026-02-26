@@ -610,14 +610,9 @@ useEffect(() => {
       return;
     }
 
-    // ✅ Per alloggi: quando selezioni start, auto-imposta end a +minStayMonths
+    // ✅ Per alloggi: quando selezioni start, calendario resta aperto per scegliere end
     if (isAlloggio && start && !end) {
-      const minMonths = parseInt((listing as any).alloggioSpecs?.minStayMonths) || 1;
-      const autoEnd = new Date(start);
-      autoEnd.setMonth(autoEnd.getMonth() + minMonths);
       setStartDate(start);
-      setEndDate(autoEnd);
-      setIsCalendarOpen(false);
       return;
     }
     
