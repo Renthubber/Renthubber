@@ -682,6 +682,14 @@ maxGuests: row.max_guests ?? undefined,  // Solo per spazi
 openingHours: row.opening_hours || "",
 closingHours: row.closing_hours || "",
 manualBadges: row.manual_badges || [],
+// 👇 CAMPI ALLOGGIO
+    alloggioSpecs: row.min_stay_months ? {
+      bedrooms: row.bedrooms ?? 0,
+      bathrooms: row.bathrooms ?? 0,
+      furnished: row.furnished || '',
+      utilitiesIncluded: row.utilities_included || '',
+      minStayMonths: row.min_stay_months ?? 1,
+    } : undefined,
 
     // 👇 CONTEGGIO VISUALIZZAZIONI
 view_count: row.view_count ?? 0,
@@ -1490,6 +1498,12 @@ if (ownerIds.length > 0) {
         max_guests: (listing as any).maxGuests || null,
         opening_hours: (listing as any).openingHours || null,
         manual_badges: (listing as any).manualBadges || [],
+        // Campi alloggio
+        bedrooms: (listing as any).alloggioSpecs?.bedrooms ?? null,
+        bathrooms: (listing as any).alloggioSpecs?.bathrooms ?? null,
+        furnished: (listing as any).alloggioSpecs?.furnished || null,
+        utilities_included: (listing as any).alloggioSpecs?.utilitiesIncluded || null,
+        min_stay_months: (listing as any).alloggioSpecs?.minStayMonths ?? null,
       };
 
       const { data, error } = await supabase
@@ -1562,6 +1576,12 @@ if (ownerIds.length > 0) {
         max_guests: (listing as any).maxGuests || null,
         opening_hours: (listing as any).openingHours || null,
         manual_badges: (listing as any).manualBadges || [],
+        // Campi alloggio
+        bedrooms: (listing as any).alloggioSpecs?.bedrooms ?? null,
+        bathrooms: (listing as any).alloggioSpecs?.bathrooms ?? null,
+        furnished: (listing as any).alloggioSpecs?.furnished || null,
+        utilities_included: (listing as any).alloggioSpecs?.utilitiesIncluded || null,
+        min_stay_months: (listing as any).alloggioSpecs?.minStayMonths ?? null,
       };
 
       const { data, error } = await supabase
