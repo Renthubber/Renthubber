@@ -634,7 +634,7 @@ export const PrenotazioniRenter: React.FC<PrenotazioniRenterProps> = ({
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">
-                €{bookingDetailData.listingPrice.toFixed(2)} × {bookingDetailData.days} {bookingDetailData.days === 1 ? bookingDetailData.priceUnit : bookingDetailData.priceUnit === 'giorno' ? 'giorni' : bookingDetailData.priceUnit}
+€{bookingDetailData.listingPrice.toFixed(2)} × {bookingDetailData.days} {bookingDetailData.days === 1 ? (bookingDetailData.priceUnit === 'giorno' ? 'giorno' : bookingDetailData.priceUnit === 'settimana' ? 'settimana' : bookingDetailData.priceUnit === 'mese' ? 'mese' : bookingDetailData.priceUnit) : (bookingDetailData.priceUnit === 'giorno' ? 'giorni' : bookingDetailData.priceUnit === 'settimana' ? 'settimane' : bookingDetailData.priceUnit === 'mese' ? 'mesi' : bookingDetailData.priceUnit)}
               </span>
               <span className="font-medium text-gray-900">
                 €{bookingDetailData.basePrice.toFixed(2)}
