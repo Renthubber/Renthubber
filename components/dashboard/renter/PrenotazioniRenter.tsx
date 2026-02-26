@@ -650,6 +650,16 @@ export const PrenotazioniRenter: React.FC<PrenotazioniRenterProps> = ({
                 </span>
               </div>
             )}
+            {bookingDetailData.extraGuestsCount > 0 && bookingDetailData.extraGuestsFee > 0 && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">
+                  {bookingDetailData.extraGuestsCount} ospit{bookingDetailData.extraGuestsCount > 1 ? 'i' : 'e'} extra
+                </span>
+                <span className="font-medium text-gray-900">
+                  €{bookingDetailData.extraGuestsFee.toFixed(2)}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-gray-600">
                 Commissione di servizio ({bookingDetailData.renterFeePercent ?? 10}% IVA inclusa)
