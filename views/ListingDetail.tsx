@@ -492,7 +492,6 @@ const disabledDates = [...bookedDates, ...blockedDates];
 
       if (startDate) {
         baseSubtotal = units * listing.price;
-        console.log('DEBUG UNITS:', { units, price: listing.price, baseSubtotal });
       }
     } else {
       // --- CASO GIORNO / SETTIMANA / MESE ----
@@ -513,8 +512,9 @@ const disabledDates = [...bookedDates, ...blockedDates];
         }
 
         baseSubtotal = units * listing.price;
+        console.log('DEBUG UNITS:', { units, price: listing.price, baseSubtotal });
       }
-    }
+      }
 
     const deposit = listing.deposit || 0;
     const cleaningFee = listing.cleaningFee || 0;
