@@ -537,6 +537,7 @@ const totalCalc = completeSubtotal + renterTotalFee + deposit;
 
     setDuration(units);
     setSubtotal(baseSubtotal);
+    console.log('DEBUG SUBTOTAL:', { baseSubtotal, cleaningFee, completeSubtotal: baseSubtotal + cleaningFee });
     setServiceFee(renterTotalFee);
     setHubberFee(hubberTotalFee);
     setHubberNet(hubberNetAmount);
