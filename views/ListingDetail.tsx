@@ -30,6 +30,11 @@ import { useNavigate } from 'react-router-dom';
 import { calculateHubberFixedFee, calculateRenterFixedFee } from '../utils/feeUtils';
 import { getAvatarUrl } from '../utils/avatarUtils';
 
+const ALLOGGIO_SUBCATEGORIES = [
+  'stanza-singola', 'stanza-doppia', 'posto-letto',
+  'monolocale', 'bilocale', 'trilocale',
+  'appartamento-condiviso'
+];
 
 interface ListingDetailProps {
   listing: Listing;
@@ -867,8 +872,8 @@ useEffect(() => {
              rules={listing.rules}
              cancellationPolicy={listing.cancellationPolicy}
              deposit={listing.deposit}
-             openingHours={(listing as any).openingHours}
-             closingHours={(listing as any).closingHours}
+             openingHours={ALLOGGIO_SUBCATEGORIES.includes(listing.subCategory) ? undefined : (listing as any).openingHours}
+             closingHours={ALLOGGIO_SUBCATEGORIES.includes(listing.subCategory) ? undefined : (listing as any).closingHours}
              category={listing.category}
             />
 
@@ -1017,6 +1022,8 @@ useEffect(() => {
                         </button>
                       </div>
                     </div>
+                   
+                   {!ALLOGGIO_SUBCATEGORIES.includes(listing.subCategory) && (
 
                     <div className="p-3 hover:bg-gray-50 rounded-b-xl">
                       <div className="w-full">
@@ -1128,6 +1135,7 @@ useEffect(() => {
 </div>
 </div>
 </div>
+)}
 </>
 )}
 
