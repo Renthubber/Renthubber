@@ -400,6 +400,8 @@ export interface Listing {
   openingHours?: string;
   closingHours?: string;
   maxGuests?: number;
+  guestsIncluded?: number;
+  extraGuestFee?: number;
   manualBadges?: string[];
   hostRules?: string[];
 
@@ -490,6 +492,8 @@ export interface ListingDraft {
   pickupInstructions?: string;
   zoneDescription?: string;
   maxGuests?: string;
+  guestsIncluded?: string;
+  extraGuestFee?: string;
   openingHours?: string;
   closingHours?: string;
   manualBadges?: string[];
