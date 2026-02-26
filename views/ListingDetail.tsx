@@ -1330,6 +1330,7 @@ useEffect(() => {
                     {(() => {
   // Calcola commissione variabile e fee fissa separate
   const completeSubtotal = subtotal + (Number(listing.cleaningFee) || 0);
+  console.log('DEBUG FEE:', { completeSubtotal, renterFeePercentage, result: (completeSubtotal * renterFeePercentage) / 100 });
   const variableFee = (completeSubtotal * renterFeePercentage) / 100;
   const fixedFee = calculateRenterFixedFee(completeSubtotal);
   
