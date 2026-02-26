@@ -32,6 +32,16 @@ const PromoLandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-white">
       
+      {/* Top Bar con Logo */}
+      <div className="bg-white py-3 px-4 flex justify-center border-b border-gray-100">
+        <img 
+          src="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png" 
+          alt="Renthubber" 
+          className="h-12 w-auto cursor-pointer"
+          onClick={() => navigate('/')}
+        />
+      </div>
+      
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#0D414B] via-[#0D414B] to-[#0a3a42]" />
