@@ -1151,6 +1151,7 @@ const moveImageRight = (index: number) => {
               <option value="3">3 mesi</option>
               <option value="6">6 mesi</option>
               <option value="12">12 mesi</option>
+              <option value="12">18 mesi</option>
             </select>
           </div>
         </div>
