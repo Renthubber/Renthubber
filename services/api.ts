@@ -676,7 +676,9 @@ const mapDbListingToAppListing = (row: any): Listing => {
     zoneDescription: row.zone_description || "",
     
     // 👇 CAMPI SPAZIO
-maxGuests: row.max_guests ?? undefined,  // Solo per spazi
+maxGuests: row.max_guests ?? undefined,
+guestsIncluded: row.guests_included ?? undefined,
+extraGuestFee: row.extra_guest_fee ?? undefined,
 
 // 👇 ORARI E BADGE (per tutti)
 openingHours: row.opening_hours || "",
@@ -1496,6 +1498,8 @@ if (ownerIds.length > 0) {
         zone_description: (listing as any).zoneDescription || null,
         // Campi spazio
         max_guests: (listing as any).maxGuests || null,
+        guests_included: (listing as any).guestsIncluded ?? null,
+        extra_guest_fee: (listing as any).extraGuestFee ?? null,
         opening_hours: (listing as any).openingHours || null,
         manual_badges: (listing as any).manualBadges || [],
         // Campi alloggio
@@ -1574,6 +1578,8 @@ if (ownerIds.length > 0) {
         zone_description: (listing as any).zoneDescription || null,
         // Campi spazio
         max_guests: (listing as any).maxGuests || null,
+        guests_included: (listing as any).guestsIncluded ?? null,
+        extra_guest_fee: (listing as any).extraGuestFee ?? null,
         opening_hours: (listing as any).openingHours || null,
         manual_badges: (listing as any).manualBadges || [],
         // Campi alloggio
