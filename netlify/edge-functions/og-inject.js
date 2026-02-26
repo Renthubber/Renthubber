@@ -6,7 +6,7 @@ const OG_PAGES = {
   '/promo/lancio-catania': {
     title: 'RentHubber è finalmente attivo a Catania!',
     description: 'Noleggia ciò che ti serve. Guadagna da ciò che non usi. Registrati gratis in 1 minuto — Zero commissioni per 30 giorni!',
-    image: 'https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/Renthubber_Catania.webp',
+    image: 'https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/Renthubber_attivo_a_Catania.webp',
     url: 'https://renthubber.com/promo/lancio-catania',
   },
   // Aggiungi altre pagine promo qui in futuro:
