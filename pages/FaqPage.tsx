@@ -46,13 +46,13 @@ export const FaqPage: React.FC = () => {
       faqs: [
         {
           q: "Che tipo di annuncio posso pubblicare?",
-          a: "Su Renthubber è possibile pubblicare annunci di noleggio di oggetti e di spazi, destinati a un utilizzo temporaneo, ma non annunci di alloggi o strutture per il pernottamento. Per quanto riguarda gli oggetti, è possibile mettere a noleggio beni di uso personale, hobbistico o professionale, come attrezzature, strumenti, dispositivi, accessori, materiali per eventi, sport, lavoro o tempo libero. Per quanto riguarda gli spazi, sono ammessi esclusivamente spazi non abitativi, utilizzabili per attività temporanee o specifiche, come garage, box, depositi, magazzini, uffici, sale riunioni, studi professionali, laboratori, spazi creativi, aree private o spazi per eventi.",
+          a: "Su RentHubber è possibile pubblicare annunci di noleggio di oggetti, spazi e immobili per affitto a medio/lungo termine (durata minima 30 giorni). Non sono ammessi annunci di affitti brevi, alloggi turistici o strutture per il pernottamento. Per quanto riguarda gli oggetti, è possibile mettere a noleggio beni di uso personale, hobbistico o professionale, come attrezzature, strumenti, dispositivi, accessori, materiali per eventi, sport, lavoro o tempo libero. Per quanto riguarda gli spazi, sono ammessi spazi utilizzabili per attività temporanee o specifiche, come garage, box, depositi, magazzini, uffici, sale riunioni, studi professionali, laboratori, spazi creativi, aree private o spazi per eventi. Per quanto riguarda gli immobili, è possibile pubblicare annunci di affitto residenziale o commerciale con durata minima di 30 giorni.",
         },
         {
-          q: "È possibile pubblicare annunci di alloggi o strutture per il pernottamento su Renthubber?",
-          a: "No. Su Renthubber non è consentito pubblicare annunci relativi a case, appartamenti, stanze, camere, B&B, hotel, case vacanza o qualsiasi struttura destinata, anche parzialmente, al pernottamento. Renthubber non è una piattaforma di affitti turistici o residenziali, ma un servizio dedicato esclusivamente al noleggio di oggetti e di spazi non abitativi, per utilizzi temporanei e specifici.",
-        },
-        {
+          q: "È possibile pubblicare annunci di affitti brevi o strutture per il pernottamento su RentHubber?",
+          a: "No. Su RentHubber non è consentito pubblicare annunci di affitto con durata inferiore a 30 giorni, né annunci relativi a B&B, hotel, case vacanza o qualsiasi struttura destinata al pernottamento turistico. È invece possibile pubblicare annunci di affitto residenziale o commerciale a medio/lungo termine (durata minima 30 giorni). RentHubber non è una piattaforma di affitti turistici, ma un marketplace dedicato al noleggio di oggetti, spazi e immobili per affitto medio/lungo termine.",
+         },
+          {
           q: "Come pubblico un nuovo annuncio?",
           a: "Accedi alla tua area Hubber, clicca su “Pubblica un annuncio” e compila tutti i campi richiesti: titolo, descrizione, categoria, foto, prezzo, deposito cauzionale (se previsto) e politica di cancellazione.",
         },

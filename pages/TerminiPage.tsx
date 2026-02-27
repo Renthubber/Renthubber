@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
-const LAST_UPDATED = "12 dicembre 2025";
+const LAST_UPDATED = "27 febbraio 2026";
 
 export const TerminiPage: React.FC = () => {
   return (
@@ -31,16 +31,16 @@ export const TerminiPage: React.FC = () => {
             <div className="mt-8 max-w-4xl mx-auto bg-gray-50 border rounded-2xl p-6 text-left shadow-sm">
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">Spazi ammessi</p>
-                  <p className="text-sm text-gray-600">
-                    Solo spazi privati o commerciali per uso temporaneo (non ricettivi).
-                  </p>
+                  <p className="text-sm font-semibold text-gray-900">Cosa puoi noleggiare</p>
+                 <p className="text-sm text-gray-600">
+                   Oggetti, attrezzarture, spazi temporanei e immobili per affitto medio/lungo termine. Esclusi affitti brevi e alloggio turistico.
+                 </p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-900">Commissioni</p>
                   <p className="text-sm text-gray-600">
-                    10% Renter + 10% Hubber + fee fissa €2 / transazione.
-                  </p>
+                  10% Renter + 10% Hubber (5% SuperHubber) + fee fissa variabile per transazione.
+                 </p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-900">Ruolo di Renthubber</p>
@@ -132,21 +132,30 @@ export const TerminiPage: React.FC = () => {
                     <span className="font-semibold">Beni mobili</span> (attrezzature, strumenti, costumi, accessori, veicoli e simili, ove consentiti);
                   </li>
                   <li className="text-justify">
-                    <span className="font-semibold">Spazi ad uso temporaneo</span> di tipo privato o commerciale (es. sale, locali, aree, terreni, spazi produttivi/ricreativi).
+                    <span className="font-semibold">Spazi ad uso temporaneo</span> di tipo privato o commerciale (es. sale, locali, aree, terreni, spazi produttivi/ricreativi);
+                  </li>
+                  <li className="text-justify">
+                    <span className="font-semibold">Immobili per locazione di medio e lungo termine</span> (contratti di locazione abitativa o commerciale con durata superiore a 30 giorni, regolati dalla normativa vigente in materia di locazioni).
                   </li>
                 </ul>
 
                 <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-5">
                   <p className="font-semibold text-amber-900 mb-2">
-                    Esclusione ospitalità/alloggio (importante)
+                    Esclusione affitti brevi e ospitalità (importante)
                   </p>
                   <p className="text-amber-900 leading-relaxed text-justify">
-                    Gli “Spazi” presenti su Renthubber non includono e non possono includere immobili o servizi destinati
-                    all’alloggio, al pernottamento o all’ospitalità. Sono pertanto esclusi: immobili residenziali, case vacanze,
-                    affitti brevi, bed &amp; breakfast, hotel, residence o strutture ricettive assimilabili. Renthubber non consente
-                    né intermedia servizi di alloggio o pernottamento.
+                    Sono esclusi dalla Piattaforma gli immobili e i servizi destinati all'affitto breve (durata inferiore a 30 giorni),
+                    all'alloggio turistico, al pernottamento o all'ospitalità. Sono pertanto esclusi: case vacanze, affitti brevi,
+                    bed &amp; breakfast, hotel, residence o strutture ricettive assimilabili. Renthubber non consente
+                    né intermedia servizi di alloggio breve, pernottamento turistico o ospitalità ricettiva.
                   </p>
                 </div>
+
+                <p className="mt-6 text-gray-700 leading-relaxed text-justify">
+                  Renthubber non è parte contrattuale del contratto tra chi pubblica un annuncio e chi prenota.
+                  Il Gestore fornisce un servizio di intermediazione tecnologica e strumenti digitali per facilitare comunicazioni
+                  e transazioni tra utenti.
+                </p>
 
                 <p className="mt-6 text-gray-700 leading-relaxed text-justify">
                   Renthubber non è parte contrattuale del contratto tra chi pubblica un annuncio e chi prenota.
@@ -164,7 +173,7 @@ export const TerminiPage: React.FC = () => {
                   <li className="text-justify"><span className="font-semibold">Renter / Utilizzatore / Locatario</span>: utente che prenota e utilizza un bene o uno spazio.</li>
                   <li className="text-justify"><span className="font-semibold">Annuncio</span>: scheda descrittiva con prezzo, disponibilità, condizioni, regole d’uso, eventuale cauzione e costi accessori.</li>
                   <li className="text-justify"><span className="font-semibold">Commissione di servizio</span>: percentuale trattenuta da Renthubber per ogni transazione.</li>
-                  <li className="text-justify"><span className="font-semibold">Fee fissa</span>: importo fisso per transazione (vedi art. 9).</li>
+                  <li className="text-justify"><span className="font-semibold">Fee fissa</span>: importo variabile per transazione, calcolato in base all'importo del noleggio/uso (vedi art. 9).</li>
                   <li className="text-justify"><span className="font-semibold">Deposito cauzionale (Cauzione)</span>: somma eventuale a garanzia di danni o mancata restituzione.</li>
                   <li className="text-justify"><span className="font-semibold">Wallet</span>: portafoglio digitale interno che può gestire crediti, bonus, rimborsi o importi tecnici secondo le regole di piattaforma.</li>
                 </ul>
@@ -220,11 +229,12 @@ export const TerminiPage: React.FC = () => {
                 </p>
 
                 <div className="mt-6 bg-gray-50 border rounded-xl p-5">
-                  <p className="font-semibold text-gray-900 mb-2">7.1 Dichiarazione specifica sugli “Spazi”</p>
-                  <p className="text-gray-700 leading-relaxed text-justify">
-                    L’Hubber dichiara e garantisce che gli spazi pubblicati non sono destinati ad alloggio/pernottamento/ospitalità turistica o residenziale
-                    e che l’uso proposto è conforme alla normativa vigente (sicurezza, autorizzazioni, capienze, destinazioni d’uso, ecc.).
-                  </p>
+                  <p className="font-semibold text-gray-900 mb-2">7.1 Dichiarazione specifica sugli "Spazi" e "Immobili"</p>
+                    <p className="text-gray-700 leading-relaxed text-justify">
+                  L'Hubber dichiara e garantisce che gli spazi e/o gli immobili pubblicati non sono destinati ad affitto breve (inferiore a 30 giorni),
+                  alloggio turistico, pernottamento o ospitalità ricettiva, e che l'uso proposto è conforme alla normativa vigente
+                (sicurezza, autorizzazioni, capienze, destinazioni d'uso, normativa sulle locazioni, ecc.).
+                </p>
                 </div>
               </div>
 
@@ -246,12 +256,40 @@ export const TerminiPage: React.FC = () => {
                 <div className="mt-4 bg-gray-50 border rounded-xl p-5">
                   <p className="font-semibold text-gray-900 mb-2">Commissioni applicate</p>
                   <ul className="list-disc list-inside text-gray-700 space-y-2">
-                    <li className="text-justify"><span className="font-semibold">10%</span> a carico del <span className="font-semibold">Renter</span> sull’importo totale del noleggio/uso;</li>
-                    <li className="text-justify"><span className="font-semibold">10%</span> a carico dell’<span className="font-semibold">Hubber</span> sull’importo totale del noleggio/uso;</li>
-                    <li className="text-justify"><span className="font-semibold">Fee fissa di gestione: € 2,00</span> per transazione.</li>
+                    <li className="text-justify"><span className="font-semibold">Commissione Renter: 10%</span> sull'importo totale del noleggio/uso;</li>
+                    <li className="text-justify"><span className="font-semibold">Commissione Hubber: 10%</span> sull'importo totale del noleggio/uso (<span className="font-semibold">5%</span> per gli Hubber con badge <span className="font-semibold">SuperHubber</span>);</li>
                   </ul>
-                  <p className="mt-3 text-gray-700 leading-relaxed text-justify">
+
+                  <div className="mt-4 border-t pt-4">
+                    <p className="font-semibold text-gray-900 mb-2">Fee fissa di gestione (per transazione)</p>
+                    <p className="text-gray-700 mb-3 text-justify">
+                      Oltre alla commissione percentuale, viene applicata una fee fissa a carico di ciascuna parte (Renter e Hubber), calcolata in base all'importo totale del noleggio/uso:
+                    </p>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="bg-white border rounded-lg p-4">
+                        <p className="font-semibold text-gray-900 mb-2">Fee fissa Renter</p>
+                        <ul className="list-disc list-inside text-gray-700 space-y-1 text-sm">
+                          <li>Importo fino a € 8,00: <span className="font-semibold">€ 0,50</span></li>
+                          <li>Importo superiore a € 8,00: <span className="font-semibold">€ 2,00</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-white border rounded-lg p-4">
+                        <p className="font-semibold text-gray-900 mb-2">Fee fissa Hubber</p>
+                        <ul className="list-disc list-inside text-gray-700 space-y-1 text-sm">
+                          <li>Importo fino a € 10,00: <span className="font-semibold">€ 0,50</span></li>
+                          <li>Importo superiore a € 10,00: <span className="font-semibold">€ 2,00</span></li>
+                        </ul>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-gray-700 text-sm text-justify">
+                      La fee fissa viene applicata una sola volta per prenotazione e non viene rimborsata in caso di modifica della prenotazione.
+                      In caso di cancellazione completa, la fee viene rimborsata insieme all'intero importo pagato, con lo stesso metodo di pagamento utilizzato o sul wallet a discrezione dell'utente.
+                    </p>
+                  </div>
+
+                  <p className="mt-4 text-gray-700 leading-relaxed text-justify">
                     Le commissioni e la fee fissa sono trattenute automaticamente e coprono costi tecnici, assistenza e gestione operativa.
+                    Il riepilogo completo di commissioni e fee è sempre visibile prima della conferma del pagamento.
                   </p>
                 </div>
               </div>
