@@ -273,7 +273,7 @@ export const FaqPage: React.FC = () => {
               Contattaci o apri una segnalazione dal Centro assistenza.
             </p>
             <a
-              href="#"
+              href="/assistenza"
               className="inline-block px-8 py-3 rounded-full text-lg font-semibold bg-white text-[#0D414B] hover:bg-gray-100 transition"
             >
               Vai al Centro Assistenza

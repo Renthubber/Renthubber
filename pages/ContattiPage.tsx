@@ -33,12 +33,41 @@ export const ContattiPage: React.FC = () => {
 
               <form
                 className="space-y-4"
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
-                  // Qui in futuro potrai collegare l'invio reale (API, email, ecc.)
-                  alert(
-                    "Questo è un form di esempio. L'invio reale verrà configurato in seguito."
-                  );
+                  const form = e.target as HTMLFormElement;
+                  const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+                  
+                  const name = (form.elements.namedItem('name') as HTMLInputElement).value.trim();
+                  const email = (form.elements.namedItem('email') as HTMLInputElement).value.trim();
+                  const subject = (form.elements.namedItem('subject') as HTMLInputElement).value.trim();
+                  const message = (form.elements.namedItem('message') as HTMLTextAreaElement).value.trim();
+
+                  submitBtn.disabled = true;
+                  submitBtn.textContent = 'Invio in corso...';
+
+                  try {
+                    const { createClient } = await import('@supabase/supabase-js');
+                    const supabase = createClient(
+                      import.meta.env.VITE_SUPABASE_URL,
+                      import.meta.env.VITE_SUPABASE_ANON_KEY
+                    );
+
+                    const { error } = await supabase
+                      .from('public_contact_requests')
+                      .insert([{ name, email, subject, message }]);
+
+                    if (error) throw error;
+
+                    alert('Messaggio inviato con successo! Ti risponderemo il prima possibile.');
+                    form.reset();
+                  } catch (err) {
+                    console.error('Errore invio contatto:', err);
+                    alert('Si è verificato un errore. Riprova o scrivici a support@renthubber.com');
+                  } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Invia messaggio';
+                  }
                 }}
               >
                 <div>
@@ -46,6 +75,7 @@ export const ContattiPage: React.FC = () => {
                     Nome e cognome *
                   </label>
                   <input
+                    name="name"
                     type="text"
                     className="w-full rounded-lg border-gray-300 focus:ring-[#0D414B] focus:border-[#0D414B] text-sm px-3 py-2"
                     placeholder="Inserisci il tuo nome"
@@ -58,6 +88,7 @@ export const ContattiPage: React.FC = () => {
                     Indirizzo email *
                   </label>
                   <input
+                    name="email"
                     type="email"
                     className="w-full rounded-lg border-gray-300 focus:ring-[#0D414B] focus:border-[#0D414B] text-sm px-3 py-2"
                     placeholder="nome@esempio.com"
@@ -70,6 +101,7 @@ export const ContattiPage: React.FC = () => {
                     Oggetto *
                   </label>
                   <input
+                    name="subject"
                     type="text"
                     className="w-full rounded-lg border-gray-300 focus:ring-[#0D414B] focus:border-[#0D414B] text-sm px-3 py-2"
                     placeholder="Es. Problema con una prenotazione"
@@ -82,6 +114,7 @@ export const ContattiPage: React.FC = () => {
                     Messaggio *
                   </label>
                   <textarea
+                    name="message"
                     className="w-full rounded-lg border-gray-300 focus:ring-[#0D414B] focus:border-[#0D414B] text-sm px-3 py-2 min-h-[140px]"
                     placeholder="Descrivi in modo chiaro cosa è successo o cosa desideri chiederci"
                     required
@@ -99,7 +132,7 @@ export const ContattiPage: React.FC = () => {
                     htmlFor="privacy"
                     className="text-xs md:text-sm text-gray-600 text-justify"
                   >
-                    Dichiaro di aver letto e compreso l’informativa privacy e acconsento
+                    Dichiaro di aver letto e compreso l'informativa privacy e acconsento
                     al trattamento dei miei dati per la gestione della richiesta di
                     contatto.
                   </label>
@@ -132,7 +165,7 @@ export const ContattiPage: React.FC = () => {
                     Per assistenza generale, problemi con prenotazioni o dubbi sul
                     funzionamento della piattaforma:
                     <br />
-                    <span className="font-semibold">supporto@renthubber.com</span>
+                    <span className="font-semibold">support@renthubber.com</span>
                     {/* Sostituisci con la tua mail reale */}
                   </p>
                 </div>
@@ -188,7 +221,7 @@ export const ContattiPage: React.FC = () => {
                 subito la risposta che cerchi.
               </p>
               <a
-                href="#"
+                href="/faq"
                 className="text-sm font-semibold text-[#0D414B] hover:underline"
               >
                 Vai alle FAQ
