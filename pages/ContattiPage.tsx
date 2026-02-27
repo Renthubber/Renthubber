@@ -241,7 +241,7 @@ export const ContattiPage: React.FC = () => {
                 Centro assistenza per aprire una richiesta tracciata.
               </p>
               <a
-                href="#"
+                href="assistenza"
                 className="text-sm font-semibold text-[#0D414B] hover:underline"
               >
                 Vai al Centro assistenza
@@ -257,7 +257,7 @@ export const ContattiPage: React.FC = () => {
                 grave durante un noleggio, invia una segnalazione dedicata.
               </p>
               <a
-                href="#"
+                href="segnala"
                 className="text-sm font-semibold text-[#0D414B] hover:underline"
               >
                 Vai alla pagina segnalazioni
