@@ -28,6 +28,10 @@
   path = "/promo/*"
   function = "og-inject"
 
+[[edge_functions]]
+  path = "/invito/*"
+  function = "og-inject"  
+
 # ✅ Headers per il sitemap
 [[headers]]
   for = "/sitemap.xml"
