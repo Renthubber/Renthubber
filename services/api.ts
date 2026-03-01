@@ -695,6 +695,8 @@ manualBadges: row.manual_badges || [],
 
     // 👇 CONTEGGIO VISUALIZZAZIONI
 view_count: row.view_count ?? 0,
+    store_id: row.store_id || null,
+    short_code: row.short_code || null,
   };
 };
 
@@ -1510,6 +1512,8 @@ if (ownerIds.length > 0) {
         furnished: (listing as any).alloggioSpecs?.furnished || null,
         utilities_included: (listing as any).alloggioSpecs?.utilitiesIncluded || null,
         min_stay_months: (listing as any).alloggioSpecs?.minStayMonths ?? 1,
+        // Store autorizzato
+        store_id: (listing as any).store_id || null,
       };
 
       const { data, error } = await supabase
@@ -1590,6 +1594,8 @@ if (ownerIds.length > 0) {
         furnished: (listing as any).alloggioSpecs?.furnished || null,
         utilities_included: (listing as any).alloggioSpecs?.utilitiesIncluded || null,
         min_stay_months: (listing as any).alloggioSpecs?.minStayMonths ?? null,
+        // Store autorizzato
+        store_id: (listing as any).store_id || null,
       };
 
       const { data, error } = await supabase
