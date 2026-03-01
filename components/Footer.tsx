@@ -24,7 +24,7 @@ export const Footer: React.FC = () => {
           </div>
 
           {/* COLONNA 2 – Renthubber */}
-          <div className="max-w-[190px]">
+          <div className="max-w-[200px]">
             <h3 className="font-semibold text-gray-900 mb-4">Renthubber</h3>
             <ul className="space-y-2 text-sm text-gray-500">
               <li><Link to="/chi-siamo" className="hover:text-brand">Chi siamo</Link></li>
@@ -35,6 +35,7 @@ export const Footer: React.FC = () => {
               <li><Link to="/super-hubber" className="hover:text-brand">Programma SuperHubber</Link></li>
               <li><Link to="/investitori" className="hover:text-brand">Investitori</Link></li>
               <li><Link to="/lavora-con-noi" className="hover:text-brand">Lavora con noi</Link></li>
+              <li><Link to="/store" className="hover:text-brand">Diventa uno Store Autorizzato</Link></li>
             </ul>
           </div>
 

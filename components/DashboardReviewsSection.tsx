@@ -12,7 +12,7 @@ interface DashboardReviewsSectionProps {
 onPendingCountChange?: (count: number) => void;
 }
 
-type TabType = 'pending' | 'received' | 'given';
+type TabType = 'pending' | 'received' | 'given' | 'store';
 
 interface Review {
   id: string;
@@ -40,6 +40,15 @@ interface PendingReview {
   endDate: string;
 }
 
+interface PendingStoreReview {
+  inventoryId: string;
+  bookingId: string;
+  storeId: string;
+  storeName: string;
+  listingTitle: string;
+  completedAt: string;
+}
+
 export const DashboardReviewsSection: React.FC<DashboardReviewsSectionProps> = ({
   userId,
   userType,
@@ -51,6 +60,15 @@ export const DashboardReviewsSection: React.FC<DashboardReviewsSectionProps> = (
   const [receivedReviews, setReceivedReviews] = useState<Review[]>([]);
   const [givenReviews, setGivenReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingStoreReviews, setPendingStoreReviews] = useState<PendingStoreReview[]>([]);
+  const [showStoreTab, setShowStoreTab] = useState(false);
+  const [storeReviewRating, setStoreReviewRating] = useState(0);
+  const [storeReviewComment, setStoreReviewComment] = useState('');
+  const [storeReviewCourtesy, setStoreReviewCourtesy] = useState(0);
+  const [storeReviewCare, setStoreReviewCare] = useState(0);
+  const [storeReviewPunctuality, setStoreReviewPunctuality] = useState(0);
+  const [submittingStoreReview, setSubmittingStoreReview] = useState(false);
+  const [selectedStoreReview, setSelectedStoreReview] = useState<PendingStoreReview | null>(null);
 
   // Modal recensione
 const [showReviewModal, setShowReviewModal] = useState(false);
@@ -75,6 +93,10 @@ const getTimeRemaining = (endDate: string) => {
     loadReviews();
   }, [userId, userType, activeTab]);
 
+  useEffect(() => {
+    loadPendingStoreReviews();
+  }, [userId, userType]);
+
   // Comunica il conteggio al Dashboard
 useEffect(() => {
   if (onPendingCountChange) {
@@ -98,6 +120,8 @@ useEffect(() => {
         await loadReceivedReviews();
       } else if (activeTab === 'given') {
         await loadGivenReviews();
+      } else if (activeTab === 'store') {
+        await loadPendingStoreReviews();
       }
     } catch (err) {
       console.error('Errore caricamento recensioni:', err);
@@ -105,7 +129,6 @@ useEffect(() => {
       setLoading(false);
     }
   };
-
   const loadPendingReviews = async () => {
   try {
     // Query diretta a Supabase con JOIN per avere i dati completi
@@ -160,6 +183,64 @@ useEffect(() => {
   }
 };
 
+  const loadPendingStoreReviews = async () => {
+    try {
+      const field = userType === 'hubber' ? 'hubber_id' : 'renter_id';
+      const completedField = userType === 'hubber' ? 'hubber_pickup_at' : 'renter_return_at';
+
+      const { data: inventories, error } = await supabase
+        .from('store_inventory')
+        .select('id, store_id, booking_id, listing_id, hubber_pickup_at, renter_return_at')
+        .eq(field, userId)
+        .not(completedField, 'is', null);
+
+      if (error) throw error;
+
+      const pending: PendingStoreReview[] = [];
+
+      for (const inv of inventories || []) {
+        if (!inv.booking_id || !inv.store_id) continue;
+
+        // Verifica se ha già recensito questo store per questa prenotazione
+        const { data: existing } = await supabase
+          .from('store_reviews')
+          .select('id')
+          .eq('reviewer_id', userId)
+          .eq('booking_id', inv.booking_id)
+          .maybeSingle();
+
+        if (existing) continue;
+
+        // Carica nome store e titolo listing
+        const { data: store } = await supabase
+          .from('stores')
+          .select('business_name')
+          .eq('id', inv.store_id)
+          .single();
+
+        const { data: listing } = await supabase
+          .from('listings')
+          .select('title')
+          .eq('id', inv.listing_id)
+          .single();
+
+        pending.push({
+          inventoryId: inv.id,
+          bookingId: inv.booking_id,
+          storeId: inv.store_id,
+          storeName: store?.business_name || 'Store',
+          listingTitle: listing?.title || 'Annuncio',
+          completedAt: userType === 'hubber' ? inv.hubber_pickup_at : inv.renter_return_at,
+        });
+      }
+
+      setPendingStoreReviews(pending);
+      setShowStoreTab(pending.length > 0);
+    } catch (err) {
+      console.error('Errore caricamento recensioni store:', err);
+    }
+  };
+
   const loadReceivedReviews = async () => {
     try {
       const reviews = userType === 'hubber'
@@ -191,6 +272,142 @@ useEffect(() => {
     }
   };
 
+ const submitStoreReview = async (item: PendingStoreReview) => {
+    if (storeReviewRating === 0) return;
+    setSubmittingStoreReview(true);
+    try {
+      await supabase.from('store_reviews').insert({
+        store_id: item.storeId,
+        reviewer_id: userId,
+        booking_id: item.bookingId,
+        inventory_id: item.inventoryId,
+        reviewer_role: userType,
+        rating: storeReviewRating,
+        rating_courtesy: storeReviewCourtesy || null,
+        rating_care: storeReviewCare || null,
+        rating_punctuality: storeReviewPunctuality || null,
+        comment: storeReviewComment.trim() || null,
+        is_visible: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+      // Rimuovi dalla lista
+      setPendingStoreReviews(prev => prev.filter(r => r.bookingId !== item.bookingId));
+      setSelectedStoreReview(null);
+      setStoreReviewRating(0);
+      setStoreReviewComment('');
+      setStoreReviewCourtesy(0);
+      setStoreReviewCare(0);
+      setStoreReviewPunctuality(0);
+
+      // Nascondi tab se non ci sono più recensioni pending
+      if (pendingStoreReviews.length <= 1) {
+        setShowStoreTab(false);
+        setActiveTab('pending');
+      }
+    } catch (err) {
+      console.error('Errore invio recensione store:', err);
+    } finally {
+      setSubmittingStoreReview(false);
+    }
+  };
+
+  const renderStoreTab = () => {
+    if (pendingStoreReviews.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <CheckCircle2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">Nessuna recensione store da lasciare</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {pendingStoreReviews.map(item => (
+          <div key={item.bookingId} className="bg-white border border-gray-200 rounded-xl p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <p className="font-semibold text-gray-900">{item.storeName}</p>
+                <p className="text-xs text-gray-500">{item.listingTitle}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {new Date(item.completedAt).toLocaleDateString('it-IT')}
+                </p>
+              </div>
+              <span className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-full font-medium">
+                Da recensire
+              </span>
+            </div>
+
+            {selectedStoreReview?.bookingId === item.bookingId ? (
+              <div className="space-y-3">
+                {/* Valutazione globale */}
+                <div>
+                  <p className="text-xs font-medium text-gray-700 mb-1">Valutazione generale</p>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <button key={n} onClick={() => setStoreReviewRating(n)}>
+                        <Star className={`w-7 h-7 transition-colors ${n <= storeReviewRating ? 'text-amber-400 fill-current' : 'text-gray-300'}`} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Criteri */}
+                {[
+                  { key: 'courtesy', label: '😊 Cortesia', value: storeReviewCourtesy, setter: setStoreReviewCourtesy },
+                  { key: 'care', label: '📦 Cura dell\'oggetto', value: storeReviewCare, setter: setStoreReviewCare },
+                  { key: 'punctuality', label: '⏱️ Puntualità', value: storeReviewPunctuality, setter: setStoreReviewPunctuality },
+                ].map(criterion => (
+                  <div key={criterion.key}>
+                    <p className="text-xs font-medium text-gray-700 mb-1">{criterion.label}</p>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <button key={n} onClick={() => criterion.setter(n)}>
+                          <Star className={`w-5 h-5 transition-colors ${n <= criterion.value ? 'text-amber-400 fill-current' : 'text-gray-300'}`} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {/* Commento */}
+                <textarea
+                  value={storeReviewComment}
+                  onChange={e => setStoreReviewComment(e.target.value)}
+                  placeholder="Lascia un commento (opzionale)..."
+                  className="w-full border border-gray-200 rounded-lg p-3 text-sm resize-none focus:ring-2 focus:ring-brand outline-none"
+                  rows={3}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => submitStoreReview(item)}
+                    disabled={storeReviewRating === 0 || submittingStoreReview}
+                    className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50 transition-colors"
+                  >
+                    {submittingStoreReview ? 'Invio...' : 'Invia recensione'}
+                  </button>
+                  <button
+                    onClick={() => { setSelectedStoreReview(null); setStoreReviewRating(0); setStoreReviewComment(''); setStoreReviewCourtesy(0); setStoreReviewCare(0); setStoreReviewPunctuality(0); }}
+                    className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    Annulla
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setSelectedStoreReview(item)}
+                className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Scrivi recensione
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const renderPendingTab = () => {
     if (pendingReviews.length === 0) {
@@ -507,6 +724,29 @@ useEffect(() => {
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0D414B]" />
             )}
           </button>
+        {showStoreTab && (
+            <button
+              onClick={() => setActiveTab('store')}
+              className={`pb-4 px-1 relative ${
+                activeTab === 'store'
+                  ? 'text-[#0D414B] font-medium'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4" />
+                Store
+                {pendingStoreReviews.length > 0 && (
+                  <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {pendingStoreReviews.length}
+                  </span>
+                )}
+              </div>
+              {activeTab === 'store' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0D414B]" />
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -520,6 +760,7 @@ useEffect(() => {
           {activeTab === 'pending' && renderPendingTab()}
           {activeTab === 'received' && renderReceivedTab()}
           {activeTab === 'given' && renderGivenTab()}
+          {activeTab === 'store' && renderStoreTab()}
         </>
       )}
 
