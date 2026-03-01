@@ -410,6 +410,8 @@ export interface Listing {
   pickupCity?: string;
   pickupInstructions?: string;
   cleaningFee?: number;
+  store_id?: string | null;
+  short_code?: string | null;
 
   createdAt?: string; // 🔥 AGGIUNTO per ordinamento e compatibilità
   view_count?: number; // 🔥 CONTEGGIO VISUALIZZAZIONI REALI

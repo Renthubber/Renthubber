@@ -55,6 +55,7 @@ import { AntidiscriminazionePage } from "./pages/AntidiscriminazionePage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { TerminiPage } from "./pages/TerminiPage";
 import { MappaSitoPage } from "./pages/MappaSitoPage";
+import StoreAdesionePage from './pages/StoreAdesionePage';
 // === CONTEXT ===
 import { BrandingProvider } from "./context/BrandingProvider";
 
@@ -65,6 +66,13 @@ import { CollaboratorRegistration } from './collaboratori/components/Collaborato
 import { ProtectedCollaboratorRoute } from './collaboratori/components/ProtectedCollaboratorRoute';
 import { CollaboratorDashboard } from './collaboratori/components/CollaboratorDashboard';
 import { CollaboratorReferralLanding } from './collaboratori/components/CollaboratorReferralLanding';
+
+// === STORE AUTORIZZATO ===
+import { StoreAuthProvider } from './store/context/StoreAuthContext';
+import { ProtectedStoreRoute } from './store/components/ProtectedStoreRoute';
+import { StoreDashboard } from './store/components/StoreDashboard';
+import { StoreLogin } from './store/components/StoreLogin';
+import { PublicStoreProfilePage } from './views/PublicStoreProfile';
 
 import {
   Listing,
@@ -817,11 +825,29 @@ const handleRenterClick = async (renter: User) => {
   </CollaboratorAuthProvider>
 } />
 
+{/* ============================================================ */}
+{/* STORE AUTORIZZATO */}
+{/* ============================================================ */}
+<Route path="/store/login" element={
+  <StoreAuthProvider>
+    <StoreLogin />
+  </StoreAuthProvider>
+} />
+<Route path="/store/dashboard" element={
+  <StoreAuthProvider>
+    <ProtectedStoreRoute>
+      <StoreDashboard />
+    </ProtectedStoreRoute>
+  </StoreAuthProvider>
+} />
+<Route path="/store/profile/:storeId" element={<PublicStoreProfilePage />} />
+<Route path="/store" element={<StoreAdesionePage />} />
+
         </Routes>
       </main>
 
       {/* Bottom Navigation Bar - Solo Mobile */}
-      {!location.pathname.startsWith('/collaboratori') && !location.pathname.startsWith('/promo') && (
+      {!location.pathname.startsWith('/collaboratori') && !location.pathname.startsWith('/promo') && ( !location.pathname.startsWith('/store/dashboard') &&
   <BottomNavBar
     currentUser={currentUser}
     activeMode={activeMode}
@@ -840,7 +866,8 @@ const handleRenterClick = async (renter: User) => {
        !location.pathname.startsWith('/become-hubber') && 
        !location.pathname.startsWith('/edit-listing') && 
        !location.pathname.startsWith('/collaboratori') && 
-       !location.pathname.startsWith('/promo') && (
+       !location.pathname.startsWith('/promo') && 
+       !location.pathname.startsWith('/store/dashboard') && (
         <Footer />
       )}
     </div>
