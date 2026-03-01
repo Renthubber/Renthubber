@@ -199,11 +199,69 @@ export const AdminCollaboratori: React.FC = () => {
       const { error } = await supabase.from('collaborators').update({ status: newStatus }).eq('id', id);
       if (error) throw error;
       setCollaborators(prev => prev.map(c => c.id === id ? { ...c, status: newStatus as any } : c));
-      // Se approvato, approva anche le zone in attesa
+
+      const collab = collaborators.find(c => c.id === id);
+
+      // Se approvato, approva anche le zone in attesa + invia email credenziali
       if (newStatus === 'approvato') {
         await supabase.from('collaborator_zones').update({ status: 'approvata' }).eq('collaborator_id', id).eq('status', 'richiesta');
         setZones(prev => prev.map(z => z.collaborator_id === id && z.status === 'richiesta' ? { ...z, status: 'approvata' } : z));
+
+        try {
+          const { data: template } = await supabase.from('email_templates').select('body_html, body_text').eq('id', 'tpl-collaborator-approved').single();
+          await supabase.from('email_queue').insert({
+            template_id: 'tpl-collaborator-approved',
+            recipient_email: collab?.email,
+            recipient_name: `${collab?.first_name} ${collab?.last_name}`,
+            subject: 'Benvenuto su RentHubber - Le tue credenziali di accesso',
+            body_html: template?.body_html || '',
+            body_text: template?.body_text || '',
+            variables: { first_name: collab?.first_name, email: collab?.email },
+            status: 'pending',
+            scheduled_at: new Date().toISOString(),
+            sender_account_id: '44fb76f6-ba5d-4594-a0b0-0ee0309920e5',
+          });
+        } catch (emailErr) { console.warn('Email approvazione non inviata:', emailErr); }
       }
+
+      // Se sospeso
+      if (newStatus === 'sospeso') {
+        try {
+          const { data: template } = await supabase.from('email_templates').select('body_html, body_text').eq('id', 'tpl-collaborator-suspended').single();
+          await supabase.from('email_queue').insert({
+            template_id: 'tpl-collaborator-suspended',
+            recipient_email: collab?.email,
+            recipient_name: `${collab?.first_name} ${collab?.last_name}`,
+            subject: 'Il tuo account collaboratore è stato sospeso',
+            body_html: template?.body_html || '',
+            body_text: template?.body_text || '',
+            variables: { first_name: collab?.first_name },
+            status: 'pending',
+            scheduled_at: new Date().toISOString(),
+            sender_account_id: '44fb76f6-ba5d-4594-a0b0-0ee0309920e5',
+          });
+        } catch (emailErr) { console.warn('Email sospensione non inviata:', emailErr); }
+      }
+
+      // Se rifiutato
+      if (newStatus === 'rifiutato') {
+        try {
+          const { data: template } = await supabase.from('email_templates').select('body_html, body_text').eq('id', 'tpl-collaborator-terminated').single();
+          await supabase.from('email_queue').insert({
+            template_id: 'tpl-collaborator-terminated',
+            recipient_email: collab?.email,
+            recipient_name: `${collab?.first_name} ${collab?.last_name}`,
+            subject: 'Il tuo account collaboratore è stato cancellato',
+            body_html: template?.body_html || '',
+            body_text: template?.body_text || '',
+            variables: { first_name: collab?.first_name },
+            status: 'pending',
+            scheduled_at: new Date().toISOString(),
+            sender_account_id: '44fb76f6-ba5d-4594-a0b0-0ee0309920e5',
+          });
+        } catch (emailErr) { console.warn('Email rifiuto non inviata:', emailErr); }
+      }
+
     } catch (err) { console.error(err); alert('Errore aggiornamento.'); }
     finally { setActionLoading(null); }
   };
