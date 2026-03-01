@@ -6,7 +6,7 @@ import {
   LogOut, Download, KeyRound, Trash2, FileCheck, Landmark, CheckCircle2,
   CalendarCheck, ShoppingBag, Plus, Eye, EyeOff, MapPin, Clock, Tag,
   MessageSquare, Send, AlertCircle, Headphones, UserCheck, Lock, CreditCard, Percent, Wallet,
-  ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Gift, Star, Mail, Megaphone, Calendar,
+  ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Gift, Star, Mail, Megaphone, Calendar,Store as StoreIcon,
 } from 'lucide-react';
 
 import { 
@@ -57,6 +57,7 @@ import { OnlineIndicator } from '../components/OnlineIndicator';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import { AdminDisputesPage } from './AdminDisputesPage';
 import { AdminCollaboratori } from '../components/admin/AdminCollaboratori';
+import { AdminStoreManager } from '../components/admin/AdminStoreManager';
 import { AdminUsersMap } from '../components/admin/AdminUsersMap';
 import { AdminBookingDetailModal } from '../components/admin/AdminBookingDetailModal';
 
@@ -137,7 +138,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<
-'overview' | 'users' | 'listings' | 'bookings' | 'messages' | 'support' | 'finance' | 'invoices' | 'cms' | 'disputes' | 'reviews' | 'email' | 'announcements' | 'config' | 'referral' | 'collaboratori' | 'map'
+'overview' | 'users' | 'listings' | 'bookings' | 'messages' | 'support' | 'finance' | 'invoices' | 'cms' | 'disputes' | 'reviews' | 'email' | 'announcements' | 'config' | 'referral' | 'collaboratori' | 'stores' | 'map'
 >('overview');
   // Sotto-tab per Finanza & Wallet
 const [financeSubTab, setFinanceSubTab] = useState <
@@ -9081,6 +9082,16 @@ const renderCMS = () => <AdminCMSBranding />;
             <Users className="w-5 h-5 mr-3" /> Collaboratori
           </button>
           <button
+            onClick={() => setActiveTab('stores')}
+            className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
+              activeTab === 'stores'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+            }`}
+          >
+            <StoreIcon className="w-5 h-5 mr-3" /> Store
+          </button>
+          <button
             onClick={() => setActiveTab('config')}
             className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
               activeTab === 'config'
@@ -9150,6 +9161,7 @@ const renderCMS = () => <AdminCMSBranding />;
     {activeTab === 'announcements' && (<AdminAnnouncements currentUser={currentUser} />)}
     {activeTab === 'referral' && <ReferralSettings />}
     {activeTab === 'collaboratori' && <AdminCollaboratori />}
+    {activeTab === 'stores' && <AdminStoreManager />}
     {activeTab === 'map' && <AdminUsersMap />}
     {activeTab === 'config' && renderConfig()}
   </div>

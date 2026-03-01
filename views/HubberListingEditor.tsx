@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Listing, CancellationPolicyType, ListingCategory } from '../types';
 import { 
   Save, ArrowLeft, Camera, Upload, MapPin, DollarSign, 
-  FileText, Shield, Plus, X, Clock, Users, Home, Loader2, Search, ChevronLeft, ChevronRight
+  FileText, Shield, Plus, X, Clock, Users, Home, Loader2, Search, ChevronLeft, ChevronRight,
+  Store as StoreIcon
 } from 'lucide-react';
 import { searchItalianCities, CitySuggestion } from '../services/geocodingService';
 import { processImageSingle } from '../utils/imageProcessing';
@@ -30,6 +31,23 @@ export const HubberListingEditor: React.FC<HubberListingEditorProps> = ({ listin
   
   // 🖼️ Stato per il processing delle immagini
   const [isProcessingImages, setIsProcessingImages] = useState(false);
+  // 🏪 Store disponibili
+  const [availableStores, setAvailableStores] = useState<{id: string; business_name: string; address: string; city: string}[]>([]);
+  const [selectedStoreId, setSelectedStoreId] = useState<string>(listing.store_id || '');
+
+  useEffect(() => {
+    const loadStores = async () => {
+      const { data: userData } = await supabase.from('users').select('city').eq('id', listing.hostId).single();
+      if (!userData?.city) return;
+      const { data: stores } = await supabase
+        .from('stores')
+        .select('id, business_name, address, city')
+        .eq('status', 'active')
+        .ilike('city', userData.city.trim());
+      if (stores && stores.length > 0) setAvailableStores(stores);
+    };
+    loadStores();
+  }, [listing.hostId]);
 
   // --- AUTOCOMPLETE CITTÀ ---
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
@@ -132,7 +150,8 @@ if (!formData.images || formData.images.length === 0) {
         bathrooms: (dataToSave as any).alloggioSpecs?.bathrooms ?? null,
         furnished: (dataToSave as any).alloggioSpecs?.furnished || null,
         utilities_included: (dataToSave as any).alloggioSpecs?.utilitiesIncluded || null,
-        min_stay_months: (dataToSave as any).alloggioSpecs?.minStayMonths ?? 1
+        min_stay_months: (dataToSave as any).alloggioSpecs?.minStayMonths ?? 1,
+        store_id: selectedStoreId || null
       })
       .eq('id', dataToSave.id);
 
@@ -956,6 +975,45 @@ if (!formData.images || formData.images.length === 0) {
                   />
                 </div>
               </div>
+  
+              {/* 🏪 Store Autorizzato */}
+              {availableStores.length > 0 && formData.category === 'oggetto' && (
+                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                    <StoreIcon className="w-5 h-5 mr-2 text-brand" />
+                    Store Autorizzato
+                    <span className="ml-2 text-xs font-normal text-gray-400">(opzionale)</span>
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Scegli uno Store Autorizzato dove depositare l'oggetto per il ritiro.
+                  </p>
+                  <select
+                    value={selectedStoreId}
+                    onChange={(e) => setSelectedStoreId(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-sm focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
+                  >
+                    <option value="">Nessuno store (consegna diretta)</option>
+                    {availableStores.map(s => (
+                      <option key={s.id} value={s.id}>
+                        🏪 {s.business_name} — {s.address}, {s.city}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedStoreId && (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-start gap-2">
+                      <StoreIcon className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-green-800">
+                          {availableStores.find(s => s.id === selectedStoreId)?.business_name}
+                        </p>
+                        <p className="text-xs text-green-600">
+                          L'oggetto sarà depositato presso questo store.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Extra Details based on Category */}
 {formData.category === 'spazio' && (

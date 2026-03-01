@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Listing, User } from '../types';
-import { Plus, Edit, Trash2, Eye, Star, Package, ExternalLink, PauseCircle, Play, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Star, Package, ExternalLink, PauseCircle, Play, X, QrCode, Download } from 'lucide-react';
 import { supabase } from "../services/supabaseClient";
 import { api } from '../services/api';
 
@@ -22,6 +22,7 @@ export const MyListings: React.FC<MyListingsProps> = ({
   const [previewListing, setPreviewListing] = useState<Listing | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSuspending, setIsSuspending] = useState(false);
+  const [qrListing, setQrListing] = useState<Listing | null>(null);
 
   // 🔹 Filtra per hostId se presente, altrimenti usa owner.id (compatibilità vecchi dati)
   const myListings = listings.filter((l) =>
@@ -57,6 +58,44 @@ export const MyListings: React.FC<MyListingsProps> = ({
     } finally {
       setIsSuspending(false);
     }
+  };
+
+ const generateQRContent = (listingId: string) => {
+    return `RENTHUBBER_LISTING:${listingId}`;
+  };
+
+  const handleDownloadQR = (listing: Listing) => {
+    const canvas = document.createElement('canvas');
+    const size = 300;
+    canvas.width = size;
+    canvas.height = size + 60;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(generateQRContent(listing.id))}`;
+    
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, size, size);
+      ctx.fillStyle = '#111827';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(listing.title.slice(0, 30), size / 2, size + 20);
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(`ID: ${listing.id.slice(0, 8)}...`, size / 2, size + 40);
+      ctx.fillText('RentHubber Store', size / 2, size + 55);
+
+      const link = document.createElement('a');
+      link.download = `qr_${listing.title.replace(/\s+/g, '_').slice(0, 20)}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+    img.src = qrUrl;
   };
 
   // 🔹 ELIMINA ANNUNCIO (con logica intelligente soft/hard delete)
@@ -181,6 +220,18 @@ export const MyListings: React.FC<MyListingsProps> = ({
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
+
+          {/* 🔲 Sezione Store QR */}
+          {listing.store_id && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <button
+                onClick={(e) => { e.stopPropagation(); setQrListing(listing); }}
+                className="w-full flex items-center justify-center gap-2 bg-brand/5 hover:bg-brand/10 text-brand text-xs font-bold py-2.5 rounded-xl transition-colors"
+              >
+                <QrCode className="w-4 h-4" /> Mostra QR Code Store
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -251,6 +302,61 @@ export const MyListings: React.FC<MyListingsProps> = ({
         </div>
       </div>
 
+     {/* 🔲 QR CODE MODAL */}
+      {qrListing && (
+        <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <div>
+                <h3 className="font-bold text-gray-900">QR Code Store</h3>
+                <p className="text-xs text-gray-500 mt-0.5">{qrListing.title}</p>
+              </div>
+              <button onClick={() => setQrListing(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col items-center">
+              <div className="bg-white p-4 rounded-2xl border-2 border-gray-100 mb-4">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`RENTHUBBER:${(qrListing as any).short_code || qrListing.id}`)}`}
+                  alt="QR Code"
+                  className="w-56 h-56"
+                />
+              </div>
+              
+              <p className="text-xs text-gray-500 text-center mb-1">
+                Mostra questo QR allo Store Autorizzato
+              </p>
+              <div className="text-center mb-4">
+                <p className="text-2xl font-bold tracking-widest text-gray-900 mb-1">
+                  {(qrListing as any).short_code || qrListing.id.slice(0, 6).toUpperCase()}
+                </p>
+                <p 
+                  className="text-xs text-gray-400 font-mono cursor-pointer hover:text-brand"
+                  onClick={() => { navigator.clipboard.writeText((qrListing as any).short_code || qrListing.id.slice(0, 6)); alert('Codice copiato!'); }}
+                >
+                  📋 Tocca per copiare il codice
+                </p>
+              </div>
+
+              <div className="w-full bg-brand/5 border border-brand/20 rounded-xl p-3 mb-4">
+                <p className="text-xs text-brand font-medium text-center">
+                  📦 Porta l'oggetto allo store e fai scansionare questo codice per il deposito
+                </p>
+              </div>
+
+              <button
+                onClick={() => handleDownloadQR(qrListing)}
+                className="w-full flex items-center justify-center gap-2 bg-brand text-white font-bold py-3 rounded-xl hover:bg-brand-dark transition-colors"
+              >
+                <Download className="w-4 h-4" /> Scarica QR Code
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    
       {/* 🔍 MODAL PREVIEW ANNUNCIO */}
       {previewListing && (
        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] sm:flex sm:items-center sm:justify-center sm:p-4">

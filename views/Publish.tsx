@@ -19,7 +19,8 @@ import {
   Plus,
   Loader2,
   Home,
-  Users
+  Users,
+  Store as StoreIcon
 } from 'lucide-react';
 import { generateListingDescription, suggestPrice } from '../services/geminiService';
 import { ListingDraft, Condition, CancellationPolicyType, Listing, User } from '../types';
@@ -60,6 +61,36 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
   
   // 🖼️ Stato per il processing delle immagini
   const [isProcessingImages, setIsProcessingImages] = useState(false);
+
+  // 🏪 Store disponibili nella città dell'utente
+  const [availableStores, setAvailableStores] = useState<{id: string; business_name: string; address: string; city: string}[]>([]);
+  const [selectedStoreId, setSelectedStoreId] = useState<string>('');
+
+  useEffect(() => {
+    const loadStores = async () => {
+      if (!currentUser?.id) return;
+      
+      const { data: userData } = await supabase
+        .from('users')
+        .select('city')
+        .eq('id', currentUser.id)
+        .single();
+      
+      if (!userData?.city) return;
+
+      const { data: stores } = await supabase
+        .from('stores')
+        .select('id, business_name, address, city')
+        .eq('status', 'active')
+        .ilike('city', userData.city.trim());
+
+      if (stores && stores.length > 0) {
+        setAvailableStores(stores);
+      }
+    };
+
+    loadStores();
+  }, [currentUser]);
 
   // --- DRAFT STATE ---
   const [draft, setDraft] = useState<ListingDraft>({
@@ -358,6 +389,7 @@ const moveImageRight = (index: number) => {
         openingHours: draft.openingHours,
         closingHours: draft.closingHours,
         manualBadges: draft.manualBadges,
+        store_id: selectedStoreId || null,
         // 👇 TECH/SPACE SPECS
         techSpecs: draft.category === 'oggetto'
           ? {
@@ -1034,6 +1066,47 @@ const moveImageRight = (index: number) => {
           </div>
         </div>
       </div>
+
+      {/* 🏪 Selezione Store Autorizzato (opzionale) */}
+      {availableStores.length > 0 && draft.category === 'oggetto' && (
+        <div className="border-t border-gray-200 pt-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center">
+            <StoreIcon className="w-5 h-5 mr-2 text-brand" />
+            Store Autorizzato
+            <span className="ml-2 text-xs font-normal text-gray-400">(opzionale)</span>
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Scegli uno Store Autorizzato nella tua città dove depositare l'oggetto. Il renter potrà ritirarlo comodamente in negozio.
+          </p>
+          
+          <select
+            value={selectedStoreId}
+            onChange={(e) => setSelectedStoreId(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-sm focus:ring-2 focus:ring-brand focus:border-transparent outline-none"
+          >
+            <option value="">Nessuno store (consegna diretta)</option>
+            {availableStores.map(s => (
+              <option key={s.id} value={s.id}>
+                🏪 {s.business_name} — {s.address}, {s.city}
+              </option>
+            ))}
+          </select>
+
+          {selectedStoreId && (
+            <div className="mt-3 bg-green-50 border border-green-200 rounded-xl p-3 flex items-start gap-2">
+              <StoreIcon className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-green-800">
+                  {availableStores.find(s => s.id === selectedStoreId)?.business_name}
+                </p>
+                <p className="text-xs text-green-600">
+                  L'oggetto sarà depositato presso questo store. Il renter riceverà le info di ritiro dopo la prenotazione.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Dettagli Spazio - solo per categoria spazio */}
       {draft.category === 'spazio' && (
