@@ -22,8 +22,12 @@ export const ProtectedStoreRoute: React.FC<{ children: React.ReactNode }> = ({ c
     );
   }
 
-  if (!isAuthenticated || !store) {
+ if (!isAuthenticated || !store) {
     return <Navigate to="/store/login" replace />;
+  }
+
+  if (!store.activated_at) {
+    return <Navigate to="/store/attivazione" replace />;
   }
 
   return <>{children}</>;
