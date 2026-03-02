@@ -9,6 +9,12 @@ const OG_PAGES = {
     image: 'https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/Renthubber_attivo_a_Catania.webp',
     url: 'https://renthubber.com/promo/lancio-catania',
   },
+  '/store': {
+    title: 'Diventa un Renthubber Store Autorizzato!',
+    description: 'Entra nella rete di punti fisici partner di Renthubber. Genera nuove entrate dalla tua attività commerciale senza stravolgere il tuo business. Candidati ora!',
+    image: 'https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/diventa%20uno%20store%20autorizzato.webp',
+    url: 'https://renthubber.com/store',
+  },
   // Aggiungi altre pagine promo qui in futuro:
   // '/promo/lancio-milano': { title: '...', description: '...', image: '...', url: '...' },
 };
