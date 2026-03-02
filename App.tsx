@@ -72,6 +72,7 @@ import { StoreAuthProvider } from './store/context/StoreAuthContext';
 import { ProtectedStoreRoute } from './store/components/ProtectedStoreRoute';
 import { StoreDashboard } from './store/components/StoreDashboard';
 import { StoreLogin } from './store/components/StoreLogin';
+import { StoreActivation } from './store/components/StoreActivation';
 import { PublicStoreProfilePage } from './views/PublicStoreProfile';
 
 import {
@@ -831,6 +832,11 @@ const handleRenterClick = async (renter: User) => {
 <Route path="/store/login" element={
   <StoreAuthProvider>
     <StoreLogin />
+  </StoreAuthProvider>
+} />
+<Route path="/store/attivazione" element={
+  <StoreAuthProvider>
+    <StoreActivation />
   </StoreAuthProvider>
 } />
 <Route path="/store/dashboard" element={
