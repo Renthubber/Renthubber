@@ -32,6 +32,10 @@
   path = "/invito/*"
   function = "og-inject"  
 
+[[edge_functions]]
+  path = "/store"
+  function = "og-inject"  
+
 # ✅ Headers per il sitemap
 [[headers]]
   for = "/sitemap.xml"
