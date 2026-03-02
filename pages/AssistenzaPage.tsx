@@ -68,7 +68,7 @@ export const AssistenzaPage: React.FC = () => {
                 così da rendere sempre più semplice trovare le informazioni che cerchi.
               </p>
               <a
-                href="#"
+                href="/faq"
                 className="inline-block mt-6 text-sm font-semibold text-[#0D414B] hover:underline"
               >
                 Vai alle Domande frequenti
