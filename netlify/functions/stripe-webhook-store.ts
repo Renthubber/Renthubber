@@ -52,8 +52,8 @@ export const handler: Handler = async (event, context) => {
   try {
     switch (stripeEvent.type) {
 
-      case 'invoice.paid':
-        await handleInvoicePaid(stripeEvent.data.object as Stripe.Invoice, stripe, SUPABASE_URL, SUPABASE_SERVICE_KEY);
+      case 'payment_intent.succeeded':
+        await handleActivationPayment(stripeEvent.data.object as Stripe.PaymentIntent, SUPABASE_URL, SUPABASE_SERVICE_KEY);
         break;
 
       case 'customer.subscription.updated':
@@ -75,6 +75,57 @@ export const handler: Handler = async (event, context) => {
     return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
   }
 };
+
+/**
+ * Gestisce pagamento quota iscrizione store
+ */
+async function handleActivationPayment(
+  paymentIntent: Stripe.PaymentIntent,
+  SUPABASE_URL: string,
+  SUPABASE_SERVICE_KEY: string
+) {
+  if (paymentIntent.metadata?.type !== 'store_activation') return;
+
+  const storeId = paymentIntent.metadata?.store_id;
+  if (!storeId) return;
+
+  // Attiva lo store
+  await fetch(`${SUPABASE_URL}/rest/v1/stores?id=eq.${storeId}`, {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      activated_at: new Date().toISOString(),
+      subscription_status: 'active',
+    }),
+  });
+
+  // Registra transazione
+  await fetch(`${SUPABASE_URL}/rest/v1/store_transactions`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      store_id: storeId,
+      transaction_type: 'activation_fee',
+      amount: paymentIntent.amount,
+      vat_amount: Math.round(paymentIntent.amount - (paymentIntent.amount / 1.22)),
+      net_amount: Math.round(paymentIntent.amount / 1.22),
+      stripe_payment_id: paymentIntent.id,
+      status: 'completed',
+      description: 'Quota iscrizione Store RentHubber',
+      created_at: new Date().toISOString(),
+    }),
+  });
+
+  console.log(`✅ Store ${storeId} attivato con quota iscrizione`);
+}
 
 /**
  * Pagamento abbonamento riuscito (primo mese o rinnovo)
