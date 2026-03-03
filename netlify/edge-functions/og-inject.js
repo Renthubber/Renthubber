@@ -15,6 +15,13 @@ const OG_PAGES = {
     image: 'https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/diventa%20uno%20store%20autorizzato.webp',
     url: 'https://renthubber.com/store',
   },
+
+  '/lavora-con-noi': {
+    title: 'Diventa Collaboratore Renthubber!',
+    description: 'Trasforma le tue connessioni in opportunità reali. Guadagna commissioni ricorrenti portando nuovi Hubber sulla piattaforma. €0 investimento iniziale.',
+    image: 'https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/lavora-con-noi.webp',
+    url: 'https://renthubber.com/lavora-con-noi',
+  },
   // Aggiungi altre pagine promo qui in futuro:
   // '/promo/lancio-milano': { title: '...', description: '...', image: '...', url: '...' },
 };
