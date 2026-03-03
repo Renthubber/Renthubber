@@ -46,7 +46,7 @@ export const DiventareHubberPage: React.FC = () => {
       <div className="mb-4">
         <h3 className="font-semibold text-gray-900 mb-2">Spazi:</h3>
         <p className="text-gray-600 text-sm leading-relaxed text-justify">
-          Sale per eventi e feste, uffici temporanei o coworking privati, magazzini 
+          Sale per eventi e feste, uffici temporanei o coworking privati,residenziali per medio e lungo termine, abitazioni per studenti, lavoratori fuori sede, magazzini 
           e depositi, terrazzi e giardini per eventi all'aperto, terreni agricoli, 
           garage o box auto, laboratori attrezzati, cucine professionali, studi 
           fotografici o sale prove.
@@ -69,8 +69,8 @@ export const DiventareHubberPage: React.FC = () => {
     </div>
     <div className="ml-3">
       <p className="text-sm text-yellow-800 font-medium">
-        <strong>Importante:</strong> Non è possibile pubblicare annunci di alloggi o abitazioni su Renthubber. 
-        La piattaforma è dedicata esclusivamente a oggetti e spazi non residenziali.
+        <strong>Importante:</strong> Non è possibile pubblicare annunci di alloggi destinati ad affitti brevi su Renthubber. 
+        La piattaforma è dedicata esclusivamente a oggetti e spazi non residenziali o residenziali per affitto di medio e lungo termine.
       </p>
     </div>
   </div>
