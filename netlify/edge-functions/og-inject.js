@@ -76,7 +76,7 @@ export default async (request, context) => {
     const referralOG = {
       title: `${userName} ti invita su Renthubber!`,
       description: `Registrati con il suo invito e ricevi un bonus sul tuo primo noleggio. Noleggia ciò che ti serve. Guadagna da ciò che non usi.`,
-      image: 'https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png',
+      image: 'https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/Scopri_Renthubber.png',
       url: fullUrl,
     };
 
