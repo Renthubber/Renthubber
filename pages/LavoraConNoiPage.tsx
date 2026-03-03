@@ -86,8 +86,7 @@ export const LavoraConNoiPage: React.FC = () => {
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8 text-justify md:text-center">
               Trasforma le tue connessioni in opportunità reali. Guadagna
-              commissioni ricorrenti portando nuovi Hubber sulla piattaforma del
-              noleggio tra privati.
+              commissioni ricorrenti portando nuovi Hubber sulla piattaforma.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
@@ -169,8 +168,8 @@ export const LavoraConNoiPage: React.FC = () => {
                 Cos'è Renthubber?
               </h2>
               <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-                Il primo marketplace italiano per il noleggio tra privati di
-                oggetti e spazi. Noleggia tutto tranne gli alloggi.
+                Il primo marketplace italiano per il noleggio di
+                oggetti e spazi. Puoi noleggiare tutto tranne gli alloggi destinati agli affitti brevi.
               </p>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
