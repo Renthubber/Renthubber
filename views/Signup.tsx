@@ -196,6 +196,20 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
          console.warn("Document upload issue (non-blocking):", uploadErr);
        }
 
+       // ✅ APPLICA PROMO SE PRESENTE
+       if (promoCode && isValidPromo(promoCode)) {
+         try {
+           const promoApplied = await applyPromoToUser(user.id, promoCode);
+           if (promoApplied) {
+             console.log(`✅ Promo "${promoCode}" applicata con successo`);
+           } else {
+             console.warn(`⚠️ Promo "${promoCode}" non applicata`);
+           }
+         } catch (promoErr) {
+           console.warn("⚠️ Errore applicazione promo (non bloccante):", promoErr);
+         }
+       }
+
        // Salviamo l'utente nello stato locale per il passaggio successivo
        setRegisteredUser(user);
 
@@ -673,6 +687,11 @@ export const Signup: React.FC<SignupProps> = ({ onComplete, initialStep = 'role'
         {formData.referralCode && (
            <span className="block mt-2 font-semibold text-brand-accent">
               🎁 Bonus in attesa! Completa la tua prima prenotazione per ottenerlo.
+           </span>
+        )}
+        {searchParams.get('promo') && isValidPromo(searchParams.get('promo')!) && (
+           <span className="block mt-2 font-semibold text-green-600">
+              🎉 Promo attivata! Hai 0% commissioni per 30 giorni o €1.000 di transazioni.
            </span>
         )}
       </p>
