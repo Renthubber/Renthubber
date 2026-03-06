@@ -6,7 +6,7 @@ import {
   LogOut, Download, KeyRound, Trash2, FileCheck, Landmark, CheckCircle2,
   CalendarCheck, ShoppingBag, Plus, Eye, EyeOff, MapPin, Clock, Tag,
   MessageSquare, Send, AlertCircle, Headphones, UserCheck, Lock, CreditCard, Percent, Wallet,
-  ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Gift, Star, Mail, Megaphone, Calendar,Store as StoreIcon,
+  ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Gift, Star, Mail, Megaphone, Calendar,Store as StoreIcon, Ticket,
 } from 'lucide-react';
 
 import { 
@@ -60,6 +60,8 @@ import { AdminCollaboratori } from '../components/admin/AdminCollaboratori';
 import { AdminStoreManager } from '../components/admin/AdminStoreManager';
 import { AdminUsersMap } from '../components/admin/AdminUsersMap';
 import { AdminBookingDetailModal } from '../components/admin/AdminBookingDetailModal';
+import { AdminRisorse } from '../components/admin/AdminRisorse';
+import { AdminEsperienze } from '../components/admin/AdminEsperienze';
 
 
 // Funzione per formattare data in italiano
@@ -137,8 +139,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   currentUser,
 }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<
-'overview' | 'users' | 'listings' | 'bookings' | 'messages' | 'support' | 'finance' | 'invoices' | 'cms' | 'disputes' | 'reviews' | 'email' | 'announcements' | 'config' | 'referral' | 'collaboratori' | 'stores' | 'map'
+  const [activeTab, setActiveTab] = useState <
+'overview' | 'users' | 'listings' | 'esperienze'| 'bookings' | 'messages' | 'support' | 'finance' | 'invoices' | 'cms' | 'disputes' | 'reviews' | 'email' | 'announcements' | 'config' | 'referral' | 'collaboratori' | 'stores' | 'map' | 'risorse'
 >('overview');
   // Sotto-tab per Finanza & Wallet
 const [financeSubTab, setFinanceSubTab] = useState <
@@ -584,7 +586,7 @@ const [userDocumentFilter, setUserDocumentFilter] = useState<'all' | 'to_verify'
   const [editListingForm, setEditListingForm] = useState<{
     title: string;
     description: string;
-    category: 'oggetto' | 'spazio';
+    category: 'oggetto' | 'spazio' | 'esperienza';
     subCategory: string;
     price: number;
     priceUnit: 'ora' | 'giorno' | 'settimana' | 'mese';
@@ -8954,6 +8956,16 @@ const renderCMS = () => <AdminCMSBranding />;
             )}
           </button>
           <button
+            onClick={() => setActiveTab('esperienze')}
+            className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
+              activeTab === 'esperienze'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+            }`}
+          >
+            <Ticket className="w-5 h-5 mr-3" /> Slot Esperienze
+          </button>
+          <button
             onClick={() => setActiveTab('disputes')}
             className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
               activeTab === 'disputes'
@@ -9092,6 +9104,16 @@ const renderCMS = () => <AdminCMSBranding />;
             <StoreIcon className="w-5 h-5 mr-3" /> Store
           </button>
           <button
+            onClick={() => setActiveTab('risorse')}
+            className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
+              activeTab === 'risorse'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+            }`}
+          >
+            <FileText className="w-5 h-5 mr-3" /> Risorse
+          </button>
+          <button
             onClick={() => setActiveTab('config')}
             className={`w-full flex items-center px-3 py-3 rounded-lg transition-colors ${
               activeTab === 'config'
@@ -9162,6 +9184,8 @@ const renderCMS = () => <AdminCMSBranding />;
     {activeTab === 'referral' && <ReferralSettings />}
     {activeTab === 'collaboratori' && <AdminCollaboratori />}
     {activeTab === 'stores' && <AdminStoreManager />}
+    {activeTab === 'risorse' && <AdminRisorse />}
+    {activeTab === 'esperienze' && <AdminEsperienze />}
     {activeTab === 'map' && <AdminUsersMap />}
     {activeTab === 'config' && renderConfig()}
   </div>

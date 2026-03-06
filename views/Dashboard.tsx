@@ -2582,7 +2582,7 @@ const renderHubberCalendar = () => {
     <CalendarListingSelector
       userId={user.id}
       userName={user.name}
-      listings={hubberListings} // 🆕 NON user.listings!
+      listings={hubberListings.filter(l => l.status !== 'suspended' && l.status !== 'draft')} // Mostra solo published
       onViewRenterProfile={onViewRenterProfile}
       onImportCalendar={handleImportCalendar}
       onSyncCalendar={handleSyncCalendar}
