@@ -1,0 +1,52 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Configurazione DEV locale
+[dev]
+  command = "npm run dev"
+  targetPort = 3000
+  port = 8888
+  publish = "dist"
+  autoLaunch = false
+
+# Configurazione Functions
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["nodemailer"]
+
+# ✅ Configurazione Edge Functions per Open Graph
+[[edge_functions]]
+  path = "/listing/*"
+  function = "og-preview"
+
+[[edge_functions]]
+  path = "/promo/*"
+  function = "og-inject"
+
+[[edge_functions]]
+  path = "/invito/*"
+  function = "og-inject"  
+
+[[edge_functions]]
+  path = "/store"
+  function = "og-inject"  
+
+[[edge_functions]]
+  path = "/lavora-con-noi"
+  function = "og-inject"
+
+[[edge_functions]]
+  path = "/risorse/*"
+  function = "og-risorse"
+
+# ✅ Headers per il sitemap
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Content-Type = "application/xml"
+    Cache-Control = "public, max-age=3600"

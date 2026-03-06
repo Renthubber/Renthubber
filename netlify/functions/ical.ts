@@ -1,0 +1,63 @@
+import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
+import { generateHubberICalFeed } from '../../services/ical';
+
+/**
+ * Netlify Function: iCal Export
+ * 
+ * Gestisce richieste GET a /.netlify/functions/ical
+ * URL pattern: /api/ical/:userId/:token.ics
+ * 
+ * Esempio: https://renthubber.com/.netlify/functions/ical?userId=xxx&token=yyy
+ */
+export const handler: Handler = async (
+  event: HandlerEvent,
+  context: HandlerContext
+) => {
+  // Solo GET
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
+      body: 'Method Not Allowed',
+    };
+  }
+
+  try {
+    // Estrai parametri dall'URL
+const params = event.queryStringParameters || {};
+const userId = params.userId;
+const token = params.token;
+const listingId = params.listingId; // 🆕 AGGIUNGI
+
+if (!userId || !token || !listingId) { // 🆕 Aggiungi || !listingId
+  return {
+    statusCode: 400,
+    body: 'Missing userId, token, or listingId', // 🆕 Aggiorna messaggio
+  };
+}
+
+// Genera il feed iCal
+const icalContent = await generateHubberICalFeed(userId, token, listingId); // 🆕 Passa listingId
+
+    // Restituisci con header appropriati
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'text/calendar; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="renthubber.ics"',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
+      body: icalContent,
+    };
+
+  } catch (error: any) {
+    console.error('Errore generazione iCal:', error);
+    
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'text/plain',
+      },
+      body: `Errore: ${error.message || 'Errore generazione calendario'}`,
+    };
+  }
+};

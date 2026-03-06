@@ -1,0 +1,29 @@
+{
+  "name": "RentHubber - Noleggio Peer-to-Peer",
+  "short_name": "RentHubber",
+  "description": "Piattaforma di noleggio peer-to-peer per oggetti e spazi in Italia",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/R-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/R-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "shopping", "lifestyle"],
+  "lang": "it-IT",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
+}
