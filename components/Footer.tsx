@@ -33,7 +33,8 @@ export const Footer: React.FC = () => {
               <li><Link to="/tariffe" className="hover:text-brand">Tariffe e Commissioni</Link></li>
               <li><Link to="/invita-amico" className="hover:text-brand">Programma Invita un amico</Link></li>
               <li><Link to="/super-hubber" className="hover:text-brand">Programma SuperHubber</Link></li>
-              <li><Link to="/investitori" className="hover:text-brand">Investitori</Link></li>
+              <li><Link to="/simulatore-guadagni" className="hover:text-brand">Simulatore di guadagno</Link></li>
+             <li><Link to="/risorse" className="hover:text-brand">Centro Risorse Hubber</Link></li>
               <li><Link to="/lavora-con-noi" className="hover:text-brand">Lavora con noi</Link></li>
               <li><Link to="/store" className="hover:text-brand">Diventa uno Store Autorizzato</Link></li>
             </ul>
@@ -48,6 +49,7 @@ export const Footer: React.FC = () => {
               <li><Link to="/assistenza" className="hover:text-brand">Centro assistenza</Link></li>
               <li><Link to="/cancellazione" className="hover:text-brand">Regole di cancellazione</Link></li>
               <li><Link to="/segnala" className="hover:text-brand">Segnala un problema</Link></li>
+               <li><Link to="/investitori" className="hover:text-brand">Investitori</Link></li>
               <li><Link to="/contatti" className="hover:text-brand">Contattaci</Link></li>
             </ul>
           </div>
