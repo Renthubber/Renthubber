@@ -288,6 +288,8 @@ async function createBookingAfterPayment(params: {
   totalAmountCents: number;
   stripePaymentIntentId?: string;
   listingTitle?: string;
+  experienceSlotId?: string;
+  participantsCount?: number;
 }): Promise<BookingRequest> {
   const { data, error } = await supabase
     .from("bookings")
@@ -301,6 +303,8 @@ async function createBookingAfterPayment(params: {
       status: "confirmed",
       payment_status: "paid",
       stripe_payment_intent_id: params.stripePaymentIntentId ?? null,
+      experience_slot_id: params.experienceSlotId ?? null,
+      participants_count: params.participantsCount ?? null,
     })
     .select("*")
     .single();
@@ -311,6 +315,14 @@ async function createBookingAfterPayment(params: {
   }
 
   const booking = mapBookingRowToRequest(data);
+
+  // Incrementa booked_count se esperienza
+  if (params.experienceSlotId && params.participantsCount) {
+    await supabase.rpc('increment_slot_booked_count', {
+      p_slot_id: params.experienceSlotId,
+      p_count: params.participantsCount,
+    });
+  }
   
   // 📧 Invia email di conferma prenotazione
 await notifyBookingConfirmed(booking.id);
@@ -609,11 +621,15 @@ async function getHubberBookings(userId: string): Promise<BookingRequest[]> {
 -------------------------------------------------------*/
 const normalizeCategory = (
   raw: string | null | undefined
-): "oggetto" | "spazio" => {
+): "oggetto" | "spazio" | "esperienza" => {
   const v = (raw || "").toLowerCase().trim();
 
   if (v.startsWith("spaz") || v.startsWith("space")) {
     return "spazio";
+  }
+
+  if (v.startsWith("esper")) {
+    return "esperienza";
   }
 
   return "oggetto";
@@ -697,6 +713,15 @@ manualBadges: row.manual_badges || [],
 view_count: row.view_count ?? 0,
     store_id: row.store_id || null,
     short_code: row.short_code || null,
+    // Esperienza
+    durationValue: row.duration_value || undefined,
+    durationUnit: row.duration_unit || undefined,
+    languages: row.languages || undefined,
+    difficulty: row.difficulty || undefined,
+    minAge: row.min_age || undefined,
+    included: row.included || [],
+    notIncluded: row.not_included || [],
+    priceType: row.price_type || 'persona',
   };
 };
 
@@ -1264,6 +1289,7 @@ export const api = {
         .from('listings')
         .select('*')
         .eq('owner_id', userId)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -1514,6 +1540,15 @@ if (ownerIds.length > 0) {
         min_stay_months: (listing as any).alloggioSpecs?.minStayMonths ?? 1,
         // Store autorizzato
         store_id: (listing as any).store_id || null,
+        // Esperienza
+        duration_value: (listing as any).durationValue || null,
+        duration_unit: (listing as any).durationUnit || null,
+        languages: (listing as any).languages || null,
+        difficulty: (listing as any).difficulty || null,
+        min_age: (listing as any).minAge || null,
+        included: (listing as any).included || [],
+        not_included: (listing as any).notIncluded || [],
+        price_type: (listing as any).priceType || 'persona',
       };
 
       const { data, error } = await supabase
@@ -2130,6 +2165,14 @@ if (hubberData) {
           return { success: false, error: "Errore durante la cancellazione." };
         }
 
+        // 6b. Se è un'esperienza, libera il posto nello slot
+        if (booking.experience_slot_id && booking.participants_count) {
+          await supabase.rpc('decrement_slot_booked_count', {
+            p_slot_id: booking.experience_slot_id,
+            p_count: booking.participants_count,
+          });
+        }
+
         // 7. Gestisci rimborso in base al metodo scelto
         if (refundAmount > 0) {
           if (refundMethod === 'wallet') {
@@ -2413,6 +2456,14 @@ if (cardPaidOriginal > 0) {
         if (updateError) {
           console.error("Errore aggiornamento stato:", updateError);
           return { success: false, error: "Errore durante la cancellazione." };
+        }
+
+        // 4b. Se è un'esperienza, libera il posto nello slot
+        if (booking.experience_slot_id && booking.participants_count) {
+          await supabase.rpc('decrement_slot_booked_count', {
+            p_slot_id: booking.experience_slot_id,
+            p_count: booking.participants_count,
+          });
         }
 
         // 5. Gestisci rimborso proporzionale al metodo di pagamento originale
@@ -5553,15 +5604,17 @@ issued_at: new Date().toISOString()
           }
         }
 
-        // 📧 Invia email di completamento prenotazione
-        await notifyBookingCompleted(bookingId);
+        if (status === 'completed') {
+          // 📧 Invia email di completamento prenotazione
+          await notifyBookingCompleted(bookingId);
 
-        // 📧 Invia fatture via email
-        await notifyInvoiceGenerated(bookingId);
+          // 📧 Invia fatture via email
+          await notifyInvoiceGenerated(bookingId);
 
-        // 📧 Invia richiesta recensione a renter e hubber
-        await notifyReviewRequest(bookingId, 'renter');
-        await notifyReviewRequest(bookingId, 'hubber');
+          // 📧 Invia richiesta recensione a renter e hubber
+          await notifyReviewRequest(bookingId, 'renter');
+          await notifyReviewRequest(bookingId, 'hubber');
+        }
 
         return true;
       } catch (err) {
