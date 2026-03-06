@@ -1,0 +1,1 @@
+module.exports = require('./netlify/functions/process-payout-manual.js')

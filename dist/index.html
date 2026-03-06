@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- SEO Meta Tags Base -->
+    <title>Renthubber - Noleggia ciò che ti serve. Guadagna da ciò che non usi.</title>
+    <meta name="description" content="Noleggia ciò che ti serve. Guadagna da ciò che non usi. La piattaforma per oggetti e spazi vicino a te." />
+    <meta name="keywords" content="noleggio, affitto, peer-to-peer, sharing economy, noleggio attrezzature, noleggio elettronica, noleggio spazi, renthubber" />
+    <meta name="author" content="Renthubber" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://renthubber.com" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://renthubber.com" />
+    <meta property="og:title" content="Renthubber - Noleggia ciò che ti serve. Guadagna da ciò che non usi." />
+    <meta property="og:description" content="La piattaforma per oggetti e spazi vicino a te." />
+    <meta property="og:image" content="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png" />
+    <meta property="og:locale" content="it_IT" />
+    <meta property="og:site_name" content="Renthubber" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://renthubber.com" />
+    <meta name="twitter:title" content="Renthubber - Noleggia ciò che ti serve. Guadagna da ciò che non usi." />
+    <meta name="twitter:description" content="La piattaforma per oggetti e spazi vicino a te." />
+    <meta name="twitter:image" content="https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png" />
+    
+    <!-- Favicon - CORRETTO -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#0D414B" />
+    <meta name="msapplication-TileColor" content="#0D414B" />
+    
+    <!-- Preconnect for Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://upyznglekmynztmydtxi.supabase.co" />
+    
+    <!-- Google Site Verification (aggiungerai il codice dopo) -->
+    <!-- <meta name="google-site-verification" content="TUO_CODICE_QUI" /> -->
+    
+    <!-- Structured Data - Organization Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Renthubber",
+      "url": "https://renthubber.com",
+      "logo": "https://upyznglekmynztmydtxi.supabase.co/storage/v1/object/public/images/logo-renthubber.png",
+      "description": "Noleggia ciò che ti serve. Guadagna da ciò che non usi. La piattaforma per oggetti e spazi vicino a te.",
+      "sameAs": [
+        "https://www.facebook.com/renthubber",
+        "https://www.instagram.com/renthubber",
+        "https://www.linkedin.com/company/renthubber"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "Customer Support",
+        "email": "info@renthubber.com"
+      }
+    }
+    </script>
+    
+    <!-- Structured Data - WebSite Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Renthubber",
+      "url": "https://renthubber.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://renthubber.com/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    
+       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/react-day-picker@9.11.1/dist/style.css">
+    
+  <!-- Leaflet CSS per le mappe -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+      crossorigin="" />
+
+<!-- Leaflet MarkerCluster CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    
+    <style>
+      body { font-family: 'Inter', sans-serif; }
+      /* Custom scrollbar for cleaner look */
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: #f1f1f1; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+      
+      /* Leaflet custom marker styles */
+      .custom-marker {
+        background: transparent !important;
+        border: none !important;
+      }
+      
+      /* Fix per z-index mappa Leaflet */
+      .leaflet-pane,
+      .leaflet-tile,
+      .leaflet-marker-icon,
+      .leaflet-marker-shadow,
+      .leaflet-tile-container,
+      .leaflet-pane > svg,
+      .leaflet-pane > canvas,
+      .leaflet-zoom-box,
+      .leaflet-image-layer,
+      .leaflet-layer {
+        z-index: 1 !important;
+      }
+      .leaflet-control {
+        z-index: 2 !important;
+      }
+    </style>
+    
+
+    <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react-day-picker": "https://aistudiocdn.com/react-day-picker@^9.11.1",
+    "react-day-picker/": "https://aistudiocdn.com/react-day-picker@^9.11.1/",
+    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.84.0",
+    "leaflet": "https://unpkg.com/leaflet@1.9.4/dist/leaflet-src.esm.js"
+  }
+}
+</script>
+  <script type="module" crossorigin src="/assets/index-CMk0CttJ.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BZhTwS28.css">
+</head>
+  <body class="bg-gray-50 text-gray-900 antialiased">
+    <div id="root"></div>
+
+<!-- Intercetta recovery hash PRIMA che Supabase lo processi -->
+<script>
+  (function() {
+    const hash = window.location.hash;
+    
+    if (hash.includes('type=recovery') && hash.includes('access_token')) {
+      console.log('🔐 Recovery hash intercettato!');
+      
+      // Salva hash in sessionStorage
+      sessionStorage.setItem('recovery_hash', hash);
+      
+      // Rimuovi hash dall'URL per evitare che Supabase lo processi
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+      
+      // Forza redirect a /reset-password
+      if (window.location.pathname !== '/reset-password') {
+        window.location.href = '/reset-password';
+      }
+    }
+  })();
+</script>
+
+</body>
+</html>

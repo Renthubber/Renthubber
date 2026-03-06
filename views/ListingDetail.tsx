@@ -27,6 +27,7 @@ import { calendarBlocksApi } from '../services/calendarBlocksApi';
 import { BookingPaymentModal } from "../components/BookingPaymentModal";
 import { referralApi } from "../services/referralApi";
 import { supabase } from "../services/supabaseClient";
+import { ListingDetailEsperienza } from "./ListingDetailEsperienza";
 import { useNavigate } from 'react-router-dom';
 import { calculateHubberFixedFee, calculateRenterFixedFee } from '../utils/feeUtils';
 import { getAvatarUrl } from '../utils/avatarUtils';
@@ -859,6 +860,21 @@ useEffect(() => {
       console.error("Errore durante l'aggiornamento post-pagamento:", err);
     }
   };
+
+ // Se esperienza → usa componente dedicato
+  if (listing.category === 'esperienza') {
+    return (
+      <ListingDetailEsperienza
+        listing={listing}
+        currentUser={currentUser}
+        onBack={onBack}
+        systemConfig={systemConfig}
+        onPaymentSuccess={onPaymentSuccess}
+        onHostClick={onHostClick}
+        onRenterClick={onRenterClick}
+      />
+    );
+  }
 
   // Se annuncio sospeso e utente non è il proprietario → non disponibile
   if (listing.status === 'suspended' && currentUser?.id !== listing.hostId) {
