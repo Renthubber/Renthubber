@@ -191,6 +191,9 @@ export const PrenotazioniRenter: React.FC<PrenotazioniRenterProps> = ({
                         >
                           <td className="p-4 text-xs whitespace-nowrap">
                             {booking.dates}
+                            {(booking as any).listing_category === 'esperienza' && (booking as any).participants_count && (
+                              <span className="ml-1 text-gray-400">· {(booking as any).participants_count} pers.</span>
+                            )}
                           </td>
                           <td className="p-4 font-medium text-gray-900">
                             {booking.listingTitle}
@@ -308,6 +311,9 @@ export const PrenotazioniRenter: React.FC<PrenotazioniRenterProps> = ({
                                       >
                                         <td className="p-4 text-xs whitespace-nowrap">
                                           {booking.dates}
+                            {(booking as any).listing_category === 'esperienza' && (booking as any).participants_count && (
+                              <span className="ml-1 text-gray-400">· {(booking as any).participants_count} pers.</span>
+                            )}
                                         </td>
                                         <td className="p-4 font-medium text-gray-900">
                                           {booking.listingTitle}
@@ -412,6 +418,9 @@ export const PrenotazioniRenter: React.FC<PrenotazioniRenterProps> = ({
                                   >
                                     <td className="p-4 text-xs whitespace-nowrap">
                                       {booking.dates}
+                            {(booking as any).listing_category === 'esperienza' && (booking as any).participants_count && (
+                              <span className="ml-1 text-gray-400">· {(booking as any).participants_count} pers.</span>
+                            )}
                                     </td>
                                     <td className="p-4 font-medium text-gray-900">
                                       {booking.listingTitle}
@@ -508,6 +517,9 @@ export const PrenotazioniRenter: React.FC<PrenotazioniRenterProps> = ({
                     <p className="text-xs text-gray-500 mt-1 flex items-center">
                       <Calendar className="w-3 h-3 mr-1" />
                       {selectedRenterBooking.dates}
+                      {(selectedRenterBooking as any).listing_category === 'esperienza' && (selectedRenterBooking as any).participants_count && (
+                        <span className="ml-1">· {(selectedRenterBooking as any).participants_count} partecipanti</span>
+                      )}
                     </p>
                     <div className="mt-2">
                       {renderBookingStatusBadge(selectedRenterBooking.status)}
@@ -761,13 +773,15 @@ export const PrenotazioniRenter: React.FC<PrenotazioniRenterProps> = ({
                     {/* Azioni */}
                     {canCancelBooking(selectedRenterBooking.status) && (
                       <div className="border-t border-gray-100 pt-4 mt-4 space-y-2">
-                        <button
-                          onClick={() => openModifyModal(selectedRenterBooking)}
-                          className="w-full py-2.5 rounded-xl border border-blue-200 text-blue-600 font-bold text-sm hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                          Modifica date
-                        </button>
+                        {(selectedRenterBooking as any).listing_category !== 'esperienza' && (
+                          <button
+                            onClick={() => openModifyModal(selectedRenterBooking)}
+                            className="w-full py-2.5 rounded-xl border border-blue-200 text-blue-600 font-bold text-sm hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                            Modifica date
+                          </button>
+                        )}
                         <button
                           onClick={() => openCancelModal(selectedRenterBooking)}
                           className="w-full py-2.5 rounded-xl border border-red-200 text-red-600 font-bold text-sm hover:bg-red-50 transition-colors"

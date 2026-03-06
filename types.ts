@@ -1,7 +1,7 @@
 // TYPES - RENTHUBBER APP (VERSIONE COMPLETA 2025)
 
 // CATEGORIE E STATI
-export type ListingCategory = "oggetto" | "spazio";
+export type ListingCategory = "oggetto" | "spazio" | "esperienza";
 export type ListingStatus = "draft" | "published" | "hidden" | "suspended";
 export type Condition = "nuovo" | "come_nuovo" | "buono" | "usato" | "molto_usato";
 export type CancellationPolicyType = "flexible" | "moderate" | "strict";
@@ -415,6 +415,16 @@ export interface Listing {
 
   createdAt?: string; // 🔥 AGGIUNTO per ordinamento e compatibilità
   view_count?: number; // 🔥 CONTEGGIO VISUALIZZAZIONI REALI
+
+  // Esperienza
+  durationValue?: string;
+  durationUnit?: 'ore' | 'giorni' | 'settimane';
+  languages?: string;
+  difficulty?: string;
+  minAge?: number;
+  included?: string[];
+  notIncluded?: string[];
+  priceType?: 'persona' | 'gruppo';
 }
 
 // --- TRANSAZIONI ---
@@ -670,6 +680,9 @@ export interface Dispute {
   // Tracking temporale
   createdAt: string;             // ISO
   updatedAt?: string;            // ISO
+  listing_category?: string;
+  experience_slot_id?: string | null;
+  participants_count?: number | null;
 
   // Eventuale history messaggi legata alla contestazione
   messages?: Message[];

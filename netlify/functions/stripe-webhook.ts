@@ -164,6 +164,8 @@ async function handlePaymentIntentSucceeded(
   const walletUsed = parseFloat(metadata.renthubber_wallet_used || '0');
   const refundUsed = parseFloat(metadata.renthubber_refund_used || '0');
   const referralUsed = parseFloat(metadata.renthubber_referral_used || '0');
+  const experienceSlotId = metadata.renthubber_experience_slot_id || null;
+  const participantsCount = parseInt(metadata.renthubber_participants_count || '0') || null;
 
   if (!listingId || !renterId || !hubberId) {
     console.error('❌ Missing required metadata');
@@ -189,6 +191,9 @@ async function handlePaymentIntentSucceeded(
         p_platform_fee_cents: Math.round(renterFee * 100),
         p_hubber_net_amount_cents: Math.round((basePrice + cleaningFee - hubberFee) * 100),
         p_wallet_used_cents: Math.round(walletUsed * 100),
+        p_experience_slot_id: experienceSlotId || null,
+        p_participants_count: participantsCount || null,
+        p_listing_category: experienceSlotId ? 'esperienza' : null,
         p_provider: 'stripe',
         p_provider_payment_id: paymentIntent.id,
         p_cleaning_fee_cents: Math.round(cleaningFee * 100),
@@ -475,4 +480,5 @@ try {
 }
 
 console.log('🎉 Booking modification completed');
+
 }

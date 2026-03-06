@@ -6,7 +6,7 @@ import { Listing, User } from '../types';
 interface PublishModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPublish: (listing: Listing) => Promise<void> | void;
+  onPublish: (listing: Listing) => Promise<any> | void;
   currentUser: User;
 }
 

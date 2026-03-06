@@ -32,6 +32,8 @@ interface CreatePaymentIntentRequest {
   generalBalanceToUse?: number;
   refundBalanceToUse?: number;
   referralBalanceToUse?: number;
+  experienceSlotId?: string | null;
+  participantsCount?: number | null;
 }
 
 export const handler: Handler = async (event, context) => {
@@ -75,6 +77,8 @@ export const handler: Handler = async (event, context) => {
       generalBalanceToUse = 0,
       refundBalanceToUse = 0,
       referralBalanceToUse = 0,
+      experienceSlotId = null,
+      participantsCount = null,
     } = body;
 
     // Validazione
@@ -219,6 +223,9 @@ export const handler: Handler = async (event, context) => {
             p_wallet_used_cents: Math.round(walletUsedTotal * 100),
             p_extra_guests_count: extraGuestsCount,
             p_extra_guests_fee_cents: Math.round(extraGuestsFee * 100),
+            p_experience_slot_id: experienceSlotId || null,
+            p_participants_count: participantsCount || null,
+            p_listing_category: experienceSlotId ? 'esperienza' : null,
             p_provider: 'wallet',
             p_provider_payment_id: 'WALLET_PAYMENT',
           }),
@@ -390,6 +397,8 @@ export const handler: Handler = async (event, context) => {
         renthubber_general_used: generalBalanceToUse.toString(),
         renthubber_refund_used: refundBalanceToUse.toString(),
         renthubber_referral_used: referralBalanceToUse.toString(),
+        renthubber_experience_slot_id: experienceSlotId || '',
+        renthubber_participants_count: (participantsCount || 0).toString(),
       },
     });
 

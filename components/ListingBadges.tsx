@@ -68,10 +68,10 @@ export const ListingBadges: React.FC<ListingBadgesProps> = ({
 
   // Tipo di annuncio
   badges.push({
-    label: listing.category === "spazio" ? "Spazio" : "Oggetto",
+    label: listing.category === "spazio" ? "Spazio" : listing.category === "esperienza" ? "Esperienza" : "Oggetto",
     icon: Zap,
+    color: listing.category === "esperienza" ? "bg-brand/10 text-brand" : undefined,
   });
-
   // Super Hubber
   if (isSuperHubber) {
     badges.push({

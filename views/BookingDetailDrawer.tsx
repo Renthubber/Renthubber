@@ -49,16 +49,6 @@ export const BookingDetailDrawer: React.FC<BookingDetailDrawerProps> = ({
 
   if (!isOpen || !booking) return null;
 
-  // DEBUG TEMPORANEO
-console.log('=== DEBUG BOOKING ===');
-console.log('booking completo:', booking);
-console.log('booking.listing:', booking.listing);
-console.log('booking.pickup_address:', booking.pickup_address);
-console.log('booking.listing?.pickup_address:', booking.listing?.pickup_address);
-console.log('wallet_used_cents:', booking.wallet_used_cents);
-console.log('card_paid_cents:', booking.card_paid_cents);
-console.log('=====================');
-
 // Calcola rental_days se mancante (in base al price_unit)
 if (!booking.rental_days && booking.start_date && booking.end_date) {
   const start = new Date(booking.start_date);
@@ -264,6 +254,11 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
     <p className="text-sm font-medium text-gray-900">
       {formatDate(booking.start_date || booking.startDate)} - {formatDate(booking.end_date || booking.endDate)}
     </p>
+    {booking.listing_category === 'esperienza' && booking.participants_count && (
+      <p className="text-sm text-brand font-medium mt-1 flex items-center gap-1">
+        <User className="w-3 h-3" /> {booking.participants_count} partecipanti
+      </p>
+    )}
   </div>
 </div>
 
@@ -530,7 +525,7 @@ if (!booking.rental_days && booking.start_date && booking.end_date) {
               {/* Bottoni Azioni */}
               {booking.status !== 'cancelled' && booking.status !== 'completed' && (
                 <div className="space-y-2">
-                  {onModifyDates && (
+                  {onModifyDates && booking.listing_category !== 'esperienza' && (
                     <button
                       onClick={() => onModifyDates(booking)}
                       className="w-full bg-white border-2 border-brand text-brand hover:bg-brand hover:text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"

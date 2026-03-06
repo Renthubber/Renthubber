@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Listing, ListingCategory } from '../types';
 import { ListingCard } from '../components/ListingCard';
-import { Search, SlidersHorizontal, Box, LayoutGrid, MapPin, Euro, Calendar, X, Sparkles, SearchX } from 'lucide-react';
+import { Search, SlidersHorizontal, Box, LayoutGrid, MapPin, Euro, Calendar, X, Sparkles, SearchX, Ticket } from 'lucide-react';
 import { CityAutocomplete } from '../components/CityAutocomplete';
 import { CitySuggestion, searchItalianCities } from '../services/geocodingService';
 import { AirbnbCalendar } from '../components/AirbnbCalendar';
@@ -697,13 +697,24 @@ useEffect(() => {
             <LayoutGrid className="w-4 h-4 mr-2" />
             Spazi
           </button>
+          <button
+            onClick={() => setActiveTab('esperienza')}
+            className={`flex items-center px-6 py-3 rounded-lg font-medium transition-all ${
+              activeTab === 'esperienza'
+                ? 'bg-brand text-white shadow-md'
+                : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            <Ticket className="w-4 h-4 mr-2" />
+            Esperienze
+          </button>
         </div>
       </div>
 
       {/* Filters Row */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">
-          {activeTab === 'oggetto' ? 'Oggetti consigliati' : 'Spazi disponibili'}
+          {activeTab === 'oggetto' ? 'Oggetti consigliati' : activeTab === 'spazio' ? 'Spazi disponibili' : 'Esperienze disponibili'}
         </h2>
         <button 
           onClick={() => setShowFilters(!showFilters)}

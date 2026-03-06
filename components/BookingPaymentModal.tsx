@@ -403,6 +403,8 @@ const actualWalletUsable = useMemo(() => {
           extraGuestsFee: extraGuestsFeeEur,
           totalAmount: totalAmountEur,
           useWallet: actualWalletUsable > 0,
+          experienceSlotId: (listing as any).selectedSlotId ?? null,
+          participantsCount: (listing as any).selectedParticipants ?? null,
           // ✅ Quando usa "Credito Rimborsi", prima refund poi general
           generalBalanceToUse: walletType === 'refund' ? Math.min(generalBalance, Math.max(0, actualWalletUsable - refundBalance)) : 0,
           refundBalanceToUse: walletType === 'refund' ? Math.min(refundBalance, actualWalletUsable) : 0,

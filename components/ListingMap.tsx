@@ -5,7 +5,7 @@ import { geocodeAddress, getCityCenter } from '../services/geocodingService';
 // Tipi
 interface ListingMapProps {
   location: string;           // Città/zona (es. "Milano, MI")
-  category: 'oggetto' | 'spazio';
+  category: "oggetto" | "spazio" | "esperienza",
   exactAddress?: string;      // Indirizzo esatto (solo dopo prenotazione)
   showExactLocation?: boolean; // Se true, mostra posizione esatta
   height?: string;            // Altezza mappa (default: 200px)

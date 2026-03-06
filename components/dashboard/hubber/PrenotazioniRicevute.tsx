@@ -217,6 +217,9 @@ export const PrenotazioniRicevute: React.FC<PrenotazioniRicevuteProps> = ({
                       >
                         <td className="p-3 text-xs whitespace-nowrap">
                           {booking.dates}
+                          {(booking as any).listing_category === 'esperienza' && (booking as any).participants_count && (
+                            <span className="ml-1 text-gray-400">· {(booking as any).participants_count} pers.</span>
+                          )}
                         </td>
                         <td className="p-3 font-medium text-gray-900">
                           {booking.listingTitle}
@@ -344,6 +347,9 @@ export const PrenotazioniRicevute: React.FC<PrenotazioniRicevuteProps> = ({
                                     >
                                       <td className="p-3 text-xs whitespace-nowrap">
                                         {booking.dates}
+                          {(booking as any).listing_category === 'esperienza' && (booking as any).participants_count && (
+                            <span className="ml-1 text-gray-400">· {(booking as any).participants_count} pers.</span>
+                          )}
                                       </td>
                                       <td className="p-3 font-medium text-gray-900">
                                         {booking.listingTitle}
@@ -445,6 +451,9 @@ export const PrenotazioniRicevute: React.FC<PrenotazioniRicevuteProps> = ({
                                 >
                                   <td className="p-3 text-xs whitespace-nowrap">
                                     {booking.dates}
+                          {(booking as any).listing_category === 'esperienza' && (booking as any).participants_count && (
+                            <span className="ml-1 text-gray-400">· {(booking as any).participants_count} pers.</span>
+                          )}
                                   </td>
                                   <td className="p-3 font-medium text-gray-900">
                                     {booking.listingTitle}
@@ -554,6 +563,9 @@ export const PrenotazioniRicevute: React.FC<PrenotazioniRicevuteProps> = ({
                       </p>
                       <p className="font-medium text-gray-800">
                         {selectedBooking.dates}
+                        {(selectedBooking as any).listing_category === 'esperienza' && (selectedBooking as any).participants_count && (
+                          <span className="ml-1">· {(selectedBooking as any).participants_count} partecipanti</span>
+                        )}
                       </p>
                     </div>
                   </div>
