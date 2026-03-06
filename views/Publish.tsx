@@ -3,6 +3,7 @@ import {
   Box,
   LayoutGrid,
   Sparkles,
+  Ticket,
   Upload,
   DollarSign,
   MapPin,
@@ -29,6 +30,7 @@ import { ListingMapStatic } from '../components/ListingMap';
 import { CitySuggestion } from '../services/geocodingService';
 import { processImageSingle } from '../utils/imageProcessing';
 import { supabase } from "../services/supabaseClient";
+import { PublishEsperienza } from './PublishEsperienza';
 
 // --- WIZARD STEPS CONSTANTS ---
 const STEPS = [
@@ -61,6 +63,7 @@ export const Publish: React.FC<PublishProps> = ({ onPublish, currentUser }) => {
   
   // 🖼️ Stato per il processing delle immagini
   const [isProcessingImages, setIsProcessingImages] = useState(false);
+  const [showEsperienza, setShowEsperienza] = useState(false);
 
   // 🏪 Store disponibili nella città dell'utente
   const [availableStores, setAvailableStores] = useState<{id: string; business_name: string; address: string; city: string}[]>([]);
@@ -461,6 +464,21 @@ const moveImageRight = (index: number) => {
           </div>
           <h3 className="text-lg font-bold text-gray-900">Uno Spazio</h3>
           <p className="text-sm text-gray-500 mt-2">Garage, ufficio, negozio temporaneo, magazzino, sale eventi...</p>
+        </button>
+
+        <button
+          onClick={() => setDraft(d => ({ ...d, category: 'esperienza' }))}
+          className={`p-8 rounded-2xl border-2 transition-all flex flex-col items-center text-center ${
+            draft.category === 'esperienza'
+              ? 'border-brand bg-brand/5 ring-2 ring-brand/20'
+              : 'border-gray-200 hover:border-gray-300'
+          }`}
+        >
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${draft.category === 'esperienza' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-500'}`}>
+            <Ticket className="w-8 h-8" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900">Un'Esperienza</h3>
+          <p className="text-sm text-gray-500 mt-2">Tour, corsi, workshop, degustazioni, attività guidate...</p>
         </button>
       </div>
     </div>
@@ -1620,6 +1638,16 @@ const moveImageRight = (index: number) => {
   );
 
   // --- RENDER ROOT ---
+  if (showEsperienza) {
+    return (
+      <PublishEsperienza
+        onPublish={onPublish}
+        onBack={() => setShowEsperienza(false)}
+        currentUser={currentUser}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
@@ -1687,7 +1715,13 @@ const moveImageRight = (index: number) => {
 
               {currentStep < STEPS.length ? (
                 <button
-                  onClick={handleNext}
+                  onClick={() => {
+                    if (currentStep === 1 && draft.category === 'esperienza') {
+                      setShowEsperienza(true);
+                    } else {
+                      handleNext();
+                    }
+                  }}
                   disabled={isPublishing}
                   className="px-8 py-3 rounded-xl bg-brand text-white font-bold hover:bg-brand-dark shadow-lg hover:shadow-xl transition-all flex items-center disabled:opacity-50"
                 >
