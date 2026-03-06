@@ -40,6 +40,10 @@
   path = "/lavora-con-noi"
   function = "og-inject"
 
+[[edge_functions]]
+  path = "/risorse/*"
+  function = "og-risorse"
+
 # ✅ Headers per il sitemap
 [[headers]]
   for = "/sitemap.xml"

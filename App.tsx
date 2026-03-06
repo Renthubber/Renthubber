@@ -17,6 +17,7 @@ import { ReferralLanding } from "./views/ReferralLanding";
 import { Dashboard } from "./views/Dashboard";
 import { MyListings } from "./views/MyListings";
 import { HubberListingEditor } from "./views/HubberListingEditor";
+import { HubberListingEditorEsperienza } from "./views/HubberListingEditorEsperienza";
 import { AdminDashboard } from "./views/AdminDashboard";
 import { BecomeHubberWizard } from "./views/BecomeHubberWizard";
 import { PublicHostProfile } from "./views/PublicHostProfile";
@@ -31,6 +32,9 @@ import { AnnouncementPopup } from './components/AnnouncementPopup';
 import { useUserPresence } from './hooks/useUserPresence';
 import { useRealtimeMessages } from './hooks/useRealtimeMessages';
 import PromoLandingPage from './pages/promo/PromoLandingPage';
+import EarningsSimulator from './pages/EarningsSimulator';
+import RisorseHubberPage from './pages/RisorseHubberPage';
+import RisorseArticoloPage from './pages/RisorseArticoloPage';
 // import { InstallPrompt } from './components/InstallPrompt';
 
 
@@ -370,20 +374,16 @@ setIsAuthChecking(false);
   navigate('/');
 };
 
-  const handleAddListing = async (listing: Listing) => {
+  const handleAddListing = async (listing: Listing): Promise<Listing | null> => {
   try {
-
-    
-    // 👇 SALVA SU SUPABASE (questa chiamata mancava!)
     const savedListing = await api.listings.create(listing);
-    
-    
-    // 👇 POI aggiorna lo stato locale
     setListings((prev) => [...prev, savedListing]);
     navigate('/my-listings');
+    return savedListing;
   } catch (error) {
     console.error('❌ ERRORE salvataggio listing:', error);
     alert('Errore durante la pubblicazione. Riprova tra qualche istante.');
+    return null;
   }
 };
 
@@ -469,6 +469,16 @@ const handleRenterClick = async (renter: User) => {
   const HubberListingEditorWrapper = () => {
     if (!editingListing) {
       return <Navigate to="/my-listings" />;
+    }
+
+    if (editingListing.category === 'esperienza') {
+      return (
+        <HubberListingEditorEsperienza
+          listing={editingListing}
+          onSave={handleUpdateListing}
+          onCancel={() => navigate('/my-listings')}
+        />
+      );
     }
 
     return (
@@ -774,8 +784,11 @@ const handleRenterClick = async (renter: User) => {
           <Route path="/tariffe" element={<TariffePage />} />
           <Route path="/invita-amico" element={<InvitaAmicoPage />} />
           <Route path="/super-hubber" element={<SuperHubberPage />} />
+          <Route path="/simulatore-guadagni" element={<EarningsSimulator />} />
           <Route path="/investitori" element={<InvestitoriPage />} />
           <Route path="/lavora-con-noi" element={<LavoraConNoiPage />} />
+          <Route path="/risorse" element={<RisorseHubberPage />} />
+          <Route path="/risorse/:slug" element={<RisorseArticoloPage />} />
 
           {/* PAGINE FOOTER - SUPPORTO */}
           <Route path="/faq" element={<FaqPage />} />
@@ -897,8 +910,9 @@ const handleRenterClick = async (renter: User) => {
         isOpen={isPublishModalOpen}
         onClose={() => setIsPublishModalOpen(false)}
         onPublish={async (listing) => {
-          await handleAddListing(listing);
+          const result = await handleAddListing(listing);
           setIsPublishModalOpen(false);
+          return result;
         }}
         currentUser={currentUser}
       />
