@@ -28,7 +28,7 @@ export const MappaSitoPage: React.FC = () => {
               Sezioni principali
             </h2>
             <p className="text-gray-600 leading-relaxed text-justify mb-6 max-w-3xl">
-              Le pagine principali ti aiutano a capire cos’è Renthubber, come
+              Le pagine principali ti aiutano a capire cos'è Renthubber, come
               funziona la piattaforma e quali opportunità offre a Renter e Hubber.
             </p>
 
@@ -38,46 +38,17 @@ export const MappaSitoPage: React.FC = () => {
                   Renthubber
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
-                  <li>
-                    <Link to="/" className="hover:text-[#0D414B]">
-                      Home
-                    </Link>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Chi siamo
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Come funziona
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Sicurezza
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Tariffe e commissioni
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Programma Invita un amico
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Programma SuperHubber
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Investitori
-                    </a>
-                  </li>
+                  <li><Link to="/" className="hover:text-[#0D414B]">Home</Link></li>
+                  <li><Link to="/chi-siamo" className="hover:text-[#0D414B]">Chi siamo</Link></li>
+                  <li><Link to="/come-funziona" className="hover:text-[#0D414B]">Come funziona</Link></li>
+                  <li><Link to="/sicurezza" className="hover:text-[#0D414B]">Sicurezza</Link></li>
+                  <li><Link to="/tariffe" className="hover:text-[#0D414B]">Tariffe e commissioni</Link></li>
+                  <li><Link to="/invita-amico" className="hover:text-[#0D414B]">Programma Invita un amico</Link></li>
+                  <li><Link to="/super-hubber" className="hover:text-[#0D414B]">Programma SuperHubber</Link></li>
+                  <li><Link to="/simulatore-guadagni" className="hover:text-[#0D414B]">Simulatore guadagni</Link></li>
+                  <li><Link to="/risorse" className="hover:text-[#0D414B]">Risorse per Hubber</Link></li>
+                  <li><Link to="/investitori" className="hover:text-[#0D414B]">Investitori</Link></li>
+                  <li><Link to="/lavora-con-noi" className="hover:text-[#0D414B]">Lavora con noi</Link></li>
                 </ul>
               </div>
 
@@ -86,26 +57,11 @@ export const MappaSitoPage: React.FC = () => {
                   Per chi vuole noleggiare (Renter)
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Cerca un annuncio
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Filtri avanzati di ricerca
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Come prenotare
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Gestione prenotazioni
-                    </a>
-                  </li>
+                  <li><Link to="/" className="hover:text-[#0D414B]">Cerca un annuncio</Link></li>
+                  <li><Link to="/come-funziona" className="hover:text-[#0D414B]">Come prenotare</Link></li>
+                  <li><Link to="/cancellazione" className="hover:text-[#0D414B]">Regole di cancellazione</Link></li>
+                  <li><Link to="/dashboard/bookings" className="hover:text-[#0D414B]">Gestione prenotazioni</Link></li>
+                  <li><Link to="/dashboard/favorites" className="hover:text-[#0D414B]">Le mie recensioni</Link></li>
                 </ul>
               </div>
 
@@ -114,26 +70,11 @@ export const MappaSitoPage: React.FC = () => {
                   Per chi vuole mettere a noleggio (Hubber)
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Diventare Hubber
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Pubblica un annuncio
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Dashboard Hubber
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Programma SuperHubber
-                    </a>
-                  </li>
+                  <li><Link to="/diventare-hubber" className="hover:text-[#0D414B]">Diventare Hubber</Link></li>
+                  <li><Link to="/dashboard/overview" className="hover:text-[#0D414B]">Pubblica un annuncio</Link></li>
+                  <li><Link to="/dashboard/overview" className="hover:text-[#0D414B]">Dashboard Hubber</Link></li>
+                  <li><Link to="/super-hubber" className="hover:text-[#0D414B]">Programma SuperHubber</Link></li>
+                  <li><Link to="/dashboard/hubber_bookings" className="hover:text-[#0D414B]">Prenotazioni ricevute</Link></li>
                 </ul>
               </div>
             </div>
@@ -157,21 +98,9 @@ export const MappaSitoPage: React.FC = () => {
                   Centro assistenza
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Centro assistenza
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Domande frequenti (FAQ)
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Come diventare Hubber
-                    </a>
-                  </li>
+                  <li><Link to="/assistenza" className="hover:text-[#0D414B]">Centro assistenza</Link></li>
+                  <li><Link to="/faq" className="hover:text-[#0D414B]">Domande frequenti (FAQ)</Link></li>
+                  <li><Link to="/diventare-hubber" className="hover:text-[#0D414B]">Come diventare Hubber</Link></li>
                 </ul>
               </div>
 
@@ -180,21 +109,9 @@ export const MappaSitoPage: React.FC = () => {
                   Gestione problemi e segnalazioni
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Regole di cancellazione
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Segnala un problema
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Sicurezza
-                    </a>
-                  </li>
+                  <li><Link to="/cancellazione" className="hover:text-[#0D414B]">Regole di cancellazione</Link></li>
+                  <li><Link to="/segnala" className="hover:text-[#0D414B]">Segnala un problema</Link></li>
+                  <li><Link to="/sicurezza" className="hover:text-[#0D414B]">Sicurezza</Link></li>
                 </ul>
               </div>
 
@@ -203,16 +120,8 @@ export const MappaSitoPage: React.FC = () => {
                   Contatti
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Contattaci
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Supporto via email
-                    </a>
-                  </li>
+                  <li><Link to="/contatti" className="hover:text-[#0D414B]">Contattaci</Link></li>
+                  <li><Link to="/assistenza" className="hover:text-[#0D414B]">Supporto via email</Link></li>
                 </ul>
               </div>
             </div>
@@ -236,21 +145,9 @@ export const MappaSitoPage: React.FC = () => {
                   Documenti legali
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Termini e condizioni
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Informativa Privacy
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Cookie Policy
-                    </a>
-                  </li>
+                  <li><Link to="/termini-condizioni" className="hover:text-[#0D414B]">Termini e condizioni</Link></li>
+                  <li><Link to="/privacy-policy" className="hover:text-[#0D414B]">Informativa Privacy</Link></li>
+                  <li><Link to="/cookie-policy" className="hover:text-[#0D414B]">Cookie Policy</Link></li>
                 </ul>
               </div>
 
@@ -259,16 +156,8 @@ export const MappaSitoPage: React.FC = () => {
                   Regole della community
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Linee guida della community
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Politica antidiscriminazione
-                    </a>
-                  </li>
+                  <li><Link to="/linee-guida" className="hover:text-[#0D414B]">Linee guida della community</Link></li>
+                  <li><Link to="/antidiscriminazione" className="hover:text-[#0D414B]">Politica antidiscriminazione</Link></li>
                 </ul>
               </div>
 
@@ -277,16 +166,8 @@ export const MappaSitoPage: React.FC = () => {
                   Trasparenza & sicurezza
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Sicurezza & verifiche
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Programmi di tutela
-                    </a>
-                  </li>
+                  <li><Link to="/sicurezza" className="hover:text-[#0D414B]">Sicurezza & verifiche</Link></li>
+                  <li><Link to="/dashboard/security" className="hover:text-[#0D414B]">Verifica identità</Link></li>
                 </ul>
               </div>
             </div>
@@ -310,21 +191,11 @@ export const MappaSitoPage: React.FC = () => {
                   Area utente
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
-                  <li>
-                    <Link to="/login" className="hover:text-[#0D414B]">
-                      Login / Registrazione
-                    </Link>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Profilo personale
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Impostazioni account
-                    </a>
-                  </li>
+                  <li><Link to="/login" className="hover:text-[#0D414B]">Login / Registrazione</Link></li>
+                  <li><Link to="/dashboard/profile" className="hover:text-[#0D414B]">Profilo personale</Link></li>
+                  <li><Link to="/dashboard/security" className="hover:text-[#0D414B]">Impostazioni account</Link></li>
+                  <li><Link to="/wallet" className="hover:text-[#0D414B]">Wallet</Link></li>
+                  <li><Link to="/messages" className="hover:text-[#0D414B]">Messaggi & chat</Link></li>
                 </ul>
               </div>
 
@@ -333,21 +204,10 @@ export const MappaSitoPage: React.FC = () => {
                   Dashboard Renter
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Le mie prenotazioni
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Messaggi & chat
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Storico noleggi
-                    </a>
-                  </li>
+                  <li><Link to="/dashboard/overview" className="hover:text-[#0D414B]">Panoramica</Link></li>
+                  <li><Link to="/dashboard/bookings" className="hover:text-[#0D414B]">Le mie prenotazioni</Link></li>
+                  <li><Link to="/dashboard/favorites" className="hover:text-[#0D414B]">Le mie recensioni</Link></li>
+                  <li><Link to="/dashboard/payments" className="hover:text-[#0D414B]">Pagamenti & Fatture</Link></li>
                 </ul>
               </div>
 
@@ -356,21 +216,11 @@ export const MappaSitoPage: React.FC = () => {
                   Dashboard Hubber
                 </h3>
                 <ul className="space-y-2 text-sm md:text-base text-gray-700">
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      I miei annunci
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Prenotazioni ricevute
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-[#0D414B]">
-                      Wallet & pagamenti
-                    </a>
-                  </li>
+                  <li><Link to="/dashboard/overview" className="hover:text-[#0D414B]">Panoramica</Link></li>
+                  <li><Link to="/dashboard/hubber_bookings" className="hover:text-[#0D414B]">Prenotazioni ricevute</Link></li>
+                  <li><Link to="/dashboard/calendar" className="hover:text-[#0D414B]">Calendario</Link></li>
+                  <li><Link to="/dashboard/payments" className="hover:text-[#0D414B]">Wallet & pagamenti</Link></li>
+                  <li><Link to="/dashboard/reviews" className="hover:text-[#0D414B]">Recensioni</Link></li>
                 </ul>
               </div>
             </div>
