@@ -13,9 +13,9 @@ export const ChiSiamoPage: React.FC = () => {
             Chi siamo
           </h1>
           <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto text-justify md:text-center">
-            Renthubber nasce per rendere il noleggio di oggetti e spazi
+            Renthubber nasce per rendere il noleggio di oggetti, spazi ed esperienze
             un gesto semplice, sicuro e sostenibile. Mettiamo in contatto
-            persone e attività che vogliono condividere ciò che hanno,
+            persone e attività che vogliono condividere ciò che hanno o sanno fare,
             con chi ne ha bisogno in un preciso momento.
           </p>
         </div>
@@ -29,9 +29,9 @@ export const ChiSiamoPage: React.FC = () => {
     </h2>
     <p className="text-gray-600 leading-relaxed text-center mb-4 max-w-3xl mx-auto">
       Renthubber è una piattaforma di sharing economy che permette a chiunque
-      di mettere a disposizione o noleggiare oggetti, attrezzature e spazi:
+      di mettere a disposizione o noleggiare oggetti, attrezzature, spazi ed esperienze:
       dal piccolo accessorio di uso quotidiano, alla sala per eventi, fino
-      a mezzi e strumenti specializzati.
+      a mezzi, strumenti specializzati e attività da vivere insieme.
     </p>
     <p className="text-gray-600 leading-relaxed text-center max-w-3xl mx-auto">
       Il nostro obiettivo è ridurre sprechi, costi inutili e acquisti
@@ -165,9 +165,9 @@ export const ChiSiamoPage: React.FC = () => {
             Diventa parte della community Renthubber
           </h2>
           <p className="text-lg text-gray-200 mb-8 text-justify md:text-center">
-            Che tu voglia noleggiare ciò che ti serve solo per qualche ora
-            o mettere a reddito ciò che già possiedi, Renthubber è il luogo
-            giusto per iniziare. Crea il tuo account e inizia a condividere.
+            Che tu voglia noleggiare ciò che ti serve solo per qualche ora,
+            mettere a reddito ciò che già possiedi o condividere un’esperienza,
+            Renthubber è il luogo giusto per iniziare. Crea il tuo account e inizia a condividere.
           </p>
           <Link
             to="/signup"

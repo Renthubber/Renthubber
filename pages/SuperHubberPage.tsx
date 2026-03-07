@@ -95,7 +95,7 @@ export const SuperHubberPage: React.FC = () => {
 
       <li className="text-justify">
         <span className="font-semibold text-gray-900">5. Almeno un annuncio attivo</span><br />
-        Disponibilità continuativa di oggetti o spazi da noleggiare.
+        Disponibilità continuativa di oggetti, spazi o esperienze da noleggiare.
       </li>
     </ul>
   </div>
@@ -193,7 +193,7 @@ export const SuperHubberPage: React.FC = () => {
       <li className="text-justify">rating medio pari o superiore a 4.5 stelle;</li>
       <li className="text-justify">tasso di cancellazione inferiore al 5%;</li>
       <li className="text-justify">identità verificata;</li>
-      <li className="text-justify">almeno un annuncio attivo sulla piattaforma.</li>
+      <li className="text-justify">almeno un annuncio attivo sulla piattaforma (oggetti, spazi o esperienze).</li>
     </ul>
 
     <p className="text-gray-600 leading-relaxed text-justify mt-6">

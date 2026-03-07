@@ -21,47 +21,50 @@ export const TariffePage: React.FC = () => {
         </section>
 
         {/* PANORAMICA GENERALE */}
-        <section className="py-20 bg-white border-y">
-          <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-start">
-            <div>
-              <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
-                Struttura delle tariffe
-              </h2>
-              <p className="text-gray-600 leading-relaxed text-justify mb-4">
-                Ogni noleggio su Renthubber genera una transazione composta da:
-              </p>
-              <ul className="list-disc list-inside text-gray-700 space-y-2 text-sm md:text-base">
-                <li className="text-justify">
-                  <span className="font-semibold">Importo di noleggio</span>: stabilito
-                  dall’Hubber in base al valore dell’oggetto/spazio e alla durata.
-                </li>
-                <li className="text-justify">
-                  <span className="font-semibold">Commissione Renthubber</span>: una
-                  piccola percentuale che rende sostenibile la piattaforma.
-                </li>
-                <li className="text-justify">
-                  <span className="font-semibold">Eventuali costi extra</span>: ad esempio
-                  assicurazione, pulizia o servizi aggiuntivi, se previsti.
-                </li>
-              </ul>
-              <p className="text-gray-600 leading-relaxed text-justify mt-4">
-                Prima di confermare qualsiasi prenotazione, Renter e Hubber vedono sempre
-                un riepilogo chiaro e dettagliato di tutti gli importi.
-              </p>
-            </div>
+<section className="py-20 bg-white border-y">
+          <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+    <div>
+      <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
+        Struttura delle tariffe
+      </h2>
+      <p className="text-gray-600 leading-relaxed text-justify mb-4">
+        Ogni noleggio su Renthubber genera una transazione composta da:
+      </p>
+      <ul className="list-disc list-inside text-gray-700 space-y-2 text-sm md:text-base">
+        <li className="text-justify">
+          <span className="font-semibold">Importo di noleggio</span>: stabilito
+          dall'Hubber in base al valore dell'oggetto, dello spazio o dell'esperienza e alla durata.
+        </li>
+        <li className="text-justify">
+          <span className="font-semibold">Commissione Renthubber</span>: una
+          piccola percentuale che rende sostenibile la piattaforma.
+        </li>
+        <li className="text-justify">
+          <span className="font-semibold">Eventuali costi extra</span>: ad esempio
+          assicurazione, pulizia o servizi aggiuntivi, se previsti.
+        </li>
+      </ul>
+      <p className="text-gray-600 leading-relaxed text-justify mt-4">
+        Le stesse commissioni si applicano a tutte le categorie disponibili su Renthubber: oggetti, spazi ed esperienze.
+      </p>
+      <p className="text-gray-600 leading-relaxed text-justify mt-2">
+        Prima di confermare qualsiasi prenotazione, Renter e Hubber vedono sempre
+        un riepilogo chiaro e dettagliato di tutti gli importi.
+      </p>
+    </div>
 
-            <div className="bg-gray-50 rounded-xl p-8 shadow-sm border">
-              <h3 className="text-xl font-bold text-gray-900 mb-3 text-left">
-                Trasparenza prima di tutto
-              </h3>
-              <p className="text-gray-600 text-sm md:text-base text-justify">
-                Nessun costo nascosto, nessuna sorpresa dopo. Ogni cifra è mostrata
-                prima della conferma della prenotazione, con il dettaglio di ciò che
-                va all’Hubber e ciò che rappresenta la commissione di piattaforma.
-              </p>
-            </div>
-          </div>
-        </section>
+    <div className="bg-gray-50 rounded-xl p-8 shadow-sm border">
+      <h3 className="text-xl font-bold text-gray-900 mb-3 text-left">
+        Trasparenza prima di tutto
+      </h3>
+      <p className="text-gray-600 text-sm md:text-base text-justify">
+        Nessun costo nascosto, nessuna sorpresa dopo. Ogni cifra è mostrata
+        prima della conferma della prenotazione, con il dettaglio di ciò che
+        va all'Hubber e ciò che rappresenta la commissione di piattaforma.
+      </p>
+    </div>
+  </div>
+</section>
 
         {/* TARIFFE PER IL RENTER */}
         <section className="py-20">

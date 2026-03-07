@@ -11,8 +11,8 @@ export const ComeFunzionaPage: React.FC = () => {
           <div className="max-w-6xl mx-auto px-6 text-center">
             <h1 className="text-4xl font-bold text-gray-900">Come funziona</h1>
             <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto text-justify md:text-center">
-              Renthubber mette in contatto chi ha oggetti o spazi da noleggiare
-              con chi ha bisogno di utilizzarli per poche ore, giorni o settimane.
+              Renthubber mette in contatto chi ha oggetti, spazi o esperienze da offrire
+              con chi ha bisogno di utilizzarli o parteciparvi per poche ore, giorni o settimane.
               Tutto in modo semplice, sicuro e trasparente.
             </p>
           </div>
@@ -30,7 +30,7 @@ export const ComeFunzionaPage: React.FC = () => {
                   Come Renter
                 </h3>
                 <p className="text-gray-600 text-sm md:text-base text-justify">
-                  Trovi quello che ti serve solo quando ti serve. Noleggi in
+                  Trovi quello che ti serve solo quando ti serve. Noleggi oggetti, prenoti spazi o partecipi a esperienze in
                   sicurezza, senza dover acquistare tutto. Filtri per categoria,
                   prezzo e posizione ti aiutano a trovare rapidamente ciò di cui
                   hai bisogno, vicino a te.
@@ -41,8 +41,8 @@ export const ComeFunzionaPage: React.FC = () => {
                   Come Hubber
                 </h3>
                 <p className="text-gray-600 text-sm md:text-base text-justify">
-                  Metti a reddito oggetti, spazi o attrezzature che non usi
-                  sempre. Gestisci prezzi, disponibilità e regole direttamente
+                  Metti a reddito oggetti, spazi, attrezzature o esperienze che vuoi condividere.
+                  Gestisci prezzi, disponibilità, slot e regole direttamente
                   dalla dashboard, mantenendo il controllo su ogni prenotazione.
                 </p>
               </div>
@@ -91,11 +91,12 @@ export const ComeFunzionaPage: React.FC = () => {
                 </li>
                 <li className="text-justify">
                   <span className="font-semibold text-gray-900">
-                    4. Ritiro o consegna
+                    4. Ritiro, consegna o presentazione
                   </span>
                   <br />
                   Concorda con l’Hubber il ritiro dell’oggetto/spazio o la
                   consegna, in base alle opzioni disponibili nell’annuncio.
+                  Per le esperienze, presentati nel luogo e all’orario indicati nello slot prenotato.
                 </li>
                 <li className="text-justify">
                   <span className="font-semibold text-gray-900">
@@ -167,11 +168,12 @@ export const ComeFunzionaPage: React.FC = () => {
                 </li>
                 <li className="text-justify">
                   <span className="font-semibold text-gray-900">
-                    4. Consegna & gestione
+                    4. Consegna, gestione o erogazione
                   </span>
                   <br />
                   Organizza ritiro/consegna e assicurati che l’oggetto/spazio sia
                   conforme a quanto promesso nell’annuncio.
+                  Per le esperienze, preparati per l’orario dello slot e accogliere i partecipanti prenotati.
                 </li>
                 <li className="text-justify">
                   <span className="font-semibold text-gray-900">
@@ -183,6 +185,74 @@ export const ComeFunzionaPage: React.FC = () => {
                   previste.
                 </li>
               </ol>
+            </div>
+          </div>
+        </section>
+
+        {/* ESPERIENZE */}
+        <section className="py-20 bg-white border-y">
+          <div className="max-w-6xl mx-auto px-6">
+            <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-center">
+              Come funzionano le Esperienze
+            </h2>
+            <p className="text-gray-600 max-w-3xl mx-auto text-center mb-12">
+              Le esperienze sono attività, laboratori, tour, workshop e corsi proposti dagli Hubber e prenotabili tramite slot orari. Ecco come funzionano per entrambe le parti.
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-12 items-start">
+
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4 text-left">Per chi partecipa (Renter)</h3>
+                <ol className="space-y-4 text-gray-700 text-sm md:text-base">
+                  <li className="text-justify">
+                    <span className="font-semibold text-gray-900">1. Cerca l’esperienza</span><br />
+                    Sfoglia le esperienze disponibili nella tua zona, filtra per categoria, data e prezzo.
+                  </li>
+                  <li className="text-justify">
+                    <span className="font-semibold text-gray-900">2. Scegli lo slot</span><br />
+                    Seleziona la data e l’orario che preferisci tra quelli disponibili e verifica eventuali requisiti (età, attrezzatura, ecc.).
+                  </li>
+                  <li className="text-justify">
+                    <span className="font-semibold text-gray-900">3. Prenota e paga</span><br />
+                    Completa la prenotazione e il pagamento in piattaforma. Riceverai la conferma direttamente nell’app.
+                  </li>
+                  <li className="text-justify">
+                    <span className="font-semibold text-gray-900">4. Presentati allo slot</span><br />
+                    Recati nel luogo indicato all’orario preciso dello slot. In caso di impedimento, cancella entro i termini previsti dalla politica dell’annuncio.
+                  </li>
+                  <li className="text-justify">
+                    <span className="font-semibold text-gray-900">5. Lascia una recensione</span><br />
+                    Al termine dell’esperienza, condividi il tuo feedback per aiutare la community.
+                  </li>
+                </ol>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4 text-left">Per chi organizza (Hubber)</h3>
+                <ol className="space-y-4 text-gray-700 text-sm md:text-base">
+                  <li className="text-justify">
+                    <span className="font-semibold text-gray-900">1. Crea l’annuncio</span><br />
+                    Descrivi l’esperienza, carica foto, imposta prezzo, durata, numero massimo di partecipanti ed eventuali requisiti.
+                  </li>
+                  <li className="text-justify">
+                    <span className="font-semibold text-gray-900">2. Configura gli slot</span><br />
+                    Definisci le date e gli orari disponibili direttamente dalla dashboard. Puoi aggiungere, modificare o rimuovere slot in qualsiasi momento.
+                  </li>
+                  <li className="text-justify">
+                    <span className="font-semibold text-gray-900">3. Gestisci le prenotazioni</span><br />
+                    Ricevi le prenotazioni dei partecipanti, accetta o rifiuta e utilizza la chat per chiarire eventuali dubbi.
+                  </li>
+                  <li className="text-justify">
+                    <span className="font-semibold text-gray-900">4. Eroga l’esperienza</span><br />
+                    Accogliere i partecipanti all’orario dello slot e assicurati che l’attività si svolga come descritto nell’annuncio.
+                  </li>
+                  <li className="text-justify">
+                    <span className="font-semibold text-gray-900">5. Ricevi il pagamento</span><br />
+                    A esperienza conclusa, il compenso viene elaborato e accreditato sul tuo wallet secondo le regole della piattaforma.
+                  </li>
+                </ol>
+              </div>
+
             </div>
           </div>
         </section>

@@ -16,7 +16,7 @@ export const CancellazionePage: React.FC = () => {
             <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto text-justify md:text-center">
               Le politiche di cancellazione su Renthubber garantiscono chiarezza e 
               trasparenza sia per chi noleggia (Renter) sia per chi mette a 
-              disposizione oggetti o spazi (Hubber). Ogni annuncio deve indicare 
+              disposizione oggetti, spazi o esperienze (Hubber). Ogni annuncio deve indicare 
               in modo chiaro la politica applicata.
             </p>
           </div>
@@ -26,71 +26,93 @@ export const CancellazionePage: React.FC = () => {
         <section className="py-20 bg-white border-y">
           <div className="max-w-6xl mx-auto px-6">
 
-            <h2 className="text-3xl font-semibold text-gray-900 mb-10 text-left">
+            <h2 className="text-3xl font-semibold text-gray-900 mb-10 text-center">
               Tipologie di politiche di cancellazione
             </h2>
 
-            {/* FLESSIBILE */}
-            <div className="mb-16">
-              <h3 className="text-2xl font-bold text-gray-900 mb-3 text-left">
-                Flessibile
-              </h3>
-              <p className="text-gray-600 leading-relaxed text-justify max-w-3xl">
-                La politica di cancellazione più permissiva. 
-                <br />
-                <span className="font-semibold text-gray-800">
-                  Rimborso 100% fino a 24 ore prima dell’inizio del noleggio.
-                </span>
-              </p>
-            </div>
+            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
 
-            {/* MODERATA */}
-            <div className="mb-16">
-              <h3 className="text-2xl font-bold text-gray-900 mb-3 text-left">
-                Moderata
-              </h3>
-              <p className="text-gray-600 leading-relaxed text-justify max-w-3xl">
-                Ideale per noleggi programmati con più anticipo.
-                <br />
-                <span className="font-semibold text-gray-800">
-                  Rimborso 100% fino a 5 giorni prima dell’inizio del noleggio.
-                </span>
-              </p>
-            </div>
+              {/* FLESSIBILE */}
+              <div className="bg-gray-50 border rounded-2xl p-6 text-center flex flex-col gap-3">
+                <h3 className="text-2xl font-bold text-gray-900">Flessibile</h3>
+                <p className="text-gray-600 leading-relaxed text-sm">
+                  La politica di cancellazione più permissiva.
+                </p>
+                <p className="font-semibold text-gray-800 text-sm">
+                  Rimborso 100% fino a 24 ore prima dell’inizio del noleggio o dello slot.
+                </p>
+              </div>
 
-            {/* RIGIDA */}
-            <div className="mb-16">
-              <h3 className="text-2xl font-bold text-gray-900 mb-3 text-left">
-                Rigida
-              </h3>
-              <p className="text-gray-600 leading-relaxed text-justify max-w-3xl">
-                Pensata per oggetti/spazi con elevata richiesta o utilizzo specifico.
-                <br />
-                <span className="font-semibold text-gray-800">
-                  Rimborso 50% fino a 7 giorni prima dell’inizio del noleggio.
-                </span>
-              </p>
+              {/* MODERATA */}
+              <div className="bg-gray-50 border rounded-2xl p-6 text-center flex flex-col gap-3">
+                <h3 className="text-2xl font-bold text-gray-900">Moderata</h3>
+                <p className="text-gray-600 leading-relaxed text-sm">
+                  Ideale per noleggi programmati con più anticipo.
+                </p>
+                <p className="font-semibold text-gray-800 text-sm">
+                  Rimborso 100% fino a 5 giorni prima dell’inizio del noleggio o dello slot.
+                </p>
+              </div>
+
+              {/* RIGIDA */}
+              <div className="bg-gray-50 border rounded-2xl p-6 text-center flex flex-col gap-3">
+                <h3 className="text-2xl font-bold text-gray-900">Rigida</h3>
+                <p className="text-gray-600 leading-relaxed text-sm">
+                  Pensata per oggetti/spazi con elevata richiesta o utilizzo specifico.
+                </p>
+                <p className="font-semibold text-gray-800 text-sm">
+                  Rimborso 50% fino a 7 giorni prima dell’inizio del noleggio o dello slot.
+                </p>
+              </div>
+
             </div>
 
           </div>
         </section>
 
+        {/* ESPERIENZE */}
+        <section className="py-12 bg-gray-50 border-y">
+          <div className="max-w-6xl mx-auto px-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
+              Regole specifiche per le Esperienze
+            </h2>
+            <p className="text-gray-600 leading-relaxed text-center mb-8 max-w-3xl mx-auto">
+              Per le Esperienze prenotate tramite slot orari, si applicano le stesse politiche sopra descritte con riferimento all’orario di inizio dello slot. In aggiunta valgono le seguenti regole:
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+              <div className="bg-white border rounded-xl p-5 text-center">
+                <p className="font-semibold text-gray-900 mb-2">Mancata presentazione (no-show)</p>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Se il Partecipante non si presenta all’orario dello slot senza aver cancellato nei termini previsti dalla politica, non è previsto alcun rimborso.
+                </p>
+              </div>
+              <div className="bg-white border rounded-xl p-5 text-center">
+                <p className="font-semibold text-gray-900 mb-2">Annullamento da parte dell’Hubber</p>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Se l’Hubber annulla uno slot per qualsiasi motivo, i Partecipanti hanno sempre diritto al rimborso integrale dell’importo pagato, indipendentemente dalla politica applicata.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ALTRE INFORMAZIONI */}
         <section className="py-20">
-          <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-6xl mx-auto px-6 text-center">
 
-            <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
+            <h2 className="text-3xl font-semibold text-gray-900 mb-4">
               Modalità di rimborso
             </h2>
 
-            <p className="text-gray-600 leading-relaxed text-justify mb-4 max-w-3xl">
+            <p className="text-gray-600 leading-relaxed mb-4 max-w-3xl mx-auto">
               In caso di cancellazione entro i limiti previsti dalla politica selezionata,
               il rimborso viene elaborato automaticamente tramite il metodo di pagamento
               utilizzato, al netto di eventuali commissioni non rimborsabili indicate
-              specificamente nella piattaforma.
+              specificamente nella piattaforma. Per le Esperienze, il rimborso segue la politica associata allo slot prenotato.
             </p>
 
-            <p className="text-gray-600 leading-relaxed text-justify max-w-3xl">
+            <p className="text-gray-600 leading-relaxed max-w-3xl mx-auto">
               Se la cancellazione avviene oltre i limiti della politica scelta, 
               non è previsto alcun rimborso salvo diversa autorizzazione dell’Hubber.
             </p>

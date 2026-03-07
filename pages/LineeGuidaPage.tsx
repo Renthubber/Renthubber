@@ -57,7 +57,7 @@ export const LineeGuidaPage: React.FC = () => {
 
         {/* COMPORTAMENTI CONSIGLIATI */}
         <section className="py-20">
-          <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-start">
+          <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
                 Comportamenti consigliati
@@ -84,11 +84,17 @@ export const LineeGuidaPage: React.FC = () => {
                 <li className="text-justify">
                   Lasciare recensioni oneste e costruttive dopo un noleggio.
                 </li>
+                <li className="text-justify">
+                  Per le esperienze: verificare prima della prenotazione eventuali requisiti richiesti (età minima, attrezzatura personale, idoneità fisica, ecc.).
+                </li>
+                <li className="text-justify">
+                  Per gli Hubber che organizzano esperienze: comunicare tempestivamente ai partecipanti qualsiasi variazione, ritardo o annullamento dello slot.
+                </li>
               </ul>
             </div>
 
             <div className="bg-white rounded-xl p-8 shadow-sm border">
-              <h3 className="text-xl font-bold text-gray-900 mb-3 text-left">
+            <h3 className="text-xl font-bold text-gray-900 mb-3 text-left">
                 Un buon comportamento porta benefici
               </h3>
               <p className="text-gray-600 text-sm md:text-base text-justify">
@@ -133,13 +139,16 @@ export const LineeGuidaPage: React.FC = () => {
         Utilizzo della piattaforma per scopi diversi da quelli previsti
         (ad esempio promuovere attività estranee al noleggio consentito).
       </li>
+      <li className="text-justify">
+        Pubblicare esperienze per cui non si dispone delle competenze, autorizzazioni o abilitazioni professionali necessarie, o fornire informazioni false su requisiti, luogo, durata o contenuto dell’attività.
+      </li>
     </ul>
   </div>
 </section>
 
         {/* COMUNICAZIONE & CHAT INTERNA */}
         <section className="py-20">
-          <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-start">
+          <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
                 Uso corretto della chat interna
@@ -169,8 +178,8 @@ export const LineeGuidaPage: React.FC = () => {
               </ul>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-8 shadow-sm border">
-              <h3 className="text-xl font-bold text-gray-900 mb-3 text-left">
+            <div className="bg-white rounded-xl p-8 shadow-sm border">
+            <h3 className="text-xl font-bold text-gray-900 mb-3 text-left">
                 Perché è importante restare in piattaforma
               </h3>
               <p className="text-gray-600 text-sm md:text-base text-justify">
@@ -217,7 +226,7 @@ export const LineeGuidaPage: React.FC = () => {
 
         {/* CONSEGUENZE DELLE VIOLAZIONI */}
         <section className="py-20">
-          <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-start">
+          <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-semibold text-gray-900 mb-4 text-left">
                 Violazioni delle linee guida
@@ -242,7 +251,7 @@ export const LineeGuidaPage: React.FC = () => {
             </div>
 
             <div className="bg-white rounded-xl p-8 shadow-sm border">
-              <h3 className="text-xl font-bold text-gray-900 mb-3 text-left">
+            <h3 className="text-xl font-bold text-gray-900 mb-3 text-left">
                 Tutela della community
               </h3>
               <p className="text-gray-600 text-sm md:text-base text-justify">

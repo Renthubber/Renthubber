@@ -1,4 +1,5 @@
 import React from "react";
+import { Search, Percent, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
@@ -21,35 +22,49 @@ export const TerminiPage: React.FC = () => {
             <p className="mt-6 text-lg text-gray-600 max-w-3xl mx-auto text-justify md:text-center">
               I presenti Termini (di seguito, “Termini”) regolano l’accesso e l’utilizzo
               della piattaforma Renthubber da parte degli utenti, siano essi{" "}
-              <span className="font-semibold">Renter</span> (chi utilizza) o{" "}
-              <span className="font-semibold">Hubber</span> (chi mette a disposizione beni o spazi).
+              <span className="font-semibold">Renter</span> (chi utilizza o partecipa) o{" "}
+              <span className="font-semibold">Hubber</span> (chi mette a disposizione beni, spazi o esperienze).
               L’uso della Piattaforma implica l’accettazione dei presenti Termini, della Privacy Policy
               e della Cookie Policy.
             </p>
 
-            {/* Quick highlight box */}
-            <div className="mt-8 max-w-4xl mx-auto bg-gray-50 border rounded-2xl p-6 text-left shadow-sm">
+           {/* Quick highlight box */}
+            <div className="mt-8 max-w-4xl mx-auto">
               <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Cosa puoi noleggiare</p>
-                 <p className="text-sm text-gray-600">
-                   Oggetti, attrezzarture, spazi temporanei e immobili per affitto medio/lungo termine. Esclusi affitti brevi e alloggio turistico.
-                 </p>
+
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm flex flex-col items-center gap-2 text-center">
+                  <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center">
+                    <Search className="w-5 h-5 text-teal-600" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">Cosa puoi fare</p>
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    Noleggiare oggetti, usare spazi temporanei, affittare immobili (min. 30 gg) e prenotare esperienze con slot orari. Esclusi affitti brevi e alloggio turistico.
+                  </p>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Commissioni</p>
-                  <p className="text-sm text-gray-600">
-                  10% Renter + 10% Hubber (5% SuperHubber) + fee fissa variabile per transazione.
-                 </p>
+
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm flex flex-col items-center gap-2 text-center">
+                  <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
+                    <Percent className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">Commissioni</p>
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    10% Renter + 10% Hubber (5% SuperHubber) + fee fissa variabile per transazione.
+                  </p>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Ruolo di Renthubber</p>
-                  <p className="text-sm text-gray-600">
+
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm flex flex-col items-center gap-2 text-center">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">Ruolo di Renthubber</p>
+                  <p className="text-sm text-gray-500 leading-relaxed">
                     Intermediario tecnologico, non parte del contratto tra utenti.
                   </p>
                 </div>
+
               </div>
             </div>
+
           </div>
         </section>
 
@@ -125,7 +140,7 @@ export const TerminiPage: React.FC = () => {
               <div id="oggetto" className="scroll-mt-28">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-3">2. Oggetto del servizio</h2>
                 <p className="text-gray-700 leading-relaxed text-justify">
-                  Renthubber consente l’incontro tra utenti che desiderano noleggiare, concedere in uso o condividere:
+                  Renthubber consente l’incontro tra utenti che desiderano noleggiare, concedere in uso, condividere o organizzare/partecipare a:
                 </p>
                 <ul className="list-disc list-inside mt-3 text-gray-700 space-y-2">
                   <li className="text-justify">
@@ -136,6 +151,9 @@ export const TerminiPage: React.FC = () => {
                   </li>
                   <li className="text-justify">
                     <span className="font-semibold">Immobili per locazione di medio e lungo termine</span> (contratti di locazione abitativa o commerciale con durata superiore a 30 giorni, regolati dalla normativa vigente in materia di locazioni).
+                  </li>
+                  <li className="text-justify">
+                    <span className="font-semibold">Esperienze e attività</span> (laboratori, corsi, tour, degustazioni, workshop, attività sportive e simili) proposte da Hubber e prenotabili tramite slot orari definiti. L'Hubber che pubblica un'esperienza assume la qualità di organizzatore/erogatore della stessa ed è l'unico responsabile del suo svolgimento.
                   </li>
                 </ul>
 
@@ -176,6 +194,9 @@ export const TerminiPage: React.FC = () => {
                   <li className="text-justify"><span className="font-semibold">Fee fissa</span>: importo variabile per transazione, calcolato in base all'importo del noleggio/uso (vedi art. 9).</li>
                   <li className="text-justify"><span className="font-semibold">Deposito cauzionale (Cauzione)</span>: somma eventuale a garanzia di danni o mancata restituzione.</li>
                   <li className="text-justify"><span className="font-semibold">Wallet</span>: portafoglio digitale interno che può gestire crediti, bonus, rimborsi o importi tecnici secondo le regole di piattaforma.</li>
+                  <li className="text-justify"><span className="font-semibold">Esperienza</span>: attività, laboratorio, corso, tour, workshop o servizio analogico proposto da un Hubber con data, orario e numero massimo di partecipanti definiti, prenotabile tramite slot.</li>
+                  <li className="text-justify"><span className="font-semibold">Slot</span>: unità temporale (data + ora + durata) in cui un'Esperienza è disponibile per la prenotazione.</li>
+                  <li className="text-justify"><span className="font-semibold">Partecipante</span>: Renter che prenota uno o più posti in uno Slot di un'Esperienza.</li>
                 </ul>
               </div>
 
@@ -236,6 +257,13 @@ export const TerminiPage: React.FC = () => {
                 (sicurezza, autorizzazioni, capienze, destinazioni d'uso, normativa sulle locazioni, ecc.).
                 </p>
                 </div>
+
+                <div className="mt-6 bg-gray-50 border rounded-xl p-5">
+                  <p className="font-semibold text-gray-900 mb-2">7.2 Dichiarazione specifica sulle "Esperienze"</p>
+                  <p className="text-gray-700 leading-relaxed text-justify">
+                    L'Hubber che pubblica un'Esperienza dichiara e garantisce di avere le competenze, le autorizzazioni e, ove richiesto dalla normativa, le abilitazioni professionali necessarie per erogare l'attività descritta. L'Hubber è l'unico responsabile della corretta esecuzione, della sicurezza dei partecipanti, del rispetto dei requisiti normativi (sicurezza luoghi, coperture assicurative, certificazioni, capienze, ecc.) e della veridicità di tutte le informazioni riportate nell'annuncio (luogo, durata, numero massimo di partecipanti, materiali inclusi, eventuali limiti di età o requisiti fisici).
+                  </p>
+                </div>
               </div>
 
               {/* 8 */}
@@ -245,6 +273,18 @@ export const TerminiPage: React.FC = () => {
                   La prenotazione effettuata tramite la Piattaforma costituisce impegno vincolante tra Hubber e Renter alle condizioni dell’annuncio
                   e dei presenti Termini. Le parti devono concordare e rispettare tempi, modalità di consegna/ritiro (beni) o accesso/uso (spazi), regole e divieti.
                 </p>
+                <div className="mt-4 bg-gray-50 border rounded-xl p-5">
+                  <p className="font-semibold text-gray-900 mb-2">8.1 Prenotazione di Esperienze (slot orari)</p>
+                  <p className="text-gray-700 leading-relaxed text-justify mb-3">
+                    Per le Esperienze, la prenotazione riguarda uno o più posti in uno Slot specifico (data, ora o giorni e durata definiti dall’Hubber). La conferma avviene secondo le modalità indicate nell’annuncio (automatica o manuale).
+                  </p>
+                  <ul className="list-disc list-inside text-gray-700 space-y-2 text-sm">
+                    <li className="text-justify">Il Partecipante è tenuto a presentarsi nel luogo e all’orario indicati; in caso di mancata presentazione (no-show) non è previsto rimborso, salvo quanto stabilito dalla politica di cancellazione dell’annuncio.</li>
+                    <li className="text-justify">L’Hubber può annullare uno Slot per cause di forza maggiore o motivi straordinari comunicandolo tempestivamente tramite la Piattaforma; in tal caso i Partecipanti hanno diritto al rimborso integrale.</li>
+                    <li className="text-justify">Se lo Slot non raggiunge il numero minimo di partecipanti indicato nell’annuncio, l’Hubber può annullarlo entro i termini stabiliti, con rimborso integrale ai Partecipanti già prenotati.</li>
+                    <li className="text-justify">Eventuali requisiti speciali (età minima, idoneità fisica, attrezzatura personale, ecc.) devono essere verificati dal Partecipante prima della prenotazione e sono di esclusiva responsabilità dell’Hubber comunicarli correttamente nell’annuncio.</li>
+                  </ul>
+                </div>
               </div>
 
               {/* 9 */}
@@ -305,11 +345,17 @@ export const TerminiPage: React.FC = () => {
 
               {/* 11 */}
               <div id="consegna" className="scroll-mt-28">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-3">11. Consegna, riconsegna e ritardi / Accesso e ritardi (spazi)</h2>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-3">11. Consegna, riconsegna e ritardi / Accesso e ritardi (spazi) / Puntualità alle Esperienze</h2>
                 <p className="text-gray-700 leading-relaxed text-justify">
                   Luogo e orario sono concordati tra le parti. Salvo diversa indicazione nell’annuncio: tolleranza di 30 minuti; oltre, può applicarsi
                   una penale pari a 1/10 del prezzo giornaliero per ogni ora di ritardo. In caso di mancata restituzione o abuso, l’Hubber può attivare segnalazione e richiedere assistenza.
                 </p>
+                <div className="mt-4 bg-gray-50 border rounded-xl p-5">
+                  <p className="font-semibold text-gray-900 mb-2">11.1 Esperienze: puntualità e no-show</p>
+                  <p className="text-gray-700 leading-relaxed text-justify">
+                    Per le Esperienze, l’orario di inizio è vincolante. Il Partecipante è tenuto a presentarsi all’orario e nel luogo indicati nello Slot. L’Hubber non è tenuto ad attendere oltre 15 minuti dall’orario di inizio previsto, salvo diversa indicazione nell’annuncio. Il mancato arrivo del Partecipante (no-show) non dà diritto ad alcun rimborso, salvo quanto previsto dalla politica di cancellazione. Se l’Hubber non si presenta o non eroga l’Esperienza come descritto, il Partecipante può aprire una segnalazione tramite il Centro assistenza per la valutazione di un rimborso.
+                  </p>
+                </div>
               </div>
 
               {/* 12 */}

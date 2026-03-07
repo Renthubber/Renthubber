@@ -187,6 +187,45 @@ export const FaqPage: React.FC = () => {
         },
       ],
     },
+    {
+      title: "Esperienze",
+      color: "border-purple-500 bg-purple-50",
+      textColor: "text-purple-700",
+      faqs: [
+        {
+          q: "Come funziona la prenotazione di un’esperienza?",
+          a: "Cerca l’esperienza che ti interessa, seleziona uno slot disponibile (data e orario) e completa la prenotazione con il pagamento in piattaforma. Riceverai una conferma direttamente nell’app. La conferma può essere automatica o richiedere l’approvazione manuale dell’Hubber, a seconda delle impostazioni dell’annuncio.",
+        },
+        {
+          q: "Cosa succede se non mi presento allo slot (no-show)?",
+          a: "Se non ti presenti all’orario dello slot senza aver cancellato nei termini previsti dalla politica di cancellazione dell’annuncio, non è previsto alcun rimborso. Ti consigliamo di cancellare in anticipo se sai che non potrai partecipare.",
+        },
+        {
+          q: "Posso cancellare la prenotazione di un’esperienza?",
+          a: "Sì, puoi cancellare entro i termini stabiliti dalla politica di cancellazione dell’annuncio (Flessibile, Moderata o Rigida). Il rimborso dipende da quando effettui la cancellazione rispetto all’orario di inizio dello slot. Controlla sempre la politica prima di prenotare.",
+        },
+        {
+          q: "L’esperienza può essere annullata dall’Hubber?",
+          a: "Sì, l’Hubber può annullare uno slot per cause di forza maggiore o motivi straordinari. In questo caso hai sempre diritto al rimborso integrale dell’importo pagato, indipendentemente dalla politica di cancellazione applicata. Riceverai una notifica tramite la piattaforma.",
+        },
+        {
+          q: "Come pubblico un’esperienza come Hubber?",
+          a: "Accedi alla tua area Hubber, seleziona la categoria ‘Esperienza’ e compila tutti i campi: titolo, descrizione, categoria, foto, prezzo, durata, numero massimo di partecipanti ed eventuali requisiti speciali (età minima, attrezzatura, ecc.). Dopo la pubblicazione potrai configurare gli slot direttamente dalla dashboard.",
+        },
+        {
+          q: "Come gestisco gli slot di un’esperienza?",
+          a: "Dalla dashboard Hubber puoi aggiungere, modificare o rimuovere slot in qualsiasi momento. Per ogni slot definisci data, orario e numero massimo di posti disponibili. Gli slot già prenotati non possono essere modificati senza comunicarlo ai partecipanti.",
+        },
+        {
+          q: "Cosa succede se un partecipante non si presenta (no-show)?",
+          a: "Se un partecipante non si presenta allo slot senza aver cancellato nei termini previsti, non è previsto alcun rimborso a suo favore. Il compenso per lo slot verrà comunque elaborato secondo le regole della piattaforma.",
+        },
+        {
+          q: "Posso annullare uno slot già pubblicato?",
+          a: "Sì, puoi annullare uno slot per motivi straordinari o di forza maggiore. In caso di annullamento da parte tua, tutti i partecipanti già prenotati hanno diritto al rimborso integrale. Ti invitiamo a comunicare l’annullamento il prima possibile tramite la piattaforma e, se possibile, a proporre una data alternativa.",
+        },
+      ],
+    },
   ];
 
   return (

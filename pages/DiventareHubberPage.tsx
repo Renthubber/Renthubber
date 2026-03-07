@@ -13,7 +13,7 @@ export const DiventareHubberPage: React.FC = () => {
             <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto text-justify md:text-center">
               Entrare nella community degli Hubber di Renthubber significa trasformare
               ciò che possiedi in un'opportunità di guadagno. Che tu abbia oggetti,
-              attrezzature o spazi inutilizzati, puoi metterli a noleggio e iniziare
+              attrezzature, spazi inutilizzati o un’esperienza da condividere, puoi metterli a noleggio e iniziare
               a generare entrate extra in modo semplice e sicuro.
             </p>
           </div>
@@ -53,6 +53,16 @@ export const DiventareHubberPage: React.FC = () => {
         </p>
       </div>
       
+      <div className="mb-4">
+        <h3 className="font-semibold text-gray-900 mb-2">Esperienze e attività:</h3>
+        <p className="text-gray-600 text-sm leading-relaxed text-justify">
+          Tour guidati, laboratori creativi, corsi pratici, workshop professionali,
+          degustazioni, lezioni individuali o di gruppo, attività outdoor e molto altro.
+          Se hai una competenza, una passione o un’abilità da trasmettere, puoi
+          creare slot prenotabili e accogliere partecipanti in sicurezza.
+        </p>
+      </div>
+
       <p className="text-gray-600 leading-relaxed text-justify mb-4">
         Non serve investire denaro: pubblichi gratuitamente e paghi una piccola 
         commissione solo quando ricevi una prenotazione completata. L'obiettivo è 
@@ -129,7 +139,7 @@ export const DiventareHubberPage: React.FC = () => {
                     4. Consegnalo e completa il noleggio
                   </span>
                   <br />
-                  Una volta confermata la prenotazione, organizza consegna, ritiro o accesso. La comunicazione avviene sempre tramite chat interna.
+                  Una volta confermata la prenotazione, organizza consegna, ritiro o accesso. Per le esperienze, accogli i partecipanti allo slot prenotato e eroga l’attività come da annuncio. La comunicazione avviene sempre tramite chat interna.
                 </li>
                 <li className="text-justify">
                   <span className="font-semibold text-gray-900">
@@ -244,6 +254,7 @@ export const DiventareHubberPage: React.FC = () => {
               <li className="text-justify">Comunicare sempre tramite chat interna.</li>
               <li className="text-justify">Gestire le prenotazioni con responsabilità.</li>
               <li className="text-justify">Rispettare le policy della piattaforma.</li>
+              <li className="text-justify">Per le esperienze: indicare chiaramente requisiti, durata, luogo e numero massimo di partecipanti per ogni slot.</li>
             </ul>
           </div>
         </section>
@@ -258,8 +269,8 @@ export const DiventareHubberPage: React.FC = () => {
               Sei pronto a diventare un Hubber?
             </h2>
             <p className="text-lg text-gray-200 mb-8 text-justify md:text-center">
-              Trasforma ciò che possiedi in un'opportunità di guadagno. Pubblica
-              il tuo primo annuncio e unisciti alla community di Renthubber.
+              Trasforma ciò che possiedi o sai fare in un'opportunità di guadagno. Pubblica
+              il tuo primo annuncio, crea la tua prima esperienza e unisciti alla community di Renthubber.
             </p>
             <Link
               to="/signup"
